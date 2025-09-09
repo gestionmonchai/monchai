@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+*.env
+.env
+venv/
+env/
+ENV/
+.vscode/
+.idea/
+
+# Django
+*.log
+db.sqlite3
+media/
+static/
+local_settings.py
+
+# React Native / Expo
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.swp
+*.swo
+*~
