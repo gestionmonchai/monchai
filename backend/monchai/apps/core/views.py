@@ -2,12 +2,15 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.core.exceptions import ValidationError
+from decimal import Decimal
 
 from .models import Parcelle, Vendange, Cuve, Lot, Mouvement, BouteilleLot
 from .serializers import (
     ParcelleSerializer, VendangeSerializer, CuveSerializer,
     LotSerializer, MouvementSerializer, BouteilleLotSerializer
 )
+from .services import MouvementService, MiseEnBouteilleService
 
 
 class BaseDomaineMixin:
@@ -101,19 +104,89 @@ class MouvementViewSet(BaseDomaineMixin, viewsets.ModelViewSet):
         """Endpoint pour valider un mouvement"""
         mouvement = self.get_object()
         
-        # Vérifier que le mouvement est en brouillon
-        if mouvement.status != 'draft':
+        try:
+            mouvement_valide = MouvementService.valider_mouvement(mouvement.id)
+            serializer = self.get_serializer(mouvement_valide)
+            return Response(serializer.data)
+        except ValidationError as e:
             return Response(
-                {"error": "Seuls les mouvements en brouillon peuvent être validés"},
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Implémenter ici la logique de validation (contrôle volume, etc.)
-        mouvement.status = 'valide'
-        mouvement.save()
-        
-        serializer = self.get_serializer(mouvement)
-        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def inter_cuves(self, request):
+        """Endpoint pour créer un mouvement inter-cuves"""
+        try:
+            data = request.data
+            mouvement = MouvementService.create_inter_cuves(
+                source_lot_id=data.get('source_lot_id'),
+                destination_cuve_id=data.get('destination_cuve_id'),
+                volume_hl=Decimal(str(data.get('volume_hl'))),
+                date=data.get('date'),
+                commentaire=data.get('commentaire', ''),
+                domaine=request.user.profile.domaine
+            )
+            serializer = self.get_serializer(mouvement)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Erreur lors de la création du mouvement: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def perte(self, request):
+        """Endpoint pour créer un mouvement de perte"""
+        try:
+            data = request.data
+            mouvement = MouvementService.create_perte(
+                source_lot_id=data.get('source_lot_id'),
+                volume_hl=Decimal(str(data.get('volume_hl'))),
+                date=data.get('date'),
+                commentaire=data.get('commentaire', ''),
+                domaine=request.user.profile.domaine
+            )
+            serializer = self.get_serializer(mouvement)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Erreur lors de la création du mouvement: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['post'])
+    def vendange_vers_cuve(self, request):
+        """Endpoint pour créer un mouvement vendange vers cuve"""
+        try:
+            data = request.data
+            mouvement = MouvementService.create_vendange_vers_cuve(
+                vendange_id=data.get('vendange_id'),
+                destination_cuve_id=data.get('destination_cuve_id'),
+                date=data.get('date')
+            )
+            serializer = self.get_serializer(mouvement)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Erreur lors de la création du mouvement: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     def destroy(self, request, *args, **kwargs):
         """Surcharge pour empêcher la suppression de mouvements validés ou verrouillés"""
@@ -140,3 +213,35 @@ class BouteilleLotViewSet(BaseDomaineMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Associe automatiquement le domaine de l'utilisateur"""
         serializer.save(domaine=self.request.user.profile.domaine)
+    
+    @action(detail=False, methods=['post'])
+    def mise_en_bouteille(self, request):
+        """Endpoint pour exécuter une mise en bouteille complète"""
+        try:
+            data = request.data
+            mouvement, bouteille_lot = MiseEnBouteilleService.executer_mise_en_bouteille(
+                source_lot_id=data.get('source_lot_id'),
+                nb_bouteilles=int(data.get('nb_bouteilles')),
+                contenance_ml=int(data.get('contenance_ml')),
+                taux_perte_hl=Decimal(str(data.get('taux_perte_hl', 0))),
+                date=data.get('date'),
+                domaine=request.user.profile.domaine
+            )
+            
+            # Retourner les informations du lot de bouteilles créé
+            serializer = self.get_serializer(bouteille_lot)
+            return Response({
+                'bouteille_lot': serializer.data,
+                'mouvement_id': mouvement.id
+            }, status=status.HTTP_201_CREATED)
+            
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Erreur lors de la mise en bouteille: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
