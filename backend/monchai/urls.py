@@ -43,6 +43,7 @@ urlpatterns = [
     
     # UI endpoints (main app)
     path('', include('monchai.apps.core.urls')),
+    path('drm/', include(('monchai.apps.drm.urls', 'drm-ui'), namespace='drm-ui')),
     
     # API endpoints
     path('api/', APIRoot.as_view(), name='api-root'),
