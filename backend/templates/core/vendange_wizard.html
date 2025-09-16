@@ -1,0 +1,118 @@
+<div class="space-y-6">
+    <div>
+        <h3 class="text-lg font-medium text-gray-900 mb-4">🍇 Nouvelle vendange</h3>
+        <p class="text-sm text-gray-600 mb-6">Enregistrez une nouvelle vendange et affectez-la optionnellement à une cuve.</p>
+    </div>
+
+    <form hx-post="{% url 'core:vendange_wizard' %}" hx-target="this" hx-swap="outerHTML">
+        {% csrf_token %}
+        
+        <!-- Étape 1: Informations vendange -->
+        <div class="space-y-4">
+            <div>
+                <label for="parcelle_id" class="block text-sm font-medium text-gray-700">Parcelle</label>
+                <select id="parcelle_id" name="parcelle_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
+                    <option value="">Sélectionnez une parcelle</option>
+                    {% for parcelle in parcelles %}
+                    <option value="{{ parcelle.id }}">{{ parcelle.nom }} - {{ parcelle.cepage }} ({{ parcelle.surface_ha }} ha)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700">Date de vendange</label>
+                    <input type="date" id="date" name="date" required value="{{ today|date:'Y-m-d' }}" 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
+                </div>
+
+                <div>
+                    <label for="volume_hl" class="block text-sm font-medium text-gray-700">Volume brut (hl)</label>
+                    <input type="number" id="volume_hl" name="volume_hl" step="0.01" min="0.01" required 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
+                           placeholder="25.4">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="dechets_hl" class="block text-sm font-medium text-gray-700">Déchets/Pertes (hl)</label>
+                    <input type="number" id="dechets_hl" name="dechets_hl" step="0.01" min="0" value="0" 
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
+                           placeholder="0.8">
+                </div>
+
+                <div>
+                    <label for="cuve_id" class="block text-sm font-medium text-gray-700">Cuve de destination (optionnel)</label>
+                    <select id="cuve_id" name="cuve_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
+                        <option value="">Affecter plus tard</option>
+                        {% for cuve in cuves %}
+                        <option value="{{ cuve.id }}">{{ cuve.nom }} ({{ cuve.capacite_hl }} hl - {{ cuve.get_materiau_display }})</option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Si sélectionnée, un mouvement sera créé automatiquement</p>
+                </div>
+            </div>
+
+            <div>
+                <label for="commentaire" class="block text-sm font-medium text-gray-700">Commentaire</label>
+                <textarea id="commentaire" name="commentaire" rows="3" 
+                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
+                          placeholder="Notes sur la vendange..."></textarea>
+            </div>
+        </div>
+
+        <!-- Résumé calculé -->
+        <div class="bg-gray-50 p-4 rounded-md" x-data="vendangeCalculator()">
+            <h4 class="text-sm font-medium text-gray-900 mb-2">Résumé</h4>
+            <div class="text-sm text-gray-600">
+                <p>Volume brut: <span x-text="volumeBrut"></span> hl</p>
+                <p>Déchets: <span x-text="dechets"></span> hl</p>
+                <p class="font-medium text-gray-900">Volume net: <span x-text="volumeNet"></span> hl</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeModal()" 
+                    class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Annuler
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-900 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Créer la vendange
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function vendangeCalculator() {
+        return {
+            get volumeBrut() {
+                return document.getElementById('volume_hl').value || '0';
+            },
+            get dechets() {
+                return document.getElementById('dechets_hl').value || '0';
+            },
+            get volumeNet() {
+                const brut = parseFloat(this.volumeBrut) || 0;
+                const dechets = parseFloat(this.dechets) || 0;
+                return (brut - dechets).toFixed(2);
+            }
+        }
+    }
+
+    // Gestion de la réponse HTMX
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.xhr.status === 200) {
+            const response = JSON.parse(evt.detail.xhr.responseText);
+            if (response.success && response.redirect) {
+                closeModal();
+                location.reload(); // Recharger pour voir les nouvelles données
+            } else if (!response.success) {
+                alert('Erreur: ' + response.error);
+            }
+        }
+    });
+</script>

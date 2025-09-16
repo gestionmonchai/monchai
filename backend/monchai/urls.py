@@ -41,11 +41,14 @@ class APIRoot(APIView):
 urlpatterns = [
     path('admin/', admin.site.urls),
     
+    # UI endpoints (main app)
+    path('', include('monchai.apps.core.urls')),
+    
     # API endpoints
     path('api/', APIRoot.as_view(), name='api-root'),
     path('api/auth/', include('monchai.apps.accounts.urls')),
-    path('api/', include('monchai.apps.core.urls')),
-    path('api/', include('monchai.apps.sales.urls')),
+    path('api/core/', include(('monchai.apps.core.urls', 'core-api'), namespace='core-api')),
+    path('api/sales/', include('monchai.apps.sales.urls')),
     path('api/drm/', include('monchai.apps.drm.urls')),
     
     # Healthcheck
