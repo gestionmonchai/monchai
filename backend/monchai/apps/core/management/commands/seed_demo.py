@@ -269,5 +269,82 @@ class Command(BaseCommand):
         self.stdout.write(f'   - Mouvements: {domaine.mouvements.count()}')
         self.stdout.write(f'   - Lots bouteilles: {domaine.bouteille_lots.count()}')
         
+        # 10. Créer des produits à partir des bouteilles
+        try:
+            from monchai.apps.sales.models import Produit, Client, Commande, LigneCommande
+            from monchai.apps.sales.services import VenteService, FactureService
+            
+            # Créer des produits
+            bouteille_lots = domaine.bouteille_lots.all()
+            produits_crees = []
+            
+            for i, bl in enumerate(bouteille_lots):
+                produit = Produit.objects.create(
+                    domaine=domaine,
+                    bouteille_lot=bl,
+                    nom=f"Muscadet S&M 2024 - Cuvée {i+1}",
+                    sku=f"MC24-C{i+1:02d}-750",
+                    prix_ttc_eur=Decimal('8.90'),
+                    tva_pct=Decimal('20.00')
+                )
+                produits_crees.append(produit)
+                self.stdout.write(f'[OK] Produit créé: {produit.nom} ({produit.sku})')
+            
+            # Créer des clients
+            clients_data = [
+                {
+                    'nom': 'Restaurant Le Gourmet',
+                    'email': 'contact@legourmet.fr',
+                    'adresse': '15 rue de la Paix',
+                    'code_postal': '44000',
+                    'ville': 'Nantes',
+                    'siret': '12345678901234'
+                },
+                {
+                    'nom': 'Cave à Vins Dupont',
+                    'email': 'dupont@cave-vins.fr',
+                    'adresse': '8 place du Marché',
+                    'code_postal': '44100',
+                    'ville': 'Nantes'
+                }
+            ]
+            
+            clients_crees = []
+            for client_data in clients_data:
+                client = Client.objects.create(domaine=domaine, **client_data)
+                clients_crees.append(client)
+                self.stdout.write(f'[OK] Client créé: {client.nom}')
+            
+            # Créer une commande de test
+            if produits_crees and clients_crees:
+                lignes_data = [
+                    {
+                        'produit_id': produits_crees[0].id,
+                        'quantite': 12,
+                        'prix_unitaire_ttc_eur': produits_crees[0].prix_ttc_eur
+                    }
+                ]
+                
+                commande = VenteService.creer_commande(
+                    client_id=clients_crees[0].id,
+                    lignes_data=lignes_data,
+                    date_commande=date.today(),
+                    commentaire="Commande test",
+                    domaine=domaine
+                )
+                
+                self.stdout.write(f'[OK] Commande créée: #{commande.id} - {commande.total_ttc_eur} EUR')
+                
+                # Confirmer la commande
+                commande_confirmee, mouvements = VenteService.confirmer_commande(commande.id)
+                self.stdout.write(f'[OK] Commande confirmée avec {len(mouvements)} mouvements de stock')
+                
+                # Créer une facture
+                facture = FactureService.creer_facture_depuis_commande(commande.id)
+                self.stdout.write(f'[OK] Facture créée: {facture.numero}')
+                
+        except Exception as e:
+            self.stdout.write(f'[ERROR] Erreur création données sales: {str(e)}')
+
         self.stdout.write('\nAccedez au dashboard: http://127.0.0.1:8000/')
         self.stdout.write('Connexion admin: http://127.0.0.1:8000/admin/')

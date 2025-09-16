@@ -32,20 +32,25 @@ class Parcelle(models.Model):
 class Vendange(models.Model):
     """Modèle pour les vendanges"""
     
+    TYPE_CHOICES = [
+        ("vendange_vers_cuve", "Vendange vers cuve"),
+        ("inter_cuves", "Inter-cuves"),
+        ("perte", "Perte"),
+        ("mise_en_bouteille", "Mise en bouteille"),
+        ("vente_sortie_stock", "Vente sortie stock"),
+        ("autre", "Autre")
+    ]
+    
+    STATUS_CHOICES = [
+        ("draft", "Brouillon"),
+        ("valide", "Validé"),
+        ("verrouille", "Verrouillé")
+    ]
+    
     parcelle = models.ForeignKey(Parcelle, on_delete=models.CASCADE, related_name="vendanges")
-    date = models.DateField("Date de vendange")
-    volume_hl = models.DecimalField(
-        "Volume (hl)",
-        max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(0.01)]
-    )
-    dechets_hl = models.DecimalField(
-        "Déchets (hl)",
-        max_digits=10,
-        decimal_places=2,
-        default=0
-    )
+    date = models.DateField("Date")
+    volume_hl = models.DecimalField("Volume (HL)", max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    dechets_hl = models.DecimalField("Déchets (HL)", max_digits=10, decimal_places=2, default=0)
     commentaire = models.TextField("Commentaire", blank=True)
     created_at = models.DateTimeField("Date de création", auto_now_add=True)
     updated_at = models.DateTimeField("Date de mise à jour", auto_now=True)
@@ -158,10 +163,11 @@ class Mouvement(models.Model):
         decimal_places=2,
         default=0
     )
-    date = models.DateField("Date du mouvement")
+    date = models.DateField("Date")
     status = models.CharField("Statut", max_length=10, choices=STATUS_CHOICES, default="draft")
     verrouille = models.BooleanField("Verrouillé", default=False)
     commentaire = models.TextField("Commentaire", blank=True)
+    produit_id = models.PositiveIntegerField("ID Produit", null=True, blank=True, help_text="Pour les mouvements de vente")
     meta_json = models.JSONField("Métadonnées", default=dict, blank=True)
     created_at = models.DateTimeField("Date de création", auto_now_add=True)
     updated_at = models.DateTimeField("Date de mise à jour", auto_now=True)

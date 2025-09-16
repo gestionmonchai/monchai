@@ -62,25 +62,27 @@ class CommandeViewSet(BaseDomaineMixin, viewsets.ModelViewSet):
         serializer.save(domaine=self.request.user.profile.domaine)
     
     @action(detail=True, methods=['post'])
-    def valider(self, request, pk=None):
-        """Endpoint pour valider une commande"""
+    def confirmer(self, request, pk=None):
+        """Endpoint pour confirmer une commande et créer les mouvements de stock"""
+        from .services import VenteService
+        
         commande = self.get_object()
         
-        # Vérifier que la commande est en brouillon
-        if commande.status != 'brouillon':
+        try:
+            commande_confirmee, mouvements = VenteService.confirmer_commande(commande.id)
+            
+            serializer = self.get_serializer(commande_confirmee)
+            return Response({
+                "commande": serializer.data,
+                "mouvements_crees": len(mouvements),
+                "message": "Commande confirmée avec succès"
+            })
+            
+        except Exception as e:
             return Response(
-                {"error": "Seules les commandes en brouillon peuvent être validées"},
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Implémenter ici la logique de validation (stock, etc.)
-        commande.status = 'confirmee'
-        commande.save()
-        
-        # Ici on devrait créer un mouvement de type 'vente_sortie_stock'
-        
-        serializer = self.get_serializer(commande)
-        return Response(serializer.data)
 
 
 class LigneCommandeViewSet(viewsets.ModelViewSet):
@@ -123,17 +125,67 @@ class FactureViewSet(BaseDomaineMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
         """Endpoint pour générer/récupérer le PDF d'une facture"""
+        from .pdf_generator import generer_pdf_facture
+        from django.http import FileResponse
+        from django.conf import settings
+        import os
+        
         facture = self.get_object()
         
-        # Ici, on devrait implémenter la logique de génération du PDF
-        # Pour l'instant, on retourne juste le chemin s'il existe
-        if not facture.pdf_path:
+        try:
+            # Générer le PDF s'il n'existe pas
+            if not facture.pdf_path:
+                pdf_path = generer_pdf_facture(facture.id)
+            else:
+                pdf_path = facture.pdf_path
+            
+            # Retourner le fichier PDF
+            full_path = os.path.join(settings.MEDIA_ROOT, pdf_path)
+            if os.path.exists(full_path):
+                return FileResponse(
+                    open(full_path, 'rb'),
+                    as_attachment=True,
+                    filename=f"facture_{facture.numero}.pdf"
+                )
+            else:
+                return Response(
+                    {"error": "Fichier PDF non trouvé"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+                
+        except Exception as e:
             return Response(
-                {"error": "PDF non généré pour cette facture"},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": f"Erreur lors de la génération du PDF: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
+    def creer_depuis_commande(self, request):
+        """Endpoint pour créer une facture depuis une commande"""
+        from .services import FactureService
+        
+        commande_id = request.data.get('commande_id')
+        if not commande_id:
+            return Response(
+                {"error": "commande_id requis"},
+                status=status.HTTP_400_BAD_REQUEST
             )
         
-        return Response({"pdf_url": facture.pdf_path})
+        try:
+            facture = FactureService.creer_facture_depuis_commande(
+                commande_id=commande_id,
+                date_emission=request.data.get('date_emission'),
+                date_echeance=request.data.get('date_echeance')
+            )
+            
+            serializer = self.get_serializer(facture)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class PaiementViewSet(viewsets.ModelViewSet):
