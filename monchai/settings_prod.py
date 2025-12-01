@@ -11,9 +11,9 @@ import os
 DEBUG = False
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'CHANGE-ME-IN-PRODUCTION-USE-LONG-RANDOM-STRING')
 
-# PythonAnywhere domain - CHANGEZ 'votreusername' par votre nom d'utilisateur PythonAnywhere
+# PythonAnywhere domain
 ALLOWED_HOSTS = [
-    'votreusername.pythonanywhere.com',  # <-- MODIFIEZ ICI
+    'denisberthelot.pythonanywhere.com',
     'localhost',
     '127.0.0.1',
 ]
