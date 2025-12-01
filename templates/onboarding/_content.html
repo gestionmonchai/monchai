@@ -1,0 +1,85 @@
+<div id="onboarding-container">
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-semibold">Progression</span>
+        <span class="badge bg-primary">{{ state.get_progress }}%</span>
+      </div>
+      <div class="progress" style="height: 10px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{ state.get_progress|default:0 }}%"></div>
+      </div>
+      {% if state.completed_at %}
+      <div class="mt-2 text-success small">
+        <i class="bi bi-check-circle me-1"></i>Onboarding terminé
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="mb-3">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      {% for s in steps %}
+        <div class="d-flex align-items-center">
+          <span class="badge rounded-pill me-2 {% if s.status == 'done' %}bg-success{% else %}{% if s.key == current_key and s.status != 'done' %}bg-primary{% else %}bg-secondary{% endif %}{% endif %}">
+            {% if s.status == 'done' %}<i class="bi bi-check2"></i>{% else %}{{ forloop.counter }}{% endif %}
+          </span>
+          <span class="small text-muted me-3">{{ s.title }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Steps cards -->
+  <div id="onboarding-steps" class="row g-3">
+    {% for s in steps %}
+      <div class="col-12 col-lg-6">
+        <div class="card h-100 {% if s.status == 'done' %}border-success{% elif s.key == current_key and s.status != 'done' %}border-primary{% else %}border-secondary{% endif %}">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h5 class="card-title mb-0">{{ s.title }}</h5>
+              {% if s.status == 'done' %}
+                <span class="badge bg-success"><i class="bi bi-check2-circle me-1"></i>Terminé</span>
+              {% else %}
+                {% if s.key == current_key %}
+                  <span class="badge bg-primary"><i class="bi bi-lightning-charge me-1"></i>Étape courante</span>
+                {% else %}
+                  <span class="badge bg-secondary">À faire</span>
+                {% endif %}
+              {% endif %}
+            </div>
+            <p class="text-muted small mb-3">{{ s.desc }}</p>
+
+            <div class="mt-auto d-flex flex-wrap gap-2">
+              {% if s.status == 'done' %}
+                <a href="{{ s.create_url }}" class="btn btn-outline-success">
+                  <i class="bi bi-pencil-square me-1"></i>Modifier / consulter
+                </a>
+              {% else %}
+                <a id="tour-create-{{ s.key }}" href="{{ s.create_url }}" class="btn btn-primary {% if s.key != current_key %}disabled{% endif %}">
+                  <i class="bi bi-plus-lg me-1"></i>Créer ma première entrée
+                </a>
+                <form method="post" action="{% url 'onboarding:skip' s.key %}" class="d-inline" hx-post="{% url 'onboarding:skip' s.key %}" hx-target="#onboarding-container" hx-swap="outerHTML">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-secondary">Passer</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="text-center mt-4">
+    {% if current_key %}
+      {% for s in steps %}
+        {% if s.key == current_key %}
+          <a class="btn btn-lg btn-success" href="{{ s.create_url }}">
+            Continuer le chemin
+          </a>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>

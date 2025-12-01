@@ -1,0 +1,350 @@
+<style>
+#help-widget { position: fixed; bottom: 16px; right: 16px; z-index: 1050; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+#help-toggle { width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,.15); flex-shrink: 0; }
+#help-panel { 
+    width: clamp(320px, 90vw, 420px); 
+    height: 600px; /* Fixed height base */
+    max-height: 80vh; 
+    display: none; 
+    background: #fff;
+    border-radius: .5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0,0,0,.125);
+    flex-direction: column; /* Crucial for flex layout */
+}
+#help-panel.show { display: flex; } /* Use flex instead of block */
+#help-panel .card-body { 
+    flex: 1 1 auto; 
+    display: flex; 
+    flex-direction: column; 
+    min-height: 0; /* Allow shrinking */
+    overflow: hidden; /* Contain children */
+    padding: 1rem;
+}
+#help-log { 
+    flex: 1 1 auto; 
+    overflow-y: auto; 
+    background: #f8f9fa; 
+    border: 1px solid #eee; 
+    border-radius: .5rem; 
+    padding: .75rem; 
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.help-msg { display: flex; flex-direction: column; max-width: 100%; }
+.help-msg.you { align-items: flex-end; }
+.help-msg.ai { align-items: flex-start; }
+.help-msg .bubble { 
+    display: inline-block; 
+    border-radius: .75rem; 
+    padding: .5rem .75rem; 
+    max-width: 85%; 
+    word-wrap: break-word;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+.help-msg.you .bubble { background: #0d6efd; color: white; border-bottom-right-radius: 0.25rem; }
+.help-msg.ai .bubble { background: #e9ecef; color: #212529; border-bottom-left-radius: 0.25rem; }
+
+/* Responsive tweaks for small screens */
+@media (max-width: 576px) {
+  #help-widget { bottom: 8px; right: 8px; }
+  #help-toggle { width: 52px; height: 52px; }
+  #help-panel { width: calc(100vw - 32px); height: 70vh; }
+}
+</style>
+<div id="help-widget">
+  <div id="help-panel">
+    <div class="card-header d-flex justify-content-between align-items-center p-3 border-bottom bg-white rounded-top">
+      <strong><i class="bi bi-robot me-2"></i>Assistant Mon Chai</strong>
+      <button type="button" class="btn-close" aria-label="Fermer" id="help-close"></button>
+    </div>
+    <div class="card-body">
+      <!-- Guides rapides -->
+      <div class="mb-3 d-flex justify-content-between align-items-center">
+        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Guides rapides</small>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-secondary" id="help-guide-insert" title="Insérer exemple"><i class="bi bi-magic"></i></button>
+          <button class="btn btn-outline-secondary" id="help-guide-copy" title="Copier"><i class="bi bi-clipboard"></i></button>
+        </div>
+      </div>
+      
+      <div id="help-log">
+        <div class="help-msg ai">
+            <div class="bubble">Bonjour ! Je suis l'assistant Mon Chai. Posez-moi une question sur le logiciel.</div>
+        </div>
+      </div>
+
+      <div class="input-group mt-auto">
+        <input type="text" id="help-input" class="form-control shadow-none" placeholder="Posez votre question..." autocomplete="off">
+        <button id="help-send" class="btn btn-primary">
+          <i class="bi bi-send-fill" id="btn-icon-send"></i>
+          <span id="help-sending" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <button id="help-toggle" class="btn btn-primary rounded-circle text-white d-flex align-items-center justify-content-center">
+    <i class="bi bi-chat-dots-fill fs-4"></i>
+  </button>
+</div>
+<script>
+(function(){
+  const panel = document.getElementById('help-panel');
+  const toggle = document.getElementById('help-toggle');
+  const closeBtn = document.getElementById('help-close');
+  const log = document.getElementById('help-log');
+  const input = document.getElementById('help-input');
+  const sendBtn = document.getElementById('help-send');
+  const guideInsertBtn = document.getElementById('help-guide-insert');
+  const guideCopyBtn = document.getElementById('help-guide-copy');
+  const sendingEl = document.getElementById('help-sending');
+  let currentAbort = null;
+  let sending = false;
+  let debounceTimer = null;
+  let localCache = new Map(); // Cache local pour réponses
+  let pageHintsCache = null; // Cache des hints de page
+  let lastPath = null;
+  let history = []; // Conversation history [{role: 'user'|'assistant', content: '...'}, ...]
+
+  // Allowed URL prefixes for which the help is applicable
+  const ALLOWLIST = [
+    '/ventes/clients', '/ventes/clients/', '/ventes/clients/nouveau',
+    '/ventes', '/ventes/commandes', '/ventes/devis', '/ventes/factures',
+    '/referentiels', '/referentiels/cuvees',
+    '/stocks', '/drm',
+    '/production', '/production/mises', '/production/lots-elevage',
+    '/catalogue', '/viticulture', '/metadata', '/onboarding'
+  ];
+
+  // keywords → module cible + page d’aide par défaut
+  const MODULE_MAP = [
+    { keys: [/client(s)?/i, /crm/i, /adresse(s)?/i, /livraison(s)?/i, /shipping/i, /delivery/i, /facturation/i], module: 'clients', url: '/ventes/clients/' },
+    { keys: [/cuv(ée|e|ées|es)/i, /cuve(s)?/i], module: 'cuvees', url: '/referentiels/cuvees/' },
+    { keys: [/commande(s)?/i, /vente(s)?/i, /devis/i, /facture(s)?/i], module: 'ventes', url: '/ventes/commandes/' },
+    { keys: [/produit(s)?/i, /sku(s)?/i, /tarif(s)?/i], module: 'produits', url: '/catalogue/' },
+    { keys: [/stock(s)?/i, /inventaire/i, /mouvement(s)?/i], module: 'stocks', url: '/stocks/' },
+    { keys: [/drm/i, /douane(s)?/i, /crd/i], module: 'drm', url: '/drm/' },
+  ];
+
+  function detectModuleFromQuestion(q){
+    for (const m of MODULE_MAP){
+      if (m.keys.some(rx => rx.test(q))) return m;
+    }
+    return null;
+  }
+
+  function detectOnboardingFromQuestion(q){
+    const rx = /(d[ée]marr|commenc|onboard|d[ée]but|premier\s+pas|guide)/i;
+    return rx.test(q || '');
+  }
+
+  function isAllowedPath(pathname){
+    return ALLOWLIST.some(p => pathname.startsWith(p));
+  }
+
+  function pagePolicy({ pathname, question }){
+    const allowed = isAllowedPath(pathname);
+    const inferred = detectModuleFromQuestion(question || '');
+    const onboarding = detectOnboardingFromQuestion(question || '');
+    if (allowed) return { ok: true, module: null, url: null };
+    if (inferred) return { ok: true, module: inferred.module, url: inferred.url };
+    if (onboarding) return { ok: true, module: 'onboarding', url: '/onboarding/' };
+    return { ok: false, module: null, url: '/ventes/clients/' };
+  }
+
+  function grabPageHints(){
+    // Cache les hints si la page n'a pas changé
+    const currentPath = location.pathname;
+    if (pageHintsCache && lastPath === currentPath) {
+      return pageHintsCache;
+    }
+    
+    try{
+      // Optimisé : seulement 40 éléments au lieu de 80
+      const nodes = Array.from(document.querySelectorAll('h1,h2,h3,button.btn-primary,a.nav-link'));
+      const txt = nodes.slice(0,40).map(n=> (n.textContent||'').trim()).filter(Boolean).join(' | ');
+      pageHintsCache = txt.slice(0, 1000); // Réduit de 2000 à 1000
+      lastPath = currentPath;
+      return pageHintsCache;
+    }catch(_){ return ''; }
+  }
+
+  function appendMsg(text, who){
+    const div = document.createElement('div');
+    div.className = 'help-msg ' + (who || 'ai');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    div.appendChild(bubble);
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // Quick guides repository
+  const GUIDES = {
+    mise_stock: `Mettre des bouteilles en stock (de A → Z)\n\nVue d’ensemble (qui fait quoi)\n- Vendange → enregistre la matière (kg, °pot) et affecte une Cuvée (millésime).\n- Encuvage/Pressurage → crée un Lot technique (vin en vrac, volume en L).\n- Élevage → mouvements/analyses jusqu’à statut: prêt mise.\n- Mise (OF) → consomme du vrac et crée un tirage (Lot commercial) → stock produit (SKU).\n\nPas-à-pas (application)\n- Créer/Affecter la Cuvée\n  Ouvre la vendange → bouton “Affecter à une cuvée” (ou crée la Cuvée millésime).\n- Encuver/Presser\n  Vendange → “Encuvage / Pressurage” → saisis rendement % (ou volume mesuré) + contenant → crée le Lot technique.\n- Suivre le Lot\n  Va sur Lots & Élevage → ouvre le lot → enregistre analyses / mouvements (soutirage, ouillage…).\n- Passer le lot en “Prêt mise”\n  Dans la fiche lot, marque “Prêt mise” (analyses obligatoires OK).\n- Créer l’OF de mise\n  Production → Mises → Nouveau : choisis lot source, format (ex. 75 cl), saisis la quantité de bouteilles.\n  (Si BOM/MS actifs : “Préparer” pour réserver bouteilles/bouchons/étiquettes.)\n- Valider la mise\n  Valider : le système décrémente le vrac, crée le Lot commercial (tirage) et crédite le stock produit (SKU).\n- Contrôler le stock produit\n  Va dans Catalogue/Produits ou Ventes → vérifie le stock disponible du SKU du tirage.\n\nRègles & chiffres utiles\n- Conversion bouteilles ↔ vrac : nb_bouteilles × (ml / 1000) = L\n  Ex. 10 000 × 0,75 L = 7 500 L nécessaires au lot source.\n- Pré-requis “Prêt mise” : analyses mini (définies dans la Cuvée) présentes.\n\nÉchecs fréquents\n- Lot pas “Prêt mise” → impossible de valider l’OF.\n- Volume vrac insuffisant pour la quantité demandée.\n- (Si MS actives) stock MS insuffisant ou lot fournisseur bloqué.\n\nMini-exemple contrôlable\n- Vendange 8 000 kg → encuvage → 5 600 L (si 70 % réel).\n- Après élevage : 7 800 L disponibles (après ajouts/assemblage).\n- Objectif : 10 000 bt 75 cl → besoin 7 500 L.\n- Passe le lot en “Prêt mise” → Mise (10 000, 75 cl) → valider → stock produit +10 000 unités (tirage), lot vrac −7 500 L.`
+  };
+
+  function appendGuide(key){
+    const text = GUIDES[key];
+    if (text) appendMsg(text, 'ai');
+  }
+
+  async function copyGuide(key){
+    try{
+      const text = GUIDES[key] || '';
+      await navigator.clipboard.writeText(text);
+      appendMsg('Guide copié dans le presse-papiers.', 'ai');
+    }catch(_){ /* ignore */ }
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  function sanitize(text) {
+    if (!text) return '';
+    // Remove control tokens and artifacts
+    let out = text.replace(/<\|assistant\|>|<\|user\|>|\[CONTRAINDICE\]|\[CONTRAINTE\]|RÈGLES DE SÉCURITÉ \& QUALITÉ/gi, '');
+    // Deduplicate consecutive identical lines
+    const lines = out.split('\n');
+    const filtered = [];
+    let seenVoirAussi = false;
+    for (let i = 0; i < lines.length; i++) {
+      const cur = lines[i].trim();
+      if (i === 0 || cur !== lines[i-1].trim()) filtered.push(lines[i]);
+      // Enforce single 'Voir aussi' link
+      if (/^\s*Voir aussi\s*:/i.test(cur)){
+        if (seenVoirAussi) { filtered.pop(); } // drop duplicates
+        seenVoirAussi = true;
+      }
+    }
+    return filtered.join('\n').trim();
+  }
+
+  async function askHelp(message){
+    const path = location.pathname || '/';
+    
+    // Vérifier le cache local d'abord
+    const cacheKey = `${path}|${message}`;
+    if (localCache.has(cacheKey)) {
+      const cached = localCache.get(cacheKey);
+      appendMsg(message, 'you');
+      appendMsg(cached, 'ai');
+      input.value = '';
+      return;
+    }
+    
+    const pol = pagePolicy({ pathname: path, question: message });
+    let effectivePage = pol.url || path;
+    if (!pol.ok){
+      const onboarding = detectOnboardingFromQuestion(message || '');
+      effectivePage = onboarding ? '/onboarding/' : (pol.url || '/ventes/clients/');
+    }
+    const pageHints = grabPageHints();
+
+    // Add user message to history
+    history.push({role: 'user', content: message});
+    if (history.length > 6) history = history.slice(history.length - 6);
+
+    appendMsg(message, 'you');
+    input.value = '';
+    if (sending && currentAbort) { try { currentAbort.abort(); } catch(_) {} }
+    currentAbort = new AbortController();
+    sending = true;
+    sendBtn.disabled = true;
+    input.disabled = true;
+    if (sendingEl) sendingEl.classList.remove('d-none');
+    try{
+      const headers = {'Content-Type':'application/json'};
+      const csrft = getCookie('csrftoken');
+      if (csrft) headers['X-CSRFToken'] = csrft;
+      const resp = await fetch('/api/help/query', {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        signal: currentAbort.signal,
+        body: JSON.stringify({
+          page_url: path,
+          question: message,
+          history: history
+        })
+      });
+      const ct = (resp.headers.get('content-type') || '').toLowerCase();
+      if (!ct.includes('application/json')){
+        const txt = await resp.text();
+        const err = `Erreur ${resp.status}: ${sanitize(txt).slice(0,500)}`;
+        appendMsg(err, 'ai');
+        // Don't add error to history to avoid polluting context
+        return;
+      }
+      const data = await resp.json();
+      if (!resp.ok){
+        appendMsg(data.error || `Erreur ${resp.status}`, 'ai');
+      } else {
+        const out = sanitize(data.text || data.answer) || '(vide)';
+        appendMsg(out, 'ai');
+        
+        // Add AI response to history
+        history.push({role: 'assistant', content: out});
+        if (history.length > 6) history = history.slice(history.length - 6);
+
+        // Mettre en cache la réponse (max 50 entrées)
+        if (localCache.size >= 50) {
+          const firstKey = localCache.keys().next().value;
+          localCache.delete(firstKey);
+        }
+        localCache.set(cacheKey, out);
+      }
+    }catch(e){
+      if (!(e && e.name === 'AbortError')){
+        appendMsg('Ollama indisponible ?', 'ai');
+      }
+    }
+    sending = false;
+    sendBtn.disabled = false;
+    input.disabled = false;
+    if (sendingEl) sendingEl.classList.add('d-none');
+    currentAbort = null;
+  }
+
+  toggle.addEventListener('click', ()=>{ panel.classList.toggle('show'); });
+  (closeBtn||toggle).addEventListener('click', ()=>{ panel.classList.remove('show'); localStorage.setItem('helpWidgetOpen','0'); });
+  sendBtn.addEventListener('click', ()=>{ const m = input.value.trim(); if(!m) return; if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(()=> askHelp(m), 300); });
+  input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); const m=input.value.trim(); if(!m) return; if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(()=> askHelp(m), 300); }});
+  
+  // Prefetch au focus pour réduire la latence perçue
+  input.addEventListener('focus', ()=>{
+    if (!pageHintsCache) {
+      grabPageHints(); // Pré-calcul des hints
+    }
+  }, { once: true });
+
+  // Bind guide actions
+  if (guideInsertBtn) guideInsertBtn.addEventListener('click', ()=> appendGuide('mise_stock'));
+  if (guideCopyBtn) guideCopyBtn.addEventListener('click', ()=> copyGuide('mise_stock'));
+
+  // Persist open state across pages
+  try{
+    const wasOpen = localStorage.getItem('helpWidgetOpen') === '1';
+    if (wasOpen) panel.classList.add('show');
+    toggle.addEventListener('click', ()=>{
+      const open = panel.classList.contains('show');
+      localStorage.setItem('helpWidgetOpen', open ? '1':'0');
+    });
+  }catch(_){ /* ignore */ }
+
+  // Expose a global opener for header button
+  try{
+    window._openHelpWidget = function(){
+      panel.classList.add('show');
+      try{ localStorage.setItem('helpWidgetOpen','1'); }catch(_){}
+    };
+  }catch(_){ /* ignore */ }
+})();
+</script>

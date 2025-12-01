@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+
+{% block title %}Référentiels - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-gear me-2 text-secondary"></i>Référentiels de Production
+            </h1>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'catalogue:products_dashboard' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Dashboard
+                </a>
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-plus"></i> Nouveau
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/referentiels/cepages/nouveau/">
+                                <i class="bi bi-flower1 me-2"></i>Nouveau cépage
+                            </a></li>
+                            <li><a class="dropdown-item" href="/referentiels/parcelles/nouvelle/">
+                                <i class="bi bi-geo-alt me-2"></i>Nouvelle parcelle
+                            </a></li>
+                            <li><a class="dropdown-item" href="/referentiels/unites/nouvelle/">
+                                <i class="bi bi-rulers me-2"></i>Nouvelle unité
+                            </a></li>
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation tabs -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <nav class="nav nav-pills nav-fill">
+                    <a class="nav-link" href="{% url 'catalogue:products_dashboard' %}">
+                        <i class="bi bi-house me-2"></i>Dashboard
+                    </a>
+                    <a class="nav-link" href="{% url 'catalogue:products_cuvees' %}">
+                        <i class="bi bi-wine me-2"></i>Cuvées
+                    </a>
+                    <a class="nav-link" href="{% url 'catalogue:products_lots' %}">
+                        <i class="bi bi-box me-2"></i>Lots
+                    </a>
+                    <a class="nav-link" href="{% url 'catalogue:products_skus' %}">
+                        <i class="bi bi-upc me-2"></i>Produits finis
+                    </a>
+                    <a class="nav-link active" href="{% url 'catalogue:products_referentiels' %}">
+                        <i class="bi bi-gear me-2"></i>Référentiels
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Cépages -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-flower1 me-2 text-success"></i>Cépages
+                </h5>
+                <div>
+                    <span class="badge bg-success me-2">{{ cepages|length }} cépage{{ cepages|length|pluralize:"s" }}</span>
+                    <a href="/referentiels/cepages/" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if cepages %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Couleur</th>
+                                    <th>Code</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cepage in cepages %}
+                                <tr>
+                                    <td><strong>{{ cepage.nom }}</strong></td>
+                                    <td>
+                                        {% if cepage.couleur == 'rouge' %}
+                                            <span class="badge bg-danger">Rouge</span>
+                                        {% elif cepage.couleur == 'blanc' %}
+                                            <span class="badge bg-light text-dark">Blanc</span>
+                                        {% elif cepage.couleur == 'rose' %}
+                                            <span class="badge bg-warning text-dark">Rosé</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ cepage.get_couleur_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if cepage.code %}
+                                            <code>{{ cepage.code }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/referentiels/cepages/{{ cepage.id }}/" class="btn btn-outline-primary" title="Voir détails">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if user.get_active_membership.can_edit_data %}
+                                                <a href="/referentiels/cepages/{{ cepage.id }}/modifier/" class="btn btn-outline-secondary" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-flower1 fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucun cépage configuré</p>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="/referentiels/cepages/nouveau/" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter un cépage
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Section Parcelles -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-geo-alt me-2 text-warning"></i>Parcelles
+                </h5>
+                <div>
+                    <span class="badge bg-warning text-dark me-2">{{ parcelles|length }} parcelle{{ parcelles|length|pluralize:"s" }}</span>
+                    <a href="/referentiels/parcelles/" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if parcelles %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Surface</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parcelle in parcelles %}
+                                <tr>
+                                    <td><strong>{{ parcelle.nom }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">
+                                            {{ parcelle.surface_ha|floatformat:2 }} ha
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/referentiels/parcelles/{{ parcelle.id }}/" class="btn btn-outline-primary" title="Voir détails">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if user.get_active_membership.can_edit_data %}
+                                                <a href="/referentiels/parcelles/{{ parcelle.id }}/modifier/" class="btn btn-outline-secondary" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-geo-alt fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucune parcelle configurée</p>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="/referentiels/parcelles/nouvelle/" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter une parcelle
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Unités -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-rulers me-2 text-info"></i>Unités de mesure
+                </h5>
+                <div>
+                    <span class="badge bg-info me-2">{{ unites|length }} unité{{ unites|length|pluralize:"s" }}</span>
+                    <a href="/referentiels/unites/" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if unites %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Code</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for unite in unites %}
+                                <tr>
+                                    <td><strong>{{ unite.nom }}</strong></td>
+                                    <td><code>{{ unite.code }}</code></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/referentiels/unites/{{ unite.id }}/" class="btn btn-outline-primary" title="Voir détails">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if user.get_active_membership.can_edit_data %}
+                                                <a href="/referentiels/unites/{{ unite.id }}/modifier/" class="btn btn-outline-secondary" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-rulers fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucune unité configurée</p>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="/referentiels/unites/nouvelle/" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter une unité
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Entrepôts -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-building me-2 text-dark"></i>Entrepôts
+                </h5>
+                <div>
+                    <span class="badge bg-dark me-2">{{ entrepots|length }} entrepôt{{ entrepots|length|pluralize:"s" }}</span>
+                    <a href="/referentiels/entrepots/" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if entrepots %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entrepot in entrepots %}
+                                <tr>
+                                    <td><strong>{{ entrepot.nom }}</strong></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/referentiels/entrepots/{{ entrepot.id }}/" class="btn btn-outline-primary" title="Voir détails">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if user.get_active_membership.can_edit_data %}
+                                                <a href="/referentiels/entrepots/{{ entrepot.id }}/modifier/" class="btn btn-outline-secondary" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-building fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucun entrepôt configuré</p>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="/referentiels/entrepots/nouveau/" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter un entrepôt
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Import CSV -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-upload me-2"></i>Import en masse
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Importez vos référentiels en masse depuis des fichiers CSV.</p>
+                <a href="/referentiels/import/" class="btn btn-primary">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Importer des données CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des cartes
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

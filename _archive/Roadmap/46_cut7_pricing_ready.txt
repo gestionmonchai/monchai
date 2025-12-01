@@ -1,0 +1,33 @@
+Roadmap 46 — Cut #7 : Politique de prix prête pour vendre — VERSION DÉTAILLÉE
+=============================================================================
+
+🎯 Objectif de sortie
+---------------------
+Avoir une **politique de prix complète** en production : listes versionnées, remises, taxes, simulateur explicable. 
+Prête à alimenter **devis/commandes** et l’e‑commerce.
+
+✅ Critères “Done” (mesurables)
+-------------------------------
+- 100 % des **AC** des roadmaps 42..45 passent en CI.
+- p95 < 200 ms sur `/tarifs/simulateur` (caches chauds).
+- Aucune version active chevauchée (contrainte vérifiée en tests).
+- Dev Book complété : `pricing_lists.md`, `discounts_engine.md`, `tax_rules.md`, `pricing_engine.md`.
+- Dashboards : latences, erreurs, cache_hit, floor_hits ; alertes seuil configurées.
+
+🧪 Tests transverses T07 (à ajouter à la CI)
+--------------------------------------------
+- Scénarios : Client Pro FR / Client Export / Client UE VAT avec 3 cuvées, UOM bt/ctn/HL, paliers 6/12.
+- Variantes stacking : `stack` vs `exclusive` vs `stop`.
+- Bascule de version v1→v2 au 1er du mois : simulation du 30/09 et du 01/10 → résultats différents attendus.
+- Conversions UOM hors règles → message clair (non supporté v1).
+
+🛠️ Runbook Opérations
+----------------------
+- **Créer une version** : importer items → valider échantillon → “Activer” à la date cible → surveiller latences & erreurs 24–48 h.
+- **Modifier remises** : annoncer en interne ; surveiller `floor_hits_total` (alerte si pic inhabituel).
+- **Modifier taxes/policy** : QA ciblée (FR, UE reverse, Export) + vérification des arrondis.
+- **Panne cache** : dégrader en lecture directe SQL (timeouts ajustés), alerte SRE, réchauffage caches.
+
+📌 Notes & dettes
+-----------------
+- Arrondi document-level (v1.1), conversions UOM automatique (v1.1), vérification VIES synchrone (v1.1).

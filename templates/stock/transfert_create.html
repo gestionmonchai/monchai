@@ -1,0 +1,579 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Accueil</a>
+    &rsaquo; <a href="{% url 'stock:dashboard' %}">Stocks</a>
+    &rsaquo; <a href="{% url 'stock:transferts_list' %}">Transferts</a>
+    &rsaquo; Nouveau transfert
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="transfert-create-container">
+    <div class="transfert-header">
+        <h1><i class="bi bi-plus-circle"></i> {{ page_title }}</h1>
+        <div class="transfert-actions">
+            <a href="{% url 'stock:transferts_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages-section">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="transfert-form" id="transfertForm">
+        {% csrf_token %}
+        
+        <div class="form-sections">
+            <!-- Section 1: Sélection du lot -->
+            <div class="form-section">
+                <h3><i class="bi bi-box-seam"></i> 1. Sélection du lot</h3>
+                
+                <div class="form-group">
+                    <label for="lot" class="required">Lot à transférer:</label>
+                    <select name="lot" id="lot" class="form-control" required>
+                        <option value="">Sélectionnez un lot...</option>
+                        {% for lot_data in lots_with_stock %}
+                        <option value="{{ lot_data.lot.id }}" 
+                                data-total-volume="{{ lot_data.total_volume }}"
+                                data-balances="{{ lot_data.balances|length }}">
+                            {{ lot_data.lot.code }} - {{ lot_data.lot.cuvee.name }} 
+                            ({{ lot_data.total_volume|floatformat:2 }} L disponible)
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-help">Seuls les lots avec du stock disponible sont affichés</small>
+                </div>
+
+                <!-- Détail des stocks du lot sélectionné -->
+                <div id="lotStockDetail" class="lot-stock-detail" style="display: none;">
+                    <h4>Répartition du stock:</h4>
+                    <div id="stockBalances"></div>
+                </div>
+            </div>
+
+            <!-- Section 2: Transfert -->
+            <div class="form-section">
+                <h3><i class="bi bi-arrow-left-right"></i> 2. Détails du transfert</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="from_warehouse" class="required">Entrepôt source:</label>
+                        <select name="from_warehouse" id="from_warehouse" class="form-control" required>
+                            <option value="">Sélectionnez l'entrepôt source...</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="to_warehouse" class="required">Entrepôt destination:</label>
+                        <select name="to_warehouse" id="to_warehouse" class="form-control" required>
+                            <option value="">Sélectionnez l'entrepôt destination...</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="volume_l" class="required">Volume à transférer (L):</label>
+                    <input type="number" name="volume_l" id="volume_l" class="form-control" 
+                           step="0.01" min="0.01" required>
+                    <small class="form-help">
+                        Volume disponible dans l'entrepôt source: 
+                        <span id="availableVolume" class="text-muted">-</span>
+                    </small>
+                </div>
+            </div>
+
+            <!-- Section 3: Informations complémentaires -->
+            <div class="form-section">
+                <h3><i class="bi bi-file-text"></i> 3. Informations complémentaires</h3>
+                
+                <div class="form-group">
+                    <label for="notes">Notes (optionnel):</label>
+                    <textarea name="notes" id="notes" class="form-control" rows="3" 
+                              placeholder="Raison du transfert, observations..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Résumé du transfert -->
+        <div id="transferSummary" class="transfer-summary" style="display: none;">
+            <h4><i class="bi bi-clipboard-check"></i> Résumé du transfert</h4>
+            <div class="summary-content">
+                <div class="summary-item">
+                    <span class="summary-label">Lot:</span>
+                    <span id="summaryLot" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Volume:</span>
+                    <span id="summaryVolume" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">De:</span>
+                    <span id="summaryFrom" class="summary-value">-</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Vers:</span>
+                    <span id="summaryTo" class="summary-value">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success" id="submitBtn" disabled>
+                <i class="bi bi-check-circle"></i> Créer le transfert
+            </button>
+            <a href="{% url 'stock:transferts_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Annuler
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.transfert-create-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.transfert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.transfert-header h1 {
+    margin: 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.transfert-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.messages-section {
+    margin-bottom: 20px;
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.transfert-form {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.form-sections {
+    margin-bottom: 30px;
+}
+
+.form-section {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.form-section h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-help {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+
+.lot-stock-detail {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.lot-stock-detail h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.stock-balance-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.stock-balance-item:last-child {
+    border-bottom: none;
+}
+
+.warehouse-name {
+    font-weight: 500;
+}
+
+.warehouse-volume {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.transfer-summary {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.transfer-summary h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.summary-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: #333;
+    font-weight: bold;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+@media (max-width: 768px) {
+    .transfert-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lotSelect = document.getElementById('lot');
+    const fromWarehouseSelect = document.getElementById('from_warehouse');
+    const toWarehouseSelect = document.getElementById('to_warehouse');
+    const volumeInput = document.getElementById('volume_l');
+    const submitBtn = document.getElementById('submitBtn');
+    const lotStockDetail = document.getElementById('lotStockDetail');
+    const stockBalances = document.getElementById('stockBalances');
+    const availableVolume = document.getElementById('availableVolume');
+    const transferSummary = document.getElementById('transferSummary');
+    
+    // Données des lots avec leurs balances
+    const lotsData = {
+        {% for lot_data in lots_with_stock %}
+        '{{ lot_data.lot.id }}': {
+            code: '{{ lot_data.lot.code }}',
+            cuvee: '{{ lot_data.lot.cuvee.name }}',
+            balances: {
+                {% for warehouse, volume in lot_data.balances.items %}
+                '{{ warehouse.id }}': {
+                    name: '{{ warehouse.name }}',
+                    volume: {{ volume }}
+                },
+                {% endfor %}
+            }
+        },
+        {% endfor %}
+    };
+    
+    // Gestion sélection lot
+    lotSelect.addEventListener('change', function() {
+        const lotId = this.value;
+        
+        if (lotId && lotsData[lotId]) {
+            const lotData = lotsData[lotId];
+            
+            // Afficher les balances
+            let balancesHtml = '';
+            for (const [warehouseId, warehouseData] of Object.entries(lotData.balances)) {
+                balancesHtml += `
+                    <div class="stock-balance-item">
+                        <span class="warehouse-name">${warehouseData.name}</span>
+                        <span class="warehouse-volume">${warehouseData.volume.toFixed(2)} L</span>
+                    </div>
+                `;
+            }
+            stockBalances.innerHTML = balancesHtml;
+            lotStockDetail.style.display = 'block';
+            
+            // Réinitialiser les sélections
+            fromWarehouseSelect.value = '';
+            toWarehouseSelect.value = '';
+            volumeInput.value = '';
+            availableVolume.textContent = '-';
+            
+        } else {
+            lotStockDetail.style.display = 'none';
+            availableVolume.textContent = '-';
+        }
+        
+        updateSummary();
+        validateForm();
+    });
+    
+    // Gestion sélection entrepôt source
+    fromWarehouseSelect.addEventListener('change', function() {
+        const lotId = lotSelect.value;
+        const warehouseId = this.value;
+        
+        if (lotId && warehouseId && lotsData[lotId] && lotsData[lotId].balances[warehouseId]) {
+            const volume = lotsData[lotId].balances[warehouseId].volume;
+            availableVolume.textContent = `${volume.toFixed(2)} L`;
+            volumeInput.max = volume;
+        } else {
+            availableVolume.textContent = '-';
+            volumeInput.max = '';
+        }
+        
+        updateSummary();
+        validateForm();
+    });
+    
+    // Gestion autres champs
+    toWarehouseSelect.addEventListener('change', function() {
+        updateSummary();
+        validateForm();
+    });
+    
+    volumeInput.addEventListener('input', function() {
+        updateSummary();
+        validateForm();
+    });
+    
+    // Mise à jour du résumé
+    function updateSummary() {
+        const lotId = lotSelect.value;
+        const fromWarehouseId = fromWarehouseSelect.value;
+        const toWarehouseId = toWarehouseSelect.value;
+        const volume = volumeInput.value;
+        
+        if (lotId && fromWarehouseId && toWarehouseId && volume) {
+            const lotData = lotsData[lotId];
+            const fromWarehouse = fromWarehouseSelect.options[fromWarehouseSelect.selectedIndex].text;
+            const toWarehouse = toWarehouseSelect.options[toWarehouseSelect.selectedIndex].text;
+            
+            document.getElementById('summaryLot').textContent = `${lotData.code} - ${lotData.cuvee}`;
+            document.getElementById('summaryVolume').textContent = `${parseFloat(volume).toFixed(2)} L`;
+            document.getElementById('summaryFrom').textContent = fromWarehouse;
+            document.getElementById('summaryTo').textContent = toWarehouse;
+            
+            transferSummary.style.display = 'block';
+        } else {
+            transferSummary.style.display = 'none';
+        }
+    }
+    
+    // Validation du formulaire
+    function validateForm() {
+        const lotId = lotSelect.value;
+        const fromWarehouseId = fromWarehouseSelect.value;
+        const toWarehouseId = toWarehouseSelect.value;
+        const volume = parseFloat(volumeInput.value);
+        
+        let isValid = true;
+        
+        // Vérifications de base
+        if (!lotId || !fromWarehouseId || !toWarehouseId || !volume) {
+            isValid = false;
+        }
+        
+        // Entrepôts différents
+        if (fromWarehouseId && toWarehouseId && fromWarehouseId === toWarehouseId) {
+            isValid = false;
+        }
+        
+        // Volume disponible
+        if (lotId && fromWarehouseId && lotsData[lotId] && lotsData[lotId].balances[fromWarehouseId]) {
+            const availableVol = lotsData[lotId].balances[fromWarehouseId].volume;
+            if (volume > availableVol) {
+                isValid = false;
+            }
+        }
+        
+        submitBtn.disabled = !isValid;
+    }
+    
+    // Validation initiale
+    validateForm();
+});
+</script>
+{% endblock %}

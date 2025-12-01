@@ -1,0 +1,420 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Viticole - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Cartes métriques principales */
+    .metric-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    
+    .metric-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 16px;
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+    
+    .metric-label {
+        font-size: 0.95rem;
+        color: #6c757d;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .metric-subtitle {
+        font-size: 0.875rem;
+        color: #adb5bd;
+        margin-top: 8px;
+    }
+    
+    /* Couleurs des cartes */
+    .metric-card.harvest {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .metric-card.harvest .metric-icon {
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .metric-card.stock {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+    
+    .metric-card.stock .metric-icon {
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .metric-card.revenue {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+    
+    .metric-card.revenue .metric-icon {
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .metric-card.harvest .metric-label,
+    .metric-card.stock .metric-label,
+    .metric-card.revenue .metric-label {
+        color: rgba(255,255,255,0.9);
+    }
+    
+    .metric-card.harvest .metric-subtitle,
+    .metric-card.stock .metric-subtitle,
+    .metric-card.revenue .metric-subtitle {
+        color: rgba(255,255,255,0.7);
+    }
+    
+    /* Cartes statistiques secondaires */
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        border-left: 4px solid;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    
+    .stat-card.clients { border-color: #28a745; }
+    .stat-card.orders { border-color: #ffc107; }
+    .stat-card.unpaid { border-color: #dc3545; }
+    .stat-card.cuvees { border-color: #17a2b8; }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    /* Header du dashboard */
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+    
+    .dashboard-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #ffffff;
+        background: none !important;
+        -webkit-text-fill-color: currentColor;
+        text-shadow: none;
+        letter-spacing: 0;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    /* Badges */
+    .campaign-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    /* Section titles */
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .section-title i {
+        color: #667eea;
+    }
+    
+    /* Actions rapides */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+    }
+    
+    .quick-action-btn {
+        padding: 16px;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        background: white;
+        text-decoration: none;
+        color: #495057;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+    }
+    
+    .quick-action-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+    
+    .quick-action-btn i {
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header du dashboard -->
+<div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1 class="dashboard-title">
+                <i class="bi bi-speedometer2 me-2"></i>
+                Dashboard Viticole
+            </h1>
+            <p class="dashboard-subtitle mb-0">
+                Vue d'ensemble de votre exploitation - Campagne {{ current_campaign }}
+            </p>
+        </div>
+        {% if user.get_active_membership %}
+        <div class="text-end">
+            <a href="{% url 'auth:dashboard_configure' %}" class="btn btn-outline-light btn-sm mb-2 me-2">
+                <i class="bi bi-sliders"></i> Personnaliser
+            </a>
+            <div class="campaign-badge">
+                <i class="bi bi-building me-2"></i>
+                {{ user.get_active_membership.organization.name }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Métriques principales -->
+<div class="row g-4 mb-5">
+    <!-- Volume récolté -->
+    <div class="col-lg-4">
+        <div class="metric-card harvest">
+            <div class="card-body p-4">
+                <div class="metric-icon">
+                    <i class="bi bi-basket3"></i>
+                </div>
+                <div class="metric-value">
+                    {{ volume_recolte_kg|floatformat:0 }} kg
+                </div>
+                <div class="metric-label">
+                    Volume Récolté
+                </div>
+                <div class="metric-subtitle">
+                    {% if volume_recolte_l > 0 %}
+                        ≈ {{ volume_recolte_l|floatformat:0 }} L de moût
+                    {% else %}
+                        {{ nb_vendanges }} vendange{{ nb_vendanges|pluralize }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Volume en cuve -->
+    <div class="col-lg-4">
+        <div class="metric-card stock">
+            <div class="card-body p-4">
+                <div class="metric-icon">
+                    <i class="bi bi-droplet-fill"></i>
+                </div>
+                <div class="metric-value">
+                    {{ volume_en_cuve_l|floatformat:0 }} L
+                </div>
+                <div class="metric-label">
+                    Volume en Cuve
+                </div>
+                <div class="metric-subtitle">
+                    {{ nb_lots_stock }} lot{{ nb_lots_stock|pluralize }} en stock
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chiffre d'affaires -->
+    <div class="col-lg-4">
+        <div class="metric-card revenue">
+            <div class="card-body p-4">
+                <div class="metric-icon">
+                    <i class="bi bi-currency-euro"></i>
+                </div>
+                <div class="metric-value">
+                    {{ ca_ttc|floatformat:0 }} €
+                </div>
+                <div class="metric-label">
+                    Chiffre d'Affaires {{ current_year }}
+                </div>
+                <div class="metric-subtitle">
+                    {{ ca_ht|floatformat:0 }} € HT - {{ nb_factures }} facture{{ nb_factures|pluralize }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques secondaires -->
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <h2 class="section-title">
+            <i class="bi bi-graph-up"></i>
+            Statistiques
+        </h2>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card clients">
+            <div class="stat-value text-success">{{ nb_clients }}</div>
+            <div class="stat-label">Clients actifs</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card cuvees">
+            <div class="stat-value text-info">{{ nb_cuvees }}</div>
+            <div class="stat-label">Cuvées actives</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card orders">
+            <div class="stat-value text-warning">{{ nb_commandes_en_cours }}</div>
+            <div class="stat-label">Commandes en cours</div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card unpaid">
+            <div class="stat-value text-danger">{{ montant_impaye|floatformat:0 }} €</div>
+            <div class="stat-label">Factures impayées</div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row g-4">
+    <div class="col-12">
+        <h2 class="section-title">
+            <i class="bi bi-lightning-charge"></i>
+            Actions Rapides
+        </h2>
+    </div>
+    
+    <div class="col-12">
+        <div class="quick-actions">
+            <a href="{% url 'ventes:clients_list' %}" class="quick-action-btn">
+                <i class="bi bi-people"></i>
+                <span>Gérer les clients</span>
+            </a>
+            
+            <a href="{% url 'catalogue:products_cuvees' %}" class="quick-action-btn">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <span>Gérer les cuvées</span>
+            </a>
+            
+            <a href="{% url 'stock:dashboard' %}" class="quick-action-btn">
+                <i class="bi bi-boxes"></i>
+                <span>Stocks & Transferts</span>
+            </a>
+            
+            <a href="{% url 'production:vendanges_list' %}" class="quick-action-btn">
+                <i class="bi bi-basket3"></i>
+                <span>Vendanges</span>
+            </a>
+            
+            <a href="{% url 'ventes:factures_list' %}" class="quick-action-btn">
+                <i class="bi bi-receipt"></i>
+                <span>Factures</span>
+            </a>
+            
+            <a href="{% url 'onboarding:checklist' %}" class="quick-action-btn">
+                <i class="bi bi-list-check"></i>
+                <span>Configuration</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Section informations compte (en bas) -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light border-0">
+                <h6 class="mb-0">
+                    <i class="bi bi-person-circle me-2"></i>
+                    Informations du compte
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <strong>Nom :</strong> {{ user.full_name }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>Email :</strong> {{ user.email }}
+                            </li>
+                        </ul>
+                    </div>
+                    {% if user.get_active_membership %}
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <strong>Organisation :</strong> {{ user.get_active_membership.organization.name }}
+                            </li>
+                            <li class="mb-2">
+                                <strong>Rôle :</strong> 
+                                <span class="badge bg-primary">{{ user.get_active_membership.get_role_display }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

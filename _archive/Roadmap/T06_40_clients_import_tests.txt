@@ -1,0 +1,50 @@
+T06 — Tests /clients/import (Roadmap 40 — Import CSV/XLSX minimal)
+==================================================================
+But
+---
+Valider l’**import générique** appliqué aux clients (mapping, dry‑run, upsert idempotent).
+
+Fixtures
+--------
+- CSV1: `Nom,Email` (50 lignes valides).
+- CSV2: `Nom,Email,Tel,Segment,Pays,TVA` (mélangé, erreurs).
+- CSV3: 100k lignes pour perf/streaming.
+
+A) Upload & Preview
+-------------------
+- [ ] Upload CSV1 UTF‑8 → preview (10 lignes) OK; encodage/séparateur détectés.
+- [ ] Fichier binaire renommé .csv → 415/422 (magic bytes).
+
+B) Mapping
+----------
+- [ ] Auto‑mapping: Nom→name, Email→email, Tel→phone, Segment→segment.
+- [ ] Required manquant (name) → 400 mapping invalide.
+
+C) Dry‑run
+----------
+- [ ] Emails invalides / phones non E.164 / segment inconnu → **erreurs** listées.
+- [ ] Warnings: normalisation unaccent, collapse spaces, upper country.
+- [ ] Export erreurs.csv/warnings.csv (UTF‑8, cellules `= + - @ \t` neutralisées).
+
+D) Execute (upsert)
+-------------------
+- [ ] Upsert par TVA si fournie; sinon `name_norm+country_code` (mode conservateur: insert‑only si incertain).
+- [ ] Doublons TVA → mise à jour unique; pas de duplicat.
+
+E) Perfs & robustesse
+---------------------
+- [ ] 100k lignes: streaming stable, mémoire bornée; p95 chunk OK.
+- [ ] 12 Mo → 413; logs d’audit.
+- [ ] Idempotence: relancer execute sur même job → pas de duplicat.
+
+F) Sécurité & RLS
+-----------------
+- [ ] RLS org OK; RBAC editor+.
+- [ ] Anti‑CSV injection en preview/export OK.
+
+IDs
+---
+- pytest::t06_clients_import_mapping_validation
+- pytest::t06_clients_import_dry_run_errors_warnings
+- pytest::t06_clients_import_execute_upsert
+- k6::t06_clients_import_100k_streaming_perf

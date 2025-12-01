@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-cup-straw me-2 text-primary"></i>{{ page_title }}
+            </h1>
+            <div>
+                <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Colonne gauche -->
+                        <div class="col-md-6">
+                            <!-- Nom de la cuvée -->
+                            <div class="mb-3">
+                                <label for="{{ form.nom.id_for_label }}" class="form-label">
+                                    {{ form.nom.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nom|add_class:"form-control" }}
+                                {% if form.nom.help_text %}
+                                    <div class="form-text">{{ form.nom.help_text }}</div>
+                                {% endif %}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.nom.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Couleur -->
+                            <div class="mb-3">
+                                <label for="{{ form.couleur.id_for_label }}" class="form-label">
+                                    {{ form.couleur.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.couleur|add_class:"form-select" }}
+                                {% if form.couleur.help_text %}
+                                    <div class="form-text">{{ form.couleur.help_text }}</div>
+                                {% endif %}
+                                {% if form.couleur.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.couleur.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Classification -->
+                            <div class="mb-3">
+                                <label for="{{ form.classification.id_for_label }}" class="form-label">
+                                    {{ form.classification.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.classification|add_class:"form-select" }}
+                                {% if form.classification.help_text %}
+                                    <div class="form-text">{{ form.classification.help_text }}</div>
+                                {% endif %}
+                                {% if form.classification.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.classification.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Appellation -->
+                            <div class="mb-3">
+                                <label for="{{ form.appellation.id_for_label }}" class="form-label">
+                                    {{ form.appellation.label }}
+                                </label>
+                                {{ form.appellation|add_class:"form-control" }}
+                                {% if form.appellation.help_text %}
+                                    <div class="form-text">{{ form.appellation.help_text }}</div>
+                                {% endif %}
+                                {% if form.appellation.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.appellation.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Colonne droite -->
+                        <div class="col-md-6">
+                            <!-- Degré d'alcool -->
+                            <div class="mb-3">
+                                <label for="{{ form.degre_alcool.id_for_label }}" class="form-label">
+                                    {{ form.degre_alcool.label }}
+                                </label>
+                                {{ form.degre_alcool|add_class:"form-control" }}
+                                {% if form.degre_alcool.help_text %}
+                                    <div class="form-text">{{ form.degre_alcool.help_text }}</div>
+                                {% endif %}
+                                {% if form.degre_alcool.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.degre_alcool.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Cépages -->
+                            <div class="mb-3">
+                                <label for="{{ form.cepages.id_for_label }}" class="form-label">
+                                    {{ form.cepages.label }}
+                                </label>
+                                {{ form.cepages|add_class:"form-select" }}
+                                {% if form.cepages.help_text %}
+                                    <div class="form-text">{{ form.cepages.help_text }}</div>
+                                {% endif %}
+                                {% if form.cepages.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.cepages.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            {{ form.description.label }}
+                        </label>
+                        {{ form.description|add_class:"form-control" }}
+                        {% if form.description.help_text %}
+                            <div class="form-text">{{ form.description.help_text }}</div>
+                        {% endif %}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes de dégustation -->
+                    <div class="mb-3">
+                        <label for="{{ form.notes_degustation.id_for_label }}" class="form-label">
+                            {{ form.notes_degustation.label }}
+                        </label>
+                        {{ form.notes_degustation|add_class:"form-control" }}
+                        {% if form.notes_degustation.help_text %}
+                            <div class="form-text">{{ form.notes_degustation.help_text }}</div>
+                        {% endif %}
+                        {% if form.notes_degustation.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes_degustation.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Erreurs non-field -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {% if cuvee %}Modifier{% else %}Créer{% endif %} la cuvée
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aide contextuelle -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-10 col-lg-8">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-lightbulb me-2"></i>Conseils</h6>
+            <ul class="mb-0">
+                <li><strong>Nom :</strong> Utilisez un nom distinctif pour votre cuvée</li>
+                <li><strong>Classification :</strong> AOC/IGP selon votre appellation</li>
+                <li><strong>Cépages :</strong> Sélectionnez les cépages utilisés (optionnel)</li>
+                <li><strong>Degré :</strong> Titre alcoométrique en % vol. (optionnel)</li>
+                <li><strong>Description :</strong> Présentation commerciale de la cuvée</li>
+                <li><strong>Notes :</strong> Caractéristiques organoleptiques pour la dégustation</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

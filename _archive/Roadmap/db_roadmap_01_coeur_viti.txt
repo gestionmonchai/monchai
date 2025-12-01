@@ -1,0 +1,92 @@
+DB Roadmap 01 — Cœur viticole (Cépages, Appellations, Parcelles, Cuvées & Lots)
+==============================================================================
+Objectif
+--------
+Poser un **modèle de données robuste** pour la production : référentiels (cépages, appellations), ressources terrain (parcelles),
+produits (cuvées), et **lots** (vin en cours/fin de vinification) avec traçabilité.
+
+Livrables (Done)
+----------------
+- Tables normalisées, **contraintes fortes** (FK, unique, check), **row_version** pour locking optimiste.
+- Règles de qualité (plage millésime, validation cépages), **index** alignés sur recherche & jointures.
+- **Seeds** minimaux (uom L/hL/BT ; 2–3 cépages démo) et **RLS logique** par organisation.
+- Dev Book : schéma, dictionnaire de données, règles.
+
+Schéma (ERD textuel)
+--------------------
+- organization(id, name, ...)
+
+Référentiels
+- grape_variety(id, organization_id, name, name_norm, color, is_active, row_version)
+  * UNIQUE(organization_id, name_norm)
+- appellation(id, organization_id, name, name_norm, type, region, is_active, row_version)
+  * UNIQUE(organization_id, name_norm)
+- vintage(id, organization_id, year, is_active, row_version)
+  * CHECK(1900 <= year AND year <= EXTRACT(YEAR FROM now()) + 1)
+  * UNIQUE(organization_id, year)
+
+Ressources terrain
+- vineyard_plot(id, organization_id, name, area_ha, grape_variety_id, appellation_id NULL, planting_year NULL, is_active, row_version)
+  * UNIQUE(organization_id, name)
+  * FK(grape_variety_id) -> grape_variety.id same org
+  * FK(appellation_id) -> appellation.id same org
+  * CHECK(area_ha > 0 AND (planting_year IS NULL OR planting_year BETWEEN 1900 AND EXTRACT(YEAR FROM now())))
+
+Produits
+- cuvee(id, organization_id, name, code NULL, default_uom_id, appellation_id NULL, vintage_id NULL, is_active, row_version)
+  * UNIQUE(organization_id, name)
+  * FK(default_uom_id)->unit_of_measure.id same org
+  * FK(appellation_id)->appellation.id
+  * FK(vintage_id)->vintage.id
+
+Traçabilité (lots & assemblages)
+- lot(id, organization_id, code, cuvee_id, warehouse_id, volume_l, alcohol_pct NULL, status ENUM('en_cours','élevage','stabilisé','embouteillé','archivé'), row_version)
+  * UNIQUE(organization_id, code)
+  * FK(cuvee_id)->cuvee.id, FK(warehouse_id)->warehouse.id
+  * CHECK(volume_l >= 0)
+- lot_grape_ratio(lot_id, grape_variety_id, ratio_pct)  // composition cépages
+  * PK(lot_id, grape_variety_id), CHECK(ratio_pct BETWEEN 0 AND 100), SUM(ratio_pct)=100 par lot (contrainte métier validée côté app)
+- lot_assemblage(parent_lot_id, child_lot_id, volume_l, created_at)
+  * PK(parent_lot_id, child_lot_id, created_at), CHECK(volume_l > 0)
+  * Empêche cycles (contrainte app)
+- unit_of_measure(id, organization_id, code, name, base_ratio_to_l, is_default)
+
+Indexation & perfs
+------------------
+- BTree: FK standard, UNIQUE sur (organization_id, name_norm/name/code).
+- FTS (option): cuvee(name, code) → tsvector + GIN ; grape_variety(name) → trigram GIN pour fuzzy.
+- Jointures fréquentes: lot(cuvee_id), vineyard_plot(grape_variety_id), cuvee(vintage_id, appellation_id) → index BTree.
+
+Règles de qualité (exemples)
+----------------------------
+- vintage.year dans [1900..current_year+1].
+- vineyard_plot.area_ha > 0 ; planting_year cohérente.
+- lot.volume_l ≥ 0 ; pas de volume négatif après mouvements (vérif côté stock plus tard).
+
+RLS logique (service)
+---------------------
+- Toutes les requêtes filtrées par `organization_id = current_org` (ajoutée côté ORM/service).
+- Permissions en lecture: read_only+ ; écriture: editor+ (sauf opérations sensibles admin+).
+
+Migrations (ordre)
+------------------
+1) Référentiels (grape_variety, appellation, vintage, unit_of_measure)
+2) Ressources terrain (vineyard_plot)
+3) Produits (cuvee)
+4) Lots & assemblages (lot, lot_grape_ratio, lot_assemblage)
+5) Index FTS/trigram si activés
+6) Seeds
+
+Tests de robustesse
+-------------------
+- Doublons name_norm (cépages/appellations) → rejet propre (IntegrityError catch → ValidationError).
+- Vintage = 0, 3000 → rejet (CHECK).
+- FK cross‑org (altération d’ID) → 404/403 côté app ; jamais fuite d’info.
+- Assemblage en cycle → rejet (détection DFS côté serveur).
+- Suppression entité liée (cépage utilisé) → soft delete only ; FK protégée.
+- Conflit row_version (édition concurrente) → 409 et UI propose refresh.
+
+Dev Book — À documenter
+-----------------------
+- Dictionnaire complet par table/colonne ; règles métier (ratios cépages, cycles).
+- Diagramme “life‑cycle” d’un lot de moût → vin → embouteillé.

@@ -1,0 +1,46 @@
+T05 — Tests /stocks/transferts (Roadmap 32)
+===========================================
+But
+---
+Garantir qu’un **transfert** crée **exactement 2 mouvements** out/in dans une **seule transaction** avec idempotence & verrous.
+
+A. Smoke
+--------
+- [ ] Formulaire et API disponibles; champs: lot, from, to, volume.
+- [ ] Historique des transferts paginé (keyset).
+
+B. Fonctionnels
+---------------
+- [ ] Transfert 50 L (Chai → Dépôt) sur lot B: OUT Chai -50, IN Dépôt +50; balances exactes.
+- [ ] Transfert 0 L → 400 (interdit).
+- [ ] from == to → 400.
+
+C. Solde & intégrité
+--------------------
+- [ ] Volume > solde source → 422; aucun des 2 moves n’est écrit.
+- [ ] Conflit de lot/org → 403/404.
+
+D. Idempotence
+--------------
+- [ ] Double POST même client_token → un seul transfert comptabilisé (2 moves unique).
+
+E. Concurrence
+--------------
+- [ ] 5 transferts en parallèle sur même lot avec volumes qui cumulés dépassent le solde → certains 422, jamais solde < 0.
+- [ ] Lock contention → messages clairs, pas d’état partiel.
+
+F. Perfs
+--------
+- [ ] p95 exécution < 300 ms sans contention.
+- [ ] Historique transferts p95 < 500 ms sur 500k transferts.
+
+G. Sécurité & Observabilité
+---------------------------
+- [ ] RBAC/RLS respectés; logs & métriques (stock_transfers_total) visibles.
+
+Tests (suggestions)
+-------------------
+- pytest::test_transfer_atomic_double_move
+- pytest::test_transfer_insufficient_balance
+- pytest::test_transfer_idempotency
+- k6: RPS 20 sur /transferts; no partial state.

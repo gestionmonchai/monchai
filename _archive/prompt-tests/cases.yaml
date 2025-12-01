@@ -1,0 +1,6 @@
+- user_input: "Ajouter un lot technique à partir d'un encuvage"
+  assert:
+    - type: contains
+      value: "Lot technique"
+    - type: not-contains
+      value: "Désolé"

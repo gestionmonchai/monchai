@@ -1,0 +1,33 @@
+DB Roadmap 07 — Vues sauvegardées, facettes & colonnes configurables
+====================================================================
+Objectif
+--------
+Permettre aux utilisateurs de **sauvegarder** des vues (filtres/tri/colonnes/facettes/groupes/pagination), partager des vues, et **personnaliser** les colonnes visibles/ordre/taille.
+
+Livrables (Done)
+----------------
+- Tables: `saved_view(id, org_id, entity, name, params_json, owner_id, visibility ENUM('private','org'), engine_version, created_at)`
+- API: CRUD des vues + partage + duplication
+- UI: gestion des colonnes (visibilité/ordre/taille), réinitialisation, “défaut par rôle”
+- Export: conserve le **contexte** de la vue (filtres/tri)
+
+Points clés d’implémentation
+----------------------------
+- `params_json` versionné (inclure `engine_version`) ; migrateur en cas d’évolution
+- Limiter nombre de vues par user/org ; index sur (org_id, entity, owner_id)
+- Respect RBAC/RLS: une vue ne peut exposer que des données autorisées
+- Colonnes configurables → whitelist côté serveur ; inconnues → ignorées
+
+Tests d’acceptation (AC)
+------------------------
+- AC-07-01: Sauver une vue (table cuvées) et la rouvrir → état identique
+- AC-07-02: Partage “org” → vue visible par collègues (mêmes droits)
+- AC-07-03: Changement de schéma (nouveau champ) → vue ancienne **ne plante pas** (fallback)
+- AC-07-04: Export depuis vue respecte filtres/tri/colonnes
+
+Robustesse
+----------
+- R-07-01: params_json corrompu → fallback défaut + message
+- R-07-02: colonnes supprimées → masquées automatiquement (log warning)
+- R-07-03: pagination stockée hors limites → clamp serveur
+- R-07-04: sécurité: aucune fuite de colonnes sensibles via partage

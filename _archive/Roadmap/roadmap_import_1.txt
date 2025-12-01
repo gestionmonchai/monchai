@@ -1,0 +1,3 @@
+ROADMAP_IMPORT_1 — Ingestion sécurisée & Prévisualisation (junior step-by-step)
+===============================================================================
+[Contenu identique au guide CSV_1 : upload, encodage, séparateur, anti-injection, preview 10 lignes, SHA-256, limites, endpoints, erreurs et tests.]

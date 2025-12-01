@@ -1,0 +1,162 @@
+Mon-Chai — Checklist de tests manuels (Sprint Auth & Identité)
+=================================================================
+But: valider en 10–15 minutes le bon fonctionnement des flux Auth, Onboarding rapide, et Rôles & accès.
+Format: scénarios à exécuter dans l’ordre, avec critères d’acceptation clairs. Pas de code, uniquement actions & vérifs.
+
+A) Pré-requis généraux
+----------------------
+1. Démarrer le serveur en mode dev (EMAIL_BACKEND=console).
+2. Base propre (ou superuser connu) ; vider sessions/cookies navigateur.
+3. Vérifier que LOGIN_URL=/auth/login/, LOGIN_REDIRECT_URL=/auth/first-run/, LOGOUT_REDIRECT_URL=/auth/login/.
+
+B) Auth — Signup / Login / Reset / Logout
+-----------------------------------------
+B1. Signup basique
+   Action :
+   - Aller sur /auth/signup/
+   - Saisir email neuf (ex: test+1@ex.com), mot de passe, valider.
+   Attendu :
+   - Redirection vers /auth/first-run/ (guard).
+   - Badge de session visible si header le prévoit.
+
+B2. Login invalide
+   Action :
+   - /auth/logout/ puis /auth/login/
+   - Entrer un email inconnu + mdp aléatoire.
+   Attendu :
+   - Aucune redirection, message “Identifiants invalides” inline.
+
+B3. Login valide
+   Action :
+   - Entrer email existant + bon mot de passe.
+   Attendu :
+   - Redirection vers /auth/first-run/ (guard).
+
+B4. Reset mot de passe (demande)
+   Action :
+   - Aller sur /auth/password-reset/
+   - Saisir l’email existant, valider.
+   Attendu :
+   - Confirmation “lien envoyé”.
+   - Dans la console, un lien de reset est visible (copiable).
+
+B5. Reset mot de passe (confirmation)
+   Action :
+   - Ouvrir le lien de reset depuis la console.
+   - Saisir un nouveau mot de passe et valider.
+   Attendu :
+   - Redirection vers /auth/login/ ou message de succès.
+   - Le nouveau mot de passe fonctionne au login.
+
+B6. Logout
+   Action :
+   - Cliquer “Se déconnecter” (header) ou visiter /auth/logout/.
+   Attendu :
+   - Redirection vers /auth/login/.
+   - Plus de badge de session.
+
+C) Onboarding rapide — Création exploitation (first-run)
+--------------------------------------------------------
+C1. Guard first-run
+   Action :
+   - Se connecter avec un compte n’ayant aucune exploitation.
+   Attendu :
+   - /auth/first-run/ redirige vers /auth/first-run/org/ (form de création).
+
+C2. Création exploitation minimale
+   Action :
+   - Sur /auth/first-run/org/, saisir Nom exploitation (obligatoire), laisser SIRET/TVA/Devise par défaut si permis.
+   - Valider.
+   Attendu :
+   - Redirection vers /dashboard/ (placeholder accepté).
+   - Un Membership owner est créé pour l’utilisateur courant.
+   - Badge de session affiche “rôle: owner @ <Nom exploitation>”.
+
+C3. Accès vues métier sans exploitation (sécurité)
+   Action :
+   - Créer un nouveau compte (sans exploitation) et tenter d’accéder à une vue métier (ex: /clients).
+   Attendu :
+   - Redirection vers /auth/first-run/ (guard).
+
+D) Rôles & accès — Invitations et permissions
+---------------------------------------------
+D1. Accès à /settings/roles (owner)
+   Action :
+   - Connecté en owner (créé ci-dessus), aller sur /settings/roles.
+   Attendu :
+   - La page se charge, table des membres/invitations visible.
+   - Formulaire d’invitation présent (email + rôle).
+
+D2. Invitation d’un collaborateur
+   Action :
+   - Sur /settings/roles, saisir l’email d’un collaborateur (ex: test+2@ex.com) + rôle “editor”.
+   - Envoyer.
+   Attendu :
+   - Message “invitation envoyée”.
+   - En console, un lien d’acceptation est visible.
+
+D3. Acceptation d’invitation — invité non connecté
+   Action :
+   - Ouvrir le lien d’acceptation dans une fenêtre privée.
+   - Être redirigé vers /auth/signup/ (ou login si déjà inscrit).
+   - S’inscrire avec l’email exact de l’invitation.
+   Attendu :
+   - Redirection vers /dashboard/.
+   - Membership créé pour l’organisation avec rôle “editor”.
+
+D4. Acceptation d’invitation — invité déjà connecté
+   Action :
+   - Se connecter avec un autre compte déjà existant.
+   - Ouvrir le même lien d’invitation.
+   Attendu :
+   - Membership ajouté immédiatement à l’organisation, rôle conforme.
+   - Redirection vers /dashboard/.
+
+D5. Permissions par rôle (lecture/écriture)
+   Action :
+   - Connecté en “read_only” (créer une invitation avec ce rôle, l’accepter).
+   - Tenter d’accéder à /settings/roles (ou un écran sensible).
+   Attendu :
+   - Accès refusé (403) ou redirection avec message.
+   - Accès en lecture aux listes non sensibles (ex: catalogue) OK ; pas de boutons “Créer/Éditer/Supprimer”.
+
+D6. Changement de rôle par owner/admin
+   Action :
+   - Connecté en owner/admin, ouvrir /settings/roles.
+   - Changer un membre “editor” en “read_only”.
+   Attendu :
+   - Confirmation visuelle.
+   - Rafraîchissement liste avec rôle mis à jour.
+   - Interdiction de retirer le dernier “owner”.
+
+E) Régressions & bordures
+-------------------------
+E1. Lien reset expiré/invalide
+   Action :
+   - Modifier manuellement le token dans l’URL de reset.
+   Attendu :
+   - Message d’erreur propre, proposition de redemander un reset.
+
+E2. Invitation expirée/invalide
+   Action :
+   - Modifier manuellement le token d’invitation.
+   Attendu :
+   - Message d’erreur propre, page d’invitation non chargée.
+
+E3. Multiples onglets / rafraîchissements
+   Action :
+   - Après signup, revenir en arrière, rafraîchir plusieurs fois.
+   Attendu :
+   - Pas de boucles de redirection ; les guards restent cohérents.
+
+F) Preuve rapide (captures/notes)
+---------------------------------
+- Captures d’écrans: login OK, first-run form, dashboard, settings/roles, invitation envoyée, acceptation.
+- Noter tout écart vs. attendu ; ouvrir tickets si nécessaire.
+
+CLOTURE — Conditions de validation finale
+-----------------------------------------
+- Tous les scénarios B/C/D passent sans erreur bloquante.
+- Pas de 404 ni de redirections infinies sur /auth/*.
+- Les guards membership protègent bien les vues métier.
+- Les rôles se comportent comme prévu (owner/admin/editor/read_only).

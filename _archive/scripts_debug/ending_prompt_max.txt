@@ -1,0 +1,179 @@
+
+PROMPT POUR CLAUDE — Batterie de tests post‑modif (Mon Chai · Django)
+
+CONTEXTE (à lire avant d’agir)
+- Projet : Mon Chai (SaaS viticole) — Django 5.0.14, Python 3.13.1, Windows 10, Postgres (cible), dev local OK.
+- Structure/application : projet Django avec apps internes (ex. apps.accounts, apps.catalogue, etc.).
+- Exemples d’URL connues : /, /api/auth/, /healthz/, /catalogue/…, endpoints d’API et vues HTML (HTMX/AJAX inclus).
+- Problèmes déjà rencontrés à éviter/rattraper :
+  • ERR_TOO_MANY_REDIRECTS après login/logout/redirections mal chainées.
+  • 404 sur / quand l’URLConf ne pointe que vers API/health.
+  • TemplateDoesNotExist (ex. apps.catalogue.views_unified.products_skus attend 'catalogue/products_skus.html' alors que le fichier n’existe pas ou le chemin est FR/EN décalé).
+  • Middleware d’organisation : current_org_id invalide restant dans session.
+  • Recherches AJAX capricieuses (nécessité d’un F5).
+
+OBJECTIF
+Après CHAQUE modification du code source, exécuter une batterie de tests automatiques + une vérification de cohérence (URLs ↔ vues ↔ templates) pour garantir :
+1) URLs résolvent et pointent vers des vues importables ; 2) Pages cliquables (smoke crawl GET) ; 
+3) Templates référencés existent et compilent ; 4) Auth/redirects OK (pas de boucles) ; 
+5) Endpoints AJAX/API répondent ; 6) Migrations/collectstatic/lints OK ; 
+7) Middleware org nettoie correctement les sessions invalides.
+À la fin, produire un RAPPORT SYNTHÉTIQUE avec corrections proposées (diffs) si nécessaire.
+
+CONDITIONS/ASSUMPTIONS
+- DJANGO_SETTINGS_MODULE défini (ex. monchai.settings.dev). Sinon, détecter et choisir la config dev par défaut.
+- Utiliser pytest + pytest‑django. Si absent, proposer d’ajouter requirements‑dev.txt avec : pytest, pytest-django, pytest-xdist, coverage, ruff, djlint, beautifulsoup4.
+- Utiliser la Django test client pour le crawl GET (pas de POST automatique). Respecter CSRF. Ne pas exécuter de tâches destructives.
+- Si django‑extensions est disponible, utiliser 'show_urls'. Sinon introspection python des urlpatterns.
+
+FLUX D’EXÉCUTION (à faire à chaque run)
+A. Mise en place & checks rapides
+1) Dépendances & env
+   - pip install -r requirements.txt (et requirements-dev.txt si présent).
+   - python manage.py check  → Doit être OK.
+   - python manage.py makemigrations --check --dry-run  → Doit dire “No changes detected”.
+
+2) Santé build & assets
+   - python -m compileall .  → Pas d’erreurs de syntaxe.
+   - python manage.py collectstatic --noinput --dry-run (ou param pour simulateur) → pas d’erreurs de storage/static.
+
+3) Lint rapide
+   - ruff .  (ou flake8 si ruff absent) → Warning OK, mais pas d’errors bloquantes.
+   - djlint templates/ --lint (si dossier présent) → pas d’erreurs critiques.
+
+B. Cohérence URLs ↔ Views ↔ Templates
+4) Inventaire des URLs
+   - Si django-extensions : python manage.py show_urls --format=json → liste {name, pattern, callback}.
+   - Sinon, introspecter monchai.urls.urlpatterns récursivement.
+   - Vérifier unicité des “name” d’URL (pas de doublons).
+
+5) Résolution bidirectionnelle
+   - Pour chaque URL GET sans param obligatoire, tenter:
+     • resolve(pattern) → callback importable
+     • reverse(name) → path générable
+   - Reporter les échecs (ImportError, ImproperlyConfigured, NoReverseMatch).
+
+6) Smoke crawl GET (site “cliquable”)
+   - Démarrer avec la page racine “/”.
+   - Vérifier statut (attendu 200 ou 302 logique). 
+   - Parser les <a href> internes (même host, chemins GET safe). Limiter à 200 liens max, profondeur 3, pas de POST/form submit.
+   - Ouvrir chaque lien unique en GET (client.get(path, follow=True)).
+   - Considérer OK si statut final ∈ {200, 302}. Tout 404/500 = FAIL.
+   - Suivi des redirections : fail si > 5 redirs (détection de boucles type ERR_TOO_MANY_REDIRECTS).
+
+7) Vérification templates
+   - Scanner le code pour les appels à render(request, "…") / TemplateResponse / render_to_string.
+   - Pour chaque template référencé : tenter loader.get_template("…") pour compiler (déclenche TemplateDoesNotExist/TemplateSyntaxError).
+   - Vérifier que le chemin respecte conventions Django :
+     • templates/<app_label>/… (si APP_DIRS=True) ou TEMPLATES['DIRS'].
+   - Cas connu : 'catalogue/products_skus.html' vs URL FR ‘/catalogue/produits/skus/’ → soit créer templates/catalogue/products_skus.html, 
+     soit renommer dans la vue pour coller au fichier existant (ex. 'catalogue/produits_skus.html'). 
+   - Parser les tags {% url %} des templates (optionnel avancé) : tenter reverse pour chaque nom trouvé → reporter NoReverseMatch.
+
+C. Parcours Auth & Middleware
+8) Auth basique
+   - Créer un utilisateur test (ou utiliser fixture).
+   - Login → accès page protégée (200) ; Logout → accès redirigé (302 vers login).
+   - Endpoint /api/auth/whoami/ (ou équiv.) → 200 JSON comprenant l’utilisateur connecté ou anonyme cohérent.
+   - Interdire boucles : toute redirection doit converger < 5 étapes.
+
+9) Middleware d’organisation
+   - Mettre 'current_org_id' invalide dans session → GET /api/auth/whoami/ (ou une page qui lit ce middleware)
+   - Attendu : session nettoyée (clé absente) + fallback org appliqué (si prévu).
+
+D. AJAX/HTMX & API
+10) Recherches AJAX
+   - Identifier endpoints de recherche (GET/POST). Tester un appel minimal (client.get avec HTTP_X_REQUESTED_WITH="XMLHttpRequest").
+   - Attendu : 200 + payload JSON/HTML fragment selon contrat ; pas d’erreur 500 ni besoin d’un F5.
+   - Si échec, capturer logs/traceback et proposer correctifs (ex. vue attend param obligatoire, mauvais serializer, CSRF manquant).
+
+11) API & santé
+   - /healthz → 200 (payload simple “ok” ou JSON). 
+   - /api/auth/… (login/logout/refresh) → statuts attendus, CORS si concerné.
+
+E. Couverture & restitution
+12) Tests automatiques à maintenir (pytest) — créer/mettre à jour si manquants
+   a) tests/test_urls_import_and_reverse.py
+      - Charge urlpatterns, check importabilité des views, reverse(name), unicité des noms.
+   b) tests/test_smoke_crawl_get.py
+      - Crawl GET : racine + liens internes (HTML parsing via BeautifulSoup), status OK, pas de 404/500, boucles détectées.
+   c) tests/test_templates_compile.py
+      - Compile tous les templates référencés par les vues ; fail sur TemplateDoesNotExist/TemplateSyntaxError/NoReverseMatch détectable.
+   d) tests/test_auth_flow.py
+      - Création user, login/logout, accès protégé, whoami JSON, détection de boucles.
+   e) tests/test_middleware_org_cleanup.py
+      - Session avec org_id invalide → endpoint → session nettoyée + fallback.
+   f) tests/test_ajax_endpoints.py
+      - AJAX recherches/HTMX : statuts 200, payload non vide minimal, entêtes corrects.
+   g) tests/test_health_api.py
+      - /healthz et endpoints critiques API.
+
+   Conseils d’implémentation (extraits) :
+   - Utiliser pytest.mark.django_db.
+   - Client Django : from django.test import Client ; client = Client().
+   - BeautifulSoup pour extraire les liens et filtrer internes ; ignorer mailto:, #, fichiers statiques.
+   - Limiter profondeur/compte liens pour éviter cycles ; conserver un set(visités).
+
+13) Couverture & seuils
+   - pytest -q --maxfail=1
+   - coverage run -m pytest ; coverage report  → viser ≥ 70% global, remonter si en‑dessous (non bloquant au début).
+
+14) Rapport final (obligatoire)
+   - Résumé clair : ✅/❌ pour chaque section (A à D).
+   - Tableau erreurs : 
+     • Type (e.g., TemplateDoesNotExist) 
+     • Endpoint/Template concerné 
+     • Stacktrace courte (1–3 lignes utiles) 
+     • Correctif proposé (patch/diff précis si possible).
+   - Exemple de correctif pour TemplateDoesNotExist ci‑dessus : 
+     • Créer 'templates/catalogue/products_skus.html' (copie d’un layout minimal) 
+     • OU modifier la vue apps.catalogue.views_unified.products_skus pour rendre 'catalogue/produits_skus.html' (et créer le fichier si absent).
+
+NOMENCLATURE & BONNES PRATIQUES À APPLIQUER SI INCOHÉRENCES DÉTECTÉES
+- Dossiers templates : 
+  • global : <repo_root>/templates/
+  • par app : <app>/templates/<app_label>/… 
+- Traductions FR/EN : 
+  • Les URL “fr” n’impliquent pas des chemins de templates “fr” ; garder des noms de fichiers stables/anglais est OK si la vue les demande explicitement.
+- Noms d’URL : uniques, stables ; préférer name="catalogue:products_skus" (namespace) pour éviter collisions.
+- Redirections :
+  • Page “/” : doit rendre un dashboard OU rediriger en 302 vers la page d’accueil/login selon auth. Pas de 404.
+  • Chaînes de redirection : max 5 ; au‑delà → considérer comme boucle → fail.
+- AJAX/HTMX :
+  • GET idempotents ; POST protégés CSRF ; pour HTMX, renvoyer fragments HTML valides et status 200/204.
+
+COMMANDES TYPE À UTILISER (si disponibles)
+- python manage.py check
+- python manage.py makemigrations --check --dry-run
+- python manage.py show_urls --format=json   (django-extensions)
+- python manage.py collectstatic --noinput --dry-run
+- pytest -q --maxfail=1
+- coverage run -m pytest ; coverage report
+- ruff .
+- djlint templates/ --lint
+
+SORTIE ATTENDUE (format)
+[Résumé]
+A1 Dépendances/env : ✅
+A2 Build/assets : ✅
+A3 Lint : ⚠️ (2 warnings ruff)
+B4 URLs inventoriées : 128 (0 doublon) ✅
+B5 Resolve/reverse : 1 NoReverseMatch ❌ (url name='catalogue:foo')
+B6 Smoke crawl : 3 liens en 404 ❌ (/catalogue/produits/skus/ ; /clients/42 ; /static/missing.css)
+B7 Templates : 1 TemplateDoesNotExist ❌ ('catalogue/products_skus.html')
+C8 Auth : ✅ | C9 Middleware org : ✅
+D10 AJAX : ⚠️ (/ajax/search produits → 500 si q manquant) ❌
+D11 API/health : ✅
+
+[Correctifs proposés]
+1) Créer templates/catalogue/products_skus.html (voir patch ci‑joint)
+2) Vue ajax_search(): rendre param q optionnel (default=""), gérer vide → []  → patch diff…
+3) Ajouter URL name='catalogue:…' manquante dans urls.py → patch diff…
+4) Ajouter route “/” → redirect vers dashboard si connecté, sinon login…
+
+[Diffs/patchs] (si demandés, fournir unified diff par fichier)
+
+IMPORTANT
+- Ne pas ignorer une erreur 500/404, même si partielle. Toujours proposer un correctif concret (création template, ajustement vue, ajout URL, fix middleware…).
+- Conserver ce prompt en local sous 'claude_test_battery_prompt.txt'. L’exécuter à chaque PR/commit ou via ptw (pytest-watch) si souhaité.
+- NE FAIS PAS d’actions destructives (migrations non maîtrisées, flush DB, POST arbitraires). Limite-toi aux GET et aux tests isolés.

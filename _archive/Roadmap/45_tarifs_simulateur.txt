@@ -1,0 +1,93 @@
+Roadmap 45 — /tarifs/simulateur (Liste + Remises + Taxes, audit explicable) — VERSION DÉTAILLÉE
+===============================================================================================
+
+🎯 Objectif
+-----------
+Construire un **simulateur** de prix final **explicable**. Entrées : client (ou segment+pays), cuvée, UOM, quantité, date. 
+Sortie : détail “liste → remises → taxes” avec **audit** pas‑à‑pas et **caches**.
+
+🔗 Contrat API
+--------------
+POST `/tarifs/simulateur`
+Body:
+{
+  "client_id": "UUID" OR {"segment":"business","country_code":"FR"},
+  "cuvee_id": "UUID",
+  "uom_id": "UUID",
+  "quantity": 12,
+  "date": "2025-10-01",
+  "currency": "EUR",
+  "explain": true
+}
+Réponse:
+{
+  "base_price": 7.80,
+  "list_source": {"price_list_id": "...", "version": 2, "item_id": "..."},
+  "discounts": [{"rule_id":"...","type":"percent","value":2.0,"stack_mode":"stack","after_price":7.644}, ...],
+  "subtotal_ht": 7.30,
+  "tax_rate": 20.0,
+  "tax_amount": 1.46,
+  "total_ttc": 8.76,
+  "audit": {"steps":[...], "warnings":["floor_price_hit"]}
+}
+
+⛏️ Pipeline de calcul (services)
+--------------------------------
+1) `resolve_customer_context(client_id or segment+country)` → {segment, country, vat_number?}
+2) `resolve_price_list(org, segment, country, date)` (42) → {price_list_id, version_id}
+3) `resolve_price_item(version_id, cuvee_id, uom_id, quantity)` → {base_price_ht, floor_price?}
+4) `select_applicable_rules(org, client, segment, cuvee, quantity, date)` (43) → [rules]
+5) `apply_discounts(base_price_ht, rules)` → {price_after_discounts, applied_rules[], floor_hit?}
+6) `resolve_tax(org, client, date)` (44) → {rate, reverse_charge?}
+7) `compute_totals(ht, rate, rounding_policy)` → {subtotal_ht, tax_amount, total_ttc}
+8) `build_audit(...)` → steps explicites + warnings
+
+🧱 Étapes d’implémentation
+--------------------------
+Étape 0 — Squelette & stubs
+- [ ] Route POST, validations d’entrée, stubs services 42/43/44.
+
+Étape 1 — Résolutions réelles (42)
+- [ ] Plug `resolve_price_list`, `resolve_price_item` + caches (300 s & 120 s).
+- [ ] Gestion `NotFound` item → 422 avec suggestion UOM défaut.
+
+Étape 2 — Remises (43)
+- [ ] Plug `select_applicable_rules` + `apply_discounts` (audit after_price).
+
+Étape 3 — Taxes (44)
+- [ ] Plug `resolve_tax` + `compute_totals` (arrondis ligne).
+
+Étape 4 — Audit & Explain
+- [ ] Étapes détaillées : pour chaque règle → `rule_id`, `scope`, `priority`, `stack_mode`, `before`, `after`.
+- [ ] Flags : `floor_price_hit`, `reverse_charge`.
+- [ ] `explain=1` → inclure les requêtes sources (ids + versions).
+
+Étape 5 — UI
+- [ ] Form simulateur : sélecteur client **ou** segment+pays, cuvée, UOM, qty, date.
+- [ ] Carte “Total” + tableaux “Remises” & “Taxes” ; badges “Liste vX”, “Reverse charge”.
+
+Étape 6 — Caches & invalidations
+- [ ] Clé : `sim:{org}:{client_or_segment}:{cuvee}:{uom}:{qty_bucket}:{date_bucket}` TTL 60–300 s.
+- [ ] Invalidations sur activation version liste, CRUD remises, CRUD taxes.
+
+Étape 7 — Observabilité & erreurs
+- [ ] Metrics : `pricing_sim_latency_ms`, `sim_cache_hit_ratio`, `sim_errors_total{type}`.
+- [ ] Logs audit JSON (corrélables aux devis/commandes plus tard).
+- [ ] Codes d’erreurs précis : 404 client/cuvée/uom ; 422 item manquant/devise `amount_off` ; 409 incohérences.
+
+🧪 AC
+-----
+- AC‑45‑01 : Pro FR, cuvée X, qty=12 → palier + remises multiplicatives + TVA FR = total TTC attendu.
+- AC‑45‑02 : Client DE avec VAT → TVA 0 % (reverse) ; audit explicite.
+- AC‑45‑03 : Règle `exclusive` client > règle segment ; `stop` arrête l’empilement.
+- AC‑45‑04 : `floor_price` coupé, warning présent.
+
+🛡️ Robustesse
+--------------
+- Item absent → 422 + suggestion UOM par défaut.
+- Conflit devise `amount_off` → 422.
+- Cache stale après activation version → invalider et prouver résultat différent.
+
+📚 Dev Book
+-----------
+- `pricing_engine.md` : pipeline, structures audit, exemples chiffrés, caches, invalidations, codes d’erreurs.

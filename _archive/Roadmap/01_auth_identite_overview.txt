@@ -1,0 +1,51 @@
+Mon‑Chai — Sprint Auth & Identité (Overview exécutable)
+=======================================================
+But: livrer un socle d’authentification robuste (session‑based), un premier parcours d’onboarding
+exploitation, et un système de rôles minimal (owner/admin, editor, read_only). Ici: plan d’action,
+livrables, invariants techniques, critères de done, dette technique acceptée.
+
+0) Invariants techniques (à ne pas casser)
+------------------------------------------
+- Auth en session (Django sessions) pour le web + API optionnelle via SessionAuthentication.
+- Chemins stables: web = /auth/* ; API = /api/auth/* ; redirections prédictibles depuis settings.
+- User référencé par email. (Soit CustomUser avec USERNAME_FIELD=email, soit username=email).
+- Une « Organization » (Exploitation) regroupe des utilisateurs via « Membership ».
+- Toujours vérifier l’existence d’un Membership actif avant d’afficher les écrans « métier ».
+
+1) Livrables déployables (ordre de livraison)
+---------------------------------------------
+A. Auth (signup/login/reset/logout) — fichier 02_auth_flow.txt
+B. Onboarding rapide (création exploitation: nom, SIRET, TVA, devise) — fichier 03_onboarding_rapide.txt
+C. Rôles & accès (owner/admin, editor, read_only) — fichier 04_roles_acces.txt
+
+2) Critères de done (globaux sprint)
+------------------------------------
+- Un·e nouvel·le utilisateur·rice peut créer un compte, se connecter, se déconnecter.
+- À la 1ère connexion, si aucune exploitation liée, on déclenche l’onboarding rapide.
+- Après onboarding, l’utilisateur·rice arrive sur un « dashboard » placeholder.
+- Les écrans « métier » (ex: /clients) refusent l’accès si pas de Membership actif.
+- Un Owner peut inviter un collaborateur avec un rôle; l’invité rejoint l’exploitation à l’inscription.
+- Tests minimums: flux signup→first‑run, login→logout, acceptation d’invitation.
+- Email en dev via console backend; pas d’envoi réel.
+
+3) Décisions UX (résumées)
+--------------------------
+- Login et Sign‑up très simples; erreurs inline; liens reset présents.
+- « First‑run guard »: après login, si aucun Membership, redirige vers « créer exploitation ».
+- Header toujours: badge de session (nom/role/org) + bouton logout.
+- Feedbacks visibles (bannières success/error) pour les étapes clefs.
+
+4) Dette technique volontaire (à planifier plus tard)
+-----------------------------------------------------
+- Pas de 2FA; pas de MFA; pas de SSO; pas de JWT public.
+- Pas de sélecteur d’organisation si multi‑org (prévu plus tard).
+- Pas de gestion RGPD complète (téléchargement/suppression compte) dans ce sprint.
+- Pas de throttling; pas de captcha; monitoring minimal.
+
+5) Points de contrôle avant merge
+---------------------------------
+- Les routes ne 404 pas; pas de redirections infinies (vérifier LOGIN_URL/REDIRECT_URL).
+- Les formulaires ont les balises {% csrf_token %}; cookies « sessionid » présents après login.
+- Les vues « métier » utilisent un décorateur de garde (ex: require_membership).
+- Le linter/formatteur passent; tests verts; migrations reproductibles.
+- Docs internes mises à jour (README sprint + ce fichier).

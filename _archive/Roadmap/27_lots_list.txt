@@ -1,0 +1,54 @@
+Roadmap 27 — /lots (Liste des lots — filtres & actions)
+======================================================
+Rôle & objectif
+---------------
+Permettre une **lecture rapide** des lots de vrac: filtres par millésime, cuvée, entrepôt, statut; recherche; tri et actions courantes. Latence p95 < 600 ms.
+
+Livrables
+---------
+- Page `/lots` avec:
+  - Filtres: millésime, cuvée, statut (ex: dispo, réservé, épuisé), entrepôt
+  - Recherche `q`: `lot.code` + `cuvee.name` (FTS)
+  - Tri: `updated_at desc` (défaut), `vintage asc/desc`, `volume desc`
+  - Pagination keyset sur `(updated_at,id)`
+  - Colonnes configurables (Nom lot/Code, Cuvée, Millésime, Volume dispo, Entrepôt, Statut, Dernier mouvement)
+  - Actions: Voir détail, Créer un lot
+- Endpoint API `/api/lots` aligné
+
+Contrats API (résumé)
+---------------------
+GET `/api/lots?q=&vintage=&cuvee=&warehouse=&status=&sort=&cursor=&page_size=`
+→ `{ items:[{id,code,cuvee{...},vintage,volume_l,warehouse,status,updated_at}], next_cursor, facets:{...} }`
+
+Index & perfs
+-------------
+- Index: `(org, cuvee_id)`, `(org, status)`, `(org, vintage)`, `(updated_at DESC, id DESC)`
+- FTS: sur `(lot.code + cuvee.name)` via tsvector matérialisé ou join optimisé
+- Caches brefs 30–60 s si besoin ; timeouts 700–900 ms
+
+Validations & sécurité
+----------------------
+- Whitelist de champs tri/filtres
+- RLS par organisation; aucune fuite cross‑org
+- Export (option): quotas et neutralisation CSV (prefix `'` cellules “= + - @ \t”)
+
+Tests d’acceptation
+-------------------
+- AC‑27‑01: Filtres millésime + statut → résultats attendus
+- AC‑27‑02: Tri updated_at stable (keyset), pas de trous/doublons
+- AC‑27‑03: Recherche “cote r” remonte lots de cuvées Côtes‑du‑Rhône
+- AC‑27‑04: Passage à la page suivante conserve filtres
+
+Robustesse (tests)
+------------------
+- R‑27‑01: spam requêtes → annulation server des anciennes
+- R‑27‑02: filtres invalides → 400 clair
+- R‑27‑03: org avec 200k lots → perfs respectées
+- R‑27‑04: export volumineux (si activé) → streaming correct
+
+Plan d’implémentation
+---------------------
+1) Query Builder v2 `/api/lots` + index
+2) UI liste + filtres + tri + keyset + colonnes configurables
+3) Observabilité (latence p95/p99) + caches
+4) Tests AC/robustesse + doc `lots_list.md`

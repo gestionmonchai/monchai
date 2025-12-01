@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-rulers me-2 text-info"></i>{{ unite.nom }}
+            </h1>
+            <div>
+                <a href="{% url 'referentiels:unite_list' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:unite_update' unite.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Informations de l'unité
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nom :</dt>
+                    <dd class="col-sm-9">{{ unite.nom }}</dd>
+
+                    <dt class="col-sm-3">Symbole :</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-light text-dark fs-6">{{ unite.symbole }}</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Type :</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-{% if unite.type_unite == 'volume' %}info{% elif unite.type_unite == 'poids' %}warning{% elif unite.type_unite == 'surface' %}success{% else %}secondary{% endif %} fs-6">
+                            {{ unite.get_type_unite_display }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-3">Facteur conversion :</dt>
+                    <dd class="col-sm-9">
+                        <strong>{{ unite.facteur_conversion }}</strong>
+                        <small class="text-muted">
+                            {% if unite.type_unite == 'volume' %}
+                                (1 {{ unite.symbole }} = {{ unite.facteur_conversion }} L)
+                            {% elif unite.type_unite == 'poids' %}
+                                (1 {{ unite.symbole }} = {{ unite.facteur_conversion }} kg)
+                            {% elif unite.type_unite == 'surface' %}
+                                (1 {{ unite.symbole }} = {{ unite.facteur_conversion }} m²)
+                            {% else %}
+                                (1 {{ unite.symbole }} = {{ unite.facteur_conversion }} unité de base)
+                            {% endif %}
+                        </small>
+                    </dd>
+
+                    <dt class="col-sm-3">Créé le :</dt>
+                    <dd class="col-sm-9">{{ unite.created_at|date:"d/m/Y à H:i" }}</dd>
+
+                    {% if unite.updated_at != unite.created_at %}
+                        <dt class="col-sm-3">Modifié le :</dt>
+                        <dd class="col-sm-9">{{ unite.updated_at|date:"d/m/Y à H:i" }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Actions -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:unite_update' unite.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i>Modifier cette unité
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'referentiels:unite_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-1"></i>Toutes les unités
+                    </a>
+                    
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:unite_create' %}" class="btn btn-outline-success">
+                            <i class="bi bi-plus me-1"></i>Nouvelle unité
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if user.get_active_membership.can_manage_roles %}
+                    <hr>
+                    <form method="post" action="{% url 'referentiels:unite_delete' unite.pk %}" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette unité ? Cette action est irréversible.')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-trash me-1"></i>Supprimer
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Exemples de conversion -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-calculator me-2"></i>Exemples de conversion
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if unite.type_unite == 'volume' %}
+                    <p class="mb-2">
+                        <strong>10 {{ unite.symbole }}</strong> = 
+                        {% widthratio unite.facteur_conversion 1 10 %} L
+                    </p>
+                    <p class="mb-2">
+                        <strong>100 {{ unite.symbole }}</strong> = 
+                        {% widthratio unite.facteur_conversion 1 100 %} L
+                    </p>
+                {% elif unite.type_unite == 'quantite' %}
+                    <p class="mb-2">
+                        <strong>5 {{ unite.symbole }}</strong> = 
+                        {% widthratio unite.facteur_conversion 1 5 %} unités
+                    </p>
+                    <p class="mb-2">
+                        <strong>10 {{ unite.symbole }}</strong> = 
+                        {% widthratio unite.facteur_conversion 1 10 %} unités
+                    </p>
+                {% else %}
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Les conversions seront disponibles lors de la gestion des stocks.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

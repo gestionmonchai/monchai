@@ -1,0 +1,227 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Produits finis | Mon Chai Administration{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/changelists.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs EXACTEMENT comme admin -->
+<nav aria-label="Fil d'Ariane">
+<div class="breadcrumbs">
+<a href="/admin/">Accueil</a>
+&rsaquo; <a href="/catalogue/produits/">Gestion des produits</a>
+&rsaquo; Produits finis
+</div>
+</nav>
+
+<div class="main" id="main">
+  <main id="content-start" class="content" tabindex="-1">
+    <div id="content" class="">
+      
+      <h1>Sélectionnez le produit fini à changer</h1>
+      
+      <div id="content-main">
+        <!-- Bouton Ajouter EXACTEMENT comme admin -->
+        <ul class="object-tools">
+          <li>
+            <a href="{% url 'catalogue:sku_create' %}" class="addlink">
+              Ajouter un produit fini
+            </a>
+          </li>
+        </ul>
+        
+        <!-- Module changelist EXACTEMENT comme admin -->
+        <div class="module filtered" id="changelist">
+          <div class="changelist-form-container">
+            
+            <!-- Barre de recherche EXACTEMENT comme admin -->
+            <div id="toolbar">
+              <form id="changelist-search" method="get" role="search">
+                <div>
+                  <label for="searchbar"><img src="{% static 'admin/img/search.svg' %}" alt="Search"></label>
+                  <input type="text" size="40" name="q" value="{{ request.GET.q|default:'' }}" id="searchbar">
+                  <input type="submit" value="Recherche">
+                </div>
+              </form>
+            </div>
+
+            <!-- Formulaire principal EXACTEMENT comme admin -->
+            <form id="changelist-form" method="post" novalidate>
+              {% csrf_token %}
+              
+              <!-- Actions EXACTEMENT comme admin -->
+              <div class="actions">
+                <label>Action : 
+                  <select name="action" required>
+                    <option value="" selected>---------</option>
+                    <option value="delete_selected">Supprimer les produits finis sélectionnés</option>
+                  </select>
+                </label>
+                <input type="hidden" name="select_across" value="0" class="select-across">
+                <button type="submit" class="button" title="Exécuter l'action sélectionnée" name="index" value="0">Envoyer</button>
+                <span class="action-counter" data-actions-icnt="{{ skus|length }}">0 sur {{ skus|length }} sélectionné</span>
+              </div>
+
+              <!-- Tableau des résultats EXACTEMENT comme admin -->
+              <div class="results">
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="action-checkbox-column">
+                        <div class="text">
+                          <span><input type="checkbox" id="action-toggle" aria-label="Sélectionner tous les objets de cette page en vue d'une action"></span>
+                        </div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-label">
+                        <div class="text"><a href="?o=1">Étiquette</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-cuvee">
+                        <div class="text"><a href="?o=2">Cuvée</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-uom">
+                        <div class="text"><a href="?o=3">UOM</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-volume">
+                        <div class="text"><a href="?o=4">Volume</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-code_barres">
+                        <div class="text"><a href="?o=5">Code-barres</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-is_active">
+                        <div class="text"><a href="?o=6">Is active</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-organization">
+                        <div class="text"><a href="?o=7">Organisation</a></div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for sku in skus %}
+                    <tr>
+                      <td class="action-checkbox">
+                        <input type="checkbox" name="_selected_action" value="{{ sku.id }}" class="action-select" aria-label="Choisir cet objet pour une action - {{ sku.label }}">
+                      </td>
+                      <th class="field-label">
+                        <a href="/admin/stock/sku/{{ sku.id }}/change/">{{ sku.label }}</a>
+                      </th>
+                      <td class="field-cuvee">{{ sku.cuvee.name|default:"-" }}</td>
+                      <td class="field-uom">{{ sku.uom.code|default:"-" }}</td>
+                      <td class="field-volume">{{ sku.volume_by_uom_to_l|floatformat:2 }} L</td>
+                      <td class="field-code_barres">{{ sku.code_barres|default:"-" }}</td>
+                      <td class="field-is_active">
+                        {% if sku.is_active %}
+                          <img src="{% static 'admin/img/icon-yes.svg' %}" alt="True">
+                        {% else %}
+                          <img src="{% static 'admin/img/icon-no.svg' %}" alt="False">
+                        {% endif %}
+                      </td>
+                      <td class="field-organization nowrap">{{ sku.organization.name }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="8">Aucun produit fini trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination EXACTEMENT comme admin -->
+              <p class="paginator">
+                {{ skus|length }} produit{{ skus|length|pluralize:"s" }} fini{{ skus|length|pluralize:"s" }}
+              </p>
+
+            </form>
+          </div>
+          
+          <!-- Filtres latéraux EXACTEMENT comme admin -->
+          <div id="changelist-filter">
+            <h2>Filtre</h2>
+            <div id="changelist-filter-extra-actions">
+              <h3>
+                <a href="?_facets=True" class="viewlink">Afficher les nombres</a>
+              </h3>
+            </div>
+            
+            <!-- Filtre par cuvée -->
+            <details data-filter-title="cuvee" open>
+              <summary>Par cuvée</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                {% for cuvee in cuvees %}
+                <li>
+                  <a href="?cuvee__id__exact={{ cuvee.id }}">{{ cuvee.name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+
+            <!-- Filtre par UOM -->
+            <details data-filter-title="uom" open>
+              <summary>Par UOM</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                {% for uom in uoms %}
+                <li>
+                  <a href="?uom__id__exact={{ uom.id }}">{{ uom.name }} ({{ uom.code }})</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+
+            <!-- Filtre par statut actif -->
+            <details data-filter-title="is active" open>
+              <summary>Par is active</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                <li>
+                  <a href="?is_active__exact=1">Oui</a>
+                </li>
+                <li>
+                  <a href="?is_active__exact=0">Non</a>
+                </li>
+              </ul>
+            </details>
+
+            <!-- Filtre par organisation -->
+            <details data-filter-title="Organisation" open>
+              <summary>Par Organisation</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                {% for org in organizations %}
+                <li>
+                  <a href="?organization__id__exact={{ org.id }}">{{ org.name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+
+          </div>
+        </div>
+      </div>
+      
+      <br class="clear">
+    </div>
+  </main>
+</div>
+{% endblock %}

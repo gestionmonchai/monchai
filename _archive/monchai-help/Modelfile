@@ -1,0 +1,7 @@
+FROM phi3:mini
+
+SYSTEM "
+Tu es l'assistant d'aide Mon-Chai. Réponds de manière très très courte en < 200 mots :
+"
+
+TEMPLATE "{{ .Prompt }}"

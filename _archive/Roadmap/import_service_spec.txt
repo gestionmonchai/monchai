@@ -1,0 +1,90 @@
+Mon‑Chai — Import Service (réutilisable pour toutes entités)
+===========================================================
+TL;DR
+-----
+Ce n’est **pas** une page unique liée aux cépages : c’est un **service d’import générique** (backend + UI générique)
+que l’on **réutilise** pour n’importe quelle entité (cépages, cuvées, clients, produits, entrepôts…). On expose un
+**bouton Importer** dans chaque écran liste, qui ouvre le **même flux** (upload → mapping → dry-run → exécution).
+
+Architecture (modulaire)
+------------------------
+- **Backend /import** (service unique) :
+  - Endpoints : `upload`, `preview`, `mapping`, `dry-run`, `execute`, `report`, `history` (déjà spécifiés).
+  - **Adapters d’entité** : un petit module par entité qui déclare le schéma (champs requis/optionnels,
+    clés uniques, synonymes, règles métier, lookups FK). Exemple : `adapters/grape_variety.py`.
+  - **Engine** commun : parsing streaming, transformations, validations génériques, upsert idempotent, rapports.
+- **Frontend** :
+  - **Modal générique** d’import (réutilisable) montée par un bouton “Importer” sur chaque page liste.
+  - Les étapes sont identiques pour toutes entités ; on passe juste `entity="grape_variety" | "cuvee" | "customer" | ...`.
+
+Adapter d’entité (exemple minimal)
+----------------------------------
+Pseudo-config (Python/JSON) placée dans `adapters/<entity>.py` :
+
+  SCHEMA = {
+    "entity": "grape_variety",
+    "required_fields": ["name"],
+    "optional_fields": ["code", "color"],
+    "unique_key": "code",                         # ou "name_norm"
+    "synonyms": {
+      "name": ["nom", "libelle", "label"],
+      "code": ["code", "abbr"],
+      "color": ["couleur", "color"]
+    },
+    "transforms_defaults": {
+      "name": ["trim", "unaccent", "collapse_spaces"],
+      "code": ["trim", "upper"]
+    },
+    "fk_lookups": {}                              # ex: { "appellation_id": {"by": ["name","code"], "source": "appellation"} }
+  }
+
+- Pour **clients** : unique_key = `vat_number` (ou couple (country_code, vat_number)), validations formats TVA, etc.
+- Pour **produits/SKU** : unique_key = (cuvee_id, uom_id) ou `sku_code` ; lookups pour FK cuvée/uom.
+
+Points d’intégration (UI)
+-------------------------
+- Sur une **page liste** (ex. /ref/cepages, /clients, /catalogue), ajouter :
+  - Bouton **Importer** → ouvre la **modal générique** et passe `entity`.
+  - Bouton **Exporter** (voir spec Export) → ouvre un **dialog** (encodage, séparateur, colonnes).
+
+Sélection d’encodage & séparateur
+---------------------------------
+- **Import** :
+  - Auto-détection proposée (UTF‑8 recommandé), avec capacité de **forcer** (UTF‑8, ISO‑8859‑1, Windows‑1252).
+  - Séparateur auto-détecté (`,` `;` `\t`), l’utilisateur peut **forcer**.
+- **Export** :
+  - Encodages proposés : UTF‑8 (défaut), ISO‑8859‑1, Windows‑1252.
+  - Séparateurs : `;` (FR) ou `,` (international), `\t`.
+  - Option **neutraliser formules** (préfixer `'`) activée par défaut.
+
+Réutilisation 100%
+------------------
+- Aucune logique “cépages-only” dans le moteur.
+- On ajoute simplement un nouvel **adapter** pour une entité et le bouton Import apparaît.
+- Même pipeline pour toutes les bases (référentiels, catalogue, clients, ventes, etc.).
+
+Sécurité (rappels clés, applicables à TOUTES entités)
+-----------------------------------------------------
+- CSV/XLSX **anti-injection** : cellules commençant par `= + - @ \t` **neutralisées** dans les exports et la prévisualisation.
+- **RLS logique** : toutes écritures/lectures scellées par organization_id.
+- **Whitelists** de champs éditables (anti-overposting).
+- **Rate-limit/quotas** par utilisateur et par org; CSRF sur POST/PUT/DELETE.
+- **Streaming** pour éviter OOM, transactions par chunk, idempotence.
+
+Checklist pour ajouter une nouvelle entité importable
+-----------------------------------------------------
+1) Créer `adapters/<entity>.py` (SCHEMA + règles + lookups).
+2) Lister `entity` dans `ALLOWED_ENTITIES` côté backend.
+3) Ajouter le **bouton Importer** sur la liste correspondante + brancher la modal import.
+4) Écrire **tests** : mapping auto, dry-run, upsert, cas erreur (FK ambiguë, duplication).
+5) Mettre à jour **Dev Book** (section import) avec exemples de mapping.
+
+Convivialité (Qualité UX)
+-------------------------
+- Sauvegarder les **mappings** par user/org pour rejouer un import mensuel.
+- Afficher un **indicateur de qualité** (“98% OK, 2% warnings”).
+- Laisser l’utilisateur **forcer** l’exécution en présence de warnings (pas d’erreurs).
+
+Notes
+-----
+- Les fichiers `csv_1..csv_5` décrivent précisément les étapes ; ce document explique **comment l’utiliser partout**.

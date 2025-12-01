@@ -1,0 +1,58 @@
+CSV_2 — Mapping des champs & Transformations (junior step-by-step)
+==================================================================
+
+But
+---
+Construire l’**écran de mapping** (CSV ↔ champs de l’entité) + **synonymes** + **transformations** prêtes à cocher.
+Valider côté serveur que le mapping est **cohérent** et **suffisant** pour un dry-run.
+
+Livrables
+---------
+1) Dictionnaires de **synonymes** par entité
+2) Écran Mapping UI (drag/select, required/optional, ignore)
+3) Transformations simples (trim, lower/upper, unaccent, regex replace, split/join, number locale, date parser)
+4) Endpoint `POST /import/:job_id/mapping` avec validation stricte
+5) Persistance du mapping par utilisateur (templates réutilisables)
+
+Structures & config
+-------------------
+- `import_schema(entity)` — JSON statique (ou DB) qui décrit:
+  - `required_fields`: ex. cépages: `['name']`
+  - `optional_fields`: ex. `['code','color']`
+  - `unique_key`: ex. `'code'` (ou `'name_norm'`)
+  - `synonyms`: `{ name: ['nom','libelle','label'], code: ['code','abbr'] }`
+  - `transforms_defaults`: par champ (ex: name → trim+unaccent+collapse spaces)
+- `import_mapping(job_id)` — stocker le mapping choisi:
+  - `{ csv_col -> { field: 'name', transforms: ['trim','unaccent'], options:{...} } }`
+
+Règles de validation serveur
+----------------------------
+- Tous les `required_fields` doivent être mappés
+- Un champ métier ne peut pas être mappé **2 fois** (sauf concat via transform `join` explicitement déclarée)
+- Les champs **non whitelistés** sont refusés (protection overposting)
+- Le `unique_key` doit être présent dans le mapping si **mode UPSERT**
+- Pour FK (ex. appellation): fournir **quelle** colonne CSV sert au lookup (`name`/`code`), pas l’ID direct
+
+Transformations (détails & exemples)
+------------------------------------
+- `trim` / `collapse_spaces` — “  Côte   Rôtie  ” → “Côte Rôtie”
+- `lower` / `upper` — “Bt” → “BT”
+- `unaccent` — “Côtes-du-Rhône” → “Cotes-du-Rhone”
+- `regex_replace` — motif/substitution (limiter à motifs sûrs)
+- `split`/`join` — ex: “Nom;Code” → `split(';')`
+- `number_locale` — “1,25” (FR) → 1.25 décimal
+- `date_parser` — “31/12/2024” → ISO 2024-12-31
+
+UI (guides)
+-----------
+- Liste des colonnes détectées à gauche, liste des champs cibles à droite
+- Marquer **(obligatoire)** vs **(optionnel)**, info-bulle avec règles
+- Bouton “**Auto-mapper**” (basé sur synonymes + similarité)
+- Aperçu **après transformation** sur 3 lignes (sans écrire en DB)
+
+Tests
+-----
+- Mapping sans `required` → erreur 400 avec message précis
+- Double mapping d’un champ → 400
+- Auto-mapping colle 80%+ des colonnes standard (jeu de test)
+- Transform `number_locale` sur “1,25” → 1.25 en prévisualisation OK

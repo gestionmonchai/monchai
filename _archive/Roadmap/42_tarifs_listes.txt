@@ -1,0 +1,98 @@
+Roadmap 42 — /tarifs/listes (Listes de prix par segment/pays/devise/UOM) — VERSION DÉTAILLÉE
+============================================================================================
+
+🎯 Objectif
+-----------
+Mettre en place un système de **listes de prix versionnées** par segment/pays/devise/UOM avec **paliers de quantité**, 
+**activation datée**, **fallbacks** et **import bulk**. La résolution doit être constante en < 15 ms p50 côté service 
+(avec caches chauds) et < 600 ms p95 pour les écrans (10k items).
+
+📦 Modèle de données (DDL suggéré)
+----------------------------------
+- `price_list(id, org_id, code, name, segment ENUM, country_code?, currency CHAR(3), is_active bool, notes text, created_at, updated_at)`
+  - UNIQUE(org_id, code)
+  - INDEX(org_id, segment, country_code, is_active)
+
+- `price_list_version(id, price_list_id, version_no INT, effective_from DATE, effective_to DATE NULL, status ENUM('draft','active','archived'), created_at)`
+  - UNIQUE(price_list_id, version_no)
+  - CHECK(effective_to IS NULL OR effective_to > effective_from)
+  - INDEX(price_list_id, status, effective_from, effective_to)
+
+- `price_item(id, price_list_version_id, cuvee_id, uom_id, min_qty INT DEFAULT 1, max_qty INT NULL, base_price NUMERIC(12,3), volume_eq_l NUMERIC(12,3) NOT NULL, notes TEXT NULL)`
+  - UNIQUE(price_list_version_id, cuvee_id, uom_id, min_qty)
+  - INDEX(price_list_version_id, cuvee_id, uom_id, min_qty)
+  - CHECK(base_price >= 0)
+  - CHECK(min_qty >= 1)
+  - CHECK(max_qty IS NULL OR max_qty >= min_qty)
+
+- `price_list_assignment(id, price_list_id, segment ENUM NULL, country_code CHAR(2) NULL, default_for_segment BOOL DEFAULT false)`
+  - But : déclarer où s’applique une liste (segment/pays)
+  - INDEX(org_id, segment, country_code, default_for_segment)
+
+📐 Règles & résolutions — Priorités (du + spécifique au + générique)
+--------------------------------------------------------------------
+1) (segment + country) → 2) (segment only) → 3) (country only) → 4) global par défaut (aucun filtre)
+Puis version **active** à la date `D`. Ensuite, item exact `(cuvee_id, uom_id, qty)` en respectant les paliers (min/max).
+
+⛏️ Étapes d’implémentation (intermédiaires, très guidées)
+---------------------------------------------------------
+Étape 0 — Foundation
+- [ ] Migrations DDL (tables + indexes + contraintes).
+- [ ] Seed: 1 liste FR/Pro/EUR code `PL_PRO_FR`, `v1` draft avec 20 items de test.
+
+Étape 1 — CRUD listes
+- [ ] Endpoint `POST /tarifs/listes` : validation `currency` ISO‑4217, `segment` cohérent, `code` unique.
+- [ ] Endpoint `GET /tarifs/listes` : filtres segment/country/currency/active + pagination keyset `(updated_at,id)`.
+- [ ] UI liste (cartes) : segment/pays/devise + statut + CTA “Voir/Éditer”.
+
+Étape 2 — Versions
+- [ ] `POST /tarifs/listes/:id/versions` : crée `version_no` = max + 1, `status='draft'`.
+- [ ] `GET /tarifs/listes/:id` : timelines, badge `active`, bouton “Activer”, “Archiver”.
+- [ ] `POST /tarifs/listes/:id/versions/:v/activate?effective_from=YYYY-MM-DD`
+      - Valide qu’aucune autre version **active** ne couvre cette date (chevauchement interdit).
+      - Passe l’ancienne active en `archived` si période révolue, sinon `effective_to = effective_from` de la nouvelle (selon policy).
+
+Étape 3 — Items (bulk + inline)
+- [ ] `POST /tarifs/listes/:id/versions/:v/items/bulk` (CSV/JSON)
+      - Idempotence par `(cuvee_id,uom_id,min_qty)`
+      - Conversions `volume_eq_l` obligatoires (0.75 pour 75 cL, 1.5 pour magnum, etc.).
+- [ ] UI items : table avec inline edit (dbl‑click), import CSV, duplication de ligne, copier/coller prix.
+
+Étape 4 — Assignments (portée)
+- [ ] `POST /tarifs/listes/:id/assign` : {segment?, country_code?, default_for_segment?}
+- [ ] Résolution test (endpoint interne de debug): `GET /tarifs/listes/resolve?segment=...&country=...&date=...`
+      - Retourne `{price_list_id, version_no}` choisi + source (priorité).
+
+Étape 5 — Service de résolution (moteur listes)
+- [ ] Fonction `resolve_price_list(org, segment, country, date)` :
+      - Requête ordonnée par priorité (SQL UNION ALL avec colonne `priority`) → premier match
+      - Cache Redis clé: `pl:{org}:{segment}:{country}:{date_bucket}` (bucket = jour) TTL 300 s
+- [ ] Fonction `resolve_price_item(version_id, cuvee_id, uom_id, qty)` :
+      - `min_qty <= qty AND (max_qty IS NULL OR qty <= max_qty)` avec tri `min_qty DESC` (prend le plus grand palier applicable)
+
+Étape 6 — Invalidations & Observabilité
+- [ ] Invalidation cache lors de : activation version, modification assignment, bulk items.
+- [ ] Metrics:
+      - `pricing_list_resolve_latency_ms` (histogramme), `cache_hit_ratio`, `price_items_count`
+- [ ] Logs: `org, list_id, version_no, segment, country, matched_rule, item_id`
+
+Étape 7 — Sécurité & robustesse
+- [ ] RBAC: `editor+` CRUD ; `viewer` lecture.
+- [ ] RLS org ; CSRF ; overposting whitelist ; validation devise cohérente avec org.
+
+🧪 Tests d’acceptation (AC)
+---------------------------
+- AC‑42‑01 : Création liste FR/Pro/EUR, v1 draft + 100 items importés (CSV), paliers (1/6/12).
+- AC‑42‑02 : Activation v1 à D → résolution retourne v1 à D+ε ; aucune version active chevauchée.
+- AC‑42‑03 : Résolution client Pro FR → item correct pour cuvée+UOM en fonction de qty (6 → palier 6).
+- AC‑42‑04 : Fallback segment only si pas d’affectation pays ; global si rien d’autre.
+
+🛡️ Robustesse (edge cases)
+--------------------------
+- Chevauchement dates → rejet 422 avec message.
+- `max_qty` < `min_qty` → rejet 400.
+- Conflit de `currency` entre listes pour un même scope → autorisé (politiques d’orga), mais signalé (warning observabilité).
+
+📚 Documentation Dev Book
+-------------------------
+- `pricing_lists.md` (complet) : schémas, exemples, requêtes SQL de résolution, caches, invalidations, runbook d’activation.

@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}Carte des parcelles - Mon Chai{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-1">Carte des parcelles</h1>
+    <div class="text-muted">Vue satellite + tags. Faites glisser un marqueur pour corriger les coordonnées.</div>
+  </div>
+  <div>
+    <a href="/ref/parcelles/" class="btn btn-outline-secondary"><i class="bi bi-list-ul me-1"></i>Liste</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div id="map" style="height: 70vh; border-radius: 0.5rem; overflow: hidden;"></div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Parcelles ({{ parcelles_json|length }})</div>
+      <div class="card-body p-0">
+        <div class="p-2">
+          <input id="filterInput" class="form-control" placeholder="Filtrer par nom/commune…" oninput="filterList()">
+        </div>
+        <div id="list" style="max-height: 60vh; overflow-y: auto;" class="list-group list-group-flush"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const data = JSON.parse('{{ parcelles_json|default:"[]"|escapejs }}');
+
+  function getCSRF(){
+    const m = document.cookie.match(/csrftoken=([^;]+)/); return m? m[1] : '';
+  }
+
+  let map, markers = {}, listItems = [];
+  document.addEventListener('DOMContentLoaded', () => {
+    map = L.map('map', { zoomControl: true });
+    // Satellite base (Esri WorldImagery)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+    }).addTo(map);
+
+    const group = L.featureGroup();
+    data.forEach(p => {
+      const lat = p.lat ?? 44.0; const lng = p.lng ?? 4.5; // fallback generic center
+      const m = L.marker([lat, lng], { draggable: true });
+      markers[p.id] = m;
+      m.addTo(map);
+      m.on('dragend', (e) => {
+        const pos = e.target.getLatLng();
+        saveParcelle(p.id, pos.lat, pos.lng, null);
+      });
+      const popup = buildPopup(p);
+      m.bindPopup(popup);
+      group.addLayer(m);
+    });
+    if (group.getLayers().length){
+      map.fitBounds(group.getBounds().pad(0.2));
+    } else {
+      map.setView([44.0, 4.5], 7);
+    }
+    renderList();
+  });
+
+  function buildPopup(p){
+    const tags = (p.tags || []).join(', ');
+    const html = `
+      <div style="min-width: 260px">
+        <div class="fw-semibold">${escapeHtml(p.nom || '—')}</div>
+        <div class="text-muted small">${escapeHtml(p.commune || '')} ${escapeHtml(p.appellation || '')}</div>
+        <div class="mt-2">
+          <label class="form-label small">Tags (séparés par des virgules)</label>
+          <input type="text" class="form-control form-control-sm" id="tags-${p.id}" value="${escapeAttr(tags)}" placeholder="bio, pente, irrigation">
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <div class="small text-muted">lat: ${p.lat ?? '—'} | lng: ${p.lng ?? '—'}</div>
+          <button class="btn btn-primary btn-sm" onclick="onSaveTags(${p.id})">Enregistrer</button>
+        </div>
+      </div>`;
+    return html;
+  }
+
+  function onSaveTags(id){
+    const input = document.getElementById(`tags-${id}`);
+    if (!input) return;
+    const tagsStr = input.value || '';
+    saveParcelle(id, null, null, tagsStr);
+  }
+
+  function saveParcelle(id, lat, lng, tags){
+    const payload = { id };
+    if (lat !== null && lat !== undefined) payload.lat = lat;
+    if (lng !== null && lng !== undefined) payload.lng = lng;
+    if (tags !== null && tags !== undefined) payload.tags = tags;
+    fetch('/ref/parcelles/api/update-geo/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRF(),
+      },
+      body: JSON.stringify(payload)
+    }).then(r => r.json()).then(res => {
+      if (!res.ok){ alert(res.error || 'Erreur'); return; }
+      // Update local state
+      const p = data.find(x => x.id === id);
+      if (!p) return;
+      if (payload.lat !== undefined) p.lat = payload.lat;
+      if (payload.lng !== undefined) p.lng = payload.lng;
+      if (payload.tags !== undefined) p.tags = (typeof payload.tags === 'string') ? payload.tags.split(',').map(t=>t.trim()).filter(Boolean) : payload.tags;
+      // Update marker popup
+      const m = markers[id];
+      if (m){ m.setPopupContent(buildPopup(p)); }
+      // Update list item tags
+      const el = document.querySelector(`[data-item-id="${id}"] .js-tags`);
+      if (el){ el.textContent = (p.tags || []).join(', '); }
+    }).catch(() => alert('Erreur réseau'));
+  }
+
+  function renderList(){
+    const container = document.getElementById('list');
+    container.innerHTML = '';
+    listItems = data.map(p => {
+      const div = document.createElement('div');
+      div.className = 'list-group-item list-group-item-action';
+      div.dataset.itemId = p.id;
+      div.innerHTML = `
+        <div class="d-flex justify-content-between">
+          <div>
+            <div class="fw-semibold">${escapeHtml(p.nom || '—')}</div>
+            <div class="small text-muted">${escapeHtml(p.commune || '')} ${escapeHtml(p.appellation || '')}</div>
+            <div class="small text-muted js-tags">${escapeHtml((p.tags||[]).join(', '))}</div>
+          </div>
+          <div class="text-end">
+            <button class="btn btn-sm btn-outline-primary" onclick="focusParcelle(${p.id})"><i class="bi bi-geo-alt"></i></button>
+          </div>
+        </div>`;
+      container.appendChild(div);
+      return div;
+    });
+  }
+
+  function filterList(){
+    const q = (document.getElementById('filterInput').value || '').toLowerCase();
+    data.forEach((p, i) => {
+      const show = (p.nom||'').toLowerCase().includes(q) || (p.commune||'').toLowerCase().includes(q);
+      listItems[i].style.display = show ? '' : 'none';
+    });
+  }
+
+  function focusParcelle(id){
+    const p = data.find(x => x.id === id);
+    if (!p) return;
+    const lat = p.lat ?? 44.0, lng = p.lng ?? 4.5;
+    map.setView([lat, lng], 16);
+    const m = markers[id];
+    if (m){ m.openPopup(); }
+  }
+
+  function escapeHtml(s){ return (s||'').replace(/[&<>"]+/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+  function escapeAttr(s){ return (s||'').replace(/"/g, '&quot;'); }
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{# 1. ON VIDE LE MENU HORIZONTAL PARASITE #}
+{% block local_nav %}{% endblock %}
+
+{# 2. STYLE CSS POUR LA TRANSITION #}
+{% block extra_css %}
+<style>
+    /* Transitions douces pour tout changement de dimension/marge */
+    .transition-all {
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    /* Styles pour le sidebar rétracté */
+    .sidebar-collapsed #prodSidebar {
+        width: 80px !important;
+        flex: 0 0 80px !important;
+    }
+    
+    .sidebar-collapsed #prodContent {
+        width: calc(100% - 80px) !important;
+        flex: 0 0 calc(100% - 80px) !important;
+    }
+
+    /* Réduction de la largeur par défaut du menu (environ 25% de moins que col-lg-3) */
+    @media (min-width: 992px) {
+        #prodSidebar {
+            width: 260px;
+            flex: 0 0 260px;
+        }
+        #prodContent {
+            width: calc(100% - 260px);
+            flex: 0 0 calc(100% - 260px);
+        }
+    }
+
+    /* Animation des libellés de texte */
+    .sidebar-label {
+        display: inline-block;
+        opacity: 1;
+        transform: translateX(0);
+        transition: opacity 0.2s ease-in-out, transform 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .sidebar-collapsed .sidebar-label {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        transform: translateX(10px);
+    }
+
+    /* Masquer les en-têtes de section (Vigne, Chai...) en mode réduit */
+    .sidebar-section-header {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: auto;
+        opacity: 1;
+    }
+    .sidebar-collapsed .sidebar-section-header {
+        height: 0;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 0;
+        border: none;
+    }
+
+    /* Centrer les icônes en mode réduit */
+    .sidebar-collapsed .list-group-item {
+        text-align: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .sidebar-collapsed .list-group-item i {
+        margin-right: 0 !important;
+        font-size: 1.2rem;
+    }
+    
+    /* Rotation du chevron */
+    .bi-chevron-left {
+        transition: transform 0.4s ease;
+    }
+    .sidebar-collapsed .bi-chevron-left {
+        transform: rotate(180deg);
+    }
+    
+    /* Ajustement card header en mode réduit */
+    .sidebar-collapsed .card-header {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        justify-content: center;
+        flex-direction: column;
+        gap: 10px;
+    }
+</style>
+{% endblock %}
+
+{# 3. ON REDÉFINIT LE BLOC PRINCIPAL POUR LE LAYOUT SIDEBAR #}
+{% block content %}
+<div class="container-fluid px-0" id="production-layout">
+    <div class="row g-0">
+        <!-- Sidebar Column -->
+        <div class="col-lg-3 mb-3 mt-4 transition-all" id="prodSidebar">
+            <div class="pe-lg-2 h-100">
+                {% include '_layout/sidebar_production.html' %}
+            </div>
+        </div>
+
+        <!-- Content Column -->
+        <div class="col-lg-9 transition-all" id="prodContent">
+            <div class="d-flex align-items-center mb-2 position-relative">
+                <div class="flex-grow-1">
+                   <!-- Espace pour fil d'ariane ou titre si besoin -->
+                </div>
+            </div>
+            {# Ici on injecte le contenu spécifique de chaque page #}
+            {% block production_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnHeader = document.getElementById('btnToggleSidebarFromHeader');
+    const layout = document.getElementById('production-layout');
+    
+    // Clé localStorage
+    const STORAGE_KEY = 'monchai_prod_sidebar_collapsed';
+
+    function setSidebarState(isCollapsed) {
+        if (isCollapsed) {
+            layout.classList.add('sidebar-collapsed');
+        } else {
+            layout.classList.remove('sidebar-collapsed');
+        }
+    }
+
+    // Init state from storage
+    const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
+    if(layout) {
+        setSidebarState(isCollapsed);
+    }
+
+    function toggleSidebar() {
+        if(!layout) return;
+        const currentlyCollapsed = layout.classList.contains('sidebar-collapsed');
+        const newState = !currentlyCollapsed;
+        setSidebarState(newState);
+        localStorage.setItem(STORAGE_KEY, newState);
+    }
+
+    // Toggle click from sidebar header
+    if(btnHeader) {
+        btnHeader.addEventListener('click', toggleSidebar);
+    }
+});
+</script>
+{% endblock %}
+
+{# 4. SCRIPT JS POUR LE TOGGLE SIDEBAR #}
+{% block extra_js %}{% endblock %}
+
+

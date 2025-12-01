@@ -1,0 +1,60 @@
+
+Roadmap — /ref/cepages (Cépages — CRUD simple)
+==============================================
+Objectif
+--------
+Offrir un CRUD minimal mais robuste pour les **cépages** (nom, code), prêt à alimenter Parcelles, Cuvées et Lots.
+Aligné avec: DB Roadmap 15 (GrapeVariety) et règles de normalisation (name_norm).
+
+Portée & Done
+-------------
+- Écran liste + création/édition/suppression (soft delete si utilisé) pour admin+.
+- Validation: unicité (org, name_norm), code optionnel unique, normalisation accents.
+- Recherche: champ (q) + filtre couleur (option), tri par nom, pagination.
+- Permissions: admin+ écritures ; read_only lecture seule.
+
+Endpoints
+---------
+- GET  /ref/cepages            — liste paginée (q, tri, filtres)
+- GET  /ref/cepages/new        — formulaire création
+- POST /ref/cepages            — créer
+- GET  /ref/cepages/:id/edit   — éditer
+- POST /ref/cepages/:id        — mettre à jour
+- POST /ref/cepages/:id/delete — supprimer (soft si référencé), confirmation
+
+Modèle (rappel)
+---------------
+- grape_variety(id, organization_id, name, name_norm, code NULL, color ENUM, is_active, row_version)
+  * UNIQUE(org, name_norm), UNIQUE NULLS NOT DISTINCT (org, code) si code utilisé
+
+UI & UX
+-------
+- Table: Nom, Code, Couleur, Statut, Actions.
+- Recherche tolérante: “cotes du rhone” ~ “Côtes-du-Rhône” (unaccent, trigram).
+- Double‑clic pour éditer Nom/Code inline (si activé globalement) ; sinon via fiche modal.
+- Confirmation suppression : indiquer usages (parcelles/cuvées) ; bascule en inactif si lié.
+
+Validations
+-----------
+- name requis (2..80), normalisation `name_norm` (lower+unaccent+spaces).
+- code optionnel (A‑Z0‑9, 2..10), unique/org si non NULL.
+- Si lié → hard delete interdit → set is_active = false.
+
+Migrations
+----------
+- Vérifier index UNIQUE(org, name_norm) et (org, code).
+- Ajout colonne `code` si manquante ; backfill NULL.
+- Job de normalisation existants → `UPDATE SET name_norm = ...`
+
+Tests d’acceptation
+-------------------
+- AC1: Création cépage avec code ; doublon name diff accents rejeté proprement.
+- AC2: Recherche “sauvigon” remonte “sauvignon” (trigram > 0).
+- AC3: Suppression cépage lié → inactivation, message clair.
+- AC4: read_only ne voit pas bouton d’édition/suppression.
+
+Robustesse
+----------
+- R1: Import CSV mauvais encodage → message explicite.
+- R2: XSS dans Nom/Code rendu échappé.
+- R3: Conflit concurrent (row_version) → 409 et proposition refresh.

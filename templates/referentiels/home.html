@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Référentiels - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-collection me-2"></i>Référentiels
+            </h1>
+            {% if organization %}
+                <span class="badge bg-success fs-6">
+                    {{ organization.name }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Référentiels viticoles :</strong> Gérez vos cépages, parcelles, unités, cuvées et entrepôts.
+            Ces données serviront de base pour la création de vos produits et la gestion de vos stocks.
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Cépages -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-flower1 me-2 text-success"></i>Cépages
+                </h5>
+                <p class="card-text text-muted">
+                    Variétés de raisin utilisées dans vos vins
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary rounded-pill">{{ stats.cepages }} cépage{{ stats.cepages|pluralize }}</span>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'referentiels:cepage_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> Voir
+                        </a>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="{% url 'referentiels:cepage_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parcelles -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-geo-alt me-2 text-warning"></i>Parcelles
+                </h5>
+                <p class="card-text text-muted">
+                    Terrains de culture de vos vignes
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary rounded-pill">{{ stats.parcelles }} parcelle{{ stats.parcelles|pluralize }}</span>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'referentiels:parcelle_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> Voir
+                        </a>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="{% url 'referentiels:parcelle_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unités -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-rulers me-2 text-info"></i>Unités
+                </h5>
+                <p class="card-text text-muted">
+                    Unités de mesure (bouteilles, litres, etc.)
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary rounded-pill">{{ stats.unites }} unité{{ stats.unites|pluralize }}</span>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'referentiels:unite_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> Voir
+                        </a>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="{% url 'referentiels:unite_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuvées -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-cup me-2 text-danger"></i>Cuvées
+                </h5>
+                <p class="card-text text-muted">
+                    Vos différentes cuvées et assemblages
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary rounded-pill">{{ stats.cuvees }} cuvée{{ stats.cuvees|pluralize }}</span>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> Voir
+                        </a>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entrepôts -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-building me-2 text-secondary"></i>Entrepôts
+                </h5>
+                <p class="card-text text-muted">
+                    Lieux de stockage (chais, caves, boutiques)
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary rounded-pill">{{ stats.entrepots }} entrepôt{{ stats.entrepots|pluralize }}</span>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'referentiels:entrepot_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> Voir
+                        </a>
+                        {% if user.get_active_membership.can_edit_data %}
+                            <a href="{% url 'referentiels:entrepot_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Ajouter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light">
+            <h6><i class="bi bi-lightbulb me-2"></i>Prochaines étapes</h6>
+            <p class="mb-2">
+                Une fois vos référentiels configurés, vous pourrez créer votre catalogue de produits 
+                et gérer vos stocks. Commencez par ajouter quelques cépages et parcelles.
+            </p>
+            {% if user.get_active_membership.can_admin %}
+            <div class="mt-3">
+                <a href="{% url 'referentiels:import_csv' %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-upload me-2"></i>Import CSV en masse
+                </a>
+                <small class="text-muted ms-2">Importez vos référentiels depuis un fichier CSV</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

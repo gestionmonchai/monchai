@@ -1,0 +1,62 @@
+Rôles & accès (admin domaine, collaborateur, lecture seule) — Indications de programmation
+=========================================================================================
+Objectif: permettre de gérer des autorisations par exploitation via des rôles simples:
+- owner (créé automatiquement au first‑run), admin, editor, read_only.
+
+1) Modélisation & constantes
+----------------------------
+- Enum OrgRole (owner, admin, editor, read_only) pour choices() réutilisable.
+- Membership(user, organization, role, is_active).
+- Convention: owner a tous les droits et peut promouvoir/révoquer; read_only = lecture seule.
+
+2) Contrôle d’accès (niveau vue)
+--------------------------------
+- Créer un décorateur utilitaire: require_membership(role_min=None)
+  * Vérifie: user authentifié + Membership actif pour l’organisation courante.
+  * Option role_min: compare une hiérarchie (owner>admin>editor>read_only).
+- Pour les vues sensibles (paramètres, invitations): exiger owner ou admin.
+- Pour les vues lecture (catalogue, clients): autoriser read_only+.
+
+3) Sélection d’organisation courante
+------------------------------------
+- Simplification: tant que l’utilisateur n’a qu’une org, utiliser la première membership active.
+- Prévoir plus tard: un sélecteur d’org dans le header (stockage en session « current_org_id »).
+- Tous les filtres de query doivent être restreints à organization=current_org.
+
+4) Interface de gestion des membres
+-----------------------------------
+- Page /settings/roles :
+  * Table: email/nom, rôle actuel, statut (actif/invité), actions (changer rôle, désactiver).
+  * Form d’invitation (email + rôle) visible seulement owner/admin.
+  * Affichage des invitations en attente (email, rôle, date, renvoi du lien).
+- Change role: POST sécurisé (CSRF), interdit de retirer owner à soi‑même sans autre owner existant.
+- Désactivation membership: soft delete via is_active=False (audit plus tard).
+
+5) Invitations (lien avec Auth)
+--------------------------------
+- Générer un token signé avec payload {email, org_id, role, exp}.
+- Envoi d’email (console en dev) avec lien d’acceptation /auth/invite/accept/<token>/.
+- Cas A: invité non connecté → stocker payload en session « pending_invite » → rediriger signup → à la fin, create Membership.
+- Cas B: invité déjà connecté → create/get Membership immédiatement → redirect dashboard.
+- Marquer l’invitation « acceptée » (timestamp) pour le suivi.
+
+6) Matrice d’autorisations (exemples concrets)
+----------------------------------------------
+- Paramètres exploitation (billing/general/roles): owner, admin.
+- Gestion des membres & invitations: owner, admin.
+- CRUD catalogue/lots/clients/commandes: editor+ (owner/admin/editor).
+- Lecture seule sur toutes les données non sensibles: read_only+.
+- Opérations critiques (suppression, export compta, facturation): owner, admin; certaines en editor si validées (à préciser par écran plus tard).
+
+7) Tests à écrire
+-----------------
+- Un read_only ne peut pas accéder à /settings/roles (403 ou redirect).
+- Un editor peut accéder au CRUD standard mais pas aux paramètres sensibles.
+- Un admin peut inviter; l’invité rejoint avec le rôle demandé.
+- Impossible de se retrouver sans owner dans une org (empêcher la dernière rétrogradation/suppression).
+
+8) Done (rôles & accès)
+-----------------------
+- Les vues métier respectent la hiérarchie de rôles.
+- L’écran /settings/roles permet de visualiser, inviter, modifier les rôles.
+- Les invitations créent bien un Membership avec le rôle souhaité (flux A/B).

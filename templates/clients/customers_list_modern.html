@@ -1,0 +1,803 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestion Clients{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Custom colors for wine theme */
+:root {
+    --wine-red: #722F37;
+    --wine-gold: #D4AF37;
+    --wine-cream: #F5F5DC;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- En-tête avec bouton de création -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Clients</h1>
+            <p class="text-gray-600 mt-1">Gestion de votre portefeuille clients</p>
+        </div>
+        <a href="{% url 'ventes:client_new' %}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Nouveau client
+        </a>
+    </div>
+
+    <!-- Statistiques rapides -->
+    {% if customers %}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Total clients</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ customers|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Actifs</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ customers|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-2m-2 0H7m5 0v-9a2 2 0 00-2-2H8a2 2 0 00-2 2v9m8 0V9a2 2 0 012-2h2a2 2 0 012 2v9M7 16h6v4H7v-4z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Professionnels</p>
+                    <p class="text-lg font-semibold text-gray-900">-</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-500">Export</p>
+                    <p class="text-lg font-semibold text-gray-900">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recherche en temps réel -->
+    <div class="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Recherche & Filtres</h3>
+            <button id="toggleAdvancedSearch" class="text-blue-600 hover:text-blue-800 text-sm">
+                <span id="toggleText">Recherche avancée</span>
+                <svg id="toggleIcon" class="w-4 h-4 inline ml-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Recherche principale -->
+        <div class="mb-4">
+            <div class="relative">
+                <input type="text" 
+                       id="globalSearch" 
+                       placeholder="Rechercher un client (nom, email, téléphone, TVA)..."
+                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <div id="searchSpinner" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
+                    <svg class="animate-spin h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recherche avancée (masquée par défaut) -->
+        <div id="advancedSearchPanel" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label for="searchName" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                    <input type="text" 
+                           id="searchName" 
+                           placeholder="Nom du client..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label for="searchEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" 
+                           id="searchEmail" 
+                           placeholder="email@exemple.com"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label for="searchPhone" class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <input type="tel" 
+                           id="searchPhone" 
+                           placeholder="+33123456789"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label for="searchVat" class="block text-sm font-medium text-gray-700 mb-1">N° TVA</label>
+                    <input type="text" 
+                           id="searchVat" 
+                           placeholder="FR12345678901"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres rapides -->
+        <div class="flex flex-wrap gap-4 items-center">
+            <div>
+                <label for="filterSegment" class="block text-sm font-medium text-gray-700 mb-1">Segment</label>
+                <select id="filterSegment" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Tous</option>
+                    <option value="individual">Particulier</option>
+                    <option value="business">Professionnel</option>
+                    <option value="wine_shop">Caviste</option>
+                    <option value="export">Export</option>
+                    <option value="other">Autre</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="filterStatus" class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                <select id="filterStatus" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Tous</option>
+                    <option value="true">Actifs</option>
+                    <option value="false">Inactifs</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="filterCountry" class="block text-sm font-medium text-gray-700 mb-1">Pays</label>
+                <select id="filterCountry" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Tous</option>
+                    <option value="FR">France</option>
+                    <option value="DE">Allemagne</option>
+                    <option value="IT">Italie</option>
+                    <option value="ES">Espagne</option>
+                    <option value="BE">Belgique</option>
+                    <option value="CH">Suisse</option>
+                    <option value="US">États-Unis</option>
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button id="clearFilters" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md border">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Effacer
+                </button>
+            </div>
+        </div>
+
+        <!-- Indicateur de résultats et sélecteur de colonnes -->
+        <div class="mt-4 flex justify-between items-center">
+            <div id="searchResults" class="text-sm text-gray-600 hidden">
+                <span id="resultsCount">0</span> client(s) trouvé(s) 
+                <span id="searchTime" class="text-gray-400"></span>
+            </div>
+            
+            <!-- Sélecteur de colonnes -->
+            <div class="relative">
+                <button id="columnSelector" class="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    </svg>
+                    Colonnes
+                </button>
+                
+                <div id="columnMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                    <div class="py-1">
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-50">
+                            <input type="checkbox" id="col-client" checked class="mr-2 rounded border-gray-300">
+                            <span class="text-sm text-gray-700">Client</span>
+                        </label>
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-50">
+                            <input type="checkbox" id="col-segment" checked class="mr-2 rounded border-gray-300">
+                            <span class="text-sm text-gray-700">Segment</span>
+                        </label>
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-50">
+                            <input type="checkbox" id="col-contact" checked class="mr-2 rounded border-gray-300">
+                            <span class="text-sm text-gray-700">Contact</span>
+                        </label>
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-50">
+                            <input type="checkbox" id="col-tags" checked class="mr-2 rounded border-gray-300">
+                            <span class="text-sm text-gray-700">Tags</span>
+                        </label>
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-50">
+                            <input type="checkbox" id="col-statut" checked class="mr-2 rounded border-gray-300">
+                            <span class="text-sm text-gray-700">Statut</span>
+                        </label>
+                        <label class="flex items-center px-4 py-2 hover:bg-gray-50">
+                            <input type="checkbox" id="col-actions" checked class="mr-2 rounded border-gray-300">
+                            <span class="text-sm text-gray-700">Actions</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des clients -->
+    <div id="clientsList" class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div id="loadingIndicator" class="hidden p-8 text-center">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-500">Recherche en cours...</p>
+        </div>
+        
+        <div id="clientsTable">
+            {% if customers %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Segment</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tags</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for customer in customers %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full 
+                                                {% if customer.segment == 'business' %}bg-blue-100
+                                                {% elif customer.segment == 'individual' %}bg-green-100
+                                                {% elif customer.segment == 'wine_shop' %}bg-purple-100
+                                                {% elif customer.segment == 'export' %}bg-orange-100
+                                                {% else %}bg-gray-100{% endif %} 
+                                                flex items-center justify-center">
+                                                <span class="text-sm font-medium 
+                                                    {% if customer.segment == 'business' %}text-blue-600
+                                                    {% elif customer.segment == 'individual' %}text-green-600
+                                                    {% elif customer.segment == 'wine_shop' %}text-purple-600
+                                                    {% elif customer.segment == 'export' %}text-orange-600
+                                                    {% else %}text-gray-600{% endif %}">
+                                                    {{ customer.name|slice:":2"|upper }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">
+                                                <a href="{% url 'ventes:client_detail' customer.id %}" class="hover:text-blue-600">
+                                                    {{ customer.name }}
+                                                </a>
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                {% if customer.vat_number %}
+                                                    {{ customer.vat_number }}
+                                                {% elif customer.email %}
+                                                    {{ customer.email }}
+                                                {% else %}
+                                                    {{ customer.get_segment_display }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if customer.segment == 'business' %}bg-blue-100 text-blue-800
+                                        {% elif customer.segment == 'individual' %}bg-green-100 text-green-800
+                                        {% elif customer.segment == 'wine_shop' %}bg-purple-100 text-purple-800
+                                        {% elif customer.segment == 'export' %}bg-orange-100 text-orange-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ customer.get_segment_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if customer.email %}
+                                        <div>📧 {{ customer.email }}</div>
+                                    {% endif %}
+                                    {% if customer.phone %}
+                                        <div class="text-gray-500">📞 {{ customer.phone }}</div>
+                                    {% endif %}
+                                    {% if not customer.email and not customer.phone %}
+                                        <span class="text-gray-400">Pas de contact</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for tag_link in customer.tag_links.all %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                                {{ tag_link.tag.name }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-gray-400 text-xs">Aucun tag</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if customer.is_active %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Actif
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            Inactif
+                                        </span>
+                                    {% endif %}
+                                    {% if customer.country_code %}
+                                        <div class="text-xs text-gray-500 mt-1">{{ customer.country_code }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <a href="{% url 'ventes:client_detail' customer.id %}" 
+                                           class="text-blue-600 hover:text-blue-900">Voir</a>
+                                        <a href="{% url 'ventes:client_edit' customer.id %}" 
+                                           class="text-indigo-600 hover:text-indigo-900">Modifier</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination keyset -->
+            {% if next_cursor %}
+                <div class="bg-white px-4 py-3 flex items-center justify-center border-t border-gray-200">
+                    <a href="?cursor={{ next_cursor }}{% if search_query %}&search={{ search_query }}{% endif %}{% if segment_filter %}&segment={{ segment_filter }}{% endif %}{% if is_active %}&active={{ is_active }}{% endif %}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Charger plus de clients
+                    </a>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun client</h3>
+                <p class="mt-1 text-sm text-gray-500">Commencez par créer votre premier client.</p>
+                <div class="mt-6">
+                    <a href="{% url 'ventes:client_new' %}" 
+                       class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Nouveau client
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fonction pour obtenir le token CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initialisation de la recherche clients');
+    
+    // Variables globales
+    let searchTimeout;
+    let currentRequest;
+    
+    // Éléments DOM
+    const globalSearch = document.getElementById('globalSearch');
+    const searchName = document.getElementById('searchName');
+    const searchEmail = document.getElementById('searchEmail');
+    const searchPhone = document.getElementById('searchPhone');
+    const searchVat = document.getElementById('searchVat');
+    
+    // Vérification des éléments critiques
+    if (!globalSearch) {
+        console.error('❌ Élément globalSearch non trouvé');
+        return;
+    }
+    console.log('✅ Éléments de recherche trouvés');
+    const filterSegment = document.getElementById('filterSegment');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterCountry = document.getElementById('filterCountry');
+    const clearFilters = document.getElementById('clearFilters');
+    const toggleAdvanced = document.getElementById('toggleAdvancedSearch');
+    const advancedPanel = document.getElementById('advancedSearchPanel');
+    const toggleText = document.getElementById('toggleText');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const clientsTable = document.getElementById('clientsTable');
+    const searchResults = document.getElementById('searchResults');
+    const resultsCount = document.getElementById('resultsCount');
+    const searchTime = document.getElementById('searchTime');
+
+    // Toggle recherche avancée
+    toggleAdvanced.addEventListener('click', function() {
+        const isHidden = advancedPanel.classList.contains('hidden');
+        if (isHidden) {
+            advancedPanel.classList.remove('hidden');
+            toggleText.textContent = 'Recherche simple';
+            toggleIcon.style.transform = 'rotate(180deg)';
+        } else {
+            advancedPanel.classList.add('hidden');
+            toggleText.textContent = 'Recherche avancée';
+            toggleIcon.style.transform = 'rotate(0deg)';
+        }
+    });
+
+    // Fonction de recherche
+    function performSearch() {
+        console.log('🔍 Début de la recherche');
+        
+        // Annuler la requête précédente
+        if (currentRequest) {
+            currentRequest.abort();
+        }
+
+        // Collecter les paramètres de recherche
+        const params = new URLSearchParams();
+        
+        // Recherche globale
+        if (globalSearch.value.trim()) {
+            params.append('search', globalSearch.value.trim());
+        }
+        
+        // Recherche par champs spécifiques
+        if (searchName.value.trim()) {
+            params.append('name', searchName.value.trim());
+        }
+        if (searchEmail.value.trim()) {
+            params.append('email', searchEmail.value.trim());
+        }
+        if (searchPhone.value.trim()) {
+            params.append('phone', searchPhone.value.trim());
+        }
+        if (searchVat.value.trim()) {
+            params.append('vat_number', searchVat.value.trim());
+        }
+        
+        // Filtres
+        if (filterSegment.value) {
+            params.append('segment', filterSegment.value);
+        }
+        if (filterStatus.value) {
+            params.append('is_active', filterStatus.value);
+        }
+        if (filterCountry.value) {
+            params.append('country_code', filterCountry.value);
+        }
+
+        // Afficher les indicateurs de chargement
+        searchSpinner.classList.remove('hidden');
+        loadingIndicator.classList.remove('hidden');
+        clientsTable.style.opacity = '0.5';
+
+        const startTime = Date.now();
+
+        // Faire la requête API
+        const apiUrl = `/clients/api/?${params.toString()}`;
+        console.log('📡 Requête API:', apiUrl);
+        
+        currentRequest = fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('📥 Réponse API:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Données reçues:', data);
+            const endTime = Date.now();
+            const searchDuration = endTime - startTime;
+            
+            // Masquer les indicateurs de chargement
+            searchSpinner.classList.add('hidden');
+            loadingIndicator.classList.add('hidden');
+            clientsTable.style.opacity = '1';
+
+            // Mettre à jour les résultats
+            updateClientsList(data.customers);
+            
+            // Afficher les statistiques
+            resultsCount.textContent = data.customers.length;
+            searchTime.textContent = `(${searchDuration}ms)`;
+            searchResults.classList.remove('hidden');
+        })
+        .catch(error => {
+            if (error.name !== 'AbortError') {
+                console.error('❌ Erreur de recherche:', error);
+                // Masquer les indicateurs de chargement
+                searchSpinner.classList.add('hidden');
+                loadingIndicator.classList.add('hidden');
+                clientsTable.style.opacity = '1';
+                
+                // Afficher un message d'erreur à l'utilisateur
+                clientsTable.innerHTML = `
+                    <div class="p-8 text-center">
+                        <div class="text-red-500 mb-2">
+                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Erreur de recherche</h3>
+                        <p class="text-gray-500">Une erreur s'est produite lors de la recherche. Veuillez réessayer.</p>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    // Fonction pour mettre à jour la liste des clients
+    function updateClientsList(customers) {
+        if (customers.length === 0) {
+            clientsTable.innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun client trouvé</h3>
+                    <p class="mt-1 text-sm text-gray-500">Essayez de modifier vos critères de recherche.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let tableHTML = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Segment</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tags</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+        `;
+
+        customers.forEach(customer => {
+            const segmentColors = {
+                'business': 'blue',
+                'individual': 'green', 
+                'wine_shop': 'purple',
+                'export': 'orange'
+            };
+            const color = segmentColors[customer.segment] || 'gray';
+            
+            tableHTML += `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-${color}-100 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-${color}-600">
+                                        ${customer.name.substring(0, 2).toUpperCase()}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">
+                                    <a href="{% url 'ventes:clients_list' %}${customer.id}/" class="hover:text-blue-600">
+                                        ${customer.name}
+                                    </a>
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    ${customer.vat_number || customer.email || customer.segment_display}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${color}-100 text-${color}-800">
+                            ${customer.segment_display}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${customer.email ? `<div>📧 ${customer.email}</div>` : ''}
+                        ${customer.phone ? `<div class="text-gray-500">📞 ${customer.phone}</div>` : ''}
+                        ${!customer.email && !customer.phone ? '<span class="text-gray-400">Pas de contact</span>' : ''}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex flex-wrap gap-1">
+                            ${customer.tags && customer.tags.length > 0 ? 
+                                customer.tags.map(tag => `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">${tag.name}</span>`).join('') :
+                                '<span class="text-gray-400 text-xs">Aucun tag</span>'
+                            }
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${customer.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${customer.is_active ? 'Actif' : 'Inactif'}
+                        </span>
+                        ${customer.country_code ? `<div class="text-xs text-gray-500 mt-1">${customer.country_code}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <a href="{% url 'ventes:clients_list' %}${customer.id}/" class="text-blue-600 hover:text-blue-900">Voir</a>
+                            <a href="{% url 'ventes:clients_list' %}${customer.id}/modifier/" class="text-indigo-600 hover:text-indigo-900">Modifier</a>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        clientsTable.innerHTML = tableHTML;
+    }
+
+    // Fonction debounce pour éviter trop de requêtes
+    function debounceSearch() {
+        console.log('⏱️ Debounce recherche déclenchée');
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 300);
+    }
+
+    // Écouteurs d'événements pour la recherche en temps réel
+    console.log('🎯 Ajout des event listeners');
+    globalSearch.addEventListener('input', debounceSearch);
+    if (searchName) searchName.addEventListener('input', debounceSearch);
+    if (searchEmail) searchEmail.addEventListener('input', debounceSearch);
+    if (searchPhone) searchPhone.addEventListener('input', debounceSearch);
+    if (searchVat) searchVat.addEventListener('input', debounceSearch);
+    if (filterSegment) filterSegment.addEventListener('change', performSearch);
+    if (filterStatus) filterStatus.addEventListener('change', performSearch);
+    if (filterCountry) filterCountry.addEventListener('change', performSearch);
+    
+    console.log('✅ Event listeners ajoutés');
+    
+    // Effectuer une recherche initiale pour charger tous les clients
+    console.log('🔄 Chargement initial des clients');
+    performSearch();
+
+    // Bouton effacer filtres
+    clearFilters.addEventListener('click', function() {
+        globalSearch.value = '';
+        searchName.value = '';
+        searchEmail.value = '';
+        searchPhone.value = '';
+        searchVat.value = '';
+        filterSegment.value = '';
+        filterStatus.value = '';
+        filterCountry.value = '';
+        searchResults.classList.add('hidden');
+        
+        // Recharger la page pour afficher tous les clients
+        window.location.href = "{% url 'ventes:clients_list' %}";
+    });
+    
+    // Gestion du sélecteur de colonnes
+    const columnSelector = document.getElementById('columnSelector');
+    const columnMenu = document.getElementById('columnMenu');
+    
+    // Toggle du menu des colonnes
+    columnSelector.addEventListener('click', function(e) {
+        e.stopPropagation();
+        columnMenu.classList.toggle('hidden');
+    });
+    
+    // Fermer le menu si on clique ailleurs
+    document.addEventListener('click', function() {
+        columnMenu.classList.add('hidden');
+    });
+    
+    // Empêcher la fermeture du menu si on clique dedans
+    columnMenu.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    // Gestion des checkboxes de colonnes
+    const columnCheckboxes = {
+        'col-client': 0,
+        'col-segment': 1,
+        'col-contact': 2,
+        'col-tags': 3,
+        'col-statut': 4,
+        'col-actions': 5
+    };
+    
+    Object.keys(columnCheckboxes).forEach(function(checkboxId) {
+        const checkbox = document.getElementById(checkboxId);
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                toggleColumn(columnCheckboxes[checkboxId], this.checked);
+            });
+        }
+    });
+    
+    function toggleColumn(columnIndex, show) {
+        const table = document.querySelector('#clientsTable table');
+        if (!table) return;
+        
+        // Toggle header
+        const headerCells = table.querySelectorAll('thead th');
+        if (headerCells[columnIndex]) {
+            headerCells[columnIndex].style.display = show ? '' : 'none';
+        }
+        
+        // Toggle body cells
+        const bodyRows = table.querySelectorAll('tbody tr');
+        bodyRows.forEach(function(row) {
+            const cells = row.querySelectorAll('td');
+            if (cells[columnIndex]) {
+                cells[columnIndex].style.display = show ? '' : 'none';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

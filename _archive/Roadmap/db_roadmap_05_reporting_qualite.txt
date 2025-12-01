@@ -1,0 +1,28 @@
+DB Roadmap 05 — Reporting, Qualité & Observabilité Data
+=======================================================
+Objectif
+--------
+Fournir des **vues analytiques** (ventes, marges, TVA), **contrôles qualité** (règles, exceptions), **sauvegardes** et **observabilité**.
+
+Livrables (Done)
+----------------
+- Vues analytiques : CA par période, canal, cuvée ; stocks (vrac/SKU) ; TVA collectée.
+- Règles qualité (SIRET/TVA/années) avec **panneau d’anomalies**.
+- Sauvegardes DB + test de **restore**, métriques (latence requêtes, erreurs), logs data.
+
+Composants
+----------
+- mv_sales_kpi(month, cuvee_id, qty, ca_ht, ca_ttc, tva)
+- mv_stock_snapshot(day, sku_id, warehouse_id, qty_units, qty_l)
+- data_quality_issue(id, organization_id, entity_name, entity_id, rule_code, severity, message, detected_at, resolved_at NULL)
+- backup_journal(id, started_at, duration_s, size_mb, status, location)
+
+Tests de robustesse
+-------------------
+- MV refresh concurrent → `REFRESH CONCURRENTLY` ; aucune indispo liste/rapports.
+- Règles qualité bruyantes → seuils anti‑spam ; regroupement des duplicats.
+- Restore dry‑run : lecture seule OK ; aucune corruption.
+
+Dev Book — À documenter
+-----------------------
+- Dictionnaire des KPI, méthodologies de calcul, limites connues.

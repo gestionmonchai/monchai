@@ -1,0 +1,66 @@
+{% comment %}
+Composant SubmitButton - Design System Mon Chai
+Roadmap 05 : état "loading" (spinner simple) après POST, disabled si form invalide côté client
+
+Usage:
+{% include 'components/submit_button.html' with text="Se connecter" %}
+{% include 'components/submit_button.html' with text="Créer mon compte" class="btn-success" %}
+{% endcomment %}
+
+<button type="submit" 
+        class="btn {{ class|default:'btn-primary' }} w-100" 
+        id="submit-btn">
+    <span class="btn-text">{{ text|default:"Valider" }}</span>
+    <span class="btn-spinner d-none">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Traitement...
+    </span>
+</button>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnSpinner = submitBtn.querySelector('.btn-spinner');
+    
+    if (form && submitBtn) {
+        // État loading après soumission
+        form.addEventListener('submit', function(e) {
+            // Vérifier la validité HTML5
+            if (form.checkValidity()) {
+                submitBtn.disabled = true;
+                btnText.classList.add('d-none');
+                btnSpinner.classList.remove('d-none');
+            }
+        });
+        
+        // Validation HTML5 en temps réel
+        const inputs = form.querySelectorAll('input[required], input[type="email"]');
+        inputs.forEach(function(input) {
+            input.addEventListener('input', function() {
+                updateSubmitState();
+            });
+            input.addEventListener('blur', function() {
+                updateSubmitState();
+            });
+        });
+        
+        function updateSubmitState() {
+            const isValid = form.checkValidity();
+            submitBtn.disabled = !isValid;
+            
+            if (isValid) {
+                submitBtn.classList.remove('btn-outline-primary');
+                submitBtn.classList.add('{{ class|default:"btn-primary" }}');
+            } else {
+                submitBtn.classList.add('btn-outline-primary');
+                submitBtn.classList.remove('{{ class|default:"btn-primary" }}');
+            }
+        }
+        
+        // État initial
+        updateSubmitState();
+    }
+});
+</script>

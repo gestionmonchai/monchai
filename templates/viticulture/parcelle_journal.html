@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0"><i class="bi bi-journal-text me-2 text-primary"></i>Parcelle {{ parcelle.nom }} — Journal</h1>
+  <a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Retour à la parcelle
+  </a>
+  </div>
+
+<div class="mb-2 d-flex gap-2 align-items-center flex-wrap">
+  <input class="form-control js-q" style="max-width:280px" placeholder="Recherche (mots-clés)">
+  <select id="optype" class="form-select" style="max-width:220px">
+    <option value="">Tous types</option>
+    {% for t in op_types %}<option value="{{ t.code }}">{{ t.label }}</option>{% endfor %}
+  </select>
+  <select id="year" class="form-select" style="max-width:160px">
+    <option value="">Toutes années</option>
+    {% for y in years %}
+      <option value="{{ y }}">{{ y }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+{% if vendanges %}
+<div class="alert alert-light py-2">
+  <strong>Vendanges récentes :</strong>
+  {% for v in vendanges %}
+    <span class="badge bg-secondary me-1">Vendange {{ v.date|date:"Y" }} — {{ v.poids_kg }} kg</span>
+  {% endfor %}
+  <a class="ms-2" href="{% url 'production:vendanges_list' %}">Voir les vendanges</a>
+</div>
+{% endif %}
+
+<div id="pj-table"
+     hx-get="{% url 'viticulture:parcelle_journal_partial' parcelle.pk %}"
+     hx-trigger="load, keyup delay:300ms from:.js-q, change from:#optype, change from:#year"
+     hx-vals='js:{ q: document.querySelector(".js-q").value, type: document.getElementById("optype").value, year: document.getElementById("year").value }'
+     hx-swap="innerHTML"></div>
+{% endblock %}

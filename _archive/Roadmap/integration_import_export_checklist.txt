@@ -1,0 +1,9 @@
+Mon‑Chai — Intégration Import/Export : Checklist rapide
+======================================================
+1) **Page liste** de l’entité → ajouter boutons : [Importer], [Exporter].
+2) [Importer] → ouvre **modal générique** → passe `entity` dans l’URL des endpoints import.
+3) Créer **adapter** d’entité si nouveau type (SCHEMA + règles + unique_key + lookups).
+4) Tester les 5 étapes : upload/preview → mapping → dry‑run → execute → report.
+5) [Exporter] → dialog (colonnes/encodage/séparateur/neutralize) → appel `GET /export/:entity`.
+6) Configurer **quotas/rate-limit** et **whitelists** (import/export).
+7) Mettre à jour **Dev Book** et ajouter des **tests e2e** (Playwright/Cypress).

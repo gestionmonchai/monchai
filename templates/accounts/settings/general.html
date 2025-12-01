@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-6">
+            
+            <!-- En-tête -->
+            <div class="d-flex align-items-center mb-4">
+                <div class="me-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-gear text-primary fs-3"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="h3 mb-1">{{ page_title }}</h1>
+                    <p class="text-muted mb-0">
+                        Configuration des préférences générales
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Messages Django -->
+            {% include 'components/django_messages.html' %}
+            
+            <!-- Formulaire -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Devise et formats -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-primary mb-3">
+                                <i class="bi bi-currency-euro me-2"></i>Devise et formats
+                            </h6>
+                            
+                            {% include 'components/form_group.html' with field=form.currency help_text="Devise utilisée pour l'affichage des montants" %}
+                        </div>
+                        
+                        <!-- Conditions générales -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-primary mb-3">
+                                <i class="bi bi-file-text me-2"></i>Conditions générales
+                            </h6>
+                            
+                            {% include 'components/form_group.html' with field=form.cgv_url help_text="Lien vers vos conditions générales de vente (optionnel)" %}
+                            
+                            <div class="alert alert-light">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Prochainement :</strong> Upload de fichiers PDF pour vos CGV et mentions légales.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'onboarding:checklist' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Retour à la checklist
+                            </a>
+                            
+                            {% include 'components/submit_button.html' with text="Enregistrer les paramètres" class="btn-primary" %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Aide -->
+            <div class="mt-4">
+                {% include 'components/banner.html' with type="info" message="💡 La devise et les formats affectent l'affichage des données dans toute l'application." dismissible=True %}
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

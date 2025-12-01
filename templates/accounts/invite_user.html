@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Inviter un collaborateur - {{ organization.name }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus text-primary" style="font-size: 3rem;"></i>
+                    <h2 class="card-title mt-3">Inviter un collaborateur</h2>
+                    <p class="text-muted">{{ organization.name }}</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Email -->
+                    <div class="mb-3">
+                        {{ form.email.label_tag }}
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">
+                                {{ form.email.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.email.help_text }}</div>
+                    </div>
+
+                    <!-- Rôle -->
+                    <div class="mb-4">
+                        {{ form.role.label_tag }}
+                        {{ form.role }}
+                        {% if form.role.errors %}
+                            <div class="text-danger small">
+                                {{ form.role.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.role.help_text }}</div>
+                    </div>
+
+                    <!-- Erreurs générales -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors.0 }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Information -->
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Comment ça marche ?</strong><br>
+                        Un email d'invitation sera envoyé à cette adresse. 
+                        La personne pourra créer un compte ou se connecter pour rejoindre votre organisation.
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="bi bi-send"></i> Envoyer l'invitation
+                        </button>
+                        <a href="{% url 'auth:roles_management' %}" class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Explication des rôles -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Rôles disponibles</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        {% if current_membership.role == 'owner' %}
+                            <div class="mb-2">
+                                <span class="badge bg-warning">Propriétaire</span>
+                                <span class="small text-muted ms-2">Tous les droits sur l'organisation</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-2">
+                            <span class="badge bg-info">Administrateur</span>
+                            <span class="small text-muted ms-2">Gestion des membres et paramètres</span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <span class="badge bg-success">Éditeur</span>
+                            <span class="small text-muted ms-2">Modification des données métier</span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">Lecture seule</span>
+                            <span class="small text-muted ms-2">Consultation uniquement</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

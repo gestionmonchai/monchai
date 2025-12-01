@@ -1,0 +1,55 @@
+Roadmap 30 — /media/upload (Uploader étiquette/visuels — sécurisé)
+==================================================================
+Rôle & objectif
+---------------
+Permettre l’**upload sécurisé** d’images (étiquette/visuels) liées aux cuvées (et potentiellement lots). Gérer la transformation (taille, WebP), la **sécurité** (mimetype + magic bytes, strip EXIF), et les **permissions**.
+
+Livrables
+---------
+- Formulaire/Modal `/media/upload?entity=cuvee&id=:id`
+- Endpoint `POST /media/upload` (multipart) → stocke, transforme, associe
+- (Option) `DELETE /media/:id` avec vérif autorisations
+- Stockage par organisation: `org/{uuid}/{file}` ; thumbs générées (ex: 320, 640, 1280)
+
+Validations & sécurité
+----------------------
+- **Taille max**: 5 Mo (config)
+- **Types**: PNG/JPG/WebP uniquement ; vérifier **magic bytes** (pas l’extension)
+- **EXIF**: **strip** des métadonnées ; orientation normalisée
+- **Dimension max**: 1600 px (long côté) ; conversion WebP qualité 80
+- **Nom**: normalisation (pas de `../`), éviter caractères de contrôle
+- **Rôles**: admin/editor ; read_only interdit
+- **RLS**: vérifier que l’entité appartient à l’org de l’uploader
+- **Rate‑limit** uploads (par user), journal d’upload
+
+Contrats API (résumé)
+---------------------
+POST `/media/upload`
+- multipart: `file`, `entity`, `entity_id`
+→ `{id, urls:{thumb, medium, original}, entity_ref:{entity, id}}`
+
+UX
+--
+- Drag & drop + aperçu avant envoi
+- Afficher ratio/poids ; message si conversion effectuée
+- Sur fiche cuvée: bouton **Changer l’image** renvoie vers cette modale
+
+Tests d’acceptation
+-------------------
+- AC‑30‑01: Upload image valide → visible en vignette sur `/catalogue` et fiche
+- AC‑30‑02: Fichier > 5 Mo ou type interdit → 400 message clair
+- AC‑30‑03: Tentative cross‑org → 403
+- AC‑30‑04: Suppression (si activée) refuse si média référencé ailleurs (ou soft‑delete)
+
+Robustesse (tests)
+------------------
+- R‑30‑01: Image corrompue → erreur propre, pas de 500
+- R‑30‑02: Haute concurrence upload → pas de collisions de noms (UUID)
+- R‑30‑03: Liens temporisés/signés si CDN (option)
+
+Plan d’implémentation
+---------------------
+1) Endpoint upload: validations (magic bytes, taille), stockage, transformation (Pillow/Sharp), strip EXIF
+2) Lien vers la cuvée/lot + mise à jour de la fiche (media_id)
+3) UI modale + feedback + rafraîchissement des vignettes
+4) Tests AC/robustesse + doc `media_upload.md`

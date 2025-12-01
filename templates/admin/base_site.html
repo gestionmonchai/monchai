@@ -1,0 +1,168 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">Mon Chai Administration</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<meta charset="UTF-8">
+
+<!-- 🍷 Design Viticole Global -->
+{% load static %}
+<link href="{% static 'css/viticole.css' %}" rel="stylesheet">
+
+<style>
+/* Amélioration de l'interface admin */
+.real-time-search {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.real-time-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+/* Badges colorés pour les référentiels */
+.admin-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.badge-rouge { background-color: #dc3545; color: white; }
+.badge-blanc { background-color: #f8f9fa; color: black; border: 1px solid #ddd; }
+.badge-rose { background-color: #e83e8c; color: white; }
+.badge-effervescent { background-color: #17a2b8; color: white; }
+
+.badge-aoc { background-color: #28a745; color: white; }
+.badge-igp { background-color: #007bff; color: white; }
+.badge-vsig { background-color: #ffc107; color: black; }
+.badge-vdf { background-color: #6c757d; color: white; }
+
+.badge-volume { background-color: #007bff; color: white; }
+.badge-poids { background-color: #28a745; color: white; }
+.badge-surface { background-color: #ffc107; color: black; }
+.badge-quantite { background-color: #6c757d; color: white; }
+
+.badge-chai { background-color: #28a745; color: white; }
+.badge-depot { background-color: #007bff; color: white; }
+.badge-boutique { background-color: #ffc107; color: black; }
+.badge-cave { background-color: #6f42c1; color: white; }
+.badge-autre { background-color: #6c757d; color: white; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Recherche temps réel pour l'admin
+    const searchInputs = document.querySelectorAll('#searchbar');
+    
+    searchInputs.forEach(function(input) {
+        let searchTimeout;
+        
+        input.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                return;
+            }
+            
+            searchTimeout = setTimeout(function() {
+                performRealTimeSearch(query, input);
+            }, 300); // Debounce de 300ms
+        });
+    });
+    
+    function performRealTimeSearch(query, inputElement) {
+        // Récupérer l'URL actuelle et ajouter le paramètre de recherche
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('q', query);
+        
+        // Effectuer la recherche via AJAX
+        fetch(currentUrl.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Parser la réponse et mettre à jour le tableau
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newTable = doc.querySelector('#result_list');
+            const currentTable = document.querySelector('#result_list');
+            
+            if (newTable && currentTable) {
+                currentTable.innerHTML = newTable.innerHTML;
+                
+                // Mettre à jour le compteur de résultats
+                const newCounter = doc.querySelector('.paginator');
+                const currentCounter = document.querySelector('.paginator');
+                if (newCounter && currentCounter) {
+                    currentCounter.innerHTML = newCounter.innerHTML;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la recherche:', error);
+        });
+    }
+    
+    // Amélioration de l'UX : focus automatique sur la recherche
+    const searchInput = document.querySelector('#searchbar');
+    if (searchInput) {
+        // Raccourci clavier Ctrl+K pour focus sur la recherche
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        });
+        
+        // Placeholder amélioré
+        searchInput.placeholder = 'Rechercher... (Ctrl+K)';
+    }
+});
+</script>
+{% endblock %}

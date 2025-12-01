@@ -1,0 +1,70 @@
+{% extends 'production/base_production.html' %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block production_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1><i class="bi bi-journal-text me-2 text-primary"></i>{{ page_title }}</h1>
+      <div>
+        <a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="btn btn-outline-secondary me-2">
+          <i class="bi bi-arrow-left"></i> Retour parcelle
+        </a>
+        {% if user.get_active_membership.can_edit_data %}
+        <a href="{% url 'viticulture:parcelle_operation_create' parcelle_pk=parcelle.pk %}" class="btn btn-success">
+          <i class="bi bi-plus-circle"></i> Nouvelle opération
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        {% if page_obj and page_obj.object_list %}
+        <div class="list-group list-group-flush">
+          {% for op in page_obj.object_list %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="badge bg-primary me-2">{{ op.get_operation_type_display }}</span>
+                <strong>{{ op.label|default:'(Sans intitulé)' }}</strong>
+              </div>
+              <small class="text-muted">{{ op.date|date:'d/m/Y' }}</small>
+            </div>
+            <div class="mt-1">
+              {% if op.produit %}<span class="text-muted me-2"><i class="bi bi-droplet me-1"></i>{{ op.produit }}</span>{% endif %}
+              {% if op.dose %}<span class="text-muted me-2"><i class="bi bi-bezier me-1"></i>{{ op.dose }}</span>{% endif %}
+              {% if op.duree_h %}<span class="text-muted me-2"><i class="bi bi-clock me-1"></i>{{ op.duree_h }} h</span>{% endif %}
+              {% if op.cout_eur %}<span class="text-muted"><i class="bi bi-currency-euro me-1"></i>{{ op.cout_eur }}</span>{% endif %}
+            </div>
+            {% if op.notes %}
+            <div class="small text-muted mt-1">{{ op.notes|linebreaksbr }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <nav aria-label="Pagination" class="mt-3">
+          <ul class="pagination justify-content-center mb-0">
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}" tabindex="-1">Précédent</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+            </li>
+          </ul>
+        </nav>
+        {% else %}
+          <p class="text-muted mb-0">Aucune opération enregistrée pour cette parcelle.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

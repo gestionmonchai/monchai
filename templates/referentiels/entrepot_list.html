@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Entrepôts - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-building me-2 text-secondary"></i>Entrepôts
+            </h1>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Référentiels
+                </a>
+                
+                <!-- Boutons Import/Export -->
+                {% include 'components/import_export_buttons.html' with entity_type='entrepot' entity_name='Entrepôts' %}
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:entrepot_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouvel entrepôt
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche temps réel -->
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="position-relative">
+            <input type="text" 
+                   id="quick-search" 
+                   name="search"
+                   value="{{ search|default:'' }}" 
+                   placeholder="Recherche rapide dans tous les entrepôts..." 
+                   class="form-control pe-5"
+                   autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                <i class="bi bi-search text-muted" id="search-icon"></i>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                    <span class="visually-hidden">Recherche...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div id="search-info" class="text-muted small mt-2">
+            {% if page_obj %}
+                {{ page_obj.paginator.count }} entrepôt{{ page_obj.paginator.count|pluralize }}
+            {% else %}
+                0 entrepôt
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Liste des entrepôts -->
+{% if page_obj %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Type</th>
+                                    <th>Capacité</th>
+                                    <th>Température</th>
+                                    <th>Créé le</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% include 'referentiels/partials/entrepot_table_rows.html' %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row mt-3">
+        <div class="col-12" id="pagination-container">
+            {% include 'referentiels/partials/pagination.html' %}
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucun entrepôt trouvé</h4>
+                {% if search %}
+                    <p>Aucun entrepôt ne correspond à votre recherche "{{ search }}".</p>
+                    <a href="{% url 'referentiels:entrepot_list' %}" class="btn btn-outline-primary">
+                        Voir tous les entrepôts
+                    </a>
+                {% else %}
+                    <p>Vous n'avez pas encore créé d'entrepôt.</p>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:entrepot_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Créer votre premier entrepôt
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/realtime-search.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new RealtimeSearch({
+        ajaxUrl: '{% url "referentiels:entrepot_search_ajax" %}',
+        entityName: 'entrepôt'
+    });
+});
+</script>
+
+<!-- Modals Import/Export -->
+{% include 'components/import_export_modals.html' %}
+
+{% endblock %}

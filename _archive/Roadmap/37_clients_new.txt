@@ -1,0 +1,66 @@
+Roadmap 37 — /clients/new (Formulaire dynamique par segment)
+============================================================
+Rôle & objectif
+---------------
+Créer un **client** via un **formulaire dynamique** adapté au **segment** (Particulier/Pro/Caviste/Export/Autre). Valider les champs obligatoires par segment, normaliser les PIIs, éviter doublons.
+
+Champs (base)
+-------------
+- Commun: `name` (ou `company`), `segment`, `country_code`, `email?`, `phone?`
+- Spécifique `business/export`: `vat_number` (TVA intracom), `billing_address?`
+- Option: multi‑contacts via `customer_contact` (v1.1)
+
+Règles & validations
+--------------------
+- `name` requis (2..120), **name_norm** (unaccent+lower+collapse spaces).
+- `email` format; `phone` normalisé **E.164** (lib de parsing, ex. libphonenumber).
+- `country_code` ISO‑3166‑1 alpha‑2 (FR, IT, ES…).
+- `vat_number` (si segment `business/export`) : valide selon pays (regex + éventuellement VIES async plus tard).
+- **Unicité** `(org, vat_number)` si fourni; sinon **détection de doublons** (see ci‑dessous).
+
+UI/UX
+-----
+- Choix **Segment** (radio ou select) → **affiche/masque** sections (TVA pour Pro/Export, contact simple pour Particulier).
+- Formatage en direct: téléphone (E.164), email lower-trim, country autocomplete.
+- Alerte “**Doublons potentiels**” (badge) en live: recherche par name_norm/email/phone à la frappe.
+- CTA: **Enregistrer** → redirige vers `/clients/:id` (fiche) + toast succès.
+
+Endpoints
+---------
+- GET `/clients/new` (form SSR) ou `/api/clients/schema?segment=business` (pour SPA)
+- POST `/clients` (form) ou `/api/clients` (JSON) → validations serveur + `row_version`
+- (Option) POST `/api/customers/check-duplicate?q=` pour suggérer des doublons
+
+Sécurité & GDPR
+---------------
+- Minimal data: ne collecter que le nécessaire par segment (privacy by design).
+- Consentement marketing (case à cocher) si email utilisé pour newsletters (stockage timestamp + ip?).
+- RBAC: `editor+` création; `viewer` interdit.
+- RLS: org boundary ; Anti‑overposting server.
+
+Déduplication (live helper)
+---------------------------
+- Générer **score**: match email exact (fort), phone (fort), name_norm+country (moyen).
+- Si score > seuil → afficher composant “fusionner ?” (v2); v1: redirection vers douteux pour **vérifier**.
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑37‑01: Segment “Pro” → TVA requise; création OK avec TVA FR valide.
+- AC‑37‑02: Segment “Particulier” → pas de TVA; email/tel optionnels.
+- AC‑37‑03: Email mal formé → 400 avec message clair; phone non E.164 → 400.
+- AC‑37‑04: Doublon (même TVA/org) → 409; pas de deuxième client créé.
+
+Robustesse (tests)
+------------------
+- R‑37‑01: Overposting champs non whitelist → 400/ignoré.
+- R‑37‑02: Pannes réseau sur VIES (si activé) → graceful fallback (ne bloque pas la création).
+- R‑37‑03: Attaques XSS via `name` → rendu échappé en liste/fiche.
+- R‑37‑04: Concurrence création même TVA → UNIQUE maintenue, 409 propre.
+
+Étapes d’implémentation
+-----------------------
+1) Migrations `customer` (+ name_norm, index).
+2) Validateurs (email, phone E.164, VAT par pays), normaliseurs (unaccent/case).
+3) UI dynamique par segment (schema‑driven).
+4) Déduplication live (suggestions); AC/tests.
+5) Doc `clients_new.md` (forms schema, validations, edge cases).

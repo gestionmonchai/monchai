@@ -1,0 +1,75 @@
+name: CI Extended
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.py'
+      - 'templates/**'
+      - 'prompt-tests/**'
+      - 'tests/**'
+      - 'package.json'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e:
+    if: contains(join(toJson(github.event.commits.*.modified)), 'templates/') || contains(join(toJson(github.event.commits.*.modified)), '.py') || contains(join(toJson(github.event.commits.*.modified)), 'tests/e2e')
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_DB: monchai, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s --health-timeout=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Install Node deps
+        run: |
+          npm install
+          npx playwright install --with-deps
+      - name: Migrate and start server
+        env:
+          DJANGO_SETTINGS_MODULE: monchai.settings
+        run: |
+          python manage.py migrate --noinput
+          python manage.py runserver 0.0.0.0:8000 &
+          for i in {1..60}; do curl -fsS -o /dev/null http://127.0.0.1:8000/ && break; sleep 1; done
+      - name: Run Playwright E2E
+        run: npx playwright test tests/e2e --reporter=html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+
+  visual:
+    if: contains(github.event.head_commit.message, '[visual]') || contains(join(toJson(github.event.commits.*.modified)), 'templates/') || contains(join(toJson(github.event.commits.*.modified)), 'tests/visual')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: |
+          npm install
+          npx playwright install --with-deps
+          npx playwright test tests/visual --reporter=line
+
+  prompts:
+    if: contains(join(toJson(github.event.commits.*.modified)), 'prompt-tests/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: |
+          npm install
+          npx promptfoo eval -c prompt-tests/promptfooconfig.yaml --max-concurrency=2

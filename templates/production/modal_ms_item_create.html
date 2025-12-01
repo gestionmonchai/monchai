@@ -1,0 +1,59 @@
+<form hx-post="{% url 'production:inventaire_ms_item_create' %}" hx-target="closest .ms-modal" hx-swap="outerHTML">
+  <div class="ms-modal card p-3">
+    <h6>Créer une matière sèche</h6>
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label">Code</label>
+        <input class="form-control" name="code" required>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Nom</label>
+        <input class="form-control" name="name" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Famille</label>
+        <input class="form-control" name="family" list="ms-family-options" placeholder="Bouchon, Bouteille, Capsule…" required>
+        <datalist id="ms-family-options">
+          {% for label in family_suggestions %}<option value="{{ label }}">{% endfor %}
+        </datalist>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">UoM</label>
+        <input class="form-control" name="uom" value="u">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Qté/colis</label>
+        <input class="form-control" name="pack_qty" type="number" step="1" value="1">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Stock mini</label>
+        <input class="form-control" name="stock_min" type="number" step="1" value="0">
+      </div>
+    </div>
+
+    <hr class="my-3">
+    <div class="mb-2"><strong>Entrée initiale (optionnel)</strong></div>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label">Emplacement</label>
+        <select class="form-select" name="location_id">
+          <option value="">—</option>
+          {% for e in emplacements %}<option value="{{ e.id }}">{{ e.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Quantité (u)</label>
+        <input class="form-control" name="qty" type="number" min="0" step="1">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Prix unitaire (€/u)</label>
+        <input class="form-control" name="unit_price_eur" type="number" min="0" step="0.0001">
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-success">Créer & Entrée</button>
+      <button type="button" class="btn btn-light" onclick="this.closest('.modal').remove()">Annuler</button>
+    </div>
+  </div>
+</form>

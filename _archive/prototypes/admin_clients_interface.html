@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+
+<html lang="fr-fr" dir="ltr">
+<head>
+<title>Sélectionnez l’objet Client à changer | Site d’administration de Django</title>
+<link rel="stylesheet" href="/static/admin/css/base.css">
+
+  <link rel="stylesheet" href="/static/admin/css/dark_mode.css">
+  <script src="/static/admin/js/theme.js" defer></script>
+
+
+  <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css">
+  <script src="/static/admin/js/nav_sidebar.js" defer></script>
+
+
+  
+  <link rel="stylesheet" href="/static/admin/css/changelists.css">
+  
+  
+    <script src="/admin/jsi18n/"></script>
+  
+  
+  
+
+
+
+
+
+<meta charset="UTF-8">
+<style>
+/* Amélioration de l'interface admin */
+.real-time-search {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.real-time-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.search-result-item:hover {
+    background-color: #f5f5f5;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+/* Badges colorés pour les référentiels */
+.admin-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.badge-rouge { background-color: #dc3545; color: white; }
+.badge-blanc { background-color: #f8f9fa; color: black; border: 1px solid #ddd; }
+.badge-rose { background-color: #e83e8c; color: white; }
+.badge-effervescent { background-color: #17a2b8; color: white; }
+
+.badge-aoc { background-color: #28a745; color: white; }
+.badge-igp { background-color: #007bff; color: white; }
+.badge-vsig { background-color: #ffc107; color: black; }
+.badge-vdf { background-color: #6c757d; color: white; }
+
+.badge-volume { background-color: #007bff; color: white; }
+.badge-poids { background-color: #28a745; color: white; }
+.badge-surface { background-color: #ffc107; color: black; }
+.badge-quantite { background-color: #6c757d; color: white; }
+
+.badge-chai { background-color: #28a745; color: white; }
+.badge-depot { background-color: #007bff; color: white; }
+.badge-boutique { background-color: #ffc107; color: black; }
+.badge-cave { background-color: #6f42c1; color: white; }
+.badge-autre { background-color: #6c757d; color: white; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Recherche temps réel pour l'admin
+    const searchInputs = document.querySelectorAll('#searchbar');
+    
+    searchInputs.forEach(function(input) {
+        let searchTimeout;
+        
+        input.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                return;
+            }
+            
+            searchTimeout = setTimeout(function() {
+                performRealTimeSearch(query, input);
+            }, 300); // Debounce de 300ms
+        });
+    });
+    
+    function performRealTimeSearch(query, inputElement) {
+        // Récupérer l'URL actuelle et ajouter le paramètre de recherche
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('q', query);
+        
+        // Effectuer la recherche via AJAX
+        fetch(currentUrl.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            // Parser la réponse et mettre à jour le tableau
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newTable = doc.querySelector('#result_list');
+            const currentTable = document.querySelector('#result_list');
+            
+            if (newTable && currentTable) {
+                currentTable.innerHTML = newTable.innerHTML;
+                
+                // Mettre à jour le compteur de résultats
+                const newCounter = doc.querySelector('.paginator');
+                const currentCounter = document.querySelector('.paginator');
+                if (newCounter && currentCounter) {
+                    currentCounter.innerHTML = newCounter.innerHTML;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la recherche:', error);
+        });
+    }
+    
+    // Amélioration de l'UX : focus automatique sur la recherche
+    const searchInput = document.querySelector('#searchbar');
+    if (searchInput) {
+        // Raccourci clavier Ctrl+K pour focus sur la recherche
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        });
+        
+        // Placeholder amélioré
+        searchInput.placeholder = 'Rechercher... (Ctrl+K)';
+    }
+});
+</script>
+
+<script src="/static/admin/js/vendor/jquery/jquery.js"></script>
+<script src="/static/admin/js/jquery.init.js"></script>
+<script src="/static/admin/js/core.js"></script>
+<script src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+<script src="/static/admin/js/actions.js"></script>
+<script src="/static/admin/js/urlify.js"></script>
+<script src="/static/admin/js/prepopulate.js"></script>
+<script src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
+<script src="/static/admin/js/filters.js" defer></script>
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/admin/css/responsive.css">
+    
+
+<meta name="robots" content="NONE,NOARCHIVE">
+</head>
+
+<body class=" app-sales model-customer change-list"
+  data-admin-utc-offset="7200">
+<a href="#content-start" class="skip-to-content-link">Passer au contenu principal</a>
+<!-- Container -->
+<div id="container">
+
+    
+    <!-- Header -->
+    
+      <header id="header">
+        <div id="branding">
+        
+<h1 id="site-name"><a href="/admin/">Mon Chai Administration</a></h1>
+
+        </div>
+        
+        
+        <div id="user-tools">
+            
+                Bienvenue,
+                <strong>Jean</strong>.
+            
+            
+                
+                    <a href="/">Voir le site</a> /
+                
+                
+                    
+                    
+                
+                
+                <a href="/admin/password_change/">Modifier le mot de passe</a> /
+                
+                <form id="logout-form" method="post" action="/admin/logout/">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="5XYsa5RR29t7Elrtvw6LS34Q2pypbVYUsAwhbEhJEf1niHn1aGJ7F3S0Yr0qlrkJ">
+                    <button type="submit">Déconnexion</button>
+                </form>
+                
+<button class="theme-toggle">
+  <div class="visually-hidden theme-label-when-auto">Changer de thème (actuellement : automatique)</div>
+  <div class="visually-hidden theme-label-when-light">Changer de thème (actuellement : clair)</div>
+  <div class="visually-hidden theme-label-when-dark">Changer de thème (actuellement : sombre)</div>
+  <svg aria-hidden="true" class="theme-icon-when-auto">
+    <use xlink:href="#icon-auto" />
+  </svg>
+  <svg aria-hidden="true" class="theme-icon-when-dark">
+    <use xlink:href="#icon-moon" />
+  </svg>
+  <svg aria-hidden="true" class="theme-icon-when-light">
+    <use xlink:href="#icon-sun" />
+  </svg>
+</button>
+
+            
+        </div>
+        
+        
+        
+      </header>
+    
+    <!-- END Header -->
+    
+      <nav aria-label="Fil d'Ariane">
+        
+<div class="breadcrumbs">
+<a href="/admin/">Accueil</a>
+&rsaquo; <a href="/admin/sales/">Gestion des ventes</a>
+&rsaquo; Clients
+</div>
+
+      </nav>
+    
+    
+
+    <div class="main" id="main">
+      
+        
+          
+<button class="sticky toggle-nav-sidebar" id="toggle-nav-sidebar" aria-label="Basculer la navigation"></button>
+<nav class="sticky" id="nav-sidebar" aria-label="Barre latérale">
+  <input type="search" id="nav-filter"
+         placeholder="Écrivez ici pour filtrer…"
+         aria-label="Filtrer les éléments de navigation">
+  
+
+
+  
+    <div class="app-billing module">
+      <table>
+        <caption>
+          <a href="/admin/billing/" class="section" title="Modèles de l’application Facturation et comptabilité">Facturation et comptabilité</a>
+        </caption>
+        
+          <tr class="model-creditnote">
+            
+              <th scope="row"><a href="/admin/billing/creditnote/">Avoirs</a></th>
+            
+
+            
+              <td><a href="/admin/billing/creditnote/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-accountmap">
+            
+              <th scope="row"><a href="/admin/billing/accountmap/">Comptes comptables</a></th>
+            
+
+            
+              <td><a href="/admin/billing/accountmap/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-invoice">
+            
+              <th scope="row"><a href="/admin/billing/invoice/">Factures</a></th>
+            
+
+            
+              <td><a href="/admin/billing/invoice/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-invoiceline">
+            
+              <th scope="row"><a href="/admin/billing/invoiceline/">Lignes de facture</a></th>
+            
+
+            
+              <td><a href="/admin/billing/invoiceline/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-payment">
+            
+              <th scope="row"><a href="/admin/billing/payment/">Paiements</a></th>
+            
+
+            
+              <td><a href="/admin/billing/payment/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-reconciliation">
+            
+              <th scope="row"><a href="/admin/billing/reconciliation/">Réconciliations</a></th>
+            
+
+            
+              <td><a href="/admin/billing/reconciliation/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-glentry">
+            
+              <th scope="row"><a href="/admin/billing/glentry/">Écritures comptables</a></th>
+            
+
+            
+              <td></td>
+            
+
+            
+          </tr>
+        
+      </table>
+    </div>
+  
+    <div class="app-sales module current-app">
+      <table>
+        <caption>
+          <a href="/admin/sales/" class="section" title="Modèles de l’application Gestion des ventes">Gestion des ventes</a>
+        </caption>
+        
+          <tr class="model-customer current-model">
+            
+              <th scope="row"><a href="/admin/sales/customer/" aria-current="page">Clients</a></th>
+            
+
+            
+              <td><a href="/admin/sales/customer/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-taxcode">
+            
+              <th scope="row"><a href="/admin/sales/taxcode/">Codes taxes</a></th>
+            
+
+            
+              <td><a href="/admin/sales/taxcode/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-order">
+            
+              <th scope="row"><a href="/admin/sales/order/">Commandes</a></th>
+            
+
+            
+              <td><a href="/admin/sales/order/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-quote">
+            
+              <th scope="row"><a href="/admin/sales/quote/">Devis</a></th>
+            
+
+            
+              <td><a href="/admin/sales/quote/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-customerpricelist">
+            
+              <th scope="row"><a href="/admin/sales/customerpricelist/">Grilles clients</a></th>
+            
+
+            
+              <td><a href="/admin/sales/customerpricelist/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-pricelist">
+            
+              <th scope="row"><a href="/admin/sales/pricelist/">Grilles tarifaires</a></th>
+            
+
+            
+              <td><a href="/admin/sales/pricelist/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-orderline">
+            
+              <th scope="row"><a href="/admin/sales/orderline/">Lignes de commande</a></th>
+            
+
+            
+              <td><a href="/admin/sales/orderline/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-quoteline">
+            
+              <th scope="row"><a href="/admin/sales/quoteline/">Lignes de devis</a></th>
+            
+
+            
+              <td><a href="/admin/sales/quoteline/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-stockreservation">
+            
+              <th scope="row"><a href="/admin/sales/stockreservation/">Réservations de stock</a></th>
+            
+
+            
+              <td><a href="/admin/sales/stockreservation/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+          <tr class="model-priceitem">
+            
+              <th scope="row"><a href="/admin/sales/priceitem/">Éléments de prix</a></th>
+            
+
+            
+              <td><a href="/admin/sales/priceitem/add/" class="addlink">Ajouter</a></td>
+            
+
+            
+          </tr>
+        
+      </table>
+    </div>
+  
+
+
+</nav>
+
+        
+      
+      <main id="content-start" class="content" tabindex="-1">
+        
+          
+        
+        <!-- Content -->
+        <div id="content" class="">
+          
+          <h1>Sélectionnez l’objet Client à changer</h1>
+          
+          
+  <div id="content-main">
+    
+        <ul class="object-tools">
+          
+            
+
+
+  
+  <li>
+    
+    <a href="/admin/sales/customer/add/" class="addlink">
+      Ajouter Client
+    </a>
+  </li>
+  
+
+
+          
+        </ul>
+    
+    
+    <div class="module filtered" id="changelist">
+      <div class="changelist-form-container">
+        
+
+<div id="toolbar"><form id="changelist-search" method="get" role="search">
+<div><!-- DIV needed for valid HTML -->
+<label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search"></label>
+<input type="text" size="40" name="q" value="" id="searchbar">
+<input type="submit" value="Recherche">
+
+
+</div>
+
+</form></div>
+
+
+        
+
+        <form id="changelist-form" method="post" novalidate><input type="hidden" name="csrfmiddlewaretoken" value="5XYsa5RR29t7Elrtvw6LS34Q2pypbVYUsAwhbEhJEf1niHn1aGJ7F3S0Yr0qlrkJ">
+        
+
+        
+          
+<div class="actions">
+  
+    
+    <label>Action : <select name="action" required>
+  <option value="" selected>---------</option>
+
+  <option value="delete_selected">Supprimer les Clients sélectionnés</option>
+
+</select></label><input type="hidden" name="select_across" value="0" class="select-across">
+    
+    
+    <button type="submit" class="button" title="Exécuter l’action sélectionnée" name="index" value="0">Envoyer</button>
+    
+    
+    
+        <span class="action-counter" data-actions-icnt="5">0 sur 5 sélectionné</span>
+        
+    
+    
+  
+</div>
+
+          
+
+
+<div class="results">
+<table id="result_list">
+<thead>
+<tr>
+
+<th scope="col" class="action-checkbox-column">
+   
+   <div class="text"><span><input type="checkbox" id="action-toggle" aria-label="Sélectionner tous les objets de cette page en vue d’une action"></span></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-legal_name sorted ascending">
+   
+       <div class="sortoptions">
+         <a class="sortremove" href="?o=" title="Enlever du tri"></a>
+         
+         <a href="?o=-1" class="toggle ascending" title="Inverser le tri"></a>
+       </div>
+   
+   <div class="text"><a href="?o=-1">Legal name</a></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-type">
+   
+   <div class="text"><a href="?o=2.1">Type</a></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-billing_city">
+   
+   <div class="text"><a href="?o=3.1">Billing city</a></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-billing_country">
+   
+   <div class="text"><a href="?o=4.1">Billing country</a></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-currency">
+   
+   <div class="text"><a href="?o=5.1">Currency</a></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-is_active">
+   
+   <div class="text"><a href="?o=6.1">Is active</a></div>
+   <div class="clear"></div>
+</th>
+<th scope="col" class="sortable column-organization">
+   
+   <div class="text"><a href="?o=7.1">Organisation</a></div>
+   <div class="clear"></div>
+</th>
+</tr>
+</thead>
+<tbody>
+
+
+<tr><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="bc301384-0dea-4ae5-9f4e-91751bcc7d21" class="action-select" aria-label="Choisir cet objet pour une action - Jean Dupont (Particulier)"></td><th class="field-legal_name"><a href="/admin/sales/customer/bc301384-0dea-4ae5-9f4e-91751bcc7d21/change/">Jean Dupont</a></th><td class="field-type">Particulier</td><td class="field-billing_city">Paris</td><td class="field-billing_country">FR</td><td class="field-currency">EUR</td><td class="field-is_active"><img src="/static/admin/img/icon-yes.svg" alt="True"></td><td class="field-organization nowrap">Domaine de Démonstration</td></tr>
+
+
+<tr><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="8ec82aa4-ea31-42e9-b394-069449ee862b" class="action-select" aria-label="Choisir cet objet pour une action - Marie Martin (Particulier)"></td><th class="field-legal_name"><a href="/admin/sales/customer/8ec82aa4-ea31-42e9-b394-069449ee862b/change/">Marie Martin</a></th><td class="field-type">Particulier</td><td class="field-billing_city">Lyon</td><td class="field-billing_country">FR</td><td class="field-currency">EUR</td><td class="field-is_active"><img src="/static/admin/img/icon-yes.svg" alt="True"></td><td class="field-organization nowrap">Domaine de Démonstration</td></tr>
+
+
+<tr><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="cbf3f5f0-7512-416e-b423-775b28f2b9df" class="action-select" aria-label="Choisir cet objet pour une action - Vins &amp; Spiritueux SARL (Professionnel)"></td><th class="field-legal_name"><a href="/admin/sales/customer/cbf3f5f0-7512-416e-b423-775b28f2b9df/change/">Vins &amp; Spiritueux SARL</a></th><td class="field-type">Professionnel</td><td class="field-billing_city">Bordeaux</td><td class="field-billing_country">FR</td><td class="field-currency">EUR</td><td class="field-is_active"><img src="/static/admin/img/icon-yes.svg" alt="True"></td><td class="field-organization nowrap">Domaine de Démonstration</td></tr>
+
+
+<tr><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="a92a153f-e0c6-4463-942b-dfac22e423ca" class="action-select" aria-label="Choisir cet objet pour une action - Weinhandel GmbH (Professionnel)"></td><th class="field-legal_name"><a href="/admin/sales/customer/a92a153f-e0c6-4463-942b-dfac22e423ca/change/">Weinhandel GmbH</a></th><td class="field-type">Professionnel</td><td class="field-billing_city">Berlin</td><td class="field-billing_country">DE</td><td class="field-currency">EUR</td><td class="field-is_active"><img src="/static/admin/img/icon-yes.svg" alt="True"></td><td class="field-organization nowrap">Domaine de Démonstration</td></tr>
+
+
+<tr><td class="action-checkbox"><input type="checkbox" name="_selected_action" value="508f53ba-33c3-4a48-9336-421ff64539d8" class="action-select" aria-label="Choisir cet objet pour une action - Wine Import Ltd (Professionnel)"></td><th class="field-legal_name"><a href="/admin/sales/customer/508f53ba-33c3-4a48-9336-421ff64539d8/change/">Wine Import Ltd</a></th><td class="field-type">Professionnel</td><td class="field-billing_city">London</td><td class="field-billing_country">GB</td><td class="field-currency">EUR</td><td class="field-is_active"><img src="/static/admin/img/icon-yes.svg" alt="True"></td><td class="field-organization nowrap">Domaine de Démonstration</td></tr>
+
+</tbody>
+</table>
+</div>
+
+
+          
+        
+        
+
+<p class="paginator">
+
+5 Clients
+
+
+</p>
+
+        </form>
+      </div>
+      
+        
+          <div id="changelist-filter">
+            <h2>Filtre</h2>
+            <div id="changelist-filter-extra-actions">
+              <h3>
+                <a href="?_facets=True" class="viewlink">Afficher les nombres</a>
+              </h3>
+              
+            </div>
+            
+<details data-filter-title="type" open>
+  <summary>
+     Par type 
+  </summary>
+  <ul>
+  
+    <li class="selected">
+    <a href="?">Tout</a></li>
+  
+    <li>
+    <a href="?type__exact=pro">Professionnel</a></li>
+  
+    <li>
+    <a href="?type__exact=part">Particulier</a></li>
+  
+  </ul>
+</details>
+
+<details data-filter-title="billing country" open>
+  <summary>
+     Par billing country 
+  </summary>
+  <ul>
+  
+    <li class="selected">
+    <a href="?">Tout</a></li>
+  
+    <li>
+    <a href="?billing_country=DE">DE</a></li>
+  
+    <li>
+    <a href="?billing_country=FR">FR</a></li>
+  
+    <li>
+    <a href="?billing_country=GB">GB</a></li>
+  
+  </ul>
+</details>
+
+<details data-filter-title="currency" open>
+  <summary>
+     Par currency 
+  </summary>
+  <ul>
+  
+    <li class="selected">
+    <a href="?">Tout</a></li>
+  
+    <li>
+    <a href="?currency=EUR">EUR</a></li>
+  
+  </ul>
+</details>
+
+<details data-filter-title="is active" open>
+  <summary>
+     Par is active 
+  </summary>
+  <ul>
+  
+    <li class="selected">
+    <a href="?">Tout</a></li>
+  
+    <li>
+    <a href="?is_active__exact=1">Oui</a></li>
+  
+    <li>
+    <a href="?is_active__exact=0">Non</a></li>
+  
+  </ul>
+</details>
+
+<details data-filter-title="Organisation" open>
+  <summary>
+     Par Organisation 
+  </summary>
+  <ul>
+  
+    <li class="selected">
+    <a href="?">Tout</a></li>
+  
+    <li>
+    <a href="?organization__id__exact=1">Vignoble des Coteaux</a></li>
+  
+    <li>
+    <a href="?organization__id__exact=2">Domaine des Vignes d&#x27;Or</a></li>
+  
+    <li>
+    <a href="?organization__id__exact=3">Domaine du Moutier</a></li>
+  
+    <li>
+    <a href="?organization__id__exact=4">Test Org</a></li>
+  
+    <li>
+    <a href="?organization__id__exact=5">Domaine de Démonstration</a></li>
+  
+  </ul>
+</details>
+
+          </div>
+        
+      
+    </div>
+  </div>
+
+          
+          <br class="clear">
+        </div>
+        <!-- END Content -->
+        <div id="footer"></div>
+      </main>
+    </div>
+</div>
+<!-- END Container -->
+
+<!-- SVGs -->
+<svg xmlns="http://www.w3.org/2000/svg" class="base-svgs">
+  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-auto"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2V4a8 8 0 1 0 0 16z"/></symbol>
+  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-moon"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol>
+  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-sun"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol>
+</svg>
+<!-- END SVGs -->
+</body>
+</html>

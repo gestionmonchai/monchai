@@ -1,0 +1,34 @@
+
+Roadmap — /ref/entrepots (Entrepôts — CRUD)
+==========================================
+Objectif
+--------
+Gérer les **entrepôts** (chai, dépôt, boutique) pour l’implantation des stocks vrac/SKU.
+
+Portée & Done
+-------------
+- CRUD complet ; contrainte **un seul primaire** par org.
+- Prévoir adresse/notes optionnelles.
+
+Endpoints
+---------
+- GET  /ref/entrepots
+- GET  /ref/entrepots/new
+- POST /ref/entrepots
+- GET  /ref/entrepots/:id/edit
+- POST /ref/entrepots/:id
+- POST /ref/entrepots/:id/delete
+
+Modèle (rappel)
+---------------
+- warehouse(org, name UNIQUE, is_primary bool unique-partielle, row_version)
+
+Validations
+-----------
+- Unicité nom/org ; si is_primary=True alors désactiver l’ancien.
+
+Tests & robustesse
+------------------
+- AC1: Deux primaires impossibles au final.
+- AC2: Suppression si utilisé en stock → refus ; proposer désactivation.
+- R1: Double submit set primary → au final un seul.

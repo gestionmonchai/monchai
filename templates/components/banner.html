@@ -1,0 +1,41 @@
+{% comment %}
+Composant Banner - Design System Mon Chai
+Roadmap 05 : success / error / info. Utilisée pour reset envoyé, invitation envoyée, etc.
+Rôles ARIA pour bannières (role="status" pour success, role="alert" pour erreurs)
+
+Usage:
+{% include 'components/banner.html' with type="success" message="Compte créé avec succès !" %}
+{% include 'components/banner.html' with type="error" message="Identifiants invalides" %}
+{% include 'components/banner.html' with type="info" message="Si un compte existe, un lien a été envoyé" %}
+{% endcomment %}
+
+{% if message %}
+    <div class="alert alert-{{ type|default:'info' }} alert-dismissible fade show mb-4" 
+         {% if type == 'error' or type == 'danger' %}
+             role="alert"
+         {% else %}
+             role="status"
+         {% endif %}>
+        
+        {% comment %}Icône selon le type{% endcomment %}
+        {% if type == 'success' %}
+            <i class="bi bi-check-circle-fill me-2"></i>
+        {% elif type == 'error' or type == 'danger' %}
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {% elif type == 'warning' %}
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+        {% else %}
+            <i class="bi bi-info-circle-fill me-2"></i>
+        {% endif %}
+        
+        <strong>{{ message }}</strong>
+        
+        {% if dismissible|default:True %}
+            <button type="button" 
+                    class="btn-close" 
+                    data-bs-dismiss="alert" 
+                    aria-label="Fermer">
+            </button>
+        {% endif %}
+    </div>
+{% endif %}

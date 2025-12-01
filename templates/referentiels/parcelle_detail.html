@@ -1,0 +1,784 @@
+{% extends 'production/base_production.html' %}
+{% load i18n humanize %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    :root {
+        --bordeaux: #7B1E22;
+        --raisin: #4E2A41;
+        --vert-dore: #A3A04A;
+        --rouge-orange: #C75A3A;
+        --jaune-dore: #E5B14C;
+        --beige: #F4EDE4;
+    }
+    
+    .parcelle-header {
+        background: linear-gradient(135deg, var(--raisin) 0%, var(--bordeaux) 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+    }
+    .parcelle-header h1 {
+        font-size: 1.75rem;
+        margin: 0;
+        font-weight: 600;
+    }
+    .parcelle-header .subtitle {
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+    
+    /* Stats Cards */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        border: 1px solid #e9ecef;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--bordeaux);
+    }
+    .stat-card .stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .stat-card .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .stat-card .stat-icon.surface { background: rgba(163, 160, 74, 0.15); color: var(--vert-dore); }
+    .stat-card .stat-icon.recolte { background: rgba(123, 30, 34, 0.15); color: var(--bordeaux); }
+    .stat-card .stat-icon.rendement { background: rgba(229, 177, 76, 0.15); color: var(--jaune-dore); }
+    .stat-card .stat-icon.age { background: rgba(78, 42, 65, 0.15); color: var(--raisin); }
+    
+    /* Action Buttons Row */
+    .actions-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    .actions-bar .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    .btn-bordeaux {
+        background: var(--bordeaux);
+        border-color: var(--bordeaux);
+        color: white;
+    }
+    .btn-bordeaux:hover {
+        background: #5a161a;
+        border-color: #5a161a;
+        color: white;
+    }
+    .btn-outline-bordeaux {
+        border-color: var(--bordeaux);
+        color: var(--bordeaux);
+    }
+    .btn-outline-bordeaux:hover {
+        background: var(--bordeaux);
+        color: white;
+    }
+    
+    /* Section Cards */
+    .section-card {
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    .section-card .section-header {
+        padding: 1rem 1.25rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .section-card .section-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--raisin);
+    }
+    .section-card .section-body {
+        padding: 1.25rem;
+    }
+    
+    /* Encépagement Table */
+    .encepagement-table {
+        width: 100%;
+    }
+    .encepagement-table th {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    .encepagement-table td {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+    }
+    .encepagement-table tr:last-child td {
+        border-bottom: none;
+    }
+    .cepage-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .cepage-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    .cepage-dot.rouge { background: var(--bordeaux); }
+    .cepage-dot.blanc { background: var(--jaune-dore); }
+    .cepage-dot.rose { background: #f8a5c2; }
+    
+    /* Progress bar for encépagement */
+    .encepagement-bar {
+        height: 24px;
+        background: #e9ecef;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+    }
+    .encepagement-bar .segment {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        min-width: 40px;
+    }
+    
+    /* Timeline for vendanges/operations */
+    .timeline-item {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .timeline-item:last-child {
+        border-bottom: none;
+    }
+    .timeline-date {
+        min-width: 80px;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .timeline-content {
+        flex: 1;
+    }
+    .timeline-content .title {
+        font-weight: 500;
+        color: #333;
+    }
+    .timeline-content .detail {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    /* Operations Grid */
+    .ops-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.5rem;
+    }
+    .ops-grid .btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+        border-radius: 8px;
+    }
+    .ops-grid .btn i {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Map */
+    .map-container {
+        height: 250px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+    .empty-state i {
+        font-size: 2.5rem;
+        opacity: 0.5;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Two column layout on desktop */
+    @media (min-width: 992px) {
+        .parcelle-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 1.5rem;
+        }
+    }
+    
+    /* Actions rapides sidebar */
+    .actions-card .btn-action {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+    }
+    .actions-card .d-grid .btn {
+        margin-bottom: 0;
+    }
+    
+    /* Visualisation des rangs */
+    .rangs-visual {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    .rangs-container {
+        display: flex;
+        gap: 2px;
+        height: 60px;
+        align-items: stretch;
+        background: #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .rang-block {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: white;
+        min-width: 20px;
+        cursor: pointer;
+        transition: transform 0.15s, filter 0.15s;
+        position: relative;
+    }
+    .rang-block:hover {
+        transform: scaleY(1.05);
+        filter: brightness(1.1);
+        z-index: 1;
+    }
+    .rang-block.rouge { background: var(--bordeaux); }
+    .rang-block.blanc { background: var(--jaune-dore); }
+    .rang-block.rose { background: #e91e63; }
+    .rang-block.undefined { background: #adb5bd; }
+    .rangs-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.75rem;
+        font-size: 0.8rem;
+    }
+    .rangs-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .rangs-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+    }
+    
+    /* Journal style amélioré */
+    .journal-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .journal-item {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        align-items: flex-start;
+    }
+    .journal-item:last-child {
+        border-bottom: none;
+    }
+    .journal-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .journal-icon.traitement { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+    .journal-icon.taille { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+    .journal-icon.travail_sol { background: rgba(139, 90, 43, 0.15); color: #8b5a2b; }
+    .journal-icon.palissage { background: rgba(0, 123, 255, 0.15); color: #007bff; }
+    .journal-icon.effeuillage { background: rgba(163, 160, 74, 0.15); color: var(--vert-dore); }
+    .journal-icon.fertilisation { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
+    .journal-icon.autre { background: rgba(78, 42, 65, 0.15); color: var(--raisin); }
+</style>
+{% endblock %}
+
+{% block production_content %}
+<div class="py-3 px-2">
+    <!-- Header -->
+    <div class="parcelle-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1><i class="bi bi-geo-alt me-2"></i>{{ parcelle.nom }}</h1>
+                <div class="subtitle mt-1">
+                    {% if parcelle.lieu_dit %}{{ parcelle.lieu_dit }} · {% endif %}
+                    {% if parcelle.commune %}{{ parcelle.commune }} · {% endif %}
+                    {% if parcelle.appellation %}{{ parcelle.appellation }}{% endif %}
+                </div>
+            </div>
+            <a href="{% url 'referentiels:parcelle_list' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i>Liste
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Row -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ parcelle.surface }} ha</div>
+                    <div class="stat-label">Surface totale</div>
+                </div>
+                <div class="stat-icon surface"><i class="bi bi-bounding-box"></i></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ total_recolte_kg|floatformat:0|default:"0" }} kg</div>
+                    <div class="stat-label">Récolte totale</div>
+                </div>
+                <div class="stat-icon recolte"><i class="bi bi-basket3"></i></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{% if rendement_moyen %}{{ rendement_moyen }} kg/ha{% else %}—{% endif %}</div>
+                    <div class="stat-label">Rendement moyen</div>
+                </div>
+                <div class="stat-icon rendement"><i class="bi bi-graph-up"></i></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{% if age_moyen_vignes %}{{ age_moyen_vignes }} ans{% else %}—{% endif %}</div>
+                    <div class="stat-label">Âge moyen vignes</div>
+                </div>
+                <div class="stat-icon age"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navigation rapide -->
+    <div class="actions-bar">
+        <a href="{% url 'production:parcelles_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list-ul me-1"></i>Toutes les parcelles
+        </a>
+        {% if user.get_active_membership.can_manage_roles %}
+        <form method="post" action="{% url 'referentiels:parcelle_delete' parcelle.pk %}" class="d-inline ms-auto"
+              onsubmit="return confirm('Supprimer définitivement cette parcelle et ses encépagements ?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>Supprimer
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <!-- Two Column Layout -->
+    <div class="parcelle-content">
+        <div class="main-column">
+            <!-- Encépagement -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="bi bi-pie-chart me-2"></i>Encépagement</h5>
+                    {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:encepagement_add' parcelle_pk=parcelle.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-plus"></i> Ajouter
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="section-body">
+                    {% if encepagements %}
+                    <!-- Visualisation des rangs -->
+                    {% if encepagements.0.rang_debut or encepagements.0.rang_fin %}
+                    <div class="rangs-visual">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted fw-bold"><i class="bi bi-list-ol me-1"></i>Disposition des rangs</small>
+                        </div>
+                        <div class="rangs-container">
+                            {% for e in encepagements %}
+                            {% if e.rang_debut and e.rang_fin %}
+                            {% with nb_rangs=e.rang_fin|add:"-"|add:e.rang_debut|add:"1" %}
+                            <div class="rang-block {{ e.cepage.couleur|default:'undefined' }}" 
+                                 style="flex: {{ nb_rangs }};"
+                                 title="{{ e.cepage.nom }}: rangs {{ e.rang_debut }} à {{ e.rang_fin }}">
+                                {{ e.rang_debut }}-{{ e.rang_fin }}
+                            </div>
+                            {% endwith %}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="rangs-legend">
+                            {% for e in encepagements %}
+                            <div class="rangs-legend-item">
+                                <div class="rangs-legend-dot" style="background: {% if e.cepage.couleur == 'rouge' %}var(--bordeaux){% elif e.cepage.couleur == 'blanc' %}var(--jaune-dore){% else %}#e91e63{% endif %};"></div>
+                                <span>{{ e.cepage.nom }}{% if e.rang_debut and e.rang_fin %} ({{ e.rang_debut }}-{{ e.rang_fin }}){% endif %}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Detail Table -->
+                    <table class="encepagement-table">
+                        <thead>
+                            <tr>
+                                <th>Cépage</th>
+                                <th class="text-center">%</th>
+                                <th class="text-center">Surface</th>
+                                <th class="text-center">Rangs</th>
+                                <th class="text-center">Planté</th>
+                                <th class="text-end">Âge</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in encepagements %}
+                            <tr>
+                                <td>
+                                    <span class="cepage-badge">
+                                        <span class="cepage-dot {{ e.cepage.couleur }}"></span>
+                                        <strong>{{ e.cepage.nom }}</strong>
+                                    </span>
+                                    {% if e.porte_greffe %}<br><small class="text-muted">{{ e.porte_greffe }}</small>{% endif %}
+                                </td>
+                                <td class="text-center"><strong>{{ e.pourcentage }}%</strong></td>
+                                <td class="text-center">{{ e.surface_ha }} ha</td>
+                                <td class="text-center">
+                                    {% if e.rang_debut and e.rang_fin %}{{ e.rang_debut }}-{{ e.rang_fin }}
+                                    {% elif e.rang_debut %}{{ e.rang_debut }}+
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td class="text-center">{% if e.annee_plantation %}{{ e.annee_plantation }}{% else %}—{% endif %}</td>
+                                <td class="text-end">{% if e.age_vignes %}{{ e.age_vignes }} ans{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="mt-2 text-muted small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Couverture : {{ encepagement_total_pct|floatformat:0 }}% · Surface plantée : {{ surface_plantee }} ha
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-pie-chart d-block"></i>
+                        <p class="mb-2">Aucun encépagement défini</p>
+                        {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:encepagement_add' parcelle_pk=parcelle.pk %}" class="btn btn-sm btn-outline-bordeaux">
+                            Définir l'encépagement
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Vendanges -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="bi bi-basket3 me-2"></i>Dernières vendanges</h5>
+                    {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'production:vendange_new' %}?parcelle={{ parcelle.pk }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-plus"></i> Ajouter
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="section-body">
+                    {% if vendanges %}
+                    {% for v in vendanges %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ v.date_reception|date:"d/m/Y" }}</div>
+                        <div class="timeline-content">
+                            <div class="title">{{ v.poids_kg }} kg</div>
+                            <div class="detail">
+                                {% if v.cuvee %}{{ v.cuvee.nom }}{% endif %}
+                                {% if v.degre_potentiel %}· {{ v.degre_potentiel }}°{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-basket d-block"></i>
+                        <p class="mb-0">Aucune vendange enregistrée</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Journal de parcelle -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="bi bi-journal-text me-2"></i>Journal de parcelle</h5>
+                    <a href="{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-plus me-1"></i>Ajouter
+                    </a>
+                </div>
+                <div class="section-body p-0">
+                    {% if operations %}
+                    <div class="journal-list p-3">
+                        {% for op in operations %}
+                        <div class="journal-item">
+                            <div class="journal-icon {{ op.type_operation|default:'autre' }}">
+                                {% if op.type_operation == 'traitement' %}<i class="bi bi-droplet"></i>
+                                {% elif op.type_operation == 'taille' %}<i class="bi bi-scissors"></i>
+                                {% elif op.type_operation == 'travail_sol' %}<i class="bi bi-tools"></i>
+                                {% elif op.type_operation == 'palissage' %}<i class="bi bi-diagram-3"></i>
+                                {% elif op.type_operation == 'effeuillage' %}<i class="bi bi-leaf"></i>
+                                {% elif op.type_operation == 'fertilisation' %}<i class="bi bi-droplet-half"></i>
+                                {% else %}<i class="bi bi-calendar-event"></i>{% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong>{{ op.get_type_operation_display|default:op.type_operation }}</strong>
+                                    <small class="text-muted">{{ op.date_operation|date:"d/m/Y" }}</small>
+                                </div>
+                                {% if op.notes %}<div class="text-muted small">{{ op.notes|truncatewords:20 }}</div>{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="border-top p-2 text-center">
+                        <a href="{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}" class="btn btn-sm btn-link">
+                            Voir tout le journal <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-journal d-block"></i>
+                        <p class="mb-2">Aucune opération enregistrée</p>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='autre' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-plus me-1"></i>Première opération
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="side-column">
+            <!-- Actions rapides (comme le menu parcelles général) -->
+            <div class="section-card actions-card mb-3">
+                <div class="section-header">
+                    <h5><i class="bi bi-lightning-charge me-2"></i>Actions rapides</h5>
+                </div>
+                <div class="section-body">
+                    <div class="d-grid gap-2">
+                        <!-- Actions principales -->
+                        <a href="{% url 'production:vendange_new' %}?parcelle={{ parcelle.pk }}" class="btn btn-warning">
+                            <i class="bi bi-basket me-2"></i>Faire une vendange
+                        </a>
+                        <a href="{% url 'referentiels:encepagement_add' parcelle_pk=parcelle.pk %}" class="btn btn-outline-success">
+                            <i class="bi bi-pie-chart me-2"></i>Gérer l'encépagement
+                        </a>
+                        
+                        <hr class="my-2">
+                        
+                        <!-- Opérations viticoles -->
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='traitement' %}" class="btn btn-outline-success btn-action">
+                            <i class="bi bi-droplet me-2"></i>Traitement phyto
+                        </a>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='taille' %}" class="btn btn-outline-success btn-action">
+                            <i class="bi bi-scissors me-2"></i>Taille
+                        </a>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='travail_sol' %}" class="btn btn-outline-success btn-action">
+                            <i class="bi bi-tools me-2"></i>Travail du sol
+                        </a>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='palissage' %}" class="btn btn-outline-success btn-action">
+                            <i class="bi bi-diagram-3 me-2"></i>Palissage / Liage
+                        </a>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='effeuillage' %}" class="btn btn-outline-success btn-action">
+                            <i class="bi bi-leaf me-2"></i>Effeuillage
+                        </a>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='fertilisation' %}" class="btn btn-outline-success btn-action">
+                            <i class="bi bi-droplet-half me-2"></i>Fertilisation
+                        </a>
+                        <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='autre' %}" class="btn btn-outline-secondary btn-action">
+                            <i class="bi bi-three-dots me-2"></i>Autre opération
+                        </a>
+                        
+                        <hr class="my-2">
+                        
+                        <!-- Liens utiles -->
+                        <a href="{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-journal-text me-2"></i>Journal complet
+                        </a>
+                        <a href="{% url 'referentiels:parcelle_update' pk=parcelle.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil me-2"></i>Modifier la parcelle
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Carte -->
+            {% if parcelle.geojson or parcelle.latitude and parcelle.longitude %}
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="bi bi-map me-2"></i>Localisation</h5>
+                </div>
+                <div class="section-body p-0">
+                    <div id="parcelle-map" class="map-container"
+                         data-lat="{{ parcelle.latitude|default_if_none:'' }}"
+                         data-lng="{{ parcelle.longitude|default_if_none:'' }}"></div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Informations -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h5><i class="bi bi-info-circle me-2"></i>Informations</h5>
+                </div>
+                <div class="section-body">
+                    <dl class="mb-0">
+                        <dt class="text-muted small">Surface</dt>
+                        <dd class="mb-2">{{ parcelle.surface }} ha ({{ surface_m2|intcomma }} m²)</dd>
+                        
+                        {% if parcelle.lieu_dit %}
+                        <dt class="text-muted small">Lieu-dit</dt>
+                        <dd class="mb-2">{{ parcelle.lieu_dit }}</dd>
+                        {% endif %}
+                        
+                        {% if parcelle.commune %}
+                        <dt class="text-muted small">Commune</dt>
+                        <dd class="mb-2">{{ parcelle.commune }}</dd>
+                        {% endif %}
+                        
+                        {% if parcelle.appellation %}
+                        <dt class="text-muted small">Appellation</dt>
+                        <dd class="mb-2">{{ parcelle.appellation }}</dd>
+                        {% endif %}
+                        
+                        {% if estimation_bouteilles %}
+                        <dt class="text-muted small">Estimation production</dt>
+                        <dd class="mb-2">~{{ estimation_bouteilles|intcomma }} btl/an</dd>
+                        {% endif %}
+                        
+                        {% if parcelle.certifications %}
+                        <dt class="text-muted small">Certifications</dt>
+                        <dd class="mb-2">
+                            {% for cert in parcelle.certifications %}
+                            <span class="badge bg-success me-1">{{ cert }}</span>
+                            {% endfor %}
+                        </dd>
+                        {% endif %}
+                        
+                        {% if parcelle.notes %}
+                        <dt class="text-muted small">Notes</dt>
+                        <dd class="mb-0">{{ parcelle.notes|linebreaksbr }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Métadonnées -->
+            <div class="section-card">
+                <div class="section-body py-2">
+                    <small class="text-muted">
+                        Créé le {{ parcelle.created_at|date:"d/m/Y" }}
+                        {% if parcelle.updated_at != parcelle.created_at %}
+                        · Modifié le {{ parcelle.updated_at|date:"d/m/Y" }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if parcelle.geojson or parcelle.latitude and parcelle.longitude %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% if parcelle.geojson %}{{ parcelle.geojson|json_script:"parcelle-geojson" }}{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var el = document.getElementById('parcelle-map');
+    if (!el) return;
+    var map = L.map(el, { zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OSM'
+    }).addTo(map);
+    var geoTag = document.getElementById('parcelle-geojson');
+    var layer;
+    if (geoTag) {
+        try {
+            var gj = JSON.parse(geoTag.textContent);
+            layer = L.geoJSON(gj, { style: { color: '#7B1E22', weight: 2, fillOpacity: 0.2 } }).addTo(map);
+            try { map.fitBounds(layer.getBounds().pad(0.2)); } catch(e) {}
+        } catch(e) {}
+    }
+    if (!layer) {
+        var lat = parseFloat(el.dataset.lat);
+        var lng = parseFloat(el.dataset.lng);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 16);
+        } else {
+            map.setView([44.0, 4.5], 6);
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+{% for cuvee in cuvees %}
+<tr class="row-click" data-href="{% url 'catalogue:cuvee_detail' cuvee.id %}">
+  <td>
+    <strong>{{ cuvee.name }}</strong>
+    {% if cuvee.code %}
+      <div class="text-muted small">{{ cuvee.code }}</div>
+    {% endif %}
+  </td>
+  <td>
+    {% if cuvee.appellation %}
+      <span class="badge bg-light text-dark">{{ cuvee.appellation.name }}</span>
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if cuvee.vintage %}
+      <span class="badge bg-light text-dark">{{ cuvee.vintage.year }}</span>
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if cuvee.default_uom %}
+      {{ cuvee.default_uom.code }}
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    <span class="badge bg-light text-dark">{{ cuvee.lots_count|default:"0" }} lot{{ cuvee.lots_count|default:"0"|pluralize:"s" }}</span>
+  </td>
+  <td>
+    {% if cuvee.is_active %}
+      <span class="badge bg-light text-dark"><i class="bi bi-check-circle me-1"></i>Actif</span>
+    {% else %}
+      <span class="badge bg-light text-dark">Inactif</span>
+    {% endif %}
+  </td>
+  <td>
+    <div class="btn-group btn-group-sm" role="group">
+      <a href="{% url 'catalogue:cuvee_detail' cuvee.id %}" class="btn btn-outline-primary" title="Voir">
+        <i class="bi bi-eye"></i>
+      </a>
+      {% if user.get_active_membership.can_edit_data %}
+      <a href="/admin/viticulture/cuvee/{{ cuvee.id }}/change/" class="btn btn-outline-secondary" title="Modifier (admin)">
+        <i class="bi bi-pencil"></i>
+      </a>
+      {% endif %}
+    </div>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="7" class="text-center py-4">
+    <i class="bi bi-wine display-4 text-muted mb-3"></i>
+    <p class="text-muted">Aucune cuvée trouvée</p>
+  </td>
+</tr>
+{% endfor %}

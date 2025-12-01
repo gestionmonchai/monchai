@@ -1,0 +1,209 @@
+Mon‑Chai — Roadmap complète “Meta base de données”
+========================================================
+Objectif : concevoir et livrer une **meta base de données** robuste, permettant le **tri** performant, la **recherche intelligente** (tolérante aux fautes, multi-langues, pertinente), et une **ergonomie** de consultation/filtrage moderne. Stack cible : Django 5.x + PostgreSQL 15+ (Redis optionnel), DRF en API si nécessaire.
+
+Structure de la roadmap (phases)
+--------------------------------
+P0. Préparation & standards (semaine 0)
+P1. Schéma “meta” & gouvernance des données
+P2. Indexation & moteur de recherche
+P3. API & Query Builder (tri/filtre/recherche)
+P4. UX de navigation (facettes, tri, pagination, sauvegarde de vues)
+P5. Performance & scalabilité (caches, MV, partitions)
+P6. Sécurité, conformité & confidentialité
+P7. Observabilité, sauvegardes & SRE light
+P8. Tests robustesse & jeux de données
+P9. Rollout, migration & formation
+
+P0 — Préparation & standards (S0)
+---------------------------------
+Résultats : conventions unifiées + base technique prête.
+- Choix et versions : Postgres 15+ ; extensions `pg_trgm`, `unaccent`, `fuzzystrmatch` ; (option) `pgvector` si besoin de similarité avancée.
+- Charte de nommage : snake_case, primary keys UUIDv7 ou bigserial, timestamps `created_at/updated_at`, soft-delete `is_active`.
+- Lint & migrations : `ruff/black`, politique de migrations (une migration par feature, squashing sur major).
+- Politique d’index : unique pour contraintes, BTree par défaut ; GIN/GIST dédiés ; index couvrants sur tri fréquent.
+- Décisions (ADR) : stockées dans `/docs/devbook/decision-log.md`.
+
+P1 — Schéma “meta” & gouvernance (S1–S2)
+----------------------------------------
+Résultats : couche **catalogue** et **dictionnaire de données**.
+1) Métamodèle
+   - `meta_entity(id, org_id, name, code, domain, is_searchable, is_listable)`
+   - `meta_attribute(id, entity_id, name, code, dtype, nullable, unit, ref_entity_id, is_facet, is_sort, is_fulltext)`
+   - `meta_relation(id, src_entity_id, dst_entity_id, rel_type, cardinality)`
+   - `meta_enum(id, attribute_id, value, label, order)` pour listes fermées.
+2) Dictionnaire humain
+   - `meta_glossary(term, definition, lang, synonyms)` + pages docs générées.
+3) Politiques
+   - Propriétaire de données par entité ; SLA de qualité ; règles de versionnement (v1,v2) et dépréciation (sunset date).
+4) Hooks qualité
+   - `meta_rule` (ex: regex SIRET, plage millésime) évaluées en batch & à l’écriture.
+
+P2 — Indexation & moteur de recherche (S2–S3)
+---------------------------------------------
+Résultats : **recherche intelligente** (tolérance fautes, accent/diacritiques, variantes) + **rang** pertinent.
+1) Postgres & FTS
+   - Extensions : `CREATE EXTENSION IF NOT EXISTS unaccent; pg_trgm;`
+   - Colonnes `tsvector` par entité pour champs `is_fulltext`; dictionnaire `simple` + `unaccent` ; support multi-langue (fr/en) via 2 colonnes tsvector si utile.
+   - Index : GIN sur `tsvector`, GIN trgm sur colonnes texte pour fuzzy LIKE/ILIKE.
+2) Stratégie de ranking
+   - Score = `ts_rank_cd(tsv, query)` + bonus exact match + bonus sur champs clés (nom, code) + pénalité archive/inactive.
+   - Fuzzy fallback : distance trigramme si FTS à 0.
+3) Synonymes & normalisation
+   - Table `meta_synonyms(entity, term, canonical)` ; pipeline : lowercase → unaccent → strip → split hyphens.
+4) Recherche hybride (option)
+   - Si besoin sémantique : `pgvector` + embeddings (batch offline) → rerank léger. **Optionnel** (activer plus tard).
+5) Ingestion & refresh
+   - Triggers ou job Celery pour rafraîchir `tsvector` et tables matérialisées après insert/update.
+
+P3 — API & Query Builder (S3–S4)
+---------------------------------
+Résultats : interface **unique** pour **tri/filtre/recherche**.
+1) Contrat GET `/api/search/`
+   - Params : `q`, `entity`, `filters[]` (clé:op:val), `sort` (clé:asc|desc), `page`, `page_size` (≤ 100), `facets[]=clé`.
+   - Opérateurs : `eq, neq, in, nin, gt, gte, lt, lte, like, ilike, between, isnull` (+ `geo` si plus tard).
+2) Query Builder serveur
+   - Traduction sécurisée → SQL paramétré (pas de SQL dynamique concat).
+   - Whitelist des champs triables/filtrables par `meta_attribute.is_sort / is_facet`.
+3) Facettes & counts
+   - `GROUP BY` sur attributs `is_facet` ; limiter top N ; “more” paginé.
+4) Pagination
+   - Offset/limit par défaut ; `keyset pagination` sur gros jeux (curseur stable sur `(sort_key,id)`).
+5) Caching
+   - Clé cache = hash des params ; TTL court (30–120s) pour facettes ; bust sur mutation.
+
+P4 — UX de navigation (S4–S5)
+-----------------------------
+Résultats : **ergonomie** moderne et productive.
+- Barre de recherche globale (Ctrl+K) avec **suggestions** (recent queries, entités, raccourcis).
+- Liste avec : chips de filtres actifs + tri multi-colonnes (priorité par ordre d’application) + **colonnes configurables**.
+- **Facettes** à gauche (accordéon), **quick-filters** (Aujourd’hui, Cette semaine, …).
+- **Sauvegarde de vues** (`saved_view`: nom, params, visibilité org/perso) + partage lien.
+- **Exports** paginés (CSV, XLSX) avec **limite** et **watermark** (org, date).
+- **Empty state** clair + **no-result suggestions** (relâcher filtre, orthographe, synonymes).
+
+P5 — Performance & scalabilité (S5–S6)
+--------------------------------------
+- Index review : `EXPLAIN ANALYZE` pour les 10 requêtes top.
+- **Matérialisées**: vues `mv_entity_list` (colonnes listables, `WHERE is_active`) + GIN tsvector → `REFRESH CONCURRENTLY` via job.
+- **Caches** : page/facette Redis ; invalidation par entité (channel).
+- **Partionnement** si volumétrie (par org_id ou date).
+- **Limiteurs**: `page_size ≤ 100`, timeout requêtes lourdes, `statement_timeout` côté DB.
+
+P6 — Sécurité, conformité & confidentialité (S5–S6)
+---------------------------------------------------
+- **RBAC** : `require_membership` + permissions fines par entité/attribut (lecture/écriture/export).
+- **Colonnes sensibles** : masquage en lecture (vue SQL dédiée) ; audit lecture (log minimal sur export).
+- **Anti-injection** : SQL paramétré ; bannir champs non whitelistés.
+- **Protection export** : quotas d’export, watermark, horodatage, journal “qui/quoi/quand”.
+
+P7 — Observabilité, sauvegardes & SRE light (S5–S6)
+---------------------------------------------------
+- **Metrics** : p95 latence search, TTFB listes, taux “no result”.
+- **Logs** : requêtes > 1s ; erreurs FTS ; timeouts ; exports.
+- **Backups** : base + fichiers ; test de **restore** trimestriel ; RPO/RTO cibles.
+- **Dashboards** : queries/min, cache hit-rate, erreurs 4xx/5xx.
+
+P8 — Tests robustesse & datasets (continu)
+------------------------------------------
+- Jeux synthétiques : 100k lignes par entité clé ; noms avec accents/apostrophes/RTLs ; doublons quasi identiques.
+- Tests automatiques (voir section “Robustesse globale” en fin de doc).
+
+P9 — Rollout & formation (S6)
+-----------------------------
+- Migration progressive : feature flags par entité.
+- Documentation utilisateurs : recherche, facettes, vues, exports.
+- Dev Book : `architecture.md` (schéma, perfs), `{feature_slug}.md` par entité intégrée au moteur.
+
+Backlog technique (évolutions)
+------------------------------
+- Requêtes sauvegardées “dynamiques” (relative date “ce mois-ci”).
+- Rerank sémantique (pgvector) pour recherches longues, logs de clics anonymisés.
+- Recherche phonétique (french soundex/metaphone) si utile.
+
+Livrables concrets par phase (résumé)
+-------------------------------------
+- P1 : Tables `meta_*`, glossary, règles qualité, ADR.
+- P2 : Extensions, colonnes `tsvector`, indexes GIN/trgm, service d’indexation + ranking.
+- P3 : Endpoint `/api/search/` + Query Builder + facettes + pagination keyset.
+- P4 : UI listes/facettes/tri + vues sauvegardées + exports.
+- P5 : MV + cache Redis + partitions (si besoin) + index review.
+- P6 : RBAC colonne/entité + masquage + garde export.
+- P7 : métriques, logs, backups, dashboards.
+- P8 : datasets synthétiques + tests robustesse.
+- P9 : plan de déploiement + docs + formation.
+
+Plan d’implémentation détaillé (checklist)
+-----------------------------------------
+1) **Extensions Postgres** : unaccent, pg_trgm (et pgvector si activée).  
+2) **Colonnes FTS** : pour entités recherchables (ex: Organization, Cuvee, Client), `tsvector` + GIN.  
+3) **Normalisation** : util `normalize(text)` (lowercase, unaccent, trim, collapse spaces).  
+4) **Synonymes** : table + import dictionnaire (fr/en).  
+5) **Query Builder** : parser sécurisé des filtres/sort ; mapping attr→colonne ; whitelist.  
+6) **Facettes** : générateur générique sur `is_facet`; limiter à 10 valeurs + “plus”.  
+7) **Tri** : multi-clés (p.ex. `-updated_at,name`), index alignés ; “tie-breaker” sur `id`.  
+8) **Pagination** : offset par défaut, keyset optionnel ; liens “suivante/précédente”.  
+9) **Exports** : stream XLSX/CSV, troncature 50k lignes, watermark.  
+10) **MV & cache** : scheduler Celery, `REFRESH CONCURRENTLY`, TTL caches, bust sélectif.  
+11) **Sécurité** : RBAC per-entité, masquage, quotas export, logs audit.  
+12) **Observabilité** : métriques de latence/succès, logs de “no result”.  
+13) **Tests** : unitaires, intégration, robustesse (voir ci-dessous).  
+14) **Docs** : Dev Book (archi, API, guide tri/recherche).
+
+Robustesse globale — liste de tests
+-----------------------------------
+R-FTS-01 Fautes de frappe : “cabernet sauviginon” → suggérer/surclasser “cabernet sauvignon”, score non nul.  
+R-FTS-02 Accents/diacritiques : “Cotes du Rhone” = “Côtes-du-Rhône”.  
+R-FTS-03 Apostrophes & tirets : “l’Hermitage”, “Cote-Rotie” → résultats corrects.  
+R-FTS-04 Multi-langue : `q="harvest"` renvoie aussi “vendanges” si synonymes configurés (optionnel).  
+R-FTS-05 Zéro résultat FTS → fallback fuzzy trigramme ; pas d’erreur 500.  
+R-FTS-06 Synonymes contradictoires : ne pas boucler ; prioriser canonical.  
+R-FAC-01 Facettes combinées (≥3 filtres) : résultats <= attendus ; pas d’explosion temps.  
+R-FAC-02 Facette sur champ rare : counts corrects ; pas d’index manquant.  
+R-SORT-01 Tri multi-colonnes (`-updated_at,name`) stable ; tie-breaker sur id.  
+R-SORT-02 Tri sur champ non indexé → refus (whitelist) ou warning ; jamais full scan > seuil.  
+R-PAG-01 Keyset pagination : aucune page doublon/manquante lors d’inserts concurrents.  
+R-PAG-02 Changement de tri invalide en cours de navigation → reset page propre.  
+R-PERF-01 P95 < 300 ms pour q vide + tri indexé sur 100k lignes (données synthétiques).  
+R-PERF-02 P95 < 600 ms pour q non vide (FTS + trigram).  
+R-CACHE-01 Cache facettes : hit-rate > 50% en navigation ; invalidation après update.  
+R-SEC-01 Injection filtre/sort (clé inconnue, op interdit) → 400 ; pas d’injection SQL.  
+R-SEC-02 Export sans droit → 403 ; export avec droit ≤ quota ; watermark ok.  
+R-SEC-03 Colonne sensible masquée en lecture ; export masque idem.  
+R-OBS-01 Logs d’erreurs enrichis (params hashés, pas de PII) ; métriques remontent.  
+R-BKD-01 Backup/Restore : dump & restore validés (read-only test).  
+R-MV-01 Refresh MV concurrent : pas de lock bloquant ; `CONCURRENTLY` OK.  
+R-MIG-01 Migration ramenant de nouvelles colonnes `is_facet/is_sort` → indexes créés ; pas de downtime notable.  
+
+Commandes & snippets utiles (exemples)
+--------------------------------------
+- Extensions :
+  SQL> CREATE EXTENSION IF NOT EXISTS unaccent;
+  SQL> CREATE EXTENSION IF NOT EXISTS pg_trgm;
+- Index tsvector :
+  ALTER TABLE cuvee ADD COLUMN search_tsv tsvector;
+  UPDATE cuvee SET search_tsv = to_tsvector('simple', unaccent(coalesce(name,'') || ' ' || coalesce(code,'')));
+  CREATE INDEX idx_cuvee_search_tsv ON cuvee USING GIN (search_tsv);
+- Index trigram :
+  CREATE INDEX idx_cuvee_name_trgm ON cuvee USING GIN (name gin_trgm_ops);
+- Query FTS :
+  SELECT id, ts_rank_cd(search_tsv, plainto_tsquery('simple', unaccent(%(q)s))) AS score
+  FROM cuvee WHERE search_tsv @@ plainto_tsquery('simple', unaccent(%(q)s))
+  ORDER BY score DESC, updated_at DESC LIMIT 50;
+
+Docs à produire (Dev Book)
+--------------------------
+- `/docs/devbook/architecture.md` : schéma meta, flux d’indexation, choix d’extensions.
+- `/docs/devbook/search-api.md` : contrat `/api/search/`, opérateurs, facettes, exemples.
+- `/docs/devbook/perf-playbook.md` : index cheat-sheet, EXPLAIN, MV, caches, quotas.
+- `/docs/devbook/data-governance.md` : dictionnaire, règles qualité, ownership, SLA.
+- `/docs/devbook/robustesse.md` : liste des tests ci-dessus + datasets synthétiques.
+
+Critères de succès (phase de sortie)
+------------------------------------
+- Latence p95 sous les seuils (PERF-01/02) ; taux “no result” < 10% sur requêtes non vides.
+- Fonctionnalités tri/filtre/recherche/facettes utilisables sans documentation lourde.
+- Exports conformes aux droits ; logs & métriques exploitables ; backups testés.
+- Dev Book à jour ; jeux de données synthétiques committés ; tests verts CI.
+
+Fin de roadmap.

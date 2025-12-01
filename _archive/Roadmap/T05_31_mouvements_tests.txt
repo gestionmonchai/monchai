@@ -1,0 +1,87 @@
+T05 — Tests /stocks/mouvements (Roadmap 31)
+===========================================
+But
+---
+Valider l’implémentation des **mouvements manuels** (in/out/adjust) sur ledger append‑only avec idempotence et verrous.
+
+Portée
+------
+- API: POST /api/stocks/mouvements ; GET liste paginée (keyset).
+- DB: stock_vrac_move, stock_vrac_balance (MAJ par trigger/job).
+- Règles: solde jamais négatif, append-only, idempotence client_token, verrous par lot.
+
+Jeu de données de départ
+------------------------
+- 1 org, 3 entrepôts (Chai, Dépôt, Boutique).
+- 5 lots (A..E) avec balances initiales (ex: A=1000 L au Chai).
+- Comptes: admin, editor, viewer.
+
+A. Smoke
+--------
+- [ ] GET liste sans 500, tri created_at desc, 50 dernières lignes affichées.
+- [ ] Form POST affiché, champs présents, contraintes visibles (type, volume, entrepôt, raison).
+
+B. Fonctionnels (happy path)
+----------------------------
+- [ ] IN 100 L sur lot A/Chai → balance +100.
+- [ ] OUT 40 L sur lot A/Chai → balance -40 (reste >= 0).
+- [ ] ADJUST -10 L sur lot A/Chai (reason=inventory_count) → balance -10.
+- [ ] Liste montre les 3 moves (ordre desc).
+
+C. Intégrité/contraintes
+------------------------
+- [ ] OUT 2000 L quand solde=1000 → 422, aucun move écrit, balance inchangée.
+- [ ] ADJUST 0 L → 400 (volume nul interdit sauf si règle contraire décidée).
+- [ ] Overposting (ajout d’un champ non-whitelist) → 400/422, champ ignoré/refusé.
+
+D. Idempotence
+--------------
+- [ ] Deux POST identiques avec **même client_token** → un seul move créé (200 sur le 2e).
+- [ ] Deux POST identiques **client_token différent** → 2 moves (comportement prévu).
+
+E. Concurrence & verrous
+------------------------
+- [ ] 2 OUT concurrents sur même lot/entrepôt qui dépassent le solde **ensemble** : un seul passe, l’autre 422.
+- [ ] 10 OUT 20 L en parallèle alors que solde=100 L → au plus 5 passent ; jamais solde < 0.
+- [ ] Lock timeout simulé → 409/423 (selon implémentation), message clair.
+
+F. Append-only & audit
+----------------------
+- [ ] Tentative DELETE/UPDATE direct sur move bloquée (RBAC/DB).
+- [ ] Audit trail contient user, timestamp, reason_code/text, client_token.
+
+G. Pagination/Keyset
+--------------------
+- [ ] Scroller N pages ne crée ni trou ni doublon (invariants par (created_at,id)).
+- [ ] Tri stable lors d’ajout de nouveaux moves entre deux requêtes (keyset correct).
+
+H. Perfs (budgets)
+------------------
+- [ ] Création move p95 < 250 ms (sans contention).
+- [ ] GET liste p95 < 500 ms pour 1M moves (index ok, keyset ok).
+- [ ] Job/trigger balance met à jour balances < 50 ms/écriture (médiane).
+
+I. Sécurité
+-----------
+- [ ] RLS: user d’une autre org ne voit/écrit rien (403/404 propre).
+- [ ] RBAC: viewer → POST interdit; editor/admin → OK.
+- [ ] XSS: reason_text rendu échappé.
+- [ ] CSRF sur POST (web).
+
+J. Observabilité
+----------------
+- [ ] Métriques incrementées: stock_moves_total{type}, stock_move_rejected_total{reason}.
+- [ ] Logs structurés (JSON) présents sur successes/erreurs.
+
+K. Reprise/Crash
+----------------
+- [ ] Crash pendant transaction → aucun move partiel, balances cohérentes.
+- [ ] Retry idempotent rejoue sans duplicat.
+
+Commandes/Auto-tests (exemples)
+-------------------------------
+- pytest::test_stocks_moves_happy_path
+- pytest::test_stocks_moves_negative_balance_blocked
+- pytest::test_stocks_moves_idempotency_token
+- pytest::test_stocks_moves_concurrency_locking
+- k6: POST moves RPS 50, check error rate < 1% et latences p95 < 250 ms.

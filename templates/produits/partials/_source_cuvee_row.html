@@ -1,0 +1,17 @@
+{% comment %} Ligne de composition cuvée (Domaine) {% endcomment %}
+<tr>
+  <td>
+    <select name="sc_cuvee" class="form-select">
+      <option value="">— Sélectionner une cuvée —</option>
+      {% for c in cuvees %}
+        <option value="{{ c.id }}" {% if selected_id and selected_id|stringformat:'s' == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </td>
+  <td>
+    <input type="number" step="0.1" min="0" max="100" name="sc_ratio" value="{{ ratio|default:'100' }}" class="form-control" />
+  </td>
+  <td class="text-end">
+    <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">Supprimer</button>
+  </td>
+</tr>

@@ -1,0 +1,80 @@
+09 — /onboarding/checklist — Onboarding & Préférences (Guide pas-à-pas pour juniors)
+====================================================================================
+Objectif: offrir une page unique listant 4 tâches initiales à compléter après la création de l’exploitation.
+Tâches: (1) infos exploitation, (2) TVA/taxes, (3) devise & formats, (4) CGV (upload/lien).
+
+Portée & Done
+--------------
+- DONE si: la page affiche 4 cartes “tâche” avec état (à faire / en cours / fait), un CTA par tâche, et un pourcentage d’avancement.
+- La checklist persiste par organisation (pas par utilisateur) et se met à jour après chaque tâche.
+
+Étape 1 — Modèle & persistance (45–60 min)
+------------------------------------------
+1.1 Table `OrgSetupChecklist` (FK Organization, JSONField `state`, DateTime `updated_at`).
+    - `state` structure minimale:
+      {
+        "company_info": "todo|doing|done",
+        "taxes": "todo|doing|done",
+        "currency_format": "todo|doing|done",
+        "terms": "todo|doing|done"
+      }
+1.2 Créer un utilitaire `get_or_create_checklist(org)` qui initialise `todo` partout.
+1.3 Signal post-Organization create: créer automatiquement la checklist.
+
+Étape 2 — Routes & garde (20–30 min)
+-------------------------------------
+2.1 URL: **GET** `/onboarding/checklist/` (require_membership).
+2.2 Redirections amicales:
+    - Si 0 tâche “done”: afficher checklist.
+    - Si tout “done”: banner “Onboarding terminé” + lien vers dashboard.
+
+Étape 3 — Vue & service (45–60 min)
+------------------------------------
+3.1 Vue lit `OrgSetupChecklist.state` et calcule:
+    - completed_count, total=4, progress = completed/total
+    - pour chaque tâche: label, description, lien vers réglage associé:
+      * company_info → /settings/billing/
+      * taxes → /settings/billing/ (section TVA)
+      * currency_format → /settings/general/
+      * terms → /settings/general/ (section CGV) ou /documents/cgv (si page dédiée)
+3.2 Action de marquage “done”:
+    - Pas de bouton “forcer done” ; l’état se met à jour quand les pages cibles sont validées (voir Étape 5).
+
+Étape 4 — Template (45 min)
+----------------------------
+4.1 4 cartes avec:
+    - Titre + description courte
+    - Badge d’état (todo/doing/done)
+    - CTA (lien) vers la page de réglage
+4.2 Barre de progression globale (0–100%). Simple, accessible (aria-valuenow).
+4.3 Bannières:
+    - “Onboarding terminé” quand 4/4 done
+    - Aide: “Vous pouvez revenir ici à tout moment depuis Paramètres → Onboarding”
+
+Étape 5 — Mise à jour automatique de la checklist (60–90 min)
+--------------------------------------------------------------
+5.1 À la validation de **/settings/billing**:
+    - Si nom d’exploitation ET adresse fiscale présents → `company_info = done`
+    - Si TVA ou statut “non assujetti” choisi → `taxes = done`
+5.2 À la validation de **/settings/general**:
+    - Si devise et formats (date, nombre) définis → `currency_format = done`
+    - Si CGV URL ou PDF uploadé → `terms = done`
+5.3 Implémenter un service `checklist_update(org, key, is_done: bool)` qui met à jour `state` et `updated_at`.
+
+Étape 6 — Permissions & sécurité (15 min)
+-----------------------------------------
+- require_membership sur la page; lecture accessible `read_only+`.
+- Les validations sur pages cibles restent `admin+` (owner/admin) pour l’édition.
+- Pas de saisie directe sur la checklist (source of truth = pages cibles).
+
+Étape 7 — Tests (45 min)
+-------------------------
+- GET checklist avec org: 200 + 4 tâches affichées + progress 0% initialement.
+- Après POST valide sur /settings/billing → company_info done +/ taxes done selon champs.
+- Après POST valide sur /settings/general → currency_format done ; terms done si CGV présent.
+- Progress = 100% quand 4/4 done; bannière visible.
+
+UX Notes
+--------
+- Icônes simples (check/clock/dot), contrastes AA, textes courts.
+- Liens CTA primaires; éviter la surcharge d’infos. Aide “Pourquoi on demande ça ?”

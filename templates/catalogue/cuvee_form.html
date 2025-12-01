@@ -1,0 +1,648 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb_items %}
+                {% if item.url %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ item.url }}" class="text-decoration-none">{{ item.name }}</a>
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="bi bi-wine me-2 text-primary"></i>{{ page_title }}
+                    </h1>
+                    <p class="text-muted mb-0">{% if is_edit %}Modifier cette cuvée{% else %}Créer une nouvelle cuvée dans votre catalogue{% endif %}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'catalogue:products_cuvees' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Retour à la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Informations de base
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        <!-- Onglets -->
+                        <ul class="nav nav-tabs" id="cuveeTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="identite-tab" data-bs-toggle="tab" data-bs-target="#identite" type="button" role="tab">Identité</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="origine-tab" data-bs-toggle="tab" data-bs-target="#origine" type="button" role="tab">Origine</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="vinif-tab" data-bs-toggle="tab" data-bs-target="#vinif" type="button" role="tab">Vinification & élevage</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="analyses-tab" data-bs-toggle="tab" data-bs-target="#analyses" type="button" role="tab">Analyses & notes</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="com-tab" data-bs-toggle="tab" data-bs-target="#commercial" type="button" role="tab">Commercialisation</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content border-start border-end border-bottom p-3" id="cuveeTabsContent">
+                            <!-- Identité -->
+                            <div class="tab-pane fade show active" id="identite" role="tabpanel" aria-labelledby="identite-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="name" class="form-label">Nom de la cuvée <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="name" name="name" value="{{ initial.name|default:'' }}" required>
+                                        <div class="form-text">Nom commercial de la cuvée</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="code" class="form-label">Code interne</label>
+                                        <input type="text" class="form-control" id="code" name="code" value="{{ initial.code|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="vintage_year" class="form-label">Millésime <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="vintage_year" name="vintage_year" list="dlVintages" min="1900" placeholder="Ex: 2024" value="{{ initial.vintage_year|default:'' }}" required>
+                                        <datalist id="dlVintages">
+                                            {% for y in suggested_vintages %}
+                                                <option value="{{ y }}">
+                                            {% endfor %}
+                                        </datalist>
+                                        <div class="form-text">Saisissable librement, suggestions sur années récentes</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="appellation_name" class="form-label">Appellation</label>
+                                        <input type="text" class="form-control" id="appellation_name" name="appellation_name" list="dlAppellations" placeholder="Saisissez ou choisissez" value="{{ initial.appellation_name|default:'' }}">
+                                        <datalist id="dlAppellations">
+                                            {% for appellation in appellations %}
+                                                <option value="{{ appellation.name }}">
+                                            {% endfor %}
+                                            {% if appellation_suggestions %}
+                                                {% for aname in appellation_suggestions %}
+                                                    <option value="{{ aname }}">
+                                                {% endfor %}
+                                            {% endif %}
+                                        </datalist>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="id_default_unit_input" class="form-label">Unité par défaut <span class="text-danger">*</span></label>
+                                        <div class="cbx cbx--sense"
+                                             data-endpoint="/referentiels/unites/?format=json"
+                                             data-allowed="volume,conditionnement,unite"
+                                             data-context='{"target_volume_l":0.75,"hints":["bouteille","vin"],"locale":"fr-FR"}'
+                                             data-sniff='{"capacity_selector":"#id_capacity_l","pack_selector":"#id_pack_count"}'>
+                                            <div class="cbx-top">
+                                                <input id="id_default_unit_input"
+                                                       class="form-control"
+                                                       type="text"
+                                                       role="combobox"
+                                                       aria-expanded="false"
+                                                       aria-autocomplete="list"
+                                                       aria-controls="id_default_unit_listbox"
+                                                       autocomplete="off"
+                                                       placeholder="Ex: 75cl bt, magnum, 6×bt…">
+                                                <ul id="id_default_unit_listbox" role="listbox" class="cbx-list" hidden></ul>
+                                            </div>
+                                            <div class="cbx-chips" aria-label="Suggestions rapides"></div>
+                                            <div class="cbx-meta">
+                                                <span id="units-help" class="form-hint">Chargement…</span>
+                                                <a class="cbx-add" href="/referentiels/unites/nouvelle/" target="_blank" rel="noopener">Créer une unité…</a>
+                                            </div>
+                                            <select id="id_default_unit" name="default_unit" hidden
+                                                    {% if initial.default_unit_id %}data-selected="{{ initial.default_unit_id }}"{% endif %}
+                                                    required>
+                                                <option value="">— Sélectionner —</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="type_vin" class="form-label">Type de vin</label>
+                                        <select class="form-select" id="type_vin" name="type_vin">
+                                            {% for val,label in type_vin_choices %}
+                                                <option value="{{ val }}" {% if initial.type_vin == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="statut" class="form-label">Statut</label>
+                                        <select class="form-select" id="statut" name="statut">
+                                            {% for val,label in statut_choices %}
+                                                <option value="{{ val }}" {% if initial.statut == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if initial.is_active is not None %}{% if initial.is_active %}checked{% endif %}{% else %}checked{% endif %}>
+                                            <label class="form-check-label" for="is_active">Cuvée active</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Origine -->
+                            <div class="tab-pane fade" id="origine" role="tabpanel" aria-labelledby="origine-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Parcelles associées</label>
+                                        <div id="parcellesList" class="vstack gap-2">
+                                            <!-- Lignes dynamiques parcelles -->
+                                        </div>
+                                        <div class="d-flex gap-2 mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="addParcelleBtn"><i class="bi bi-plus-lg me-1"></i>Ajouter une parcelle</button>
+                                            <button type="button" class="btn btn-sm btn-secondary" id="openCreateParcelleModalBtn">
+                                                <i class="bi bi-plus-circle me-1"></i>Créer une parcelle
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Indiquez les pourcentages par parcelle si connus.</div>
+                                        <!-- Templates dynamiques -->
+                                        <template id="tplParcelleSelect">
+                                            <select class="form-select" name="parcelle_id[]">
+                                                <option value="">Parcelle</option>
+                                                {% for p in parcelles %}
+                                                    <option value="{{ p.id }}">{{ p.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </template>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Cépages & proportions</label>
+                                        <div id="cepagesList" class="vstack gap-2">
+                                            <!-- Lignes dynamiques cépages -->
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addCepageBtn"><i class="bi bi-plus-lg me-1"></i>Ajouter un cépage</button>
+                                        <template id="tplCepageSelect">
+                                            <select class="form-select" name="cepage_id[]">
+                                                <option value="">Cépage</option>
+                                                {% for c in cepages %}
+                                                    <option value="{{ c.id }}">{{ c.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </template>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="date_vendange_debut" class="form-label">Début vendanges</label>
+                                        <input type="date" class="form-control" id="date_vendange_debut" name="date_vendange_debut" value="{{ initial.date_vendange_debut|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="date_vendange_fin" class="form-label">Fin vendanges</label>
+                                        <input type="date" class="form-control" id="date_vendange_fin" name="date_vendange_fin" value="{{ initial.date_vendange_fin|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="volume_total_hl" class="form-label">Volume total vinifié (hL)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="volume_total_hl" name="volume_total_hl" value="{{ initial.volume_total_hl|default:'' }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vinification & élevage -->
+                            <div class="tab-pane fade" id="vinif" role="tabpanel" aria-labelledby="vinif-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="methode_vendange" class="form-label">Méthode de vendange</label>
+                                        <select class="form-select" id="methode_vendange" name="methode_vendange">
+                                            <option value="">--</option>
+                                            {% for val,label in vendange_choices %}
+                                                <option value="{{ val }}" {% if initial.methode_vendange == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="methode_vinification" class="form-label">Vinification</label>
+                                        <select class="form-select" id="methode_vinification" name="methode_vinification">
+                                            <option value="">--</option>
+                                            {% for val,label in vinification_choices %}
+                                                <option value="{{ val }}" {% if initial.methode_vinification == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="duree_elevage_mois" class="form-label">Durée d'élevage (mois)</label>
+                                        <input type="number" min="0" class="form-control" id="duree_elevage_mois" name="duree_elevage_mois" value="{{ initial.duree_elevage_mois|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="contenant_elevage" class="form-label">Contenant d'élevage</label>
+                                        <select class="form-select" id="contenant_elevage" name="contenant_elevage">
+                                            <option value="">--</option>
+                                            {% for val,label in elevage_choices %}
+                                                <option value="{{ val }}" {% if initial.contenant_elevage == val %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Analyses & notes -->
+                            <div class="tab-pane fade" id="analyses" role="tabpanel" aria-labelledby="analyses-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="degre_alcool_potentiel" class="form-label">Alcool potentiel (%)</label>
+                                        <input type="number" step="0.01" min="0" max="20" class="form-control" id="degre_alcool_potentiel" name="degre_alcool_potentiel" value="{{ initial.degre_alcool_potentiel|default:'' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="degre_alcool_final" class="form-label">Alcool final (%)</label>
+                                        <input type="number" step="0.01" min="0" max="20" class="form-control" id="degre_alcool_final" name="degre_alcool_final" value="{{ initial.degre_alcool_final|default:'' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="sucres_residuels" class="form-label">Sucres résiduels (g/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="sucres_residuels" name="sucres_residuels" value="{{ initial.sucres_residuels|default:'' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ph" class="form-label">pH</label>
+                                        <input type="number" step="0.01" min="2.5" max="4.5" class="form-control" id="ph" name="ph" value="{{ initial.ph|default:'' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="acidite_totale" class="form-label">Acidité totale (g/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="acidite_totale" name="acidite_totale" value="{{ initial.acidite_totale|default:'' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="so2_libre" class="form-label">SO₂ libre (mg/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="so2_libre" name="so2_libre" value="{{ initial.so2_libre|default:'' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="so2_total" class="form-label">SO₂ total (mg/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="so2_total" name="so2_total" value="{{ initial.so2_total|default:'' }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="notes_internes" class="form-label">Notes internes</label>
+                                        <textarea class="form-control" id="notes_internes" name="notes_internes" rows="3">{{ initial.notes_internes|default:'' }}</textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="notes_degustation" class="form-label">Notes de dégustation</label>
+                                        <textarea class="form-control" id="notes_degustation" name="notes_degustation" rows="3">{{ initial.notes_degustation|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Commercialisation -->
+                            <div class="tab-pane fade" id="commercial" role="tabpanel" aria-labelledby="com-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="prix_revient_estime" class="form-label">Prix de revient estimé (€/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="prix_revient_estime" name="prix_revient_estime" value="{{ initial.prix_revient_estime|default:'' }}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label for="certifications" class="form-label">Certifications</label>
+                                        <input type="text" class="form-control" id="certifications" name="certifications" placeholder="Bio, HVE, ..." value="{{ initial.certifications|default:'' }}">
+                                        <div class="form-text">Séparez par des virgules</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="etiquette_image" class="form-label">Étiquette (image)</label>
+                                        <input type="file" class="form-control" id="etiquette_image" name="etiquette_image" accept="image/*">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'catalogue:products_cuvees' %}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_edit %}
+                                    <i class="bi bi-check-lg me-1"></i>Mettre à jour
+                                {% else %}
+                                    <i class="bi bi-check-lg me-1"></i>Créer la cuvée
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar d'aide -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Aide
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Nom de la cuvée</h6>
+                        <p class="small text-muted">
+                            Le nom commercial qui apparaîtra sur vos étiquettes et documents.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Appellation</h6>
+                        <p class="small text-muted">
+                            L'appellation d'origine contrôlée ou indication géographique protégée.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Millésime</h6>
+                        <p class="small text-muted">
+                            L'année de récolte des raisins utilisés pour cette cuvée.
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Unité par défaut</h6>
+                        <p class="small text-muted">
+                            Astuce : saisissez naturellement (ex. <em>75cl bt</em>, <em>magnum</em>, <em>6× bt</em>)
+                            puis utilisez les flèches ↑↓ et Entrée pour sélectionner rapidement.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Statistiques
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-primary">{{ appellations|length }}</div>
+                                <small class="text-muted">Appellations</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 mb-0 text-success">{{ vintages|length }}</div>
+                            <small class="text-muted">Millésimes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation d'entrée
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Validation du formulaire
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    
+    form.addEventListener('submit', function(e) {
+        if (!nameInput.value.trim()) {
+            e.preventDefault();
+            nameInput.classList.add('is-invalid');
+            nameInput.focus();
+        }
+    });
+
+    nameInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            this.classList.remove('is-invalid');
+        }
+    });
+
+    // Gestion dynamique des parcelles/cepages via templates
+    const parcellesList = document.getElementById('parcellesList');
+    const addParcelleBtn = document.getElementById('addParcelleBtn');
+    const cepagesList = document.getElementById('cepagesList');
+    const addCepageBtn = document.getElementById('addCepageBtn');
+
+    function cloneTemplateSelect(tplId) {
+        const tpl = document.getElementById(tplId);
+        return tpl.content.firstElementChild.cloneNode(true);
+    }
+
+    function addParcelleRow() {
+        const row = document.createElement('div');
+        row.className = 'input-group';
+        const select = cloneTemplateSelect('tplParcelleSelect');
+        const pct = document.createElement('input');
+        pct.type = 'number'; pct.step = '0.01'; pct.min = '0'; pct.max = '100';
+        pct.className = 'form-control'; pct.name = 'parcelle_pct[]'; pct.placeholder = '%';
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'btn btn-outline-danger'; btn.innerHTML = '<i class="bi bi-x"></i>';
+        btn.addEventListener('click', () => row.remove());
+        row.appendChild(select);
+        row.appendChild(pct);
+        row.appendChild(btn);
+        parcellesList.appendChild(row);
+    }
+
+    function addCepageRow() {
+        const row = document.createElement('div');
+        row.className = 'input-group';
+        const select = cloneTemplateSelect('tplCepageSelect');
+        const pct = document.createElement('input');
+        pct.type = 'number'; pct.step = '0.01'; pct.min = '0'; pct.max = '100';
+        pct.className = 'form-control'; pct.name = 'cepage_pct[]'; pct.placeholder = '%';
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'btn btn-outline-danger'; btn.innerHTML = '<i class="bi bi-x"></i>';
+        btn.addEventListener('click', () => row.remove());
+        row.appendChild(select);
+        row.appendChild(pct);
+        row.appendChild(btn);
+        cepagesList.appendChild(row);
+    }
+
+    addParcelleBtn.addEventListener('click', addParcelleRow);
+    addCepageBtn.addEventListener('click', addCepageRow);
+    // Ajouter une ligne par défaut
+    addParcelleRow();
+    addCepageRow();
+
+    // === Modal Création Parcelle ===
+    const openCreateParcelleModalBtn = document.getElementById('openCreateParcelleModalBtn');
+    const createParcelleModalEl = document.getElementById('createParcelleModal');
+    let createParcelleModal = null;
+    if (typeof bootstrap !== 'undefined' && createParcelleModalEl) {
+        createParcelleModal = new bootstrap.Modal(createParcelleModalEl);
+    }
+    const createParcelleForm = document.getElementById('createParcelleForm');
+    const createParcelleError = document.getElementById('createParcelleError');
+
+    function appendParcelleOptionToTemplate(id, name) {
+        const tpl = document.getElementById('tplParcelleSelect');
+        const selectInTpl = tpl.content.querySelector('select');
+        if (selectInTpl) {
+            const opt = document.createElement('option');
+            opt.value = id; opt.textContent = name;
+            selectInTpl.appendChild(opt);
+        }
+    }
+
+    function appendParcelleOptionToExistingSelects(id, name) {
+        document.querySelectorAll('select[name="parcelle_id[]"]').forEach(sel => {
+            const opt = new Option(name, id);
+            sel.add(opt);
+        });
+    }
+
+    function selectParcelleInLastRow(id) {
+        const selects = document.querySelectorAll('select[name="parcelle_id[]"]');
+        let target = null;
+        if (selects.length === 0) {
+            addParcelleRow();
+        }
+        const afterAddSelects = document.querySelectorAll('select[name="parcelle_id[]"]');
+        target = afterAddSelects[afterAddSelects.length - 1];
+        if (target) { target.value = id; }
+    }
+
+    if (openCreateParcelleModalBtn && createParcelleModal) {
+        openCreateParcelleModalBtn.addEventListener('click', function() {
+            createParcelleError.classList.add('d-none');
+            createParcelleForm.reset();
+            createParcelleModal.show();
+        });
+    }
+
+    if (createParcelleForm) {
+        createParcelleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createParcelleError.classList.add('d-none');
+
+            const payload = {
+                name: createParcelleForm.querySelector('[name="vp_name"]').value.trim(),
+                area_ha: createParcelleForm.querySelector('[name="vp_area_ha"]').value,
+                grape_variety_id: createParcelleForm.querySelector('[name="vp_grape_variety_id"]').value,
+                appellation_name: createParcelleForm.querySelector('[name="vp_appellation_name"]').value.trim(),
+                planting_year: createParcelleForm.querySelector('[name="vp_planting_year"]').value
+            };
+
+            // Validation minimale côté client
+            if (!payload.name || !payload.area_ha || !payload.grape_variety_id) {
+                createParcelleError.textContent = 'Veuillez remplir le nom, la surface et le cépage.';
+                createParcelleError.classList.remove('d-none');
+                return;
+            }
+
+            fetch('{% url "catalogue:create_vineyard_plot_api" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })))
+            .then(res => {
+                if (!res.ok) {
+                    const msg = res.data && res.data.error ? res.data.error : 'Erreur lors de la création';
+                    createParcelleError.textContent = msg;
+                    createParcelleError.classList.remove('d-none');
+                    return;
+                }
+                const id = res.data.id; const name = res.data.name;
+                appendParcelleOptionToTemplate(id, name);
+                appendParcelleOptionToExistingSelects(id, name);
+                selectParcelleInLastRow(id);
+                createParcelleModal.hide();
+            })
+            .catch(err => {
+                createParcelleError.textContent = 'Erreur réseau, veuillez réessayer.';
+                createParcelleError.classList.remove('d-none');
+            });
+        });
+    }
+});
+</script>
+<script src="{% static 'catalogue/cuvees_form.js' %}"></script>
+<style>
+.cbx{position:relative}
+.cbx-list{position:absolute;z-index:10;left:0;right:0;max-height:260px;overflow:auto;margin:.25rem 0;padding:0;list-style:none;border:1px solid #ddd;border-radius:.5rem;background:#fff}
+.cbx-list li{padding:.5rem .75rem;cursor:pointer;display:flex;justify-content:space-between;gap:.5rem}
+.cbx-list li[aria-selected="true"],.cbx-list li:hover{background:#f5f5f5}
+.cbx-badges{display:flex;gap:.25rem;align-items:center}
+.cbx-badge{font-size:.75rem;opacity:.7}
+.cbx-meta{display:flex;gap:.5rem;margin-top:.25rem;align-items:center}
+.cbx-add{font-size:.875rem}
+.cbx-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.chip{border:1px solid #ddd;border-radius:999px;padding:.25rem .6rem;cursor:pointer;font-size:.85rem;background:#fafafa}
+.chip:hover{background:#f1f1f1}
+</style>
+{% endblock %}
+
+{% block extra_modals %}
+<!-- Modal: Créer une parcelle -->
+<div class="modal fade" id="createParcelleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-tree me-2"></i>Créer une parcelle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger d-none" id="createParcelleError"></div>
+        <form id="createParcelleForm">
+            <div class="mb-3">
+                <label class="form-label">Nom de la parcelle <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vp_name" required>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Surface (ha) <span class="text-danger">*</span></label>
+                    <input type="number" step="0.0001" min="0.0001" class="form-control" name="vp_area_ha" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Année de plantation</label>
+                    <input type="number" min="1900" class="form-control" name="vp_planting_year" placeholder="Ex: 2005">
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label">Cépage <span class="text-danger">*</span></label>
+                    <select class="form-select" name="vp_grape_variety_id" required>
+                        <option value="">Sélectionner</option>
+                        {% for c in cepages %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Appellation</label>
+                    <input type="text" class="form-control" name="vp_appellation_name" list="dlAppellations" placeholder="Saisissez ou choisissez">
+                </div>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" form="createParcelleForm" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Créer</button>
+      </div>
+    </div>
+  </div>
+  </div>
+{% endblock %}

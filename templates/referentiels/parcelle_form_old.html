@@ -1,0 +1,685 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block production_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h1>
+                <i class="bi bi-geo-alt me-2 text-warning"></i>{{ page_title }}
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if next %}
+                    <input type="hidden" name="next" value="{{ next }}" />
+                    {% endif %}
+                    
+                    <!-- Nom de la parcelle -->
+                    <div class="mb-3">
+                        <label for="{{ form.nom.id_for_label }}" class="form-label">
+                            {{ form.nom.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.nom|add_class:"form-control" }}
+                        {% if form.nom.help_text %}
+                            <div class="form-text">{{ form.nom.help_text }}</div>
+                        {% endif %}
+                        {% if form.nom.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.nom.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Surface -->
+                    <div class="mb-3">
+                        <label for="{{ form.surface.id_for_label }}" class="form-label">
+                            {{ form.surface.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.surface|add_class:"form-control" }}
+                        {% if form.surface.help_text %}
+                            <div class="form-text">{{ form.surface.help_text }}</div>
+                        {% endif %}
+                        {% if form.surface.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.surface.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Lieu-dit -->
+                    <div class="mb-3">
+                        <label for="{{ form.lieu_dit.id_for_label }}" class="form-label">
+                            {{ form.lieu_dit.label }}
+                        </label>
+                        {{ form.lieu_dit|add_class:"form-control" }}
+                        {% if form.lieu_dit.help_text %}
+                            <div class="form-text">{{ form.lieu_dit.help_text }}</div>
+                        {% endif %}
+                        {% if form.lieu_dit.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.lieu_dit.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Commune -->
+                    <div class="mb-3">
+                        <label for="{{ form.commune.id_for_label }}" class="form-label">
+                            {{ form.commune.label }}
+                        </label>
+                        {{ form.commune|add_class:"form-control" }}
+                        {% if form.commune.help_text %}
+                            <div class="form-text">{{ form.commune.help_text }}</div>
+                        {% endif %}
+                        {% if form.commune.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.commune.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Cépages -->
+                    <div class="mb-3">
+                        <label for="{{ form.cepages.id_for_label }}" class="form-label">
+                            {{ form.cepages.label }}
+                        </label>
+                        {{ form.cepages }}
+                        {% if form.cepages.help_text %}
+                            <div class="form-text">{{ form.cepages.help_text }}</div>
+                        {% endif %}
+                        {% if form.cepages.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cepages.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Carte & GeoJSON (hidden) -->
+                    <div class="mb-3">
+                        <label class="form-label">Carte (dessinez le contour)</label>
+                        <!-- Outils de recherche cadastrale & overlays -->
+                        <div class="mb-2">
+                          <div class="row g-2 align-items-end">
+                            <div class="col-4">
+                              <label for="insee" class="form-label">INSEE</label>
+                              <input id="insee" type="text" maxlength="5" class="form-control" placeholder="35238" />
+                            </div>
+                            <div class="col-4">
+                              <label for="section" class="form-label">Section</label>
+                              <input id="section" type="text" maxlength="3" class="form-control" placeholder="AB" />
+                            </div>
+                            <div class="col-4">
+                              <label for="numero" class="form-label">Numéro</label>
+                              <div class="input-group">
+                                <input id="numero" type="text" maxlength="5" class="form-control" placeholder="0123" />
+                                <button id="btnSearchParcel" type="button" class="btn btn-outline-primary">Rechercher</button>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="togglePLU">
+                            <label class="form-check-label" for="togglePLU">Afficher PLU (zones)</label>
+                          </div>
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="toggleWMS">
+                            <label class="form-check-label" for="toggleWMS">Afficher numéros cadastraux (WMS)</label>
+                          </div>
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="toggleCadastre">
+                            <label class="form-check-label" for="toggleCadastre">Trame cadastrale (vector)</label>
+                          </div>
+                          <div class="mt-2">
+                            <label for="addrQForm" class="form-label">Adresse</label>
+                            <div class="input-group">
+                              <input id="addrQForm" type="text" class="form-control" placeholder="1 rue de Paris, Rennes" autocomplete="off">
+                              <button id="btnAddrGo" type="button" class="btn btn-outline-secondary">Rechercher</button>
+                            </div>
+                            <div id="addrResultsForm" class="list-group mt-2" style="max-height:160px;overflow:auto;"></div>
+                          </div>
+                        </div>
+                        
+                        <div id="map" style="height:420px;border-radius:8px;border:1px solid #ddd;margin:10px 0 16px;"></div>
+                        {{ form.geojson }}
+                        <div class="form-text">Cliquez une parcelle sur la carte cadastrale pour la sélectionner. Les champs et la surface se remplissent automatiquement.</div>
+                        <div id="surfBadge" class="text-muted mt-1"></div>
+                        <div id="wmsContainer" style="display:none;height:300px;margin-top:8px;">
+                          <iframe id="cadastreWmsFrame" title="Cadastre WMS" style="width:100%;height:100%;border:0;"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {{ form.notes.label }}
+                        </label>
+                        {{ form.notes|add_class:"form-control" }}
+                        {% if form.notes.help_text %}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                        {% endif %}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Conseils -->
+                    <div class="mb-3">
+                        <label for="{{ form.conseils.id_for_label }}" class="form-label">
+                            {{ form.conseils.label }}
+                        </label>
+                        {{ form.conseils|add_class:"form-control" }}
+                        {% if form.conseils.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.conseils.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Erreurs non-field -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if next %}{{ next }}{% else %}{% url 'referentiels:parcelle_list' %}{% endif %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {% if parcelle %}Modifier{% else %}Créer{% endif %} la parcelle
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aide contextuelle -->
+<div class="row justify-content-center mt-3">
+    <div class="col-md-8 col-lg-6">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-lightbulb me-2"></i>Conseils</h6>
+            <ul class="mb-0">
+                <li><strong>Nom :</strong> Utilisez un nom distinctif (ex: "Les Vignes du Haut")</li>
+                <li><strong>Surface :</strong> En hectares, minimum 0.01 ha</li>
+                <li><strong>Lieu-dit :</strong> Nom traditionnel du terrain (optionnel)</li>
+                <li><strong>Appellation :</strong> AOC, IGP ou autre classification</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@2.4.0/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+<script>window.mapboxgl = window.maplibregl;</script>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+{% if parcelle and parcelle.geojson %}
+{{ parcelle.geojson|json_script:"existing-geojson" }}
+{% endif %}
+<script>
+  (function(){
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+    const styleRaster = {
+      version: 8,
+      glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors'
+        }
+      },
+      layers: [
+        { id: 'osm', type: 'raster', source: 'osm' }
+      ]
+    };
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: styleRaster,
+      center: [2.2137, 46.2276], // France
+      zoom: 5
+    });
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.doubleClickZoom.disable();
+
+    const hiddenId = '{{ form.geojson.auto_id }}';
+    const surfaceId = '{{ form.surface.auto_id }}';
+    const communeId = '{{ form.commune.auto_id }}';
+    const $hidden = document.getElementById(hiddenId);
+    const $surface = document.getElementById('surfBadge');
+    const $surfaceInput = document.getElementById(surfaceId);
+    const $communeInput = document.getElementById(communeId);
+    const nameId = '{{ form.nom.auto_id }}';
+    const $nameInput = document.getElementById(nameId);
+
+    // UI elements
+    const $insee = document.getElementById('insee');
+    const $section = document.getElementById('section');
+    const $numero = document.getElementById('numero');
+    const $btnSearch = document.getElementById('btnSearchParcel');
+    const $togglePLU = document.getElementById('togglePLU');
+    const $toggleWMS = document.getElementById('toggleWMS');
+    const $wmsFrame = document.getElementById('cadastreWmsFrame');
+    const $wmsContainer = document.getElementById('wmsContainer');
+    const $toggleCadastre = document.getElementById('toggleCadastre');
+    const $addrQForm = document.getElementById('addrQForm');
+    const $btnAddrGo = document.getElementById('btnAddrGo');
+    const $addrResultsForm = document.getElementById('addrResultsForm');
+
+    function debounce(fn, wait){
+      let t; return function(){ const ctx=this, args=arguments; clearTimeout(t); t=setTimeout(()=>fn.apply(ctx,args), wait); };
+    }
+
+    function bboxFromMap(){
+      const b = map.getBounds();
+      return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+    }
+
+    async function searchParcel(insee, section, numero){
+      try {
+        let feat = null;
+        const url = `/api/cadastre/parcel?insee=${encodeURIComponent(insee)}&section=${encodeURIComponent(section)}&numero=${encodeURIComponent(numero)}`;
+        try {
+          const r = await fetch(url);
+          if (r.ok) {
+            const fc = await r.json();
+            feat = (fc && fc.features && fc.features[0]) || null;
+          }
+        } catch(e){}
+        if (!feat){
+          try {
+            const r2 = await fetch(url + `&fallback=1`);
+            if (r2.ok){ const fc2 = await r2.json(); feat = (fc2 && fc2.features && fc2.features[0]) || null; }
+          } catch(e){}
+        }
+        if (!feat) { return; }
+        // Update highlight with authoritative geometry
+        try { map.getSource('parcel-selected').setData({ type:'FeatureCollection', features:[feat] }); } catch(_){ }
+        if (!map.getSource('parcel')) map.addSource('parcel',{type:'geojson', data: feat});
+        else map.getSource('parcel').setData(feat);
+        if (!map.getLayer('parcel-fill')){
+          map.addLayer({id:'parcel-fill',type:'fill',source:'parcel',paint:{'fill-color':'#1a73e8','fill-opacity':0.25}});
+          map.addLayer({id:'parcel-line',type:'line',source:'parcel',paint:{'line-color':'#1a73e8','line-width':2}});
+        }
+        const bb = turf.bbox(feat);
+        map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]], {padding:20});
+        // Inject in hidden geojson
+        applyParcelGeometry(feat);
+      } catch(e){ console.error(e); }
+    }
+
+    let pluOn = false;
+    async function refreshPLU(){
+      if (!pluOn) return;
+      const insee = ($insee && $insee.value || '').trim();
+      if (!insee.match(/^\d{5}$/)) return; // besoin INSEE
+      const bbox = bboxFromMap();
+      const url = `/api/plu/zones?insee=${encodeURIComponent(insee)}&bbox=${bbox.join(',')}`;
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return;
+        const fc = await r.json();
+        if (!map.getSource('plu')) map.addSource('plu',{type:'geojson', data: fc});
+        else map.getSource('plu').setData(fc);
+        if (!map.getLayer('plu-fill')){
+          map.addLayer({id:'plu-fill',type:'fill',source:'plu',paint:{'fill-color':'#ef5350','fill-opacity':0.15}});
+          map.addLayer({id:'plu-line',type:'line',source:'plu',paint:{'line-color':'#c62828','line-width':1}});
+        }
+      } catch(e){ console.error(e); }
+    }
+
+    function removePLU(){
+      if (map.getLayer('plu-line')) map.removeLayer('plu-line');
+      if (map.getLayer('plu-fill')) map.removeLayer('plu-fill');
+      if (map.getSource('plu')) map.removeSource('plu');
+    }
+
+    let wmsOn = false;
+    function updateWMS(){
+      if (!wmsOn) return;
+      const bbox = bboxFromMap();
+      const src = `/embed/cadastre-wms?bbox=${bbox.join(',')}`;
+      try {
+        if ($wmsFrame && $wmsFrame.contentWindow) {
+          $wmsFrame.contentWindow.postMessage(JSON.stringify({type:'set-bbox', bbox}), '*');
+        } else if ($wmsFrame) {
+          $wmsFrame.src = src;
+        }
+      } catch(e){ if ($wmsFrame) $wmsFrame.src = src; }
+    }
+
+    function applyParcelGeometry(feature){
+      try {
+        if (!feature) return;
+        const gj = (feature.type === 'Feature') ? feature : { type: 'Feature', properties: {}, geometry: (feature.geometry || feature) };
+        // MAJ immédiate du champ caché + surface, même si Draw n'est pas prêt
+        try {
+          if ($hidden) $hidden.value = JSON.stringify({ type:'Feature', properties:{}, geometry: gj.geometry });
+          const area = turf.area(gj); // m²
+          const ha = area / 10000.0;
+          if ($surface) $surface.textContent = `Surface (calcul carte): ${ha.toFixed(2)} ha`;
+          if ($surfaceInput && !$surfaceInput.value) $surfaceInput.value = ha.toFixed(2);
+        } catch(_){ }
+        try { const bb = turf.bbox(gj); if (bb) map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]], {padding:20}); } catch(e){}
+      } catch(e){}
+    }
+
+    function _val(x){ return (x===0 || x==='0') ? '0' : (x||''); }
+    function setIf(el, v){ try{ if (el && _val(v) !== '') el.value = String(v); }catch(e){} }
+    function zpad4(n){ n=String(n||'').trim(); return n && n.length<4 ? n.padStart(4,'0') : n; }
+    function populateNameIfEmpty(section, numero, commune){
+      try {
+        if (!$nameInput) return;
+        const cur = ($nameInput.value||'').trim();
+        if (cur) return;
+        const parts = [];
+        if (section) parts.push(String(section).toUpperCase());
+        if (numero) parts.push(String(numero));
+        let base = parts.join(' ');
+        if (commune) base = base ? (base + ' - ' + commune) : commune;
+        if (base) { $nameInput.value = base; }
+      } catch(e){}
+    }
+    function tryFillParcelFieldsFromProps(props){
+      try {
+        const p = props || {};
+        let pid = p.id || p.ID || p.idu || p.IDU || p.idpar || p.parcelle || p.PARCELLE || '';
+        const keys = Object.keys(p);
+        const pick = (re) => {
+          for (const k of keys) { try { if (re.test(k)) { const v = p[k]; if (v !== undefined && v !== null && String(v).trim() !== '') return v; } } catch(e){} }
+          return '';
+        };
+        let insee = p.code_insee || p.CODE_INSEE || p.insee || p.INSEE || p.code_commune || p.CODE_COMMUNE || p.insee_com || p.INSEE_COM || pick(/insee/i) || pick(/code_?commune/i);
+        let section = p.section || p.SECTION || p.sect || p.SECT || pick(/^sect/i) || pick(/section/i);
+        let numero = p.numero || p.NUMERO || p.num || p.NUM || p.parcelle || p.PARCELLE || pick(/^num/i) || pick(/numero/i) || pick(/parcell/i);
+        // Try parsing from id if missing
+        if ((!insee || !section || !numero) && pid && String(pid).length >= 11){
+          const s = String(pid);
+          if (!insee && s.length >= 5) insee = s.slice(0,5);
+          if (!section && s.length >= 10) section = s.slice(8,10);
+          if (!numero && s.length >= 4) numero = s.slice(-4);
+        }
+        // Normalize
+        if (section) section = String(section).trim().toUpperCase().slice(0,3);
+        if (numero) numero = zpad4(numero);
+        // Populate quick-search inputs
+        if ($insee) setIf($insee, insee);
+        if ($section) setIf($section, section);
+        if ($numero) setIf($numero, numero);
+        // Commune name if available
+        const communeName = p.commune || p.COMMUNE || p.nom_commune || p.NOM_COMMUNE || p.nomcommune || p.NOMCOMMUNE || p.libcom || p.LIBCOM || pick(/commune/i) || pick(/libcom/i) || pick(/city|ville/i) || '';
+        if ($communeInput) setIf($communeInput, communeName);
+        populateNameIfEmpty(section, numero, communeName);
+      } catch(e){}
+    }
+
+    // Cadastre vector overlay
+    let cadOn = false;
+    let cadGeoClickBound = false;
+    async function refreshCadastre(){
+      if (!cadOn) return;
+      const bbox = bboxFromMap();
+      try {
+        const r = await fetch(`/api/cadastre/wfs?bbox=${bbox.join(',')}`);
+        if (!r.ok) return;
+        const fc = await r.json();
+        if (!map.getSource('cad')) map.addSource('cad', {type:'geojson', data: fc});
+        else map.getSource('cad').setData(fc);
+        if (!map.getLayer('cad-line')){
+          map.addLayer({id:'cad-line', type:'line', source:'cad', paint:{'line-color':'#666','line-width':1,'line-opacity':0.8}});
+          if (!cadGeoClickBound) {
+            try {
+              map.on('click','cad-line', (e) => {
+                if (!e.features || !e.features.length) return;
+                const f = e.features[0];
+                applyParcelGeometry(f);
+                tryFillParcelFieldsFromProps(f.properties || {});
+              });
+              map.on('mouseenter','cad-line', () => { try { map.getCanvas().style.cursor='pointer'; } catch(e){} });
+              map.on('mouseleave','cad-line', () => { try { map.getCanvas().style.cursor=''; } catch(e){} });
+              cadGeoClickBound = true;
+            } catch(e){}
+          }
+        }
+      } catch(e){}
+    }
+    function clearCadastre(){ try{ if (map.getLayer('cad-line')) map.removeLayer('cad-line'); if (map.getSource('cad')) map.removeSource('cad'); }catch(e){} }
+
+    // Geocode (BAN proxy)
+    async function runGeocodeForm(q){
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);
+        if (!res.ok) return;
+        const gj = await res.json();
+        const feats = gj && gj.features || [];
+        if ($addrResultsForm) $addrResultsForm.innerHTML = '';
+        feats.forEach((f, idx) => {
+          const label = (f.properties && f.properties.label) || `Résultat ${idx+1}`;
+          const a = document.createElement('a'); a.href='#'; a.className='list-group-item list-group-item-action'; a.textContent=label;
+          a.addEventListener('click', (ev)=>{ ev.preventDefault(); zoomToFeature(f); });
+          $addrResultsForm.appendChild(a);
+        });
+      } catch(e){}
+    }
+    function zoomToFeature(f){
+      try {
+        if (Array.isArray(f.bbox)){
+          const bb=f.bbox; map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]], {padding: 20}); return;
+        }
+        const g=f.geometry; if (!g) return;
+        if (g.type==='Point'){ const c=g.coordinates; map.flyTo({center:[c[0],c[1]], zoom: 17}); return; }
+        const bb=turf.bbox(f); map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]], {padding: 20});
+        try { const pr=f.properties||{}; const city = pr.commune || pr.city || pr.ville || ''; if (city && $communeInput) $communeInput.value = city; } catch(e){}
+      } catch(e){}
+    }
+
+    map.on('load', () => {
+      // UI handlers
+      // Vector cadastre (open data) for direct click-to-select
+      try {
+        if (!map.getSource('cadvt')) {
+          map.addSource('cadvt', { type:'vector', url:'https://openmaptiles.geo.data.gouv.fr/data/cadastre.json' });
+        }
+        if (!map.getLayer('cadvt-line')) {
+          map.addLayer({ id:'cadvt-line', type:'line', source:'cadvt', 'source-layer':'parcelles', paint:{ 'line-color':'#e11d48', 'line-width':1 } });
+        }
+        if (!map.getLayer('cadvt-fill')) {
+          // couche quasi transparente pour récupérer la géométrie polygonale au clic
+          map.addLayer({ id:'cadvt-fill', type:'fill', source:'cadvt', 'source-layer':'parcelles', paint:{ 'fill-color':'#000000', 'fill-opacity': 0.01 } });
+        }
+        if (!map.getLayer('cadvt-num')) {
+          map.addLayer({
+            id:'cadvt-num',
+            type:'symbol',
+            source:'cadvt',
+            'source-layer':'parcelles',
+            layout: {
+              'text-field': ['coalesce', ['get','numero'], ['get','NUMERO'], ['get','id'], ['get','ID'], ['get','idu'], ['get','IDU']],
+              'text-size': 12,
+              'text-font': ['Open Sans Regular','Arial Unicode MS Regular']
+            },
+            paint: {
+              'text-color': '#111',
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 1.5
+            }
+          });
+        }
+        try {
+          const vtOn = $toggleCadastre ? !!$toggleCadastre.checked : true;
+          map.setLayoutProperty('cadvt-line', 'visibility', vtOn ? 'visible' : 'none');
+          try { map.setLayoutProperty('cadvt-fill', 'visibility', vtOn ? 'visible' : 'none'); } catch(e){}
+          try { map.setLayoutProperty('cadvt-num', 'visibility', vtOn ? 'visible' : 'none'); } catch(e){}
+        } catch(e) {}
+        // --- Surbrillance "parcelle sélectionnée" ---
+        if (!map.getSource('parcel-selected')) {
+          map.addSource('parcel-selected', { type:'geojson', data: { type:'FeatureCollection', features: [] } });
+        }
+        if (!map.getLayer('parcel-selected-fill')) {
+          map.addLayer({
+            id:'parcel-selected-fill',
+            type:'fill',
+            source:'parcel-selected',
+            paint:{ 'fill-color':'#ffd54f', 'fill-opacity':0.35 }
+          });
+        }
+        if (!map.getLayer('parcel-selected-line')) {
+          map.addLayer({
+            id:'parcel-selected-line',
+            type:'line',
+            source:'parcel-selected',
+            paint:{ 'line-color':'#ff6f00', 'line-width':3 }
+          });
+        }
+        // place highlight below labels but above lines
+        try { map.moveLayer('parcel-selected-fill', 'cadvt-num'); } catch(e){}
+        try { map.moveLayer('parcel-selected-line', 'cadvt-num'); } catch(e){}
+        map.on('click','cadvt-fill', (e) => {
+          if (!e.features || !e.features.length) return;
+          const f = e.features[0];
+          const feat = { type:'Feature', properties: f.properties || {}, geometry: f.geometry };
+
+          // 1) highlight
+          map.getSource('parcel-selected').setData({ type:'FeatureCollection', features:[feat] });
+
+          // 2) préremplir champs + sélection côté Draw
+          tryFillParcelFieldsFromProps(f.properties || {});
+          applyParcelGeometry(feat);
+          // 3) récupérer la géométrie complète depuis l'API comme sur cadastre.data.gouv.fr
+          const i = ($insee && $insee.value || '').trim();
+          const s = ($section && $section.value || '').trim().toUpperCase();
+          const n = ($numero && $numero.value || '').trim();
+          if (i.match(/^\d{5}$/) && s && n) { searchParcel(i, s, n); }
+        });
+        map.on('mouseenter','cadvt-line', () => { try { map.getCanvas().style.cursor='pointer'; } catch(e){} });
+        map.on('mouseleave','cadvt-line', () => { try { map.getCanvas().style.cursor=''; } catch(e){} });
+        map.on('mouseenter','cadvt-fill', () => { try { map.getCanvas().style.cursor='pointer'; } catch(e){} });
+        map.on('mouseleave','cadvt-fill', () => { try { map.getCanvas().style.cursor=''; } catch(e){} });
+
+        // Fallback: clic sur la bordure
+        map.on('click','cadvt-line', (e) => {
+          let f = null;
+          try {
+            const polys = map.queryRenderedFeatures(e.point, { layers: ['cadvt-fill'] });
+            if (polys && polys.length) f = polys[0];
+          } catch(_) {}
+          if (!f) {
+            if (!e.features || !e.features.length) return;
+            f = e.features[0];
+          }
+          const feat = { type:'Feature', properties: f.properties || {}, geometry: f.geometry };
+          try { map.getSource('parcel-selected').setData({ type:'FeatureCollection', features:[feat] }); } catch(_){ }
+          tryFillParcelFieldsFromProps(f.properties || {});
+          applyParcelGeometry(feat);
+          const i = ($insee && $insee.value || '').trim();
+          const s = ($section && $section.value || '').trim().toUpperCase();
+          const n = ($numero && $numero.value || '').trim();
+          if (i.match(/^\d{5}$/) && s && n) { searchParcel(i, s, n); }
+        });
+
+        // Clic sur le numéro (symbole)
+        map.on('click','cadvt-num', (e) => {
+          let f = null;
+          try {
+            const polys = map.queryRenderedFeatures(e.point, { layers: ['cadvt-fill'] });
+            if (polys && polys.length) f = polys[0];
+          } catch(_) {}
+          if (!f) {
+            if (!e.features || !e.features.length) return;
+            f = e.features[0];
+          }
+          const feat = { type:'Feature', properties: f.properties || {}, geometry: f.geometry };
+          try { map.getSource('parcel-selected').setData({ type:'FeatureCollection', features:[feat] }); } catch(_){ }
+          tryFillParcelFieldsFromProps(f.properties || {});
+          applyParcelGeometry(feat);
+          const i = ($insee && $insee.value || '').trim();
+          const s = ($section && $section.value || '').trim().toUpperCase();
+          const n = ($numero && $numero.value || '').trim();
+          if (i.match(/^\d{5}$/) && s && n) { searchParcel(i, s, n); }
+        });
+        map.on('mouseenter','cadvt-num', () => { try { map.getCanvas().style.cursor='pointer'; } catch(e){} });
+        map.on('mouseleave','cadvt-num', () => { try { map.getCanvas().style.cursor=''; } catch(e){} });
+      } catch(e){}
+
+      if ($btnSearch) {
+        $btnSearch.addEventListener('click', () => {
+          const i = ($insee.value||'').trim();
+          const s = ($section.value||'').trim().toUpperCase();
+          const n = ($numero.value||'').trim();
+          searchParcel(i, s, n);
+        });
+      }
+      if ($togglePLU) {
+        $togglePLU.addEventListener('change', () => {
+          pluOn = !!$togglePLU.checked;
+          if (pluOn) refreshPLU(); else removePLU();
+        });
+      }
+      if ($toggleWMS) {
+        $toggleWMS.addEventListener('change', () => {
+          wmsOn = !!$toggleWMS.checked;
+          if ($wmsContainer) $wmsContainer.style.display = wmsOn ? 'block':'none';
+          if (wmsOn && $wmsFrame && !$wmsFrame.src) {
+            const bbox = bboxFromMap();
+            $wmsFrame.src = `/embed/cadastre-wms?bbox=${bbox.join(',')}`;
+          } else if (wmsOn) {
+            updateWMS();
+          } else {
+            if ($wmsFrame) $wmsFrame.src = '';
+          }
+        });
+      }
+      if ($toggleCadastre){
+        $toggleCadastre.addEventListener('change', ()=>{
+          cadOn = !!$toggleCadastre.checked;
+          if (cadOn) refreshCadastre(); else clearCadastre();
+          try { map.setLayoutProperty('cadvt-line', 'visibility', cadOn ? 'visible' : 'none'); } catch(e) {}
+          try { map.setLayoutProperty('cadvt-num', 'visibility', cadOn ? 'visible' : 'none'); } catch(e) {}
+        });
+      }
+      if ($btnAddrGo){
+        $btnAddrGo.addEventListener('click', ()=>{ const q=($addrQForm && $addrQForm.value||'').trim(); if(q.length>=3) runGeocodeForm(q); });
+      }
+      if ($addrQForm){
+        let t; $addrQForm.addEventListener('input', ()=>{ const q=($addrQForm.value||'').trim(); clearTimeout(t); t=setTimeout(()=>{ if(q.length>=3) runGeocodeForm(q); else if($addrResultsForm) $addrResultsForm.innerHTML=''; }, 250); });
+      }
+
+      // Refreshers on moveend
+      map.on('moveend', debounce(refreshPLU, 300));
+      map.on('moveend', debounce(refreshCadastre, 300));
+      map.on('moveend', debounce(updateWMS, 300));
+
+      setTimeout(() => { try { map.resize(); } catch(e){} }, 50);
+
+      // Préchargement en édition si geojson présent
+      try {
+        const el = document.getElementById('existing-geojson');
+        if (el && el.textContent) {
+          const existing = JSON.parse(el.textContent);
+          if (existing && existing.geometry) {
+            try { map.getSource('parcel-selected').setData({ type:'FeatureCollection', features:[existing] }); } catch(e){}
+            applyParcelGeometry(existing);
+          }
+        }
+      } catch(e) {}
+    });
+  })();
+</script>
+{% endblock %}

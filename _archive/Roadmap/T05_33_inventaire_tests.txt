@@ -1,0 +1,45 @@
+T05 — Tests /stocks/inventaire (Roadmap 33)
+===========================================
+But
+---
+Valider la **vue inventaire** et le **mode inventaire** (comptage physique → ajustements).
+
+A. Lecture inventaire
+---------------------
+- [ ] GET Par lot: colonnes et totaux corrects; p95 < 600 ms.
+- [ ] GET Par entrepôt: agrégats, drill‑down OK.
+- [ ] Filtres: cuvée, millésime, entrepôt, statut; Recherche q (FTS).
+
+B. Export
+---------
+- [ ] CSV/XLSX avec encodage & séparateur choisis; neutralise cellules `= + - @ \t`.
+
+C. Mode inventaire (workflow)
+-----------------------------
+- [ ] Sélection entrepôt; chargement lots/solde.
+- [ ] Saisie comptage pour 10 lots → calcul écarts immédiat.
+- [ ] Génération des **propositions** d’ajustements (delta).
+- [ ] Validation → écrit **moves adjust** par lot (reason=inventory_count); audit OK.
+- [ ] Conflit: si solde a bougé depuis la saisie → avertir et recalculer.
+
+D. Concurrence & crash
+----------------------
+- [ ] Moves en parallèle pendant la campagne: avertissements affichés; validation reste cohérente.
+- [ ] Crash pendant validation: statut par lot; mouvements déjà écrits conservés (transactions par lot).
+
+E. Perfs
+--------
+- [ ] 500k lots: pagination keyset stable; p95 < 700 ms.
+- [ ] Validation 500 ajustements: < 3 s (chunking + verrous).
+
+F. Sécurité/Permissions
+-----------------------
+- [ ] RBAC: seul editor+ valide; viewer lecture seule.
+- [ ] RLS: isolation org.
+
+Tests (suggestions)
+-------------------
+- pytest::test_inventory_view_balances_match_moves_sample
+- pytest::test_inventory_mode_adjustments_written
+- pytest::test_inventory_concurrent_changes_warning
+- k6: browse inventory & validate 500 adjustments.

@@ -1,0 +1,407 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Parcelles - Mon Chai{% endblock %}
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <h1 class="h4 mb-0">Parcelles</h1>
+    <!-- View Switcher (comme vendanges) -->
+    <div class="btn-group btn-group-sm" role="group" aria-label="Switch view">
+      <button type="button" class="btn btn-outline-primary view-switch-btn active" data-view="table">
+        <i class="bi bi-table me-1"></i>BDD
+      </button>
+      <button type="button" class="btn btn-outline-primary view-switch-btn" data-view="cards">
+        <i class="bi bi-grid-3x3-gap me-1"></i>Interventions
+      </button>
+    </div>
+  </div>
+  <a class="btn btn-primary" href="{% url 'production:parcelle_new' %}">
+    <i class="bi bi-plus-lg me-1"></i>Nouvelle parcelle
+  </a>
+</div>
+
+<!-- Filtres (visible en mode table) -->
+<div class="card mb-3 view-panel" data-view="table">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+          <i class="bi bi-chevron-down"></i> Avancé
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="clear-filters">
+          <i class="bi bi-x-circle"></i> Effacer
+        </button>
+      </div>
+    </div>
+
+    <form id="parcelles-filter-form"
+          hx-get="{% url 'production:parcelles_table' %}"
+          hx-target="#parcelles-table-content"
+          hx-swap="innerHTML"
+          hx-trigger="change, keyup delay:200ms from:input">
+      <!-- Recherche rapide -->
+      <div class="row mb-3">
+        <div class="col-md-8">
+          <div class="position-relative">
+            <input type="text" name="q" id="quick-search" value="{{ selected.q }}" placeholder="Recherche rapide (nom, commune, appellation)" class="form-control pe-5" autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+              <i class="bi bi-search text-muted" id="search-icon"></i>
+              <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                <span class="visually-hidden">Recherche...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="search-info" class="text-muted small mt-2">—</div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div id="advanced-filters" class="collapse">
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="form-label">Nom</label>
+            <input type="text" name="nom" value="{{ selected.nom }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Commune</label>
+            <input type="text" name="commune" value="{{ selected.commune }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Appellation</label>
+            <input type="text" name="appellation" value="{{ selected.appellation }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Surface min (ha)</label>
+            <input type="number" step="0.01" name="surface_min" value="{{ selected.surface_min }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Surface max (ha)</label>
+            <input type="number" step="0.01" name="surface_max" value="{{ selected.surface_max }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tri</label>
+            <select name="sort" class="form-select">
+              <option value="nom" {% if selected.sort == 'nom' %}selected{% endif %}>Nom</option>
+              <option value="nom_desc" {% if selected.sort == 'nom_desc' %}selected{% endif %}>Nom (Z-A)</option>
+              <option value="surface_desc" {% if selected.sort == 'surface_desc' %}selected{% endif %}>Surface ↓</option>
+              <option value="surface_asc" {% if selected.sort == 'surface_asc' %}selected{% endif %}>Surface ↑</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TABLE VIEW -->
+<div class="view-panel" data-view="table">
+  <div id="parcelles-table-content" hx-get="{% url 'production:parcelles_table' %}" hx-trigger="load" hx-swap="innerHTML">
+    <div class="text-center text-muted py-4">Chargement…</div>
+  </div>
+</div>
+
+<!-- CARDS/INTERVENTIONS VIEW -->
+<div class="view-panel d-none" data-view="cards">
+  <div class="row">
+    <!-- Colonne principale : grille des parcelles -->
+    <div class="col-lg-8 col-xl-9">
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <i class="bi bi-grid-3x3-gap me-2"></i>
+            <strong id="cards-count">{{ total_count }}</strong> parcelle(s)
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all">
+              <i class="bi bi-check-all me-1"></i>Tout sélectionner
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btn-deselect-all">
+              <i class="bi bi-x-lg me-1"></i>Désélectionner
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="parcelles-grid" id="parcelles-grid">
+            {% for p in parcelles %}
+            <div class="parcelle-card" 
+                 data-parcelle-id="{{ p.pk }}"
+                 data-parcelle-nom="{{ p.nom }}"
+                 data-parcelle-surface="{{ p.surface }}">
+              <div class="parcelle-card-header">
+                <span class="parcelle-name">{{ p.nom }}</span>
+                <div class="parcelle-select-indicator"><i class="bi bi-check-lg"></i></div>
+              </div>
+              <div class="parcelle-card-body">
+                <div class="parcelle-surface"><i class="bi bi-rulers me-1"></i>{{ p.surface }} ha</div>
+                {% if p.commune %}<div class="parcelle-commune text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ p.commune }}</div>{% endif %}
+                {% if p.appellation %}<div class="parcelle-appellation text-muted small"><i class="bi bi-award me-1"></i>{{ p.appellation }}</div>{% endif %}
+              </div>
+              <!-- Badges certifications -->
+              <div class="parcelle-badges">
+                {% for cert in p.certifications %}
+                  {% if cert == 'BIO' %}<span class="badge bg-success"><i class="bi bi-leaf me-1"></i>BIO</span>
+                  {% elif cert == 'HVE' %}<span class="badge bg-info"><i class="bi bi-patch-check me-1"></i>HVE</span>
+                  {% elif cert == 'TERRA_VITIS' %}<span class="badge bg-warning text-dark"><i class="bi bi-globe me-1"></i>Terra Vitis</span>
+                  {% elif cert == 'BIODYNAMIE' %}<span class="badge bg-purple"><i class="bi bi-moon-stars me-1"></i>Biodynamie</span>
+                  {% else %}<span class="badge bg-secondary">{{ cert }}</span>{% endif %}
+                {% endfor %}
+              </div>
+              <!-- Cépages -->
+              {% with cepages=p.cepages.all %}
+              {% if cepages %}
+              <div class="parcelle-cepages">
+                {% for c in cepages|slice:":3" %}<span class="badge bg-success-subtle text-success">{{ c.nom }}</span>{% endfor %}
+                {% if cepages|length > 3 %}<span class="badge bg-light text-muted">+{{ cepages|length|add:"-3" }}</span>{% endif %}
+              </div>
+              {% endif %}
+              {% endwith %}
+            </div>
+            {% empty %}
+            <div class="text-center py-5 text-muted col-12">
+              <i class="bi bi-geo-alt fs-1 mb-3 d-block"></i>
+              <p class="mb-3">Aucune parcelle enregistrée</p>
+              <a href="{% url 'production:parcelle_new' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Créer une parcelle</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panneau latéral : Actions -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card mb-3" id="selection-card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-check2-square me-2"></i>Sélection</h6></div>
+        <div class="card-body">
+          <div id="selection-empty" class="text-center text-muted py-3">
+            <i class="bi bi-hand-index d-block fs-3 mb-2"></i>Cliquez sur une parcelle
+          </div>
+          <div id="selection-info" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><strong id="selection-count">0</strong> sélectionnée(s)</span>
+              <span class="badge bg-primary"><span id="selection-surface">0</span> ha</span>
+            </div>
+            <div id="selection-list" class="small text-muted" style="max-height: 100px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3" id="actions-card">
+        <div class="card-header"><h6 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Actions rapides</h6></div>
+        <div class="card-body">
+          <div id="actions-disabled" class="text-center text-muted py-3">
+            <i class="bi bi-arrow-left-circle d-block fs-3 mb-2"></i>Sélectionnez une parcelle
+          </div>
+          <div id="actions-enabled" class="d-none">
+            <div class="d-grid gap-2">
+              <button type="button" class="btn btn-outline-success btn-action" data-op="traitement"><i class="bi bi-droplet me-2"></i>Traitement phyto</button>
+              <button type="button" class="btn btn-outline-success btn-action" data-op="taille"><i class="bi bi-scissors me-2"></i>Taille</button>
+              <button type="button" class="btn btn-outline-success btn-action" data-op="travail_sol"><i class="bi bi-tools me-2"></i>Travail du sol</button>
+              <button type="button" class="btn btn-outline-success btn-action" data-op="palissage"><i class="bi bi-diagram-3 me-2"></i>Palissage / Liage</button>
+              <button type="button" class="btn btn-outline-success btn-action" data-op="effeuillage"><i class="bi bi-leaf me-2"></i>Effeuillage</button>
+              <button type="button" class="btn btn-outline-success btn-action" data-op="fertilisation"><i class="bi bi-droplet me-2"></i>Fertilisation</button>
+              <button type="button" class="btn btn-outline-secondary btn-action" data-op="autre"><i class="bi bi-tools me-2"></i>Autre</button>
+            </div>
+            <hr class="my-3">
+            <div class="d-grid gap-2">
+              <a href="#" id="btn-vendange" class="btn btn-warning"><i class="bi bi-basket me-2"></i>Faire une vendange</a>
+              <a href="#" id="btn-voir-detail" class="btn btn-outline-secondary"><i class="bi bi-eye me-2"></i>Voir le détail</a>
+              <a href="#" id="btn-voir-journal" class="btn btn-outline-secondary"><i class="bi bi-journal-text me-2"></i>Journal parcelle</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.view-panel { transition: opacity 0.2s; }
+/* Grille des parcelles */
+.parcelles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.parcelle-card { background: white; border: 2px solid #e9ecef; border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.2s; position: relative; }
+.parcelle-card:hover { border-color: var(--wine-gold, #d4af37); box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.parcelle-card.selected { border-color: var(--wine-burgundy, #722f37); background: linear-gradient(135deg, rgba(114,47,55,0.05) 0%, rgba(212,175,55,0.05) 100%); box-shadow: 0 4px 16px rgba(114,47,55,0.2); }
+.parcelle-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+.parcelle-name { font-weight: 600; font-size: 1rem; color: var(--wine-burgundy, #722f37); line-height: 1.2; }
+.parcelle-select-indicator { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #dee2e6; display: flex; align-items: center; justify-content: center; color: transparent; transition: all 0.2s; flex-shrink: 0; }
+.parcelle-card.selected .parcelle-select-indicator { background: var(--wine-burgundy, #722f37); border-color: var(--wine-burgundy, #722f37); color: white; }
+.parcelle-surface { font-size: 0.95rem; color: #495057; font-weight: 500; }
+.parcelle-badges, .parcelle-cepages { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+.parcelle-badges .badge { font-size: 0.7rem; padding: 0.25rem 0.4rem; }
+.parcelle-cepages .badge { font-size: 0.65rem; padding: 0.2rem 0.35rem; }
+.bg-purple { background-color: #6f42c1 !important; }
+#actions-card .btn-action { text-align: left; padding: 0.5rem 0.75rem; }
+@media (max-width: 992px) { .parcelles-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+@media (max-width: 576px) { .parcelles-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; } .parcelle-card { padding: 0.75rem; } }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // === FILTRES TABLE ===
+  const advBtn = document.getElementById('toggle-advanced-search');
+  const clearBtn = document.getElementById('clear-filters');
+  const adv = document.getElementById('advanced-filters');
+  const quick = document.getElementById('quick-search');
+  const spinner = document.getElementById('search-spinner');
+  const icon = document.getElementById('search-icon');
+  const info = document.getElementById('search-info');
+  const form = document.getElementById('parcelles-filter-form');
+
+  function setLoading(isLoading) {
+    if (spinner && icon) {
+      spinner.classList.toggle('d-none', !isLoading);
+      icon.classList.toggle('d-none', isLoading);
+    }
+  }
+
+  if (advBtn && adv) {
+    advBtn.addEventListener('click', function() {
+      adv.classList.toggle('show');
+      const i = advBtn.querySelector('i');
+      if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    });
+  }
+
+  if (clearBtn && form) {
+    clearBtn.addEventListener('click', function() {
+      form.reset();
+      form.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  if (quick) quick.addEventListener('input', function() { setLoading(true); });
+
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target && evt.target.id === 'parcelles-table-content') {
+      setLoading(false);
+      const meta = document.getElementById('parcelles-table-meta');
+      if (meta && info) {
+        const total = meta.getAttribute('data-total') || '0';
+        info.textContent = total + ' parcelle' + (parseInt(total) > 1 ? 's' : '');
+      }
+    }
+  });
+
+  // === VIEW SWITCHER (comme vendanges) ===
+  const viewButtons = document.querySelectorAll('.view-switch-btn');
+  const viewPanels = document.querySelectorAll('.view-panel');
+  const savedView = localStorage.getItem('parcelles_view') || 'table';
+  switchToView(savedView);
+
+  viewButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetView = this.getAttribute('data-view');
+      switchToView(targetView);
+      localStorage.setItem('parcelles_view', targetView);
+    });
+  });
+
+  function switchToView(viewName) {
+    viewButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-view') === viewName));
+    viewPanels.forEach(panel => panel.classList.toggle('d-none', panel.getAttribute('data-view') !== viewName));
+  }
+
+  // === SELECTION CARTES ===
+  let selectedParcelles = new Map();
+  const selectionEmpty = document.getElementById('selection-empty');
+  const selectionInfo = document.getElementById('selection-info');
+  const selectionCount = document.getElementById('selection-count');
+  const selectionSurface = document.getElementById('selection-surface');
+  const selectionList = document.getElementById('selection-list');
+  const actionsDisabled = document.getElementById('actions-disabled');
+  const actionsEnabled = document.getElementById('actions-enabled');
+  const btnSelectAll = document.getElementById('btn-select-all');
+  const btnDeselectAll = document.getElementById('btn-deselect-all');
+  const btnVendange = document.getElementById('btn-vendange');
+  const btnVoirDetail = document.getElementById('btn-voir-detail');
+  const btnVoirJournal = document.getElementById('btn-voir-journal');
+
+  document.querySelectorAll('.parcelle-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const id = this.dataset.parcelleId;
+      const nom = this.dataset.parcelleNom;
+      const surface = parseFloat(this.dataset.parcelleSurface) || 0;
+      if (selectedParcelles.has(id)) {
+        selectedParcelles.delete(id);
+        this.classList.remove('selected');
+      } else {
+        selectedParcelles.set(id, { nom, surface, element: this });
+        this.classList.add('selected');
+      }
+      updateSelectionUI();
+    });
+  });
+
+  function updateSelectionUI() {
+    const count = selectedParcelles.size;
+    const totalSurface = Array.from(selectedParcelles.values()).reduce((sum, p) => sum + p.surface, 0);
+    
+    if (count === 0) {
+      if (selectionEmpty) selectionEmpty.classList.remove('d-none');
+      if (selectionInfo) selectionInfo.classList.add('d-none');
+      if (actionsDisabled) actionsDisabled.classList.remove('d-none');
+      if (actionsEnabled) actionsEnabled.classList.add('d-none');
+      if (btnDeselectAll) btnDeselectAll.classList.add('d-none');
+    } else {
+      if (selectionEmpty) selectionEmpty.classList.add('d-none');
+      if (selectionInfo) selectionInfo.classList.remove('d-none');
+      if (actionsDisabled) actionsDisabled.classList.add('d-none');
+      if (actionsEnabled) actionsEnabled.classList.remove('d-none');
+      if (btnDeselectAll) btnDeselectAll.classList.remove('d-none');
+      if (selectionCount) selectionCount.textContent = count;
+      if (selectionSurface) selectionSurface.textContent = totalSurface.toFixed(2);
+      if (selectionList) selectionList.innerHTML = Array.from(selectedParcelles.values()).map(p => p.nom).join(', ');
+      
+      if (count === 1) {
+        const firstId = Array.from(selectedParcelles.keys())[0];
+        if (btnVendange) btnVendange.href = `/production/vendanges/nouveau/?parcelle=${firstId}`;
+        if (btnVoirDetail) { btnVoirDetail.href = `/production/parcelles/${firstId}/`; btnVoirDetail.classList.remove('disabled'); }
+        if (btnVoirJournal) { btnVoirJournal.href = `/viticulture/parcelles/${firstId}/journal/`; btnVoirJournal.classList.remove('disabled'); }
+      } else {
+        if (btnVoirDetail) btnVoirDetail.classList.add('disabled');
+        if (btnVoirJournal) btnVoirJournal.classList.add('disabled');
+      }
+    }
+  }
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', function() {
+      document.querySelectorAll('.parcelle-card').forEach(card => {
+        const id = card.dataset.parcelleId;
+        if (!selectedParcelles.has(id)) {
+          selectedParcelles.set(id, { nom: card.dataset.parcelleNom, surface: parseFloat(card.dataset.parcelleSurface) || 0, element: card });
+          card.classList.add('selected');
+        }
+      });
+      updateSelectionUI();
+    });
+  }
+
+  if (btnDeselectAll) {
+    btnDeselectAll.addEventListener('click', function() {
+      selectedParcelles.forEach((val) => val.element.classList.remove('selected'));
+      selectedParcelles.clear();
+      updateSelectionUI();
+    });
+  }
+
+  // Actions opérations
+  document.querySelectorAll('.btn-action').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const op = this.dataset.op;
+      const ids = Array.from(selectedParcelles.keys());
+      if (ids.length === 0) { alert('Sélectionnez une parcelle'); return; }
+      if (ids.length === 1) {
+        window.location.href = `/viticulture/parcelles/${ids[0]}/operation/${op}/`;
+      } else {
+        alert(`Opération "${op}" sur ${ids.length} parcelles (fonctionnalité groupée à venir)`);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

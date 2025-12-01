@@ -1,0 +1,56 @@
+{% load widget_tweaks %}
+{% for entrepot in page_obj %}
+    <tr>
+        <td>
+            <a href="{% url 'referentiels:entrepot_detail' entrepot.pk %}" 
+               class="text-decoration-none fw-semibold">
+                {{ entrepot.nom }}
+            </a>
+        </td>
+        <td>
+            <span class="badge bg-{% if entrepot.type_entrepot == 'chai' %}primary{% elif entrepot.type_entrepot == 'cave' %}secondary{% elif entrepot.type_entrepot == 'boutique' %}success{% else %}info{% endif %}">
+                {{ entrepot.get_type_entrepot_display }}
+            </span>
+        </td>
+        <td class="text-muted">
+            {% if entrepot.capacite %}
+                {{ entrepot.capacite }} bouteilles
+            {% else %}
+                -
+            {% endif %}
+        </td>
+        <td class="text-muted">
+            {% if entrepot.temperature_min and entrepot.temperature_max %}
+                {{ entrepot.temperature_min }}°C - {{ entrepot.temperature_max }}°C
+            {% else %}
+                -
+            {% endif %}
+        </td>
+        <td class="text-muted">
+            {{ entrepot.created_at|date:"d/m/Y" }}
+        </td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'referentiels:entrepot_detail' entrepot.pk %}" 
+                   class="btn btn-outline-primary" 
+                   title="Voir">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:entrepot_update' entrepot.pk %}" 
+                       class="btn btn-outline-secondary" 
+                       title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+            <i class="bi bi-search fs-1 mb-2"></i>
+            <div>Aucun entrepôt trouvé</div>
+        </td>
+    </tr>
+{% endfor %}

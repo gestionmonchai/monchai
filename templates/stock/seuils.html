@@ -1,0 +1,503 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block extrahead %}
+<link href="{% static 'css/stock.css' %}" rel="stylesheet">
+<style>
+.threshold-card {
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+}
+.threshold-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.scope-global { border-left-color: #6f42c1; }
+.scope-cuvee { border-left-color: #0d6efd; }
+.scope-lot { border-left-color: #198754; }
+.scope-warehouse { border-left-color: #fd7e14; }
+
+.scope-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+.badge-global { background-color: #6f42c1; }
+.badge-cuvee { background-color: #0d6efd; }
+.badge-lot { background-color: #198754; }
+.badge-warehouse { background-color: #fd7e14; }
+
+.priority-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-sliders text-primary me-2"></i>
+                    Seuils de Stock
+                </h1>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createThresholdModal">
+                    <i class="bi bi-plus-circle me-1"></i>Nouveau seuil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations sur les priorités -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="priority-info p-4">
+                <h5 class="mb-3">
+                    <i class="bi bi-info-circle me-2"></i>Ordre de priorité des seuils
+                </h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge badge-lot me-2">1</span>
+                            <strong>Lot spécifique</strong>
+                        </div>
+                        <small>Seuil défini pour un lot précis</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge badge-cuvee me-2">2</span>
+                            <strong>Cuvée</strong>
+                        </div>
+                        <small>Seuil pour tous les lots d'une cuvée</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge badge-warehouse me-2">3</span>
+                            <strong>Entrepôt</strong>
+                        </div>
+                        <small>Seuil pour tous les stocks d'un entrepôt</small>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge badge-global me-2">4</span>
+                            <strong>Global</strong>
+                        </div>
+                        <small>Seuil par défaut pour tous les stocks</small>
+                    </div>
+                </div>
+                <hr class="my-3">
+                <p class="mb-0">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    <strong>Le système applique automatiquement le seuil le plus spécifique disponible.</strong>
+                    Par exemple, si un lot a un seuil spécifique, il sera utilisé même si des seuils cuvée, entrepôt ou global existent.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des seuils -->
+    <div class="row">
+        {% if thresholds %}
+            {% regroup thresholds by scope as scope_groups %}
+            {% for scope_group in scope_groups %}
+            <div class="col-12 mb-4">
+                <h4 class="mb-3">
+                    <span class="badge scope-badge badge-{{ scope_group.grouper }}">
+                        {% if scope_group.grouper == 'global' %}Global
+                        {% elif scope_group.grouper == 'cuvee' %}Cuvées
+                        {% elif scope_group.grouper == 'lot' %}Lots
+                        {% elif scope_group.grouper == 'warehouse' %}Entrepôts
+                        {% endif %}
+                    </span>
+                </h4>
+                
+                <div class="row">
+                    {% for threshold in scope_group.list %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card threshold-card scope-{{ threshold.scope }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">
+                                        {% if threshold.scope == 'global' %}
+                                            <i class="bi bi-globe me-1"></i>Seuil global
+                                        {% elif threshold.scope == 'cuvee' %}
+                                            <i class="bi bi-cup me-1"></i>{{ threshold.ref_object.name }}
+                                        {% elif threshold.scope == 'lot' %}
+                                            <i class="bi bi-box me-1"></i>{{ threshold.ref_object.code }}
+                                        {% elif threshold.scope == 'warehouse' %}
+                                            <i class="bi bi-building me-1"></i>{{ threshold.ref_object.name }}
+                                        {% endif %}
+                                    </h6>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item edit-threshold" href="#" data-threshold-id="{{ threshold.id }}">
+                                                <i class="bi bi-pencil me-1"></i>Modifier
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger delete-threshold" href="#" data-threshold-id="{{ threshold.id }}">
+                                                <i class="bi bi-trash me-1"></i>Supprimer
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <span class="h4 text-primary">{{ threshold.threshold_l|floatformat:0 }}</span>
+                                    <span class="text-muted">L</span>
+                                </div>
+                                
+                                {% if threshold.notes %}
+                                <p class="text-muted small mb-2">{{ threshold.notes }}</p>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        Créé le {{ threshold.created_at|date:"d/m/Y" }}
+                                        <br>par {{ threshold.created_by.get_full_name }}
+                                    </small>
+                                    <span class="badge scope-badge badge-{{ threshold.scope }}">
+                                        Priorité 
+                                        {% if threshold.scope == 'lot' %}1
+                                        {% elif threshold.scope == 'cuvee' %}2
+                                        {% elif threshold.scope == 'warehouse' %}3
+                                        {% elif threshold.scope == 'global' %}4
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-sliders text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Aucun seuil configuré</h4>
+                        <p class="text-muted">
+                            Configurez des seuils pour recevoir des alertes lorsque vos stocks sont bas.
+                        </p>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createThresholdModal">
+                            <i class="bi bi-plus-circle me-1"></i>Créer le premier seuil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de création/modification -->
+<div class="modal fade" id="createThresholdModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2"></i>Nouveau seuil de stock
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="thresholdForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Portée du seuil *</label>
+                            <select name="scope" id="scopeSelect" class="form-select" required>
+                                <option value="">Sélectionner...</option>
+                                <option value="global">Global (tous les stocks)</option>
+                                <option value="cuvee">Cuvée spécifique</option>
+                                <option value="lot">Lot spécifique</option>
+                                <option value="warehouse">Entrepôt spécifique</option>
+                            </select>
+                            <div class="form-text">Définit à quels stocks ce seuil s'applique</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Seuil (en litres) *</label>
+                            <div class="input-group">
+                                <input type="number" name="threshold_l" class="form-control" min="0" step="0.01" required>
+                                <span class="input-group-text">L</span>
+                            </div>
+                            <div class="form-text">Quantité en dessous de laquelle une alerte sera déclenchée</div>
+                        </div>
+                        
+                        <!-- Sélection de la cuvée -->
+                        <div class="col-12" id="cuveeSelect" style="display: none;">
+                            <label class="form-label">Cuvée</label>
+                            <select name="cuvee_id" class="form-select">
+                                <option value="">Sélectionner une cuvée...</option>
+                                {% for cuvee in cuvees %}
+                                <option value="{{ cuvee.id }}">{{ cuvee.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Sélection de l'entrepôt -->
+                        <div class="col-12" id="warehouseSelect" style="display: none;">
+                            <label class="form-label">Entrepôt</label>
+                            <select name="warehouse_id" class="form-select">
+                                <option value="">Sélectionner un entrepôt...</option>
+                                {% for warehouse in warehouses %}
+                                <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Sélection du lot -->
+                        <div class="col-12" id="lotSelect" style="display: none;">
+                            <label class="form-label">Lot</label>
+                            <select name="lot_id" class="form-select">
+                                <option value="">Sélectionner un lot...</option>
+                                <!-- Les lots seront chargés dynamiquement -->
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Notes (optionnel)</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="Description ou justification de ce seuil..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Aperçu de la priorité -->
+                    <div class="alert alert-info mt-3" id="priorityPreview" style="display: none;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Priorité de ce seuil :</strong> <span id="priorityText"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Créer le seuil
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer ce seuil ?</p>
+                <p class="text-muted">Cette action est irréversible. Les alertes existantes basées sur ce seuil pourraient être affectées.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const scopeSelect = document.getElementById('scopeSelect');
+    const cuveeSelect = document.getElementById('cuveeSelect');
+    const warehouseSelect = document.getElementById('warehouseSelect');
+    const lotSelect = document.getElementById('lotSelect');
+    const priorityPreview = document.getElementById('priorityPreview');
+    const priorityText = document.getElementById('priorityText');
+    const thresholdForm = document.getElementById('thresholdForm');
+    const createModal = new bootstrap.Modal(document.getElementById('createThresholdModal'));
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    
+    // Gestion du changement de portée
+    scopeSelect.addEventListener('change', function() {
+        const scope = this.value;
+        
+        // Masquer tous les sélecteurs
+        cuveeSelect.style.display = 'none';
+        warehouseSelect.style.display = 'none';
+        lotSelect.style.display = 'none';
+        priorityPreview.style.display = 'none';
+        
+        // Réinitialiser les valeurs
+        document.querySelector('[name="cuvee_id"]').value = '';
+        document.querySelector('[name="warehouse_id"]').value = '';
+        document.querySelector('[name="lot_id"]').value = '';
+        
+        // Afficher le bon sélecteur et l'aperçu de priorité
+        if (scope) {
+            priorityPreview.style.display = 'block';
+            
+            switch(scope) {
+                case 'global':
+                    priorityText.textContent = 'Priorité 4 - S\'applique à tous les stocks sans seuil plus spécifique';
+                    break;
+                case 'cuvee':
+                    cuveeSelect.style.display = 'block';
+                    priorityText.textContent = 'Priorité 2 - S\'applique à tous les lots de la cuvée sélectionnée';
+                    break;
+                case 'lot':
+                    lotSelect.style.display = 'block';
+                    priorityText.textContent = 'Priorité 1 - S\'applique uniquement au lot sélectionné (priorité maximale)';
+                    loadLots();
+                    break;
+                case 'warehouse':
+                    warehouseSelect.style.display = 'block';
+                    priorityText.textContent = 'Priorité 3 - S\'applique à tous les stocks de l\'entrepôt sélectionné';
+                    break;
+            }
+        }
+    });
+    
+    // Charger les lots dynamiquement
+    function loadLots() {
+        // Cette fonction pourrait charger les lots via AJAX
+        // Pour l'instant, on utilise une liste statique
+        const lotSelect = document.querySelector('[name="lot_id"]');
+        lotSelect.innerHTML = '<option value="">Chargement...</option>';
+        
+        // Simuler un chargement AJAX
+        setTimeout(() => {
+            lotSelect.innerHTML = '<option value="">Sélectionner un lot...</option>';
+            // Ici, vous pourriez ajouter les lots récupérés via AJAX
+        }, 500);
+    }
+    
+    // Soumission du formulaire
+    thresholdForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {};
+        
+        // Construire l'objet de données
+        data.scope = formData.get('scope');
+        data.threshold_l = parseFloat(formData.get('threshold_l'));
+        data.notes = formData.get('notes') || '';
+        
+        // Déterminer ref_id selon la portée
+        switch(data.scope) {
+            case 'cuvee':
+                data.ref_id = formData.get('cuvee_id');
+                break;
+            case 'lot':
+                data.ref_id = formData.get('lot_id');
+                break;
+            case 'warehouse':
+                data.ref_id = formData.get('warehouse_id');
+                break;
+            case 'global':
+                data.ref_id = null;
+                break;
+        }
+        
+        // Validation
+        if (!data.scope || !data.threshold_l) {
+            showToast('error', 'Veuillez remplir tous les champs obligatoires');
+            return;
+        }
+        
+        if (data.scope !== 'global' && !data.ref_id) {
+            showToast('error', 'Veuillez sélectionner un élément pour cette portée');
+            return;
+        }
+        
+        // Envoyer la requête
+        fetch('{% url "stock:create_threshold_api" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showToast('success', data.message);
+                createModal.hide();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('error', data.error || 'Erreur lors de la création');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Erreur de connexion');
+        });
+    });
+    
+    // Gestion de la suppression
+    document.querySelectorAll('.delete-threshold').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const thresholdId = this.dataset.thresholdId;
+            
+            deleteModal.show();
+            document.getElementById('confirmDelete').onclick = function() {
+                deleteThreshold(thresholdId);
+            };
+        });
+    });
+    
+    function deleteThreshold(thresholdId) {
+        fetch(`/stocks/api/seuils/${thresholdId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showToast('success', data.message);
+                deleteModal.hide();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('error', data.error || 'Erreur lors de la suppression');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Erreur de connexion');
+        });
+    }
+    
+    // Fonction pour afficher les toasts
+    function showToast(type, message) {
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+        toast.show();
+    }
+});
+</script>
+{% endblock %}

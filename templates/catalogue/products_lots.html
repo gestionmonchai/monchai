@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+
+{% block title %}Lots{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+            </h1>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'catalogue:products_dashboard' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Dashboard
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'catalogue:lot_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouveau lot
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Navigation tabs -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <nav class="nav nav-pills nav-fill">
+                    <a class="nav-link" href="{% url 'catalogue:products_dashboard' %}">
+                        <i class="bi bi-house me-2"></i>Dashboard
+                    </a>
+                    <a class="nav-link" href="{% url 'catalogue:products_cuvees' %}">
+                        <i class="bi bi-wine me-2"></i>Cuvées
+                    </a>
+                    <a class="nav-link active" href="{% url 'catalogue:products_lots' %}">
+                        <i class="bi bi-box me-2"></i>Lots
+                    </a>
+                    <a class="nav-link" href="{% url 'catalogue:products_skus' %}">
+                        <i class="bi bi-upc me-2"></i>Produits finis
+                    </a>
+                    <a class="nav-link" href="{% url 'catalogue:products_referentiels' %}">
+                        <i class="bi bi-gear me-2"></i>Référentiels
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche et filtres -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-search me-2"></i>Recherche et filtres
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Recherche rapide</label>
+                        <input type="text" class="form-control" id="search" placeholder="Code, cuvée, entrepôt...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="cuvee_filter" class="form-label">Cuvée</label>
+                        <select class="form-select" id="cuvee_filter">
+                            <option value="">Toutes</option>
+                            {% for cuvee in cuvees %}
+                                <option value="{{ cuvee.id }}">{{ cuvee.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="status_filter" class="form-label">Statut</label>
+                        <select class="form-select" id="status_filter">
+                            <option value="">Tous</option>
+                            <option value="en_cours">En cours</option>
+                            <option value="elevage">Élevage</option>
+                            <option value="stabilise">Stabilisé</option>
+                            <option value="embouteille">Embouteillé</option>
+                            <option value="archive">Archivé</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="warehouse_filter" class="form-label">Entrepôt</label>
+                        <select class="form-select" id="warehouse_filter">
+                            <option value="">Tous</option>
+                            {% for warehouse in warehouses %}
+                                <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Volume (L)</label>
+                        <div class="input-group">
+                            <input type="number" min="0" step="0.1" id="volume_min" class="form-control" placeholder="Min">
+                            <span class="input-group-text">-</span>
+                            <input type="number" min="0" step="0.1" id="volume_max" class="form-control" placeholder="Max">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Alcool (%)</label>
+                        <div class="input-group">
+                            <input type="number" min="0" max="20" step="0.1" id="alcohol_min" class="form-control" placeholder="Min">
+                            <span class="input-group-text">-</span>
+                            <input type="number" min="0" max="20" step="0.1" id="alcohol_max" class="form-control" placeholder="Max">
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end justify-content-between">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active_only" checked>
+                            <label class="form-check-label" for="is_active_only">Actifs uniquement</label>
+                        </div>
+                        <button id="clear_filters" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Effacer
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <div id="search-info" class="text-muted small"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Tableau des résultats -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-list me-2"></i>Liste des Lots
+                </h5>
+                <span class="badge bg-primary">{{ page_obj.paginator.count }} lot{{ page_obj.paginator.count|pluralize:"s" }}</span>
+            </div>
+            <div class="card-body p-0" id="lotsTable">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><a href="#" class="text-decoration-none text-dark" data-sort="code">Code</a></th>
+                                <th><a href="#" class="text-decoration-none text-dark" data-sort="cuvee">Cuvée</a></th>
+                                <th><a href="#" class="text-decoration-none text-dark" data-sort="volume_l">Volume</a></th>
+                                <th><a href="#" class="text-decoration-none text-dark" data-sort="status">Statut</a></th>
+                                <th><a href="#" class="text-decoration-none text-dark" data-sort="warehouse">Entrepôt</a></th>
+                                <th><a href="#" class="text-decoration-none text-dark" data-sort="alcohol_pct">Degré</a></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lots-table-body">
+                            {% include 'catalogue/partials/lot_table_rows.html' with lots=page_obj page_obj=page_obj %}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination-container" class="mt-3">
+                    {% include 'catalogue/partials/lot_pagination.html' with page_obj=page_obj %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// CSRF helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const cuveeSelect = document.getElementById('cuvee_filter');
+    const statusSelect = document.getElementById('status_filter');
+    const warehouseSelect = document.getElementById('warehouse_filter');
+    const clearBtn = document.getElementById('clear_filters');
+    const volMin = document.getElementById('volume_min');
+    const volMax = document.getElementById('volume_max');
+    const alcMin = document.getElementById('alcohol_min');
+    const alcMax = document.getElementById('alcohol_max');
+    const isActiveOnly = document.getElementById('is_active_only');
+    const tableBody = document.getElementById('lots-table-body');
+    const paginationContainer = document.getElementById('pagination-container');
+    const searchInfo = document.getElementById('search-info');
+    const tableEl = document.getElementById('lotsTable');
+    let currentOrder = 'desc';
+    let currentSort = 'created_at';
+    let searchTimeout;
+    let currentController;
+
+    function collectParams(page=1) {
+        const params = new URLSearchParams();
+        if (searchInput.value.trim()) params.set('search', searchInput.value.trim());
+        if (cuveeSelect.value) params.set('cuvee', cuveeSelect.value);
+        if (statusSelect.value) params.set('status', statusSelect.value);
+        if (warehouseSelect.value) params.set('warehouse', warehouseSelect.value);
+        params.set('sort', currentSort);
+        params.set('order', currentOrder);
+        if (volMin.value) params.set('volume_min', volMin.value);
+        if (volMax.value) params.set('volume_max', volMax.value);
+        if (alcMin.value) params.set('alcohol_min', alcMin.value);
+        if (alcMax.value) params.set('alcohol_max', alcMax.value);
+        if (isActiveOnly.checked) params.set('is_active', 'true');
+        if (page && page > 1) params.set('page', page);
+        return params;
+    }
+
+    function updateBrowserURL(params) {
+        const urlParams = new URLSearchParams(params);
+        const newURL = `/catalogue/produits/lots/${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
+        window.history.replaceState({}, '', newURL);
+    }
+
+    function performSearch(page=1) {
+        if (currentController) currentController.abort();
+        currentController = new AbortController();
+        const params = collectParams(page);
+        updateBrowserURL(params);
+        const apiUrl = `/catalogue/produits/lots/search-ajax/?${params.toString()}`;
+
+        tableEl.style.opacity = '0.5';
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            signal: currentController.signal
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+            tableBody.innerHTML = data.table_html;
+            paginationContainer.innerHTML = data.pagination_html;
+            if (searchInfo) {
+                const s = data.stats;
+                searchInfo.textContent = (s.filtered !== s.total) ? `${s.filtered} résultats sur ${s.total}` : `${s.total} lots`;
+            }
+            attachPaginationEvents();
+        })
+        .finally(() => { tableEl.style.opacity = '1'; });
+    }
+
+    function debounceSearch(page=1){
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => performSearch(page), 250);
+    }
+
+    function attachSortEvents(){
+        tableEl.querySelectorAll('th a[data-sort]').forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                const s = a.getAttribute('data-sort');
+                if (currentSort === s) {
+                    currentOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+                } else {
+                    currentSort = s; currentOrder = 'asc';
+                }
+                performSearch(1);
+            });
+        });
+    }
+
+    function attachPaginationEvents(){
+        paginationContainer.querySelectorAll('a[data-page]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const p = parseInt(link.getAttribute('data-page'));
+                if (p) performSearch(p);
+            });
+        });
+    }
+
+    // Bind filters
+    [searchInput].forEach(el => el && el.addEventListener('input', () => debounceSearch(1)));
+    [cuveeSelect, statusSelect, warehouseSelect, volMin, volMax, alcMin, alcMax, isActiveOnly].forEach(el => el && el.addEventListener('change', () => performSearch(1)));
+    clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        searchInput.value = '';
+        cuveeSelect.value = '';
+        statusSelect.value = '';
+        warehouseSelect.value = '';
+        volMin.value = '';
+        volMax.value = '';
+        alcMin.value = '';
+        alcMax.value = '';
+        isActiveOnly.checked = true;
+        performSearch(1);
+    });
+
+    attachSortEvents();
+    attachPaginationEvents();
+});
+</script>
+{% endblock %}

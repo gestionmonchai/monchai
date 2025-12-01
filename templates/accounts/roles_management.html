@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestion des rôles - {{ organization.name }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-people"></i> Gestion des rôles</h1>
+                <p class="text-muted">{{ organization.name }}</p>
+            </div>
+            {% if can_invite %}
+                <a href="{% url 'auth:send_invitation' %}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Inviter un collaborateur
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ stats.total_members }}</h3>
+                <p class="card-text">Membres total</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ stats.owners }}</h3>
+                <p class="card-text">Propriétaires</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">{{ stats.admins }}</h3>
+                <p class="card-text">Administrateurs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ stats.editors }}</h3>
+                <p class="card-text">Éditeurs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-secondary">{{ stats.readers }}</h3>
+                <p class="card-text">Lecture seule</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-muted">{{ stats.pending_invitations }}</h3>
+                <p class="card-text">Invitations</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table des membres -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Membres de l'organisation</h5>
+            </div>
+            <div class="card-body">
+                {% if members %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Rôle</th>
+                                    <th>Statut</th>
+                                    <th>Membre depuis</th>
+                                    {% if current_membership.can_manage_roles %}
+                                        <th>Actions</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in members %}
+                                    <tr {% if member.user == request.user %}class="table-primary"{% endif %}>
+                                        <td>
+                                            <strong>{{ member.user.full_name }}</strong>
+                                            {% if member.user == request.user %}
+                                                <span class="badge bg-secondary ms-1">Vous</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ member.user.email }}</td>
+                                        <td>
+                                            {% if member.role == 'owner' %}
+                                                <span class="badge bg-warning">{{ member.get_role_display }}</span>
+                                            {% elif member.role == 'admin' %}
+                                                <span class="badge bg-info">{{ member.get_role_display }}</span>
+                                            {% elif member.role == 'editor' %}
+                                                <span class="badge bg-success">{{ member.get_role_display }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if member.is_active %}
+                                                <span class="text-success"><i class="bi bi-check-circle"></i> Actif</span>
+                                            {% else %}
+                                                <span class="text-muted"><i class="bi bi-x-circle"></i> Inactif</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ member.created_at|date:"d/m/Y" }}</td>
+                                        {% if current_membership.can_manage_roles %}
+                                            <td>
+                                                {% if member.user != request.user %}
+                                                    <div class="btn-group btn-group-sm">
+                                                        <!-- Changer le rôle -->
+                                                        {% if not current_membership.role == 'admin' or not member.role == 'owner' %}
+                                                            <a href="{% url 'auth:change_role' member.id %}" 
+                                                               class="btn btn-outline-primary btn-sm" 
+                                                               title="Changer le rôle">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                        {% endif %}
+                                                        
+                                                        <!-- Désactiver -->
+                                                        {% if member.role != 'owner' or organization.has_multiple_owners %}
+                                                            <a href="{% url 'auth:deactivate_member' member.id %}" 
+                                                               class="btn btn-outline-danger btn-sm" 
+                                                               title="Retirer de l'organisation">
+                                                                <i class="bi bi-person-x"></i>
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Aucun membre trouvé.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invitations en attente (Roadmap 07) -->
+{% if pending_invitations %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-envelope-paper me-2"></i>
+                    Invitations en attente
+                </h5>
+                <span class="badge bg-secondary">{{ pending_invitations.count }}</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Rôle</th>
+                                <th>Invité par</th>
+                                <th>Envoyé le</th>
+                                <th>Expire le</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invitation in pending_invitations %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ invitation.email }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if invitation.role == 'owner' %}
+                                            <span class="badge bg-warning">{{ invitation.get_role_display }}</span>
+                                        {% elif invitation.role == 'admin' %}
+                                            <span class="badge bg-info">{{ invitation.get_role_display }}</span>
+                                        {% elif invitation.role == 'editor' %}
+                                            <span class="badge bg-success">{{ invitation.get_role_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ invitation.get_role_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ invitation.invited_by.full_name }}</td>
+                                    <td>{{ invitation.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if invitation.is_expired %}
+                                            <span class="text-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Expirée
+                                            </span>
+                                        {% else %}
+                                            {{ invitation.expires_at|date:"d/m/Y H:i" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if invitation.is_expired %}
+                                            <span class="badge bg-danger">Expirée</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">En attente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {% if not invitation.is_expired %}
+                                                <a href="{% url 'auth:resend_invitation' invitation.id %}" 
+                                                   class="btn btn-outline-primary" 
+                                                   title="Renvoyer l'invitation">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </a>
+                                            {% endif %}
+                                            <a href="{% url 'auth:cancel_invitation' invitation.id %}" 
+                                               class="btn btn-outline-danger" 
+                                               title="Annuler l'invitation"
+                                               onclick="return confirm('Êtes-vous sûr de vouloir annuler cette invitation ?')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Informations sur les rôles -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Explication des rôles</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><span class="badge bg-warning">Propriétaire</span></h6>
+                        <p class="small text-muted">Tous les droits, peut gérer les rôles et inviter des membres.</p>
+                        
+                        <h6><span class="badge bg-info">Administrateur</span></h6>
+                        <p class="small text-muted">Peut gérer les membres et accéder aux paramètres sensibles.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><span class="badge bg-success">Éditeur</span></h6>
+                        <p class="small text-muted">Peut modifier les données métier (catalogue, commandes, etc.).</p>
+                        
+                        <h6><span class="badge bg-secondary">Lecture seule</span></h6>
+                        <p class="small text-muted">Peut consulter les données mais pas les modifier.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

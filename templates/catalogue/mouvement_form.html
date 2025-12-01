@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-plus-circle me-2 text-primary"></i>{{ page_title }}
+            </h1>
+            <div>
+                <a href="{% url 'catalogue:lot_detail' lot.pk %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour au lot
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informations du lot -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-info-circle fs-4 me-3"></i>
+                <div>
+                    <h6 class="mb-1">Lot : {{ lot.numero_lot }} - {{ lot.cuvee.nom }} {{ lot.millesime }}</h6>
+                    <p class="mb-0">
+                        Volume actuel : <strong>{{ lot.volume_actuel|floatformat:2 }} {{ lot.unite_volume.symbole }}</strong>
+                        • Entrepôt : {{ lot.entrepot.nom }}
+                        • Statut : {{ lot.get_statut_display }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Colonne gauche -->
+                        <div class="col-md-6">
+                            <!-- Type de mouvement -->
+                            <div class="mb-3">
+                                <label for="{{ form.type_mouvement.id_for_label }}" class="form-label">
+                                    {{ form.type_mouvement.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.type_mouvement|add_class:"form-select" }}
+                                {% if form.type_mouvement.help_text %}
+                                    <div class="form-text">{{ form.type_mouvement.help_text }}</div>
+                                {% endif %}
+                                {% if form.type_mouvement.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.type_mouvement.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    {{ form.description.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.description|add_class:"form-control" }}
+                                {% if form.description.help_text %}
+                                    <div class="form-text">{{ form.description.help_text }}</div>
+                                {% endif %}
+                                {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.description.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Volume du mouvement -->
+                            <div class="mb-3">
+                                <label for="{{ form.volume_mouvement.id_for_label }}" class="form-label">
+                                    {{ form.volume_mouvement.label }} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {{ form.volume_mouvement|add_class:"form-control" }}
+                                    <span class="input-group-text">{{ lot.unite_volume.symbole }}</span>
+                                </div>
+                                {% if form.volume_mouvement.help_text %}
+                                    <div class="form-text">{{ form.volume_mouvement.help_text }}</div>
+                                {% endif %}
+                                {% if form.volume_mouvement.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.volume_mouvement.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Valeur positive = entrée, négative = sortie. Volume actuel : {{ lot.volume_actuel|floatformat:2 }} {{ lot.unite_volume.symbole }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonne droite -->
+                        <div class="col-md-6">
+                            <!-- Date du mouvement -->
+                            <div class="mb-3">
+                                <label for="{{ form.date_mouvement.id_for_label }}" class="form-label">
+                                    {{ form.date_mouvement.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.date_mouvement|add_class:"form-control" }}
+                                {% if form.date_mouvement.help_text %}
+                                    <div class="form-text">{{ form.date_mouvement.help_text }}</div>
+                                {% endif %}
+                                {% if form.date_mouvement.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.date_mouvement.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Entrepôt source (pour transferts) -->
+                            <div class="mb-3" id="entrepot-source-group">
+                                <label for="{{ form.entrepot_source.id_for_label }}" class="form-label">
+                                    {{ form.entrepot_source.label }}
+                                </label>
+                                {{ form.entrepot_source|add_class:"form-select" }}
+                                {% if form.entrepot_source.help_text %}
+                                    <div class="form-text">{{ form.entrepot_source.help_text }}</div>
+                                {% endif %}
+                                {% if form.entrepot_source.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.entrepot_source.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Entrepôt destination (pour transferts) -->
+                            <div class="mb-3" id="entrepot-destination-group">
+                                <label for="{{ form.entrepot_destination.id_for_label }}" class="form-label">
+                                    {{ form.entrepot_destination.label }}
+                                </label>
+                                {{ form.entrepot_destination|add_class:"form-select" }}
+                                {% if form.entrepot_destination.help_text %}
+                                    <div class="form-text">{{ form.entrepot_destination.help_text }}</div>
+                                {% endif %}
+                                {% if form.entrepot_destination.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.entrepot_destination.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {{ form.notes.label }}
+                        </label>
+                        {{ form.notes|add_class:"form-control" }}
+                        {% if form.notes.help_text %}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                        {% endif %}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Erreurs non-field -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'catalogue:lot_detail' lot.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Enregistrer le mouvement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aide contextuelle -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-10 col-lg-8">
+        <div class="alert alert-light">
+            <h6><i class="bi bi-lightbulb me-2"></i>Types de mouvements</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li><strong>Création :</strong> Création initiale du lot</li>
+                        <li><strong>Transfert :</strong> Déplacement entre entrepôts</li>
+                        <li><strong>Assemblage :</strong> Mélange avec d'autres lots</li>
+                        <li><strong>Soutirage :</strong> Séparation du vin clair</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li><strong>Filtration :</strong> Clarification du vin</li>
+                        <li><strong>Conditionnement :</strong> Mise en bouteilles</li>
+                        <li><strong>Vente :</strong> Sortie pour vente</li>
+                        <li><strong>Perte :</strong> Casse, évaporation, etc.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Afficher/masquer les champs entrepôt selon le type de mouvement
+document.addEventListener('DOMContentLoaded', function() {
+    const typeMouvement = document.getElementById('{{ form.type_mouvement.id_for_label }}');
+    const entrepotSourceGroup = document.getElementById('entrepot-source-group');
+    const entrepotDestinationGroup = document.getElementById('entrepot-destination-group');
+    
+    function toggleEntrepotFields() {
+        const isTransfert = typeMouvement.value === 'transfert_entrepot';
+        entrepotSourceGroup.style.display = isTransfert ? 'block' : 'none';
+        entrepotDestinationGroup.style.display = isTransfert ? 'block' : 'none';
+        
+        // Rendre les champs requis ou non selon le type
+        const sourceField = document.getElementById('{{ form.entrepot_source.id_for_label }}');
+        const destinationField = document.getElementById('{{ form.entrepot_destination.id_for_label }}');
+        
+        if (isTransfert) {
+            sourceField.setAttribute('required', 'required');
+            destinationField.setAttribute('required', 'required');
+        } else {
+            sourceField.removeAttribute('required');
+            destinationField.removeAttribute('required');
+            sourceField.value = '';
+            destinationField.value = '';
+        }
+    }
+    
+    // Initialiser l'affichage
+    toggleEntrepotFields();
+    
+    // Écouter les changements
+    typeMouvement.addEventListener('change', toggleEntrepotFields);
+});
+</script>
+{% endblock %}

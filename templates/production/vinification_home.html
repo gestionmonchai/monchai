@@ -1,0 +1,241 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Vinification - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 mb-0 fw-bold">Suivi de Vinification</h1>
+        <p class="text-muted small mb-0">Journal des opérations fermentaires</p>
+    </div>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOpModal">
+        <i class="bi bi-plus-lg me-1"></i> Nouvelle opération
+    </button>
+</div>
+
+<!-- Filtres & Recherche -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-2">
+        <form class="row g-2">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0" 
+                           placeholder="Rechercher (lot, notes)..."
+                           hx-get="{% url 'production:vinification_table' %}"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#vinification-table-body"
+                           hx-include="[name='type']">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="type" class="form-select" 
+                        hx-get="{% url 'production:vinification_table' %}"
+                        hx-trigger="change"
+                        hx-target="#vinification-table-body"
+                        hx-include="[name='q']">
+                    <option value="">Toutes les opérations</option>
+                    <optgroup label="Interventions">
+                        <option value="debourbage">Débourbage</option>
+                        <option value="inoculation_levures">Levurage</option>
+                        <option value="chaptalisation">Chaptalisation</option>
+                        <option value="correction">Correction</option>
+                        <option value="remontage">Remontage</option>
+                        <option value="pigeage">Pigeage</option>
+                        <option value="delestage">Délestage</option>
+                        <option value="debut_fa">Début FA</option>
+                        <option value="fin_fa">Fin FA</option>
+                    </optgroup>
+                    <optgroup label="Mesures">
+                        <option value="densite">Densité</option>
+                        <option value="temperature">Température</option>
+                    </optgroup>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des opérations -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0 table-hover">
+            <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-3 border-0">Date</th>
+                    <th class="border-0">Lot</th>
+                    <th class="border-0">Opération</th>
+                    <th class="border-0">Détails / Valeur</th>
+                    <th class="border-0">Notes</th>
+                </tr>
+            </thead>
+            <tbody id="vinification-table-body">
+                {% for op in operations %}
+                <tr>
+                    <td class="ps-3 fw-medium text-nowrap">{{ op.date|date:"d/m/Y" }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ op.lot.code }}</span></td>
+                    <td>
+                        {% if op.source == 'measurement' %}
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ op.type_display }}</span>
+                        {% else %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ op.type_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-monospace">{{ op.valeur|default:"-" }}</td>
+                    <td class="small text-muted">{{ op.notes|default:"" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-text fs-1 d-block mb-2 opacity-50"></i>
+                        Aucune opération de vinification enregistrée.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Ajout Opération -->
+<div class="modal fade" id="addOpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Nouvelle opération de vinification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'production:vinification_op_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Champs communs -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Lot technique</label>
+                            {{ form.lot_id|add_class:"form-select" }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Date</label>
+                            {{ form.date|add_class:"form-control" }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Type d'opération</label>
+                            {{ form.type|add_class:"form-select"|attr:"id:opTypeSelect" }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Volume concerné (L)</label>
+                            {{ form.volume_concerne|add_class:"form-control" }}
+                        </div>
+
+                        <!-- Champs conditionnels -->
+                        <div id="conditionalFields" class="col-12 border-top pt-3 mt-3 bg-light rounded p-3">
+                            <p class="text-muted small mb-2 fst-italic" id="defaultMsg">Sélectionnez un type pour voir les champs spécifiques.</p>
+                            
+                            <div class="row g-3">
+                                <!-- Duree -->
+                                <div class="col-md-6 field-container d-none" data-for="debourbage">
+                                    <label class="form-label">Durée (h)</label>
+                                    {{ form.duree_heures|add_class:"form-control" }}
+                                </div>
+                                
+                                <!-- Temperature -->
+                                <div class="col-md-6 field-container d-none" data-for="debourbage controle_densite_temp">
+                                    <label class="form-label">Température (°C)</label>
+                                    {{ form.temperature|add_class:"form-control" }}
+                                </div>
+
+                                <!-- Produit -->
+                                <div class="col-md-6 field-container d-none" data-for="inoculation_levures inoculation_bacteries so2 correction_acidite">
+                                    <label class="form-label">Produit</label>
+                                    {{ form.produit|add_class:"form-control" }}
+                                </div>
+
+                                <!-- Dose -->
+                                <div class="col-md-6 field-container d-none" data-for="inoculation_levures inoculation_bacteries so2 correction_acidite">
+                                    <label class="form-label">Dose / Quantité</label>
+                                    {{ form.dose|add_class:"form-control" }}
+                                </div>
+
+                                <!-- Quantité sucre -->
+                                <div class="col-md-6 field-container d-none" data-for="chaptalisation">
+                                    <label class="form-label">Quantité sucre (kg)</label>
+                                    {{ form.quantite_sucre|add_class:"form-control" }}
+                                </div>
+
+                                <!-- Correction Type -->
+                                <div class="col-md-6 field-container d-none" data-for="correction_acidite">
+                                    <label class="form-label">Type correction</label>
+                                    {{ form.correction_type|add_class:"form-select" }}
+                                </div>
+
+                                <!-- Action mécanique -->
+                                <div class="col-md-6 field-container d-none" data-for="remontage">
+                                    <label class="form-label">Action</label>
+                                    {{ form.action_mecanique|add_class:"form-select" }}
+                                </div>
+
+                                <!-- Nb Cycles -->
+                                <div class="col-md-6 field-container d-none" data-for="remontage">
+                                    <label class="form-label">Nb cycles / Durée</label>
+                                    {{ form.nb_cycles|add_class:"form-control" }}
+                                </div>
+
+                                <!-- Densite -->
+                                <div class="col-md-6 field-container d-none" data-for="controle_densite_temp debut_fa fin_fa debut_fml fin_fml">
+                                    <label class="form-label">Densité</label>
+                                    {{ form.densite|add_class:"form-control" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Commentaire / Notes</label>
+                            {{ form.comment|add_class:"form-control" }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const opTypeSelect = document.getElementById('opTypeSelect');
+    const fieldContainers = document.querySelectorAll('.field-container');
+    const defaultMsg = document.getElementById('defaultMsg');
+
+    function updateFields() {
+        const type = opTypeSelect.value;
+        let hasVisible = false;
+        
+        fieldContainers.forEach(container => {
+            const types = container.dataset.for.split(' ');
+            if (types.includes(type)) {
+                container.classList.remove('d-none');
+                hasVisible = true;
+            } else {
+                container.classList.add('d-none');
+            }
+        });
+
+        if (hasVisible) {
+            defaultMsg.classList.add('d-none');
+        } else {
+            defaultMsg.classList.remove('d-none');
+        }
+    }
+
+    opTypeSelect.addEventListener('change', updateFields);
+    updateFields(); // Initial call
+});
+</script>
+{% endblock %}

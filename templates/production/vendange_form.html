@@ -1,0 +1,343 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+{% block title %}{% if is_edit %}Modifier la vendange{% else %}Nouvelle vendange{% endif %} - Mon Chai{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3">{% if is_edit %}Modifier la vendange {{ vendange.code }}{% else %}Nouvelle vendange{% endif %}</h1>
+<form method="post" class="">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% if lignes_formset.non_form_errors %}
+  <div class="alert alert-danger">{{ lignes_formset.non_form_errors }}</div>
+  {% endif %}
+
+  <div class="row">
+    <!-- Colonne principale -->
+    <div class="col-lg-8">
+      <!-- Étape 1 : Infos générales -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold"><i class="bi bi-1-circle me-2"></i>Infos générales</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Parcelle <span class="text-danger">*</span></label>
+              <div class="input-group">
+                {{ form.parcelle|add_class:'form-select' }}
+                <a class="btn btn-outline-secondary" href="/referentiels/parcelles/nouvelle/?next=/production/vendanges/nouveau/" target="_blank" title="Créer">+</a>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ form.date.label }} <span class="text-danger">*</span></label>
+              {{ form.date|add_class:'form-control' }}
+            </div>
+            <div class="col-md-3">
+              {{ form.type_vendange.label_tag }}
+              {{ form.type_vendange }}
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-4">
+              <label class="form-label">Cuvée (destination)</label>
+              {{ form.cuvee }}
+              <div class="form-text text-muted">Optionnel</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ form.type_recolte.label }}</label>
+              {{ form.type_recolte|add_class:'form-control' }}
+              <datalist id="type_recolte_options">
+                <option value="blanc"></option>
+                <option value="rouge"></option>
+                <option value="rosé"></option>
+              </datalist>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Statut</label>
+              {{ form.statut }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Étape 2 : Répartition par cépage -->
+      <div class="card mb-3">
+        <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-2-circle me-2"></i>Répartition par cépage</span>
+          <span class="badge bg-primary" id="total-kg-badge">Total: 0 kg</span>
+        </div>
+        <div class="card-body p-0">
+          <!-- Info encépagement parcelle -->
+          <div class="alert alert-light border-0 rounded-0 mb-0 py-2 px-3" id="encepagement-info" style="display: none;">
+            <small><i class="bi bi-info-circle text-primary me-1"></i><strong>Cépages sur cette parcelle :</strong> <span id="encepagement-detail">—</span></small>
+          </div>
+          
+          {{ lignes_formset.management_form }}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0" id="lignes-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 25%;">Cépage <span class="text-danger">*</span></th>
+                  <th style="width: 15%;">Kg <span class="text-danger">*</span></th>
+                  <th style="width: 20%;">Rangs</th>
+                  <th style="width: 10%;">Degré</th>
+                  <th style="width: 25%;">Notes</th>
+                  <th style="width: 5%;"></th>
+                </tr>
+              </thead>
+              <tbody id="lignes-tbody">
+                {% for ligne_form in lignes_formset %}
+                <tr class="ligne-row">
+                  <td>
+                    {{ ligne_form.id }}
+                    {{ ligne_form.cepage }}
+                  </td>
+                  <td>{{ ligne_form.quantite_kg }}</td>
+                  <td>{{ ligne_form.rangs_texte }}</td>
+                  <td>{{ ligne_form.degre_potentiel }}</td>
+                  <td>{{ ligne_form.notes }}</td>
+                  <td class="text-center">
+                    {% if ligne_form.instance.pk %}
+                    <div class="form-check">
+                      {{ ligne_form.DELETE }}
+                    </div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="p-2 border-top bg-light">
+            <button type="button" class="btn btn-sm btn-outline-success" id="add-ligne-btn">
+              <i class="bi bi-plus-lg me-1"></i>Ajouter une ligne
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Onglets secondaires -->
+      <ul class="nav nav-tabs mb-3" id="vendangeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-reception-tab" data-bs-toggle="tab" data-bs-target="#tab-reception" type="button" role="tab">Réception & tri</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-mesures-tab" data-bs-toggle="tab" data-bs-target="#tab-mesures" type="button" role="tab">Mesures</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-notes-tab" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button" role="tab">Notes</button>
+        </li>
+      </ul>
+      
+      <div class="tab-content" id="vendangeTabsContent">
+        <div class="tab-pane fade show active" id="tab-reception" role="tabpanel">
+          <div class="row g-3">
+            <div class="col-md-3">{{ form.temperature_c.label_tag }} {{ form.temperature_c|add_class:'form-control' }}</div>
+            <div class="col-md-3">{{ form.tri.label_tag }} <div>{{ form.tri }}</div></div>
+            <div class="col-md-6">{{ form.tri_notes.label_tag }} {{ form.tri_notes|add_class:'form-control' }}</div>
+            <div class="col-md-6">{{ form.bennes_palox.label_tag }} {{ form.bennes_palox|add_class:'form-control' }}</div>
+            <div class="col-md-3">{{ form.etat_sanitaire.label_tag }} {{ form.etat_sanitaire|add_class:'form-control' }}</div>
+            <div class="col-md-9">{{ form.etat_sanitaire_notes.label_tag }} {{ form.etat_sanitaire_notes|add_class:'form-control' }}</div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="tab-mesures" role="tabpanel">
+          <div class="row g-3">
+            <div class="col-md-4">{{ form.degre_potentiel.label_tag }} {{ form.degre_potentiel|add_class:'form-control' }}</div>
+            <div class="col-md-4">{{ form.rendement_pct.label_tag }} {{ form.rendement_pct|add_class:'form-control' }}</div>
+            <div class="col-md-4">{{ form.volume_mesure_l.label_tag }} {{ form.volume_mesure_l|add_class:'form-control' }}</div>
+            <div class="col-md-4">{{ form.prix_raisin_eur_kg.label_tag }} {{ form.prix_raisin_eur_kg|add_class:'form-control' }}</div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="tab-notes" role="tabpanel">
+          <div class="mb-3">
+            {{ form.notes|add_class:'form-control' }}
+          </div>
+          <div class="form-check">{{ form.auto_create_lot }} {{ form.auto_create_lot.label_tag }}</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Colonne résumé -->
+    <div class="col-lg-4">
+      <div class="card mb-3 sticky-top" style="top: 1rem;">
+        <div class="card-header fw-semibold"><i class="bi bi-clipboard-check me-2"></i>Résumé</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Poids total :</span>
+              <strong id="resume-poids">0 kg</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Nb cépages :</span>
+              <strong id="resume-cepages">0</strong>
+            </div>
+          </div>
+          <hr>
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-check-lg me-1"></i>{% if is_edit %}Enregistrer{% else %}Créer la vendange{% endif %}
+            </button>
+            {% if is_edit %}
+            <a class="btn btn-outline-secondary" href="{% url 'production:vendange_detail' vendange.pk %}">Annuler</a>
+            {% else %}
+            <a class="btn btn-outline-secondary" href="/production/vendanges/">Annuler</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <div class="card mb-3">
+        <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-2"></i>Aide</div>
+        <div class="card-body small text-muted">
+          <p><strong>Comment ça marche ?</strong></p>
+          <ol class="ps-3 mb-0">
+            <li>Sélectionnez la parcelle vendangée</li>
+            <li>Renseignez le poids par cépage dans le tableau</li>
+            <li>Optionnel : indiquez les rangs concernés</li>
+            <li>Validez pour créer la vendange</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const parcelleSelect = document.getElementById('id_parcelle');
+    const encepagementInfo = document.getElementById('encepagement-info');
+    const encepagementDetail = document.getElementById('encepagement-detail');
+    const totalKgBadge = document.getElementById('total-kg-badge');
+    const resumePoids = document.getElementById('resume-poids');
+    const resumeCepages = document.getElementById('resume-cepages');
+    
+    // Gestion du formset de lignes
+    const lignesTbody = document.getElementById('lignes-tbody');
+    const addLigneBtn = document.getElementById('add-ligne-btn');
+    const totalFormsInput = document.querySelector('input[name="lignes-TOTAL_FORMS"]');
+    
+    // Template d'une ligne vide (on clone la dernière ligne vide)
+    let formIndex = parseInt(totalFormsInput.value);
+    
+    // Calculer le total des kg
+    function updateTotals() {
+        let total = 0;
+        let count = 0;
+        document.querySelectorAll('.ligne-row').forEach(row => {
+            const deleteCheck = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteCheck && deleteCheck.checked) return;
+            
+            const kgInput = row.querySelector('input[name$="-quantite_kg"]');
+            const cepageSelect = row.querySelector('select[name$="-cepage"]');
+            if (kgInput && parseFloat(kgInput.value)) {
+                total += parseFloat(kgInput.value);
+            }
+            if (cepageSelect && cepageSelect.value) {
+                count++;
+            }
+        });
+        
+        if (totalKgBadge) totalKgBadge.textContent = `Total: ${total.toFixed(1)} kg`;
+        if (resumePoids) resumePoids.textContent = `${total.toFixed(1)} kg`;
+        if (resumeCepages) resumeCepages.textContent = count;
+    }
+    
+    // Écouter les changements sur les inputs de kg
+    document.addEventListener('input', function(e) {
+        if (e.target.name && (e.target.name.includes('-quantite_kg') || e.target.name.includes('-cepage'))) {
+            updateTotals();
+        }
+    });
+    document.addEventListener('change', function(e) {
+        if (e.target.name && e.target.name.includes('-DELETE')) {
+            updateTotals();
+        }
+    });
+    
+    // Ajouter une nouvelle ligne
+    if (addLigneBtn && lignesTbody) {
+        addLigneBtn.addEventListener('click', function() {
+            // Cloner la première ligne et la vider
+            const firstRow = lignesTbody.querySelector('.ligne-row');
+            if (!firstRow) return;
+            
+            const newRow = firstRow.cloneNode(true);
+            
+            // Mettre à jour les noms et IDs
+            newRow.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.name) {
+                    el.name = el.name.replace(/-\d+-/, `-${formIndex}-`);
+                }
+                if (el.id) {
+                    el.id = el.id.replace(/-\d+-/, `-${formIndex}-`);
+                }
+                // Vider les valeurs
+                if (el.type === 'checkbox') {
+                    el.checked = false;
+                } else if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0;
+                } else {
+                    el.value = '';
+                }
+            });
+            
+            // Supprimer le champ ID caché (nouvelle ligne)
+            const hiddenId = newRow.querySelector('input[name$="-id"]');
+            if (hiddenId) hiddenId.value = '';
+            
+            // Supprimer la case DELETE pour les nouvelles lignes
+            const deleteCell = newRow.querySelector('td:last-child');
+            if (deleteCell) deleteCell.innerHTML = '';
+            
+            lignesTbody.appendChild(newRow);
+            formIndex++;
+            totalFormsInput.value = formIndex;
+        });
+    }
+    
+    // Charger les cépages de la parcelle
+    function loadEncepagements(parcelleId) {
+        if (!parcelleId) {
+            if (encepagementInfo) encepagementInfo.style.display = 'none';
+            return;
+        }
+        
+        fetch(`/ref/parcelles/${parcelleId}/cepages-api/`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.cepages && data.cepages.length > 0) {
+                    let infoText = data.cepages.map(c => {
+                        let txt = `<strong>${c.nom}</strong>`;
+                        if (c.rang_debut && c.rang_fin) {
+                            txt += ` (rangs ${c.rang_debut}-${c.rang_fin})`;
+                        } else if (c.pourcentage) {
+                            txt += ` (${c.pourcentage}%)`;
+                        }
+                        return txt;
+                    }).join(' • ');
+                    
+                    if (encepagementDetail) encepagementDetail.innerHTML = infoText;
+                    if (encepagementInfo) encepagementInfo.style.display = 'block';
+                } else {
+                    if (encepagementInfo) encepagementInfo.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('Erreur chargement cépages:', err);
+            });
+    }
+    
+    // Écouter les changements de parcelle
+    if (parcelleSelect) {
+        parcelleSelect.addEventListener('change', function() {
+            loadEncepagements(this.value);
+        });
+        
+        // Initialiser si parcelle déjà sélectionnée
+        if (parcelleSelect.value) {
+            loadEncepagements(parcelleSelect.value);
+        }
+    }
+    
+    // Calcul initial
+    updateTotals();
+});
+</script>
+{% endblock %}

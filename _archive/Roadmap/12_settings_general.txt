@@ -1,0 +1,61 @@
+12 — /settings/general — Devise & formats (date/numéro), CGV — Guide pas-à-pas
+=============================================================================
+Objectif: paramétrer les préférences générales de l’organisation: devise, formats, et CGV (URL ou PDF).
+
+Portée & Done
+--------------
+- DONE si: un admin peut définir la devise par défaut, le format de date/numéro, et lier des CGV (URL ou upload PDF),
+  et que ces réglages mettent à jour la checklist (currency_format & terms).
+
+Étape 1 — Modèle/stockage (45–60 min)
+--------------------------------------
+1.1 Table `OrgSettings` (FK Organization, unique) avec:
+    - currency (code ISO ex: 'EUR', défaut 'EUR')
+    - date_format (enum ex: 'YYYY-MM-DD', 'DD/MM/YYYY')
+    - number_format (enum ex: '1 234,56' vs '1,234.56')
+    - terms_url (URLField, blank=True)
+    - terms_file (FileField, blank=True) — stockage local en dev
+    - updated_at
+1.2 Data migration: créer `OrgSettings` pour org existantes avec défauts.
+
+Étape 2 — Routes & permissions (15–20 min)
+-------------------------------------------
+2.1 URL: **GET/POST** `/settings/general/` (require_membership role_min=admin).
+
+Étape 3 — Formulaire & validation (60 min)
+-------------------------------------------
+3.1 Sélecteur `currency`: liste courte (EUR, USD, GBP, CHF) — pas besoin d’API FX ici.
+3.2 `date_format`: radio (ex: DD/MM/YYYY par défaut pour FR).
+3.3 `number_format`: radio (séparateur décimal/ milliers).
+3.4 CGV: champ URL **ou** upload PDF (mutuellement exclusifs; si les deux remplis, prioriser file).
+    - Taille max PDF (ex: 5 Mo), types autorisés (application/pdf).
+3.5 Bouton “Enregistrer”; message succès.
+
+Étape 4 — Hooks checklist (30 min)
+-----------------------------------
+4.1 Après POST valide:
+    - currency & formats définis → checklist.currency_format = done
+    - terms_url ou terms_file défini → checklist.terms = done
+
+Étape 5 — Template (30–45 min)
+-------------------------------
+5.1 Sections “Devise & formats” et “CGV” séparées.
+5.2 Aperçu “Ex: 1 234,56 € — 31/12/2025” pour le format choisi.
+5.3 Si terms_file présent → lien “Télécharger les CGV”.
+
+Étape 6 — Intégrations futures (notes)
+--------------------------------------
+- À terme, propager `currency` aux écrans ventes (prix affichés) et PDF (factures).
+- Centraliser les formats via un utilitaire pour cohérence (ex: `format_money`, `format_date`).
+
+Étape 7 — Tests (45–60 min)
+----------------------------
+- Non admin → refus.
+- POST devise+formats → checklist.currency_format done.
+- POST CGV (URL ou PDF) → checklist.terms done.
+- Upload PDF invalide (taille/type) → erreur inline.
+
+Sécurité & UX
+-------------
+- CSRF, validations strictes, feedback clair.
+- Nettoyer anciens fichiers CGV si remplacés (éviter orphelins).

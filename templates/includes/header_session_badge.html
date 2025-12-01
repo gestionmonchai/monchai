@@ -1,0 +1,26 @@
+<!-- Badge de session selon roadmap 02_auth_flow.txt -->
+<!-- Format: "Connecté : {display_name} — rôle: {role} @ {org}" + bouton logout -->
+
+{% load static %}
+
+<div class="d-flex align-items-center">
+    <span class="navbar-text me-3">
+        <i class="bi bi-person-circle"></i>
+        Connecté : <strong>{{ user.full_name }}</strong>
+        {% if user.get_active_membership %}
+            {% with membership=user.get_active_membership %}
+                — rôle: <span class="badge bg-secondary">{{ membership.get_role_display }}</span> 
+                @ <strong>{{ membership.organization.name }}</strong>
+            {% endwith %}
+        {% else %}
+            — <span class="text-warning">Aucune organisation</span>
+        {% endif %}
+    </span>
+    
+    <form method="post" action="{% url 'auth:logout' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-box-arrow-right"></i> Déconnexion
+        </button>
+    </form>
+</div>

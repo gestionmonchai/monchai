@@ -1,0 +1,49 @@
+15 — Référentiels : Cépages — Guide pas-à-pas + Robustesse
+==========================================================
+Objectif: référencer les cépages d’une organisation pour alimenter parcelles, cuvées, lots.
+
+Portée & Done
+--------------
+- DONE si: CRUD admin+ opérationnel, cépage unique par org (sur name normalisé), usage prêt côté parcelles/cuvées, import CSV simple.
+
+Étape 1 — Modèle (45–60 min)
+----------------------------
+- GrapeVariety
+  * organization FK
+  * name (string, required) — normaliser en `name_norm` (lower, strip, sans accents) pour unicité par org
+  * color (enum: 'blanc','rouge','rosé','autre') optionnel
+  * is_active (bool) pour soft delete
+  * unique(organization, name_norm)
+
+Étape 2 — Routes & permissions (15–20 min)
+-------------------------------------------
+- /settings/referentials/grapes/ (list/create/update/delete) — admin+
+
+Étape 3 — Vues & validations (30–45 min)
+----------------------------------------
+- Form: name requis, color optionnelle ; prévenir le doublon par normalisation côté serveur.
+- Delete: soft delete (is_active=False) si le cépage est utilisé (parcelles/cuvées), sinon hard delete.
+
+Étape 4 — Template (30 min)
+---------------------------
+- Table : Nom, Couleur, Statut (actif/inactif), Actions.
+- Filtre par couleur ; recherche nom.
+
+Étape 5 — Import CSV simple (60–90 min)
+---------------------------------------
+- Upload d’un fichier CSV (colonnes: name,color) ; prévisualisation (10 premières lignes), détection doublons.
+- Insertion en bulk : ignorer lignes invalides (journal d’erreurs), créer/activer les cépages non existants.
+
+Étape 6 — Tests (45–60 min)
+----------------------------
+- Création cépage ; prévention doublon name_norm.
+- Edition couleur ; soft delete si lié (simuler usage).
+
+### Tests de robustesse
+-----------------------
+R1. Accents/espaces/majuscules → name_norm identique, unicité respectée.
+R2. Import CSV avec encodage latin-1/UTF-8 BOM → parser sans planter ou rejeter proprement.
+R3. CSV lignes vides / colonnes manquantes → journal d’erreurs, pas de 500.
+R4. Soft delete d’un cépage utilisé → interdit en hard delete ; basculer is_active=False.
+R5. XSS UI: afficher name avec échappement (pas d’HTML brut).
+R6. Non admin POST → 403/redirect ; aucun enregistrement.

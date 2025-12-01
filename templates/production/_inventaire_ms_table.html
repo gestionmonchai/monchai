@@ -1,0 +1,65 @@
+{% load inv_ms %}
+{% if not feature_ms_enabled %}
+  <div class="alert alert-info">Module Matières sèches non activé.</div>
+{% else %}
+  <div id="ms-pane" hx-get="{% url 'production:inventaire_ms' %}" hx-trigger="reload-ms from:body" hx-swap="outerHTML">
+  <div class="d-flex mb-2 gap-2">
+    <button type="button" class="btn btn-sm btn-success"
+            hx-get="{% url 'production:inventaire_ms_item_create' %}"
+            hx-target="#ms-modal" hx-swap="innerHTML">
+      + Créer & Entrée
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary"
+            hx-get="{% url 'production:inventaire_ms_transfert' %}"
+            hx-target="#ms-modal" hx-swap="innerHTML">Transférer</button>
+    <button type="button" class="btn btn-sm btn-outline-danger"
+            hx-get="{% url 'production:inventaire_ms_ajustement' %}"
+            hx-target="#ms-modal" hx-swap="innerHTML">Ajuster</button>
+  </div>
+
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Référence</th>
+        <th>Catégorie</th>
+        <th class="text-end">Stock (u)</th>
+        <th class="text-end">Réservé</th>
+        <th class="text-end">Disponible</th>
+        <th class="text-end">CMP (€/u)</th>
+        <th class="text-center">Alerte</th>
+        <th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+        {% with stock=it|get_ms_stock:request reserved=it|get_ms_reserved:request dispo=stock|ms_dispo:reserved %}
+        <tr>
+          <td><strong>{{ it.code }}</strong><br><small class="text-muted">{{ it.name }}</small></td>
+          <td>{{ it.get_family_display }}</td>
+          <td class="text-end">{{ stock }}</td>
+          <td class="text-end">{{ reserved }}</td>
+          <td class="text-end fw-semibold">{{ dispo }}</td>
+          <td class="text-end">{{ it.cmp_eur_u|floatformat:4 }}</td>
+          <td class="text-center">
+            {% if stock < it.stock_min %}
+              <span class="badge text-bg-warning">Sous mini</span>
+            {% else %}
+              <span class="badge text-bg-success">OK</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <button type="button" class="btn btn-xs btn-outline-primary"
+                    hx-get="{% url 'production:inventaire_ms_entree' %}"
+                    hx-vals='{"item_id":"{{ it.id }}"}'
+                    hx-target="#ms-modal" hx-swap="innerHTML">Entrée</button>
+          </td>
+        </tr>
+        {% endwith %}
+      {% empty %}
+        <tr><td colspan="8" class="text-muted">Aucune matière sèche.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div id="ms-modal"></div>
+  </div>
+{% endif %}

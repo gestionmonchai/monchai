@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <div class="lg:col-span-9">
+    <div class="flex items-center justify-between mb-2">
+      <h1 class="text-2xl font-semibold">{{ product.name }}</h1>
+      <div class="space-x-2">
+        <a href="{% url 'produits:product_edit' slug=product.slug %}" class="btn btn-secondary">Modifier</a>
+        {% if product.type_code == 'wine' and product.cuvee_id %}
+          <a href="/produits/lots-commerciaux/?cuvee={{ product.cuvee_id }}" class="btn">Voir lots commerciaux</a>
+          <a href="{% url 'production:mise_new' %}" class="btn">Wizard Mise</a>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <div class="mt-4 p-4 bg-white rounded shadow">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div><span class="font-medium">Marque:</span> {{ product.brand|default:'—' }}</div>
+          <div><span class="font-medium">Type:</span> {{ product.type_code }}</div>
+          <div><span class="font-medium">Cuvée:</span> {{ product.cuvee|default:'—' }}</div>
+        </div>
+        <div>
+          <div><span class="font-medium">Taxe:</span> {{ product.tax_class|default:'—' }}</div>
+          <div><span class="font-medium">Actif:</span> {{ product.is_active|yesno:'Oui,Non' }}</div>
+          <div><span class="font-medium">Slug:</span> {{ product.slug }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 bg-white rounded shadow overflow-x-auto">
+      <table class="table w-full">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Unité</th>
+            <th>Pack</th>
+            <th>Stock</th>
+            <th>Prix défaut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sku in skus %}
+          <tr class="hover">
+            <td>{{ sku.name }}</td>
+            <td>{{ sku.unite.nom }} ({{ sku.unite.symbole }})</td>
+            <td>{{ sku.pack_of|default:'—' }}</td>
+            <td>{{ sku.stock }}</td>
+            <td>{{ sku.default_price_ht|default:'—' }}</td>
+            <td>
+              <a class="btn btn-xs" href="{% url 'produits:sku_edit' pk=sku.id %}">éditer</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center py-6 text-gray-500">Aucune variante de produit fini</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6 p-4 bg-white rounded shadow">
+      <h2 class="text-lg font-medium mb-3">Ajouter un produit fini</h2>
+      <form method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <input type="text" name="name" placeholder="Nom" class="input input-bordered" required />
+          <select name="unite" class="select select-bordered" required>
+            {% for opt in sku_form.fields.unite.queryset %}
+              <option value="{{ opt.id }}">{{ opt.nom }} ({{ opt.symbole }})</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="pack_of" placeholder="Pack (optionnel)" class="input input-bordered" />
+          <input type="text" name="barcode" placeholder="Code-barres" class="input input-bordered" />
+          <button type="submit" class="btn btn-primary">Ajouter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <aside class="lg:col-span-3">
+    <div class="p-4 bg-white rounded shadow">
+      <h3 class="font-medium mb-2">Aide</h3>
+      <ul class="text-sm text-gray-600 space-y-1">
+        <li>- Pour les vins, le stock s'agrège automatiquement depuis les lots commerciaux.</li>
+        <li>- Les unités proviennent du référentiel Unités.</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

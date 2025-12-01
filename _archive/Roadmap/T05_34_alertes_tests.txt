@@ -1,0 +1,41 @@
+T05 — Tests /stocks/alertes (Roadmap 34)
+========================================
+But
+---
+Vérifier génération d’**alertes de seuil** et **badge** menu, avec priorités (lot > cuvée > entrepôt > global).
+
+A. Seuils & priorités
+---------------------
+- [ ] Seuil global 100 L → lots < 100 L créent alertes.
+- [ ] Seuil cuvée 80 L sur “Cuvée X” → alerte déclenchée à 79 L même si global=100 L (priorité cuvée).
+- [ ] Seuil lot 50 L sur Lot Y → prioritaire sur cuvée/global.
+
+B. Job compute_stock_alerts
+---------------------------
+- [ ] Crée alertes actives si balance < seuil; clôture si balance >= seuil.
+- [ ] Badge menu = nb alertes actives non acquittées.
+- [ ] Pagination & filtres sur /stocks/alertes (criticité, entrepôt, cuvée).
+
+C. Acquittement & historique
+----------------------------
+- [ ] “Acquitter” cache l’alerte du badge mais conserve l’historique (acknowledged_at).
+- [ ] Export CSV/XLSX (option).
+
+D. Notifications (option)
+-------------------------
+- [ ] Envoi Slack/email avec rate‑limit (1/j/alerte); retry backoff si échec.
+
+E. Perfs & volumétrie
+---------------------
+- [ ] 1M balances: job < X min (fixer budget), index en place.
+
+F. Sécurité
+-----------
+- [ ] RLS et RBAC respectés; pas de fuite cross‑org.
+
+Tests (suggestions)
+-------------------
+- pytest::test_alert_priorities
+- pytest::test_alert_job_create_and_close
+- pytest::test_alert_acknowledge_affects_badge
+- pytest::test_alert_notifications_rate_limited

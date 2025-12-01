@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mes chais - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+    .org-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border-left: 4px solid;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .org-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .org-badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        color: white;
+    }
+    .org-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .role-owner { background: #fef3c7; color: #92400e; }
+    .role-admin { background: #dbeafe; color: #1e40af; }
+    .role-editor { background: #d1fae5; color: #065f46; }
+    .role-readonly { background: #f3f4f6; color: #4b5563; }
+    
+    .invitation-card {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 2px dashed #10b981;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+    .invitation-icon {
+        width: 56px;
+        height: 56px;
+        background: #10b981;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #f8fafc;
+        border-radius: 16px;
+    }
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background: #e2e8f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 32px;
+        color: #64748b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-1">Mes chais</h1>
+            <p class="text-muted mb-0">Gerez vos chais et invitations</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'auth:create_organization' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-plus-lg me-2"></i>Nouveau chai
+            </a>
+        </div>
+    </div>
+    
+    {% include 'components/django_messages.html' %}
+    
+    <!-- Invitations en attente (Point 3) -->
+    {% if pending_invitations %}
+    <div class="mb-4">
+        <h5 class="text-success mb-3">
+            <i class="bi bi-envelope-open me-2"></i>
+            Invitations en attente ({{ pending_invitations|length }})
+        </h5>
+        {% for inv in pending_invitations %}
+        <div class="invitation-card">
+            <div class="d-flex align-items-center gap-3">
+                <div class="invitation-icon">
+                    <i class="bi bi-ticket-perforated"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold fs-5">{{ inv.organization.name }}</div>
+                    <div class="text-muted">
+                        Invite par {{ inv.invited_by.get_full_name|default:inv.invited_by.email }}
+                        &bull; Role : <span class="fw-medium">{{ inv.get_role_display }}</span>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'auth:accept_invitation_quick' inv.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-lg me-2"></i>Rejoindre
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Liste des chais -->
+    {% if memberships %}
+    <h5 class="mb-3">
+        <i class="bi bi-building me-2"></i>
+        Mes chais ({{ memberships|length }})
+    </h5>
+    {% for m in memberships %}
+    <div class="org-card" style="border-left-color: {{ m.organization.color|default:'#722F37' }};">
+        <div class="d-flex align-items-start gap-3">
+            <div class="org-badge" style="background-color: {{ m.organization.color|default:'#722F37' }};">
+                {{ m.organization.get_initials }}
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="org-name">{{ m.organization.name }}</span>
+                    {% if m.organization.is_test %}
+                    <span class="badge bg-warning text-dark">TEST</span>
+                    {% endif %}
+                    {% if m.organization.id == request.session.current_org_id %}
+                    <span class="badge bg-success">Actif</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="role-badge role-{{ m.role }}">{{ m.get_role_display }}</span>
+                    {% if m.owners %}
+                    <small class="text-muted">
+                        Proprietaire{% if m.owners|length > 1 %}s{% endif %} : 
+                        {% for o in m.owners %}{{ o.user.get_full_name|default:o.user.email }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </small>
+                    {% endif %}
+                </div>
+                <small class="text-muted">
+                    Membre depuis {{ m.joined_at|date:"F Y" }}
+                    {% if m.member_count %}
+                    &bull; {{ m.member_count }} membre{% if m.member_count > 1 %}s{% endif %}
+                    {% endif %}
+                </small>
+            </div>
+            <div class="d-flex gap-2">
+                {% if m.organization.id != request.session.current_org_id %}
+                <a href="{% url 'auth:switch_org' m.organization.id %}" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Entrer
+                </a>
+                {% endif %}
+                {% if m.role == 'owner' or m.role == 'admin' %}
+                <a href="{% url 'auth:profile' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-gear"></i>
+                </a>
+                {% endif %}
+                {% if m.role != 'owner' %}
+                <form method="post" action="{% url 'auth:leave_organization' m.organization.id %}" 
+                      onsubmit="return confirm('Voulez-vous vraiment quitter ce chai ?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger" title="Quitter ce chai">
+                        <i class="bi bi-box-arrow-left"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <!-- Point 15: Aucun chai -->
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-building"></i>
+        </div>
+        <h4>Vous n'etes membre d'aucun chai</h4>
+        <p class="text-muted mb-4">
+            Demandez a un domaine de vous envoyer une invitation,<br>
+            ou creez un nouveau chai si vous gerez un domaine viticole.
+        </p>
+        <a href="{% url 'auth:create_organization' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-lg me-2"></i>Creer un nouveau chai
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

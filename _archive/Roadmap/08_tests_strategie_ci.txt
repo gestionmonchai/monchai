@@ -1,0 +1,69 @@
+08 — Stratégie de tests & CI (Sprint Auth & Identité) — Guide mentor
+====================================================================
+Objectif: apprendre aux juniors à tester le bon niveau, ni trop ni trop peu, et à intégrer
+ces tests dans une CI simple mais fiable.
+
+A) Pyramide de tests (cible réaliste)
+-------------------------------------
+- Unitaires (rapides) ~60%: modèles (Membership unique), utils (token parse), permissions helpers.
+- Intégration ~30%: vues web (login/signup/reset), first-run guard, invitation acceptation.
+- End-to-end light ~10%: scénario happy path via client test Django (sans navigateur).
+
+B) Outils & conventions
+-----------------------
+- pytest + pytest-django
+- Nommage: tests par module de fonctionnalité (tests/test_web_auth.py, tests/test_first_run.py, etc.).
+- Fixtures: user_factory, org_factory, membership_factory (ou simples helpers inline si encore petit).
+- Marqueurs: @pytest.mark.django_db obligatoires sur tests DB.
+- Viser 80% coverage sur apps “accounts” (sans viser 100% dès le départ).
+
+C) Cas de test incontournables
+-------------------------------
+1) Auth
+   - Signup → redirect first-run guard (sans org).
+   - Login invalide → message d’erreur.
+   - Logout détruit la session.
+   - Reset: demande (statut OK) + confirm (mise à jour mdp).
+2) First-run
+   - Sans membership → guard renvoie vers /auth/first-run/org/.
+   - POST valid → crée Organization + Membership owner.
+3) Invitations
+   - Génération → token signé décodable, exp future.
+   - Accept connecté → membership créé.
+   - Accept non connecté → pending_invite en session, membership créé après signup.
+   - Token invalide/expiré → message propre, pas de crash.
+4) Permissions
+   - read_only interdit d’accès à /settings/roles (403/redirect).
+   - editor accès CRUD standard (à préciser plus tard), pas aux paramètres sensibles.
+   - Empêcher retrait du dernier owner.
+
+D) Données & isolement
+-----------------------
+- Pas de dépendance entre tests (pas d’ordre implicite).
+- Chaque test crée ses données (factory/helpers).
+- Nettoyage auto par pytest-django (transactions/rollbacks).
+
+E) CI minimale (pipeline)
+-------------------------
+1) Étape Lint (facultatif au début): ruff/flake8 + black --check.
+2) Étape Tests:
+   - python -m pytest -q
+   - Option: --maxfail=1 --disable-warnings pour feedback rapide.
+3) Artefacts:
+   - Rapports JUnit/coverage (optionnel si votre runner sait les afficher).
+4) Gate:
+   - Refuser merge si tests KO; alerte si coverage < seuil accepté (ex: 70% au départ).
+
+F) Anti-patterns à éviter
+-------------------------
+- Tester le framework (ex: “Django sait rediriger”). Testez votre logique, pas celle de Django.
+- Assertions fragiles sur message exact (préférez inclusion “contient”). 
+- Tests E2E lents via navigateur à ce stade (inutile pour l’Auth MVP).
+- Partager l’état entre tests (fiabilité aléatoire).
+
+G) Checklist “pre-merge” pour les tests
+---------------------------------------
+- [ ] Tests passent en local *et* en CI.
+- [ ] Couverture raisonnable sur l’app “accounts” (>70% au début).
+- [ ] Scénarios critiques couverts: signup→first-run, login→logout, invite accept.
+- [ ] Pas de flakiness (tests verts 3 fois de suite).

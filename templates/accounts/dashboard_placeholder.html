@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Mon Chai{% endblock %}
+
+{% block content %}
+<!-- Notification d'amélioration -->
+<div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-magic me-2"></i>
+        <div>
+            <strong>Interface améliorée !</strong>
+            La navigation a été modernisée avec un header horizontal plus ergonomique et des menus organisés par domaine.
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- Breadcrumb moderne -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb bg-light rounded-3 p-3 mb-0">
+        <li class="breadcrumb-item">
+            <i class="bi bi-house-door me-1"></i>
+            <a href="/" class="text-decoration-none">Accueil</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            <i class="bi bi-speedometer2 me-1"></i>
+            Dashboard
+        </li>
+    </ol>
+</nav>
+
+<!-- Header du dashboard -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="mb-1">
+                    <i class="bi bi-speedometer2 me-2 text-primary"></i>
+                    Dashboard
+                </h1>
+                <p class="text-muted mb-0">Vue d'ensemble de votre exploitation</p>
+            </div>
+            {% if user.get_active_membership %}
+                <div class="text-end">
+                    <div class="badge bg-success fs-6 mb-1">
+                        <i class="bi bi-building me-1"></i>
+                        {{ user.get_active_membership.organization.name }}
+                    </div>
+                    <br>
+                    <small class="text-muted">
+                        Connecté en tant que {{ user.get_active_membership.get_role_display }}
+                    </small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Section principale avec deux colonnes logiques -->
+<div class="row">
+    <!-- GESTION CLIENTS & VENTES -->
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-primary text-white border-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people me-2"></i>Gestion Clients & Ventes
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted">
+                    Gérez vos clients, devis, commandes et facturation
+                </p>
+                
+                <!-- Statistiques rapides -->
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <h6 class="text-primary mb-0">5</h6>
+                            <small class="text-muted">Clients</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <h6 class="text-warning mb-0">4</h6>
+                            <small class="text-muted">Devis</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <h6 class="text-success mb-0">4</h6>
+                            <small class="text-muted">Factures</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions clients -->
+                <div class="d-grid gap-2">
+                    {% if user.get_active_membership.can_access_billing %}
+                        <a href="{% url 'ventes:clients_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-people me-1"></i>Gérer les clients
+                        </a>
+                        <a href="#" onclick="alert('Module Ventes en cours de développement')" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-file-text me-1"></i>Devis & Commandes <span class="badge bg-warning">Bientôt</span>
+                        </a>
+                        <a href="#" onclick="alert('Module Facturation en cours de développement')" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-receipt me-1"></i>Factures & Paiements <span class="badge bg-warning">Bientôt</span>
+                        </a>
+                    {% else %}
+                        <div class="alert alert-warning alert-sm">
+                            <i class="bi bi-lock me-1"></i>
+                            Accès limité - Contactez un administrateur
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- GESTION PRODUITS & PRODUCTION -->
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-success text-white border-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-box me-2"></i>Gestion Produits & Production
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted">
+                    Gérez vos cépages, cuvées, lots et production
+                </p>
+                
+                <!-- Statistiques rapides -->
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <h6 class="text-success mb-0">10</h6>
+                            <small class="text-muted">Cépages</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <h6 class="text-info mb-0">5</h6>
+                            <small class="text-muted">Cuvées</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <h6 class="text-warning mb-0">3</h6>
+                            <small class="text-muted">Lots</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions produits -->
+                <div class="d-grid gap-2">
+                    <a href="{% url 'catalogue:products_dashboard' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-speedometer2 me-1"></i>Interface Produits Unifiée
+                    </a>
+                    <a href="{% url 'catalogue:products_cuvees' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-grid-3x3-gap me-1"></i>Gérer les cuvées
+                    </a>
+                    <a href="{% url 'catalogue:products_lots' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-boxes me-1"></i>Gérer les lots
+                    </a>
+                    <a href="{% url 'catalogue:products_skus' %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-upc me-1"></i>Gérer les produits finis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Section Paramètres & Administration (en bas) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white border-0">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-gear me-2"></i>Administration & Paramètres
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Informations du compte -->
+                    <div class="col-md-4">
+                        <h6 class="text-muted">Informations du compte</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Nom :</strong> {{ user.full_name }}</li>
+                            <li><strong>Email :</strong> {{ user.email }}</li>
+                            {% if user.get_active_membership %}
+                                {% with membership=user.get_active_membership %}
+                                    <li><strong>Organisation :</strong> {{ membership.organization.name }}</li>
+                                    <li><strong>Rôle :</strong> {{ membership.get_role_display }}</li>
+                                {% endwith %}
+                            {% else %}
+                                <li class="text-warning">Aucune organisation</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <!-- Paramètres pour admins+ -->
+                    {% if user.get_active_membership.can_manage_roles %}
+                        <div class="col-md-8">
+                            <h6 class="text-muted">Configuration de l'organisation</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <a href="{% url 'onboarding:checklist' %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                                        <i class="bi bi-list-check me-1"></i>Checklist d'onboarding
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'auth:billing_settings' %}" class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                                        <i class="bi bi-receipt me-1"></i>Facturation
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'auth:general_settings' %}" class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                                        <i class="bi bi-sliders me-1"></i>Paramètres généraux
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="col-md-8">
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Contactez un administrateur pour accéder aux paramètres de l'organisation.
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-box me-2 text-warning"></i>{{ lot.code }}
+            </h1>
+            <div>
+                <a href="{% url 'catalogue:products_lots' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Liste des lots
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <!-- Boutons à implémenter prochainement: modification et mouvements -->
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations du lot -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Informations du lot
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Code lot :</dt>
+                            <dd class="col-sm-8">{{ lot.code }}</dd>
+
+                            <dt class="col-sm-4">Cuvée :</dt>
+                            <dd class="col-sm-8">
+                                {% if lot.cuvee %}
+                                <a href="{% url 'catalogue:cuvee_detail' lot.cuvee.pk %}" class="text-decoration-none">
+                                    {{ lot.cuvee.name }}
+                                </a>
+                                {% else %}-{% endif %}
+                            </dd>
+
+                            <dt class="col-sm-4">Entrepôt :</dt>
+                            <dd class="col-sm-8">{% if lot.warehouse %}{{ lot.warehouse.name }}{% else %}-{% endif %}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Statut :</dt>
+                            <dd class="col-sm-8">{{ lot.get_status_display }}</dd>
+
+                            {% if lot.alcohol_pct %}
+                                <dt class="col-sm-4">Degré :</dt>
+                                <dd class="col-sm-8"><strong class="fs-5">{{ lot.alcohol_pct|floatformat:2 }}°</strong> vol.</dd>
+                            {% endif %}
+
+                            <dt class="col-sm-4">Créé le :</dt>
+                            <dd class="col-sm-8">{{ lot.created_at|date:"d/m/Y" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                {% if lot_detail and lot_detail.observations %}
+                    <hr>
+                    <h6>Observations :</h6>
+                    <p class="text-muted">{{ lot_detail.observations|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contenants -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-hdd-stack me-2"></i>Contenants</h6>
+            </div>
+            <div class="card-body">
+                {% if containers %}
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Identifiant</th>
+                                    <th class="text-end">Capacité (L)</th>
+                                    <th class="text-end">Occupé (L)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in containers %}
+                                    <tr>
+                                        <td>{{ c.get_type_display }}</td>
+                                        <td>{{ c.identifiant|default:"-" }}</td>
+                                        <td class="text-end">{{ c.capacite_l|floatformat:1 }}</td>
+                                        <td class="text-end">{{ c.volume_occupe_l|floatformat:1 }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-muted">Aucun contenant renseigné.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Volumes -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Volume Lot (L) :</span>
+                        <strong>{{ lot.volume_l|floatformat:1 }} L</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Volume net (détail) :</span>
+                        <strong>{% if lot_detail and lot_detail.volume_net_l %}{{ lot_detail.volume_net_l|floatformat:1 }} L{% else %}-{% endif %}</strong>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- Sources et documents -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-diagram-3 me-2"></i>Sources & Documents
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-muted">Cuvées sources</h6>
+                    {% if sources_cuvees %}
+                        <ul class="mb-0">
+                            {% for sc in sources_cuvees %}
+                                <li>{{ sc.cuvee.name }}{% if sc.volume_l %} — {{ sc.volume_l|floatformat:1 }} L{% endif %}{% if sc.pourcentage %} ({{ sc.pourcentage|floatformat:1 }}%) {% endif %}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted">-</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="text-muted">Lots sources</h6>
+                    {% if sources_lots %}
+                        <ul class="mb-0">
+                            {% for sl in sources_lots %}
+                                <li>{{ sl.source_lot.code }}{% if sl.volume_l %} — {{ sl.volume_l|floatformat:1 }} L{% endif %}{% if sl.pourcentage %} ({{ sl.pourcentage|floatformat:1 }}%) {% endif %}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted">-</div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <h6 class="text-muted">Documents</h6>
+                    {% if documents %}
+                        <ul class="mb-0">
+                            {% for d in documents %}
+                                <li><a href="{{ d.document.url }}" target="_blank" rel="noopener">{{ d.get_type_display }}{% if d.description %} — {{ d.description }}{% endif %}</a></li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-muted">-</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations techniques -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-clipboard-data me-2"></i>Informations techniques
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Cuvée :</strong> {{ lot.cuvee.nom }}
+                </p>
+                
+                <p class="mb-2">
+                    <strong>Millésime :</strong> {{ lot.millesime }}
+                </p>
+                
+                {% if lot.degre_alcool %}
+                    <p class="mb-2">
+                        <strong>Titre alcoométrique :</strong> {{ lot.degre_alcool }}% vol.
+                    </p>
+                {% endif %}
+                
+                {% if lot.densite %}
+                    <p class="mb-2">
+                        <strong>Densité :</strong> {{ lot.densite }}
+                    </p>
+                {% endif %}
+                
+                <p class="mb-2">
+                    <strong>Entrepôt :</strong> {{ lot.entrepot.nom }}
+                </p>
+                
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Créé le {{ lot.date_creation|date:"d/m/Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-marker {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}

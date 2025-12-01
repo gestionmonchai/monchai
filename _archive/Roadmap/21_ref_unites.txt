@@ -1,0 +1,42 @@
+
+Roadmap — /ref/unites (Unités — liste & CRUD de base)
+====================================================
+Objectif
+--------
+Lister et maintenir les **Unités de mesure** (bouteille, L, hL) avec ratios vs Litre pivot, pour conversions.
+
+Portée & Done
+-------------
+- Liste unités + création/édition/suppression (si non utilisées).
+- Seeds: L(1.0), hL(100.0), BT(0.75).
+- Unicité par org sur code ; une unité par défaut.
+
+Endpoints
+---------
+- GET  /ref/unites
+- GET  /ref/unites/new
+- POST /ref/unites
+- GET  /ref/unites/:id/edit
+- POST /ref/unites/:id
+- POST /ref/unites/:id/delete
+
+Modèle (rappel)
+---------------
+- unit_of_measure(org, code UNIQUE, name, base_ratio_to_l>0, is_default, row_version)
+
+Validations & règles
+--------------------
+- base_ratio_to_l > 0 ; code uppercase A‑Z0‑9 2..6 ; UNIQUE(org, code).
+- is_default: contrainte qu’une seule par org (toggle automatique).
+
+UI & UX
+-------
+- Table: Code, Nom, Ratio (→ L), Par défaut?, Actions.
+- Badge “Par défaut”.
+
+Tests & robustesse
+------------------
+- AC1: Mise par défaut bascule l’ancienne off.
+- AC2: Suppression unité utilisée → refus (message).
+- R1: Double submit is_default → un seul par org in fine.
+- R2: Ratio 0/neg → 400.

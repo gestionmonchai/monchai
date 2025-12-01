@@ -1,0 +1,131 @@
+{% extends 'production/base_production.html' %}
+{% load static %}
+
+{% block title %}Parcelles - {{ organization.name }}{% endblock %}
+
+{% block production_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-geo-alt me-2 text-warning"></i>Parcelles
+            </h1>
+            <div class="d-flex align-items-center">
+                <!-- Boutons Import/Export -->
+                {% include 'components/import_export_buttons.html' with entity_type='parcelle' entity_name='Parcelles' %}
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <a id="btn-new-parcelle" href="{% url 'production:parcelle_new' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouvelle parcelle
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche temps réel -->
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="position-relative">
+            <input type="text" 
+                   id="quick-search" 
+                   name="search"
+                   value="{{ search|default:'' }}" 
+                   placeholder="Recherche rapide dans toutes les parcelles..." 
+                   class="form-control pe-5"
+                   autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                <i class="bi bi-search text-muted" id="search-icon"></i>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                    <span class="visually-hidden">Recherche...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div id="search-info" class="text-muted small mt-2">
+            {% if page_obj %}
+                {{ page_obj.paginator.count }} parcelle{{ page_obj.paginator.count|pluralize }}
+            {% else %}
+                0 parcelle
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Liste des parcelles -->
+{% if page_obj %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Surface</th>
+                                    <th>Récolté (kg)</th>
+                                    <th>Lieu-dit</th>
+                                    <th>Commune</th>
+                                    <th>Créé le</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% include 'referentiels/partials/parcelle_table_rows.html' %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row mt-3">
+        <div class="col-12" id="pagination-container">
+            {% include 'referentiels/partials/pagination.html' %}
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucune parcelle trouvée</h4>
+                {% if search %}
+                    <p>Aucune parcelle ne correspond à votre recherche "{{ search }}".</p>
+                    <a href="{% url 'production:parcelles_list' %}" class="btn btn-outline-primary">
+                        Voir toutes les parcelles
+                    </a>
+                {% else %}
+                    <p>Vous n'avez pas encore créé de parcelle.</p>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'production:parcelle_new' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Créer votre première parcelle
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/realtime-search.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    new RealtimeSearch({
+        ajaxUrl: '{% url "referentiels:parcelle_search_ajax" %}',
+        entityName: 'parcelle'
+    });
+});  
+</script>
+
+<!-- Modals Import/Export -->
+{% include 'components/import_export_modals.html' %}
+
+{% endblock %}

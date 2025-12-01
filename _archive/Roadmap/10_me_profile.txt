@@ -1,0 +1,56 @@
+10 — /me/profile — Profil utilisateur (nom, langue, fuseau, photo) — Guide pas-à-pas
+====================================================================================
+Objectif: permettre à chaque utilisateur de gérer ses préférences personnelles indépendamment de l’organisation.
+
+Portée & Done
+--------------
+- DONE si: page éditable (nom, langue, fuseau horaire), upload photo (avatar), préférences sauvegardées et visibles dans le header.
+- Les préférences n’impactent pas les données d’org (ex: devise).
+
+Étape 1 — Modèle & stockage (45–60 min)
+---------------------------------------
+1.1 Créer `UserProfile` (OneToOne User) avec champs:
+    - display_name (fallback vers email si vide)
+    - locale (ex: 'fr', 'en')
+    - timezone (ex: 'Europe/Paris')
+    - avatar (ImageField, optional; en dev, FileSystemStorage local)
+1.2 Signal post_user_create: `get_or_create(UserProfile)`.
+1.3 Utilities: `get_display_name(user)` qui priorise display_name > first_name last_name > email.
+
+Étape 2 — Routes & permissions (15–20 min)
+-------------------------------------------
+2.1 URL: **GET/POST** `/me/profile/` (login_required).
+2.2 Seul l’utilisateur peut modifier son propre profil. Pas d’édition par rôle d’org.
+
+Étape 3 — Formulaire & validation (45–60 min)
+----------------------------------------------
+3.1 Champs requis: locale, timezone. display_name optionnel.
+3.2 Liste locales supportées (ex: ['fr', 'en']).
+3.3 Liste timezones depuis pytz/zoneinfo (filtrer une shortlist).
+3.4 Upload avatar: taille max (ex: 2 Mo), extensions (jpg/png), ratio carré recommandé.
+3.5 Validation serveur: poids & format de l’image; vider le champ si invalide (message clair).
+
+Étape 4 — Template (45 min)
+----------------------------
+4.1 Aperçu avatar (cercle), bouton “Remplacer”.
+4.2 Sélecteurs pour langue & fuseau (avec recherche si long).
+4.3 Bouton “Enregistrer” + états loading/success.
+4.4 Bannière “Profil mis à jour” après POST.
+
+Étape 5 — Effets UI globaux (20–30 min)
+----------------------------------------
+5.1 Header session badge utilise `get_display_name()`.
+5.2 (Option) Stocker locale & timezone en session pour adapter formats (sinon global app-level).
+5.3 (Option) Interrupteur “Mode compact / dense” si besoin (préférence UI).
+
+Étape 6 — Tests (45 min)
+-------------------------
+- Accès à /me/profile → 200; champs pré-remplis (locale par défaut, timezone).
+- POST valide → redirection 200 + bannière; changements persistants.
+- Upload image invalide → message d’erreur; ancien avatar conservé.
+
+Sécurité & RGPD (notes)
+-----------------------
+- Taille/format avatar contrôlés; stocker dans un répertoire users/{user_id}/.
+- Afficher suppression avatar (revient à l’initiale).
+- Pas de données sensibles; éviter d’exposer emails des autres utilisateurs.

@@ -1,0 +1,7 @@
+ROADMAP_IMPORT_5 — Rapports, Observabilité, Sécurité avancée & Runbook (junior step-by-step)
+============================================================================================
+[Contenu identique au guide CSV_5 : rapports téléchargeables, dashboards/alertes, quotas/rate-limit/CSRF, nettoyage, runbook, plan de tests CI.]
+
+
+
+

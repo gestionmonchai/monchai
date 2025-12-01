@@ -1,0 +1,48 @@
+{% load widget_tweaks %}
+{% for unite in page_obj %}
+    <tr>
+        <td>
+            <a href="{% url 'referentiels:unite_detail' unite.pk %}" 
+               class="text-decoration-none fw-semibold">
+                {{ unite.nom }}
+            </a>
+        </td>
+        <td>
+            <span class="badge bg-light text-dark">{{ unite.symbole }}</span>
+        </td>
+        <td>
+            <span class="badge bg-{% if unite.type_unite == 'volume' %}primary{% elif unite.type_unite == 'poids' %}warning{% else %}info{% endif %}">
+                {{ unite.get_type_unite_display }}
+            </span>
+        </td>
+        <td class="text-muted">
+            {{ unite.facteur_conversion }}
+        </td>
+        <td class="text-muted">
+            {{ unite.created_at|date:"d/m/Y" }}
+        </td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'referentiels:unite_detail' unite.pk %}" 
+                   class="btn btn-outline-primary" 
+                   title="Voir">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:unite_update' unite.pk %}" 
+                       class="btn btn-outline-secondary" 
+                       title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+            <i class="bi bi-search fs-1 mb-2"></i>
+            <div>Aucune unité trouvée</div>
+        </td>
+    </tr>
+{% endfor %}

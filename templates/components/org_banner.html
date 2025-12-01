@@ -1,0 +1,18 @@
+{% comment %}
+Banniere de contexte chai - UX Point 7
+Affiche une banniere pour les chais de test ou le contexte
+{% endcomment %}
+
+{% if current_org %}
+    {% if current_org.is_test %}
+    <!-- Banniere chai de test -->
+    <div class="alert alert-warning alert-dismissible mb-0 rounded-0 py-2 border-0" role="alert" style="background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);">
+        <div class="container d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-flask"></i>
+            <span class="fw-medium">Chai de test</span>
+            <span class="d-none d-md-inline">- Les donnees ne seront pas utilisees pour la comptabilite reelle</span>
+            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Fermer"></button>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}

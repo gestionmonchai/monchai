@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.import-step {
+    display: none;
+}
+.import-step.active {
+    display: block;
+}
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+.step-indicator .step {
+    display: flex;
+    align-items: center;
+    margin: 0 1rem;
+}
+.step-indicator .step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    font-weight: bold;
+}
+.step-indicator .step.active .step-number {
+    background-color: #007bff;
+    color: white;
+}
+.step-indicator .step.completed .step-number {
+    background-color: #28a745;
+    color: white;
+}
+.mapping-table th, .mapping-table td {
+    padding: 0.5rem;
+    border: 1px solid #dee2e6;
+}
+.preview-table {
+    font-size: 0.875rem;
+}
+.error-row {
+    background-color: #f8d7da;
+}
+.warning-row {
+    background-color: #fff3cd;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ page_title }}</h1>
+                <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour aux référentiels
+                </a>
+            </div>
+
+            <!-- Indicateur d'étapes -->
+            <div class="step-indicator">
+                <div class="step active" id="step-indicator-1">
+                    <div class="step-number">1</div>
+                    <span>Sélection</span>
+                </div>
+                <div class="step" id="step-indicator-2">
+                    <div class="step-number">2</div>
+                    <span>Prévisualisation</span>
+                </div>
+                <div class="step" id="step-indicator-3">
+                    <div class="step-number">3</div>
+                    <span>Import</span>
+                </div>
+            </div>
+
+            <!-- Étape 1: Sélection du fichier -->
+            <div class="import-step active" id="step-1">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Étape 1: Dépôt sécurisé (CSV uniquement)</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="upload-form" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="import_type" class="form-label">Type de référentiel</label>
+                                        <select class="form-select" id="import_type" name="import_type" required>
+                                            <option value="">Sélectionnez un type...</option>
+                                            {% for type in import_types %}
+                                            <option value="{{ type.key }}" {% if type.key == preselected_type %}selected{% endif %}>{{ type.label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="csv_file" class="form-label">Fichier CSV</label>
+                                        <input type="file" class="form-control" id="csv_file" name="csv_file" 
+                                               accept=".csv,.txt" required>
+                                        <div class="form-text">
+                                            Formats supportés: CSV/TXT uniquement (maximum 10MB). Pas de macros, formules neutralisées.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="dropzone" class="border border-2 border-dashed rounded p-4 text-center mb-3" style="cursor: pointer;">
+                              <div class="text-muted">Déposez votre fichier ici ou cliquez pour sélectionner.</div>
+                            </div>
+
+                            <!-- Colonnes attendues -->
+                            <div id="expected-fields" class="mb-3" style="display: none;">
+                                <h6>Colonnes attendues:</h6>
+                                <div id="expected-fields-list" class="alert alert-info"></div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload me-2"></i>Analyser (intake)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étape 2: Prévisualisation et mapping -->
+            <div class="import-step" id="step-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Étape 2: Prévisualisation et mapping des colonnes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="preview-content">
+                            <!-- Contenu généré dynamiquement -->
+                        </div>
+                        <div class="row g-3 mt-2">
+                          <div class="col-md-6">
+                            <label class="form-label">Seuil de confiance minimum</label>
+                            <div class="d-flex align-items-center gap-2">
+                              <input type="range" min="0.5" max="1.0" step="0.05" value="0.9" id="minConfidence" class="form-range" style="max-width:260px;">
+                              <input type="number" min="0.5" max="1.0" step="0.05" value="0.9" id="minConfidenceNum" class="form-control form-control-sm" style="width:90px;">
+                            </div>
+                          </div>
+                          <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="createSideArtifacts">
+                              <label class="form-check-label" for="createSideArtifacts">Créer les entités liées manquantes (brouillon rapide)</label>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
+                                <i class="bi bi-arrow-left me-2"></i>Retour
+                            </button>
+                            <button type="button" class="btn btn-success" id="execute-import" disabled>
+                                <i class="bi bi-check-circle me-2"></i>Exécuter l'import
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étape 3: Résultats -->
+            <div class="import-step" id="step-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Étape 3: Résultats de l'import</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="results-content">
+                            <!-- Contenu généré dynamiquement -->
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-primary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Nouvel import
+                            </button>
+                            <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-house me-2"></i>Retour aux référentiels
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p id="loading-message">Analyse du fichier en cours...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStep = 1;
+let importData = {};
+let importState = { batchId: null, headers: [], entityType: null, mapping: {} };
+
+// Configuration des types d'import (générée côté serveur)
+const importTypes = JSON.parse('{{ import_types_json|escapejs }}');
+
+// Gestion des étapes
+function goToStep(step) {
+    // Masquer toutes les étapes
+    document.querySelectorAll('.import-step').forEach(el => {
+        el.classList.remove('active');
+    });
+    document.querySelectorAll('.step').forEach(el => {
+        el.classList.remove('active', 'completed');
+    });
+    
+    // Afficher l'étape courante
+    document.getElementById(`step-${step}`).classList.add('active');
+    document.getElementById(`step-indicator-${step}`).classList.add('active');
+    
+    // Marquer les étapes précédentes comme complétées
+    for (let i = 1; i < step; i++) {
+        document.getElementById(`step-indicator-${i}`).classList.add('completed');
+    }
+    
+    currentStep = step;
+}
+
+// Affichage des colonnes attendues
+document.getElementById('import_type').addEventListener('change', function() {
+    const selectedType = this.value;
+    const fieldsDiv = document.getElementById('expected-fields');
+    const fieldsList = document.getElementById('expected-fields-list');
+    
+    if (selectedType && importTypes[selectedType]) {
+        const fields = importTypes[selectedType].fields;
+        fieldsList.innerHTML = `<strong>${importTypes[selectedType].label}:</strong> ${fields.join(', ')}`;
+        fieldsDiv.style.display = 'block';
+    } else {
+        fieldsDiv.style.display = 'none';
+    }
+});
+
+// Upload et prévisualisation
+document.getElementById('upload-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    
+    loadingModal.show();
+    document.getElementById('loading-message').textContent = 'Intake sécurisé en cours...';
+    
+    fetch('{% url "referentiels:import_intake_api" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingModal.hide();
+        
+        if (data.error) {
+            showAlert('danger', data.error);
+        } else {
+            importState.batchId = data.batch_id;
+            importState.headers = data.headers || [];
+            const selectedType = document.getElementById('import_type').value;
+            importState.entityType = selectedType || data.entity_type_suggestion;
+            buildMappingUI(importState, data.mapping_suggestions || {});
+            goToStep(2);
+        }
+    })
+    .catch(error => {
+        loadingModal.hide();
+        showAlert('danger', 'Erreur lors de l\'analyse: ' + error.message);
+    });
+});
+
+// Dropzone handlers
+const dropzone = document.getElementById('dropzone');
+if (dropzone) {
+  dropzone.addEventListener('click', () => document.getElementById('csv_file').click());
+  ;['dragover','dragenter'].forEach(evt => dropzone.addEventListener(evt, e=>{e.preventDefault(); dropzone.classList.add('bg-light')}));
+  ;['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e=>{e.preventDefault(); dropzone.classList.remove('bg-light')}));
+  dropzone.addEventListener('drop', (e)=>{
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) {
+      document.getElementById('csv_file').files = e.dataTransfer.files;
+      document.getElementById('upload-form').dispatchEvent(new Event('submit'));
+    }
+  })
+}
+
+// Affichage de la prévisualisation
+function buildMappingUI(state, suggestions){
+  const content = document.getElementById('preview-content');
+  const entityType = state.entityType;
+  if (!entityType || !importTypes[entityType]){
+    content.innerHTML = '<div class="alert alert-warning">Sélectionnez un type supporté pour continuer.</div>';
+    return;
+  }
+  const fields = importTypes[entityType].fields || [];
+  let html = `
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="alert alert-info">
+          <strong>Fichier analysé:</strong><br>
+          Colonnes détectées: ${state.headers.length}<br>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="alert alert-secondary">
+          Type sélectionné: <strong>${importTypes[entityType].label}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="mb-2">
+      <button class="btn btn-sm btn-outline-secondary" id="btnChangeType">Changer de type</button>
+    </div>
+    <h6>Mapping des colonnes:</h6>
+    <table class="table table-sm mapping-table mb-3">
+      <thead><tr><th>Colonne CSV</th><th>Champ cible</th></tr></thead>
+      <tbody>
+  `;
+  state.headers.forEach(h => {
+    const mapped = suggestions[h] || '';
+    html += `<tr><td><strong>${h}</strong></td><td>
+      <select class="form-select form-select-sm mapping-select" data-header="${h}">
+        <option value="">-- Ignorer --</option>
+        ${fields.map(f => `<option value="${f}" ${mapped===f?'selected':''}>${f}</option>`).join('')}
+      </select>
+    </td></tr>`;
+  });
+  html += `</tbody></table>
+    <button class="btn btn-primary" id="btnPreviewNow"><i class="bi bi-search me-1"></i>Prévisualiser</button>
+  `;
+  content.innerHTML = html;
+  document.querySelectorAll('.mapping-select').forEach(sel => sel.addEventListener('change', updateMapping));
+  document.getElementById('btnPreviewNow').addEventListener('click', runPreview);
+  document.getElementById('btnChangeType').addEventListener('click', ()=>{
+    const sel = document.getElementById('import_type');
+    if (sel && sel.value){ importState.entityType = sel.value; buildMappingUI(importState, {}); }
+  });
+}
+
+function runPreview(){
+  const mapping = collectMapping();
+  importState.mapping = mapping;
+  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+  loadingModal.show();
+  document.getElementById('loading-message').textContent = 'Prévisualisation...';
+  fetch('{% url "referentiels:import_preview_api" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+    body: JSON.stringify({ batch_id: importState.batchId, entity_type: importState.entityType, mapping })
+  }).then(r=>r.json()).then(data=>{
+    loadingModal.hide();
+    if (data.error){ showAlert('danger', data.error); return; }
+    renderPreviewResult(data);
+  }).catch(err=>{ loadingModal.hide(); showAlert('danger', 'Erreur preview: '+err.message); });
+}
+
+function renderPreviewResult(data){
+  const content = document.getElementById('preview-content');
+  const fields = importTypes[data.entity_type].fields || [];
+  let html = `
+    <div class="d-flex justify-content-between mb-2">
+      <div class="alert alert-info mb-0 py-2 px-3">Aperçu 10 lignes — mapping appliqué</div>
+      <button class="btn btn-sm btn-outline-secondary" id="btnEditMapping">Modifier le mapping</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm preview-table">
+        <thead><tr><th>Ligne</th>${fields.map(f=>`<th>${f}</th>`).join('')}<th>Complétude</th></tr></thead>
+        <tbody>
+  `;
+  (data.preview||[]).forEach(row=>{
+    html += `<tr${(row.errors||[]).length? ' class="error-row"':''}>`;
+    html += `<td>${row.line}</td>`;
+    fields.forEach(f => html += `<td>${(row.data||{})[f]||''}</td>`);
+    html += `<td>${row.completeness||0}%</td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  // Side artifacts summary
+  if (data.side_artifacts_suggestions){
+    const c = data.side_artifacts_suggestions.counts || {};
+    html += `<div class="alert alert-secondary mt-2">Ce que je peux créer (exemples):
+      <span class="badge text-bg-primary me-2">Cépages ${c.cepages||0}</span>
+      <span class="badge text-bg-primary me-2">Parcelles ${c.parcelles||0}</span>
+      <span class="badge text-bg-primary me-2">Appellations ${c.appellations||0}</span>
+    </div>`;
+  }
+  content.innerHTML = html;
+  document.getElementById('btnEditMapping').addEventListener('click', ()=> buildMappingUI(importState, importState.mapping||{}));
+  document.getElementById('execute-import').disabled = false;
+}
+
+// Mise à jour du mapping
+function updateMapping(){ collectMapping(); }
+function collectMapping(){
+  const mapping = {};
+  document.querySelectorAll('.mapping-select').forEach(select => {
+    const header = select.dataset.header;
+    const field = select.value;
+    if (field) mapping[header] = field;
+  });
+  importState.mapping = mapping; return mapping;
+}
+
+// Exécution de l'import
+document.getElementById('execute-import').addEventListener('click', function() {
+  const mapping = importState.mapping || {};
+  const minConfidence = parseFloat(document.getElementById('minConfidence').value || '0.9');
+  const createSide = !!document.getElementById('createSideArtifacts').checked;
+  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+  loadingModal.show();
+  document.getElementById('loading-message').textContent = 'Import en cours...';
+  fetch('{% url "referentiels:import_execute_api" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+    body: JSON.stringify({ batch_id: importState.batchId, entity_type: importState.entityType, mapping, min_confidence: minConfidence, create_side_artifacts: createSide })
+  }).then(r=>r.json()).then(data=>{
+    loadingModal.hide();
+    showResults(data);
+    goToStep(3);
+  }).catch(err=>{ loadingModal.hide(); showAlert('danger', 'Erreur lors de l\'import: '+err.message); });
+});
+
+// Affichage des résultats
+function showResults(data) {
+    const content = document.getElementById('results-content');
+    
+    if (data.error) {
+        content.innerHTML = `
+            <div class="alert alert-danger">
+                <h6>Erreur lors de l'import:</h6>
+                <p>${data.error}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">${data.created}</h5>
+                        <p class="card-text">Créés</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-info">${data.updated}</h5>
+                        <p class="card-text">Mis à jour</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-danger">${data.errors}</h5>
+                        <p class="card-text">Erreurs</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">${data.total_processed}</h5>
+                        <p class="card-text">Total traité</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    if (data.error_details && data.error_details.length > 0) {
+        html += `
+            <div class="alert alert-warning mt-3">
+                <h6>Détail des erreurs:</h6>
+                <ul class="mb-0">
+        `;
+        data.error_details.slice(0, 10).forEach(error => {
+            html += `<li>${error}</li>`;
+        });
+        if (data.error_details.length > 10) {
+            html += `<li>... et ${data.error_details.length - 10} autres erreurs</li>`;
+        }
+        html += `</ul>`;
+        
+        if (data.error_report_csv) {
+            html += `
+                <div class="mt-2">
+                    <a href="{% url 'referentiels:import_csv_download_errors' %}?report=${encodeURIComponent(data.error_report_csv)}" 
+                       class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-download me-2"></i>Télécharger le rapport d'erreurs
+                    </a>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+    }
+    
+    if (data.created > 0 || data.updated > 0) {
+        html += `
+            <div class="alert alert-success mt-3">
+                <i class="bi bi-check-circle me-2"></i>
+                Import terminé avec succès ! ${data.created} éléments créés, ${data.updated} mis à jour.
+            </div>
+        `;
+    }
+    
+    content.innerHTML = html;
+}
+
+// Fonction utilitaire pour afficher les alertes
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    // Auto-dismiss après 5 secondes
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Initialisation de la pré-sélection du type
+document.addEventListener('DOMContentLoaded', function() {
+    const importTypeSelect = document.getElementById('import_type');
+    if (importTypeSelect && importTypeSelect.value) {
+        // Déclencher l'événement change pour afficher les colonnes attendues
+        importTypeSelect.dispatchEvent(new Event('change'));
+    }
+    console.log('Import CSV initialisé avec pré-sélection:', '{{ preselected_type }}');
+    // Sync sliders/inputs
+    const s = document.getElementById('minConfidence');
+    const n = document.getElementById('minConfidenceNum');
+    if (s && n) {
+      s.addEventListener('input', ()=> n.value = s.value);
+      n.addEventListener('input', ()=> { let v=parseFloat(n.value||'0.9'); if (isNaN(v)) v=0.9; v=Math.max(0.5, Math.min(1.0, v)); n.value=v.toFixed(2); s.value=v.toFixed(2); });
+    }
+});
+</script>
+{% endblock %}

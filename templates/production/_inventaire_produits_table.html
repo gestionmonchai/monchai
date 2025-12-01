@@ -1,0 +1,49 @@
+<table class="table align-middle">
+  <thead>
+    <tr>
+      <th>Produit</th>
+      <th>Format</th>
+      <th>Cuvée</th>
+      <th>Millésime</th>
+      <th class="text-end">Stock (u)</th>
+      <th class="text-end">Réservé (u)</th>
+      <th class="text-end">Dispo (u)</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for sku in object_list %}
+    <tr>
+      <td><a href="/produits/skus/{{ sku.id }}/">{{ sku.label }}</a></td>
+      <td>{{ sku.uom.code }}</td>
+      <td>{{ sku.cuvee.nom }}</td>
+      <td>{{ sku.cuvee.vintage.year|default:"—" }}</td>
+      <td class="text-end">{{ sku.total_stock|default:0 }}</td>
+      <td class="text-end">{{ sku.total_reserved|default:0 }}</td>
+      <td class="text-end">{{ sku.total_dispo|default:0 }}</td>
+      <td class="text-end">
+        <div class="btn-group">
+          <a class="btn btn-sm btn-outline-secondary" href="/produits/skus/{{ sku.id }}/">Ouvrir</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/ventes/commandes/">Vendre</a>
+        </div>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="text-center text-muted py-5">Aucun produit trouvé.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if is_paginated %}
+<nav class="d-flex justify-content-end">
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.previous_page_number }}" hx-include="#inv-filters" hx-target="#inv-table" hx-swap="innerHTML">«</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.next_page_number }}" hx-include="#inv-filters" hx-target="#inv-table" hx-swap="innerHTML">»</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

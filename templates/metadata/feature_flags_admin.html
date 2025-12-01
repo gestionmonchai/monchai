@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Feature Flags Administration{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Feature Flags Administration</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'metadata:monitoring_dashboard' %}">Monitoring</a></li>
+                        <li class="breadcrumb-item active">Feature Flags</li>
+                    </ol>
+                </nav>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Gestion des Feature Flags</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Interface d'administration des feature flags. Permet d'activer/désactiver des fonctionnalités en temps réel.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Feature Flags disponibles</h6>
+                            <div class="list-group">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Catalogue Grid V2</strong>
+                                        <br><small class="text-muted">Nouvelle interface de grille catalogue</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="catalogue_grid_v2" checked>
+                                        <label class="form-check-label" for="catalogue_grid_v2"></label>
+                                    </div>
+                                </div>
+                                
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Real-time Search</strong>
+                                        <br><small class="text-muted">Recherche en temps réel avec suggestions</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="realtime_search" checked>
+                                        <label class="form-check-label" for="realtime_search"></label>
+                                    </div>
+                                </div>
+                                
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Advanced Analytics</strong>
+                                        <br><small class="text-muted">Tableaux de bord analytiques avancés</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="advanced_analytics">
+                                        <label class="form-check-label" for="advanced_analytics"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Statistiques d'utilisation</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="h4 mb-0 text-primary">3</div>
+                                            <small class="text-muted">Flags actifs</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="h4 mb-0 text-success">2</div>
+                                            <small class="text-muted">En production</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="h4 mb-0 text-warning">1</div>
+                                            <small class="text-muted">En test</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des switches de feature flags
+    const switches = document.querySelectorAll('.form-check-input[type="checkbox"]');
+    switches.forEach(function(switchEl) {
+        switchEl.addEventListener('change', function() {
+            const flagName = this.id;
+            const isEnabled = this.checked;
+            
+            // Ici on pourrait faire un appel AJAX pour sauvegarder l'état
+            console.log(`Feature flag ${flagName}: ${isEnabled ? 'enabled' : 'disabled'}`);
+            
+            // Afficher une notification
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        Feature flag ${flagName} ${isEnabled ? 'activé' : 'désactivé'}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // Supprimer le toast après affichage
+            toast.addEventListener('hidden.bs.toast', function() {
+                document.body.removeChild(toast);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

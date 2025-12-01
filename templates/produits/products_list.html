@@ -1,0 +1,445 @@
+{% extends 'base.html' %}
+
+{% block title %}Produits - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-grid me-2 text-primary"></i>Produits
+            </h1>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'catalogue:home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Catalogue
+                </a>
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="#" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouveau produit
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche avancée par champs -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filtres de recherche
+            </h6>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+                    <i class="bi bi-chevron-down"></i> Avancé
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="clear-filters">
+                    <i class="bi bi-x-circle"></i> Effacer
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Recherche rapide -->
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <input type="text" 
+                           id="quick-search" 
+                           name="search"
+                           value="{{ filters.search|default:'' }}" 
+                           placeholder="Recherche rapide dans tous les champs..." 
+                           class="form-control pe-5"
+                           autocomplete="off">
+                    <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i class="bi bi-search text-muted" id="search-icon"></i>
+                        <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                            <span class="visually-hidden">Recherche...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div id="search-info" class="text-muted small mt-2">
+                    {{ total_count }} produit{{ total_count|pluralize }} ({{ cuvees_count }} cuvée{{ cuvees_count|pluralize }}, {{ skus_count }} produit{{ skus_count|pluralize }} fini{{ skus_count|pluralize }})
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres avancés (masqués par défaut) -->
+        <div id="advanced-filters" class="collapse">
+            <hr>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-nom" class="form-label">Nom</label>
+                    <input type="text" 
+                           id="filter-nom" 
+                           name="nom"
+                           value="{{ filters.nom|default:'' }}" 
+                           placeholder="Nom du produit..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-type" class="form-label">Type</label>
+                    <select id="filter-type" name="type" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="cuvee" {% if filters.type == 'cuvee' %}selected{% endif %}>Cuvées</option>
+                        <option value="sku" {% if filters.type == 'sku' %}selected{% endif %}>Produits finis</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-appellation" class="form-label">Appellation</label>
+                    <select id="filter-appellation" name="appellation" class="form-select">
+                        <option value="">Toutes</option>
+                        {% for appellation in appellations %}
+                            <option value="{{ appellation.id }}" 
+                                    {% if filters.appellation == appellation.id|stringformat:"s" %}selected{% endif %}>
+                                {{ appellation.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-vintage" class="form-label">Millésime</label>
+                    <select id="filter-vintage" name="vintage" class="form-select">
+                        <option value="">Tous</option>
+                        {% for vintage in vintages %}
+                            <option value="{{ vintage.id }}" 
+                                    {% if filters.vintage == vintage.id|stringformat:"s" %}selected{% endif %}>
+                                {{ vintage.year }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-sort" class="form-label">Tri</label>
+                    <div class="input-group">
+                        <select id="filter-sort" name="sort" class="form-select">
+                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nom</option>
+                            <option value="type" {% if sort_by == 'type' %}selected{% endif %}>Type</option>
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Création</option>
+                            <option value="updated_at" {% if sort_by == 'updated_at' %}selected{% endif %}>Modification</option>
+                        </select>
+                        <select id="filter-order" name="order" class="form-select" style="max-width: 100px;">
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>↑</option>
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>↓</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des produits -->
+{% if products %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Type</th>
+                                    <th>Appellation</th>
+                                    <th>Millésime</th>
+                                    <th>Créé le</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% include 'produits/partials/products_table_rows.html' %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row mt-3">
+        <div class="col-12" id="pagination-container">
+            {% include 'produits/partials/products_pagination.html' %}
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucun produit trouvé</h4>
+                <p>Vous n'avez pas encore créé de produit.</p>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="#" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Créer votre premier produit
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments du DOM
+    const quickSearchInput = document.getElementById('quick-search');
+    const filterInputs = {
+        nom: document.getElementById('filter-nom'),
+        type: document.getElementById('filter-type'),
+        appellation: document.getElementById('filter-appellation'),
+        vintage: document.getElementById('filter-vintage'),
+        sort: document.getElementById('filter-sort'),
+        order: document.getElementById('filter-order')
+    };
+    
+    const searchInfo = document.getElementById('search-info');
+    const resultsTable = document.getElementById('results-table');
+    const paginationContainer = document.getElementById('pagination-container');
+    const toggleAdvancedBtn = document.getElementById('toggle-advanced-search');
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    const advancedFilters = document.getElementById('advanced-filters');
+    const searchIcon = document.getElementById('search-icon');
+    const searchSpinner = document.getElementById('search-spinner');
+    
+    let searchTimeout;
+    let currentController;
+    let currentPage = 1;
+    
+    // Configuration
+    const DEBOUNCE_MS = 300;
+    
+    // Collecter tous les filtres actifs
+    function collectFilters() {
+        const filters = {};
+        
+        // Recherche rapide
+        const quickSearch = quickSearchInput.value.trim();
+        if (quickSearch) filters.search = quickSearch;
+        
+        // Filtres avancés
+        Object.keys(filterInputs).forEach(key => {
+            const input = filterInputs[key];
+            if (input && input.value.trim()) {
+                filters[key] = input.value.trim();
+            }
+        });
+        
+        return filters;
+    }
+    
+    // Construire l'URL avec les paramètres
+    function buildURL(filters, page = 1) {
+        const params = new URLSearchParams();
+        
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                params.set(key, filters[key]);
+            }
+        });
+        
+        if (page > 1) {
+            params.set('page', page);
+        }
+        
+        return `/produits/search-ajax/?${params.toString()}`;
+    }
+    
+    // Mettre à jour l'URL du navigateur
+    function updateBrowserURL(filters, page = 1) {
+        const params = new URLSearchParams();
+        
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                params.set(key, filters[key]);
+            }
+        });
+        
+        if (page > 1) {
+            params.set('page', page);
+        }
+        
+        const newURL = `/produits/${params.toString() ? '?' + params.toString() : ''}`;
+        window.history.replaceState({}, '', newURL);
+    }
+    
+    // Fonction de recherche avec filtres multiples
+    function performSearch(page = 1) {
+        // Annuler la requête précédente
+        if (currentController) {
+            currentController.abort();
+        }
+        currentController = new AbortController();
+        
+        // Collecter tous les filtres
+        const filters = collectFilters();
+        
+        // Afficher le spinner
+        if (searchIcon && searchSpinner) {
+            searchIcon.classList.add('d-none');
+            searchSpinner.classList.remove('d-none');
+        }
+        
+        // Mettre à jour l'URL du navigateur
+        updateBrowserURL(filters, page);
+        
+        // Construire l'URL de la requête AJAX
+        const ajaxURL = buildURL(filters, page);
+        
+        // Faire la requête AJAX
+        fetch(ajaxURL, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            signal: currentController.signal
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            updateResults(data, filters);
+            attachPaginationEvents();
+        })
+        .catch(error => {
+            if (error.name !== 'AbortError') {
+                console.error('Erreur de recherche:', error);
+                searchInfo.innerHTML = '<span class="text-danger">Erreur lors de la recherche</span>';
+            }
+        })
+        .finally(() => {
+            // Masquer le spinner
+            if (searchIcon && searchSpinner) {
+                searchIcon.classList.remove('d-none');
+                searchSpinner.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Mettre à jour les résultats
+    function updateResults(data, filters) {
+        if (data.products_html) {
+            resultsTable.innerHTML = data.products_html;
+        }
+        if (data.pagination_html) {
+            paginationContainer.innerHTML = data.pagination_html;
+        }
+        
+        // Mettre à jour les informations de recherche
+        const hasFilters = Object.keys(filters).length > 0;
+        if (hasFilters) {
+            searchInfo.innerHTML = `${data.total_count || 0} résultat${(data.total_count || 0) > 1 ? 's' : ''} avec filtres`;
+        } else {
+            searchInfo.innerHTML = `${data.total_count || 0} produit${(data.total_count || 0) > 1 ? 's' : ''} (${data.cuvees_count || 0} cuvée${(data.cuvees_count || 0) > 1 ? 's' : ''}, ${data.skus_count || 0} produit${(data.skus_count || 0) > 1 ? 's' : ''} fini${(data.skus_count || 0) > 1 ? 's' : ''})`;
+        }
+    }
+    
+    // Attacher les événements de pagination
+    function attachPaginationEvents() {
+        const paginationLinks = document.querySelectorAll('.pagination-link');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = this.getAttribute('data-page');
+                performSearch(parseInt(page));
+            });
+        });
+    }
+    
+    // Gérer l'affichage/masquage des filtres avancés
+    if (toggleAdvancedBtn && advancedFilters) {
+        toggleAdvancedBtn.addEventListener('click', function() {
+            const isCollapsed = advancedFilters.classList.contains('show');
+            const icon = this.querySelector('i');
+            
+            if (isCollapsed) {
+                advancedFilters.classList.remove('show');
+                icon.className = 'bi bi-chevron-down';
+            } else {
+                advancedFilters.classList.add('show');
+                icon.className = 'bi bi-chevron-up';
+            }
+        });
+    }
+    
+    // Effacer tous les filtres
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            // Vider tous les champs
+            quickSearchInput.value = '';
+            Object.values(filterInputs).forEach(input => {
+                if (input) {
+                    if (input.type === 'select-one') {
+                        input.selectedIndex = 0;
+                    } else {
+                        input.value = '';
+                    }
+                }
+            });
+            
+            // Relancer la recherche
+            performSearch(1);
+        });
+    }
+    
+    // Événements de saisie avec debounce
+    function setupInputEvents() {
+        // Recherche rapide
+        if (quickSearchInput) {
+            quickSearchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                
+                if (this.value.trim() === '') {
+                    performSearch(1);
+                } else {
+                    searchTimeout = setTimeout(() => {
+                        performSearch(1);
+                    }, DEBOUNCE_MS);
+                }
+            });
+            
+            quickSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    performSearch(1);
+                }
+            });
+        }
+        
+        // Filtres avancés
+        Object.values(filterInputs).forEach(input => {
+            if (input) {
+                const eventType = input.type === 'select-one' ? 'change' : 'input';
+                input.addEventListener(eventType, function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        performSearch(1);
+                    }, DEBOUNCE_MS);
+                });
+            }
+        });
+    }
+    
+    // Initialisation
+    setupInputEvents();
+    attachPaginationEvents();
+    
+    // Focus sur le champ de recherche rapide
+    if (quickSearchInput) {
+        quickSearchInput.focus();
+    }
+    
+    console.log('Recherche avancée produits initialisée');
+});
+</script>
+{% endblock %}

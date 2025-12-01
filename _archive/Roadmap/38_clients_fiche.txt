@@ -1,0 +1,60 @@
+Roadmap 38 — /clients/:id (Fiche client — contacts, adresses, activités)
+=======================================================================
+Rôle & objectif
+---------------
+Afficher une **fiche client** complète avec **contacts** (multi-personnes), **adresses** (facturation/livraison), **activités** (appels, emails, commandes liées en v2). Supporter l’édition guidée et les **notes**.
+
+Modèle (DB)
+-----------
+- `customer` (cf. Roadmap 36/37)
+- `customer_contact(id, customer_id, first_name, last_name, email?, phone?, role?, is_primary bool, created_at, updated_at)`
+- `address(id, customer_id, kind ENUM('billing','shipping','other'), line1..line2, postal_code, city, country_code, is_default bool)`
+- `customer_activity(id, customer_id, type ENUM('note','call','email','meeting','order_ref','other'), payload JSONB, created_by, created_at)`
+
+Endpoints
+---------
+- GET `/clients/:id` → sections + stats (`last_activity_at`, `orders_count?` future)
+- POST `/clients/:id` (update champs principaux) avec `If‑Match: row_version`
+- POST `/clients/:id/contacts` (CRUD) ; `/clients/:id/addresses` (CRUD) ; `/clients/:id/activities` (append‑only pour historique)
+- (Option) `/clients/:id/merge` (v2) — fusion de doublons
+
+UX (sections)
+-------------
+1) **Infos client**: nom, segment, TVA/country, email/tel. Édition inline (double‑clic) avec 409 géré.
+2) **Contacts** (carte par contact) : add/edit/delete ; définir **primaire** (un seul).
+3) **Adresses** : billing/shipping ; **par défaut** unique par type.
+4) **Activités** : timeline inversée ; ajouter **Note**/**Call**/**Email** (résumé + pièces jointes option).
+5) **Tags** (Roadmap 39) affichés + gestion rapide (ajout/suppression).
+
+Sécurité & GDPR
+---------------
+- Roles: viewer lecture seule; editor+ CRUD.
+- GDPR: **droit à l’effacement** (soft delete + anonymisation optionnelle v2).
+- PII: chiffrement au repos (selon politique), masquage UI si rôle restreint.
+
+Validations
+-----------
+- Un seul `contact.is_primary=true` ; un seul `address.is_default=true` par type.
+- Email/phone formats ; country ISO ; codes postaux (regex pays option).
+- row_version sur updates concurrentes.
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑38‑01: Ajout contact secondaire puis le passer “primaire” bascule l’ancien à false.
+- AC‑38‑02: Ajout adresse billing + shipping ; définir shipping par défaut unique.
+- AC‑38‑03: Ajout activité “Note” apparaît en tête de timeline avec auteur/date.
+- AC‑38‑04: Conflit 409 sur inline edit résolu par refresh (message clair).
+
+Robustesse (tests)
+------------------
+- R‑38‑01: XSS dans notes/contacts → rendu échappé; pièces jointes contrôlées (mimetype).
+- R‑38‑02: RLS: impossible d’accéder client d’une autre org.
+- R‑38‑03: Fusion doublons (v2) — test de non‑régression : références réassignées proprement.
+- R‑38‑04: 100k activités/client → pagination keyset < 600 ms.
+
+Étapes d’implémentation
+-----------------------
+1) Migrations contacts/addresses/activities (+ index usuels).
+2) Endpoints CRUD + append‑only activities ; verrous optimistes (row_version).
+3) UI sections avec inline edit + timeline + tags.
+4) Tests AC/robustesse + doc `clients_fiche.md`.

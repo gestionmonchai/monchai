@@ -1,0 +1,65 @@
+Roadmap 25 — /catalogue (Grille cuvées — cartes + recherche)
+===========================================================
+Rôle & objectif
+---------------
+Afficher le **catalogue des cuvées** en grille (cartes) avec **recherche rapide**, **facettes** (appellation, millésime, couleur) et **tri**. Point d’entrée vers la fiche produit et vers les lots liés. Doit rester **fluide** (p95 < 600 ms).
+
+Livrables
+---------
+- Vue `/catalogue` (SSR/HTMX/SPA, au choix du projet) avec:
+  - Champ recherche (debounce 200 ms, cancellation)
+  - Facettes: Appellation, Millésime, Couleur (+ état actif)
+  - Tri: Nom (A→Z/Z→A), Récence (updated_at desc), Popularité (option)
+  - Pagination keyset (cursor `updated_at,id`), page_size=24
+  - Cartes cuvées: visuel (étiquette si dispo), Nom, Appellation/Millésime, Couleur, CTA “Voir fiche”
+- Endpoint API `/api/catalogue` (JSON) pour la même data (future intégration e‑commerce, etc.)
+- Vues sauvegardées (option) respectant filtres/tri (si feature 07 activée)
+- Tests d’acceptation & robustesse (ci‑dessous)
+
+Contrats API (résumé)
+---------------------
+GET `/api/catalogue?q=&appellation=&vintage=&color=&sort=&cursor=&page_size=24`
+→ `{ items:[{id,name,slug,appellation,vintage,color,media:{thumb_url}}, next_cursor, facets:{...}, perf:{elapsed_ms, cache_hit} }`
+
+Index & perfs (Postgres)
+------------------------
+- FTS: `cuvee.search_tsv` (simple+unaccent) + GIN
+- Trigram: `idx_cuvee_name_trgm` sur `name`
+- Trie/pagination: index `(updated_at DESC, id DESC)` + keyset
+- Caches: Redis 30–120 s sur requêtes identiques (clé = hash params + org + rôle + engine_version)
+- Statement timeout recherche: 700–900 ms ; annulation si client annule
+
+UX (détails)
+------------
+- `Ctrl/Cmd+K` ouvre la recherche globale préfiltrée sur cuvées
+- “No‑result tips”: corriger orthographe, détendre filtres, synonymes proches
+- Placeholders visuels pour cuvées sans image
+- A11y: cartes navigables clavier, aria-labels descriptifs
+
+Validations & sécurité
+----------------------
+- Whitelist de champs de tri/filtre (serveur) → clés inconnues = 400
+- RLS logique par organisation ; pas d’accès cross‑org
+- Anti‑XSS: champs rendus échappés ; URLs d’images signées/validées
+
+Tests d’acceptation
+-------------------
+- AC‑25‑01: “cote r” remonte **Côtes‑du‑Rhône** < 600 ms (p95)
+- AC‑25‑02: 3 facettes combinées restent < 700 ms (p95)
+- AC‑25‑03: Tri updated_at stable (keyset), pas de doublon/oubli entre pages
+- AC‑25‑04: Carte sans image → placeholder propre
+
+Robustesse (tests)
+------------------
+- R‑25‑01: queries invalides → 400 message clair (pas 500)
+- R‑25‑02: spam de frappes → requêtes obsolètes annulées (server cancel)
+- R‑25‑03: timeouts → fallback trigram ; UI feedback
+- R‑25‑04: grandes org (100k cuvées) → latences respectées
+
+Plan d’implémentation
+---------------------
+1) API `/api/catalogue` (Query Builder v2) + index nécessaires
+2) UI grid + recherche + facettes + tri + keyset
+3) Caches & mesure perf ; budgets temps ; dashboards
+4) Tests AC/robustesse, a11y, placeholders, i18n
+5) Doc Dev Book: `catalogue_grid.md`

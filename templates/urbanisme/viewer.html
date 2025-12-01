@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <title>Mon Chai — PLU & Parcelles</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.1/dist/leaflet-geoman.css"/>
+  <link rel="stylesheet" href="/static/urbanisme/viewer.css"/>
+</head>
+<body>
+  <div id="toolbar">
+    <div class="tabs">
+      <button id="tab-addr" class="active">Adresse</button>
+      <button id="tab-parcel">Parcelle</button>
+    </div>
+    <div id="pane-addr">
+      <input id="addr-q" placeholder="Ex: 1 rue de Paris, Rennes"/>
+      <button id="addr-go">Rechercher</button>
+    </div>
+    <div id="pane-parcel" style="display:none">
+      <input id="p-insee" placeholder="INSEE (ex: 35238)" maxlength="5"/>
+      <input id="p-sec" placeholder="Section (ex: AB)" maxlength="2"/>
+      <input id="p-num" placeholder="Numéro (ex: 0561)" maxlength="4"/>
+      <button id="p-go">Chercher</button>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="chk-plu"/> PLU (zones)</label>
+      <label><input type="checkbox" id="chk-cad-wms" checked/> Trame + n° (WMS)</label>
+    </div>
+    <div id="status"></div>
+  </div>
+  <div id="map"></div>
+
+  <script>
+  window.IGN_WMS_PARCELLAIRE = "{{ IGN_WMS_PARCELLAIRE|default:'' }}";
+  window.IGN_WMS_LAYERS = "{{ IGN_WMS_LAYERS|default:'CADASTRE.PARCELLE,CADASTRE.NUMERO' }}";
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.16.1/dist/leaflet-geoman.min.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  <script src="/static/urbanisme/viewer.js"></script>
+</body>
+</html>

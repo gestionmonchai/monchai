@@ -1,0 +1,58 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Mise {{ mise.code_of }}{% endblock %}
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Mise {{ mise.code_of }}</h1>
+  <div class="d-flex gap-2">
+    <a href="/production/services/entry/?entity_type=mise&entity_id={{ mise.id }}" class="btn btn-outline-primary btn-sm">+ Service</a>
+  </div>
+</div>
+<div class="card mb-3"><div class="card-body">
+  <div class="row g-3">
+    <div class="col-md-3"><strong>Date</strong><div>{{ mise.date }}</div></div>
+    <div class="col-md-3"><strong>Campagne</strong><div>{{ mise.campagne }}</div></div>
+    <div class="col-md-6"><strong>Notes</strong><div>{{ mise.notes|linebreaks }}</div></div>
+  </div>
+</div></div>
+<div class="card mb-3">
+  <div class="card-header">Traçabilité vendanges</div>
+  <div class="card-body">
+    {% if trace_vendanges and trace_vendanges|length %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Code</th><th>Date</th><th>Parcelle</th><th></th></tr></thead>
+        <tbody>
+          {% for v in trace_vendanges %}
+          <tr>
+            <td>{{ v.code|default:'—' }}</td>
+            <td>{{ v.date }}</td>
+            <td>{{ v.parcelle|default:'—' }}</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/production/vendanges/{{ v.id }}/">Voir la vendange</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-muted">Aucune vendange liée trouvée.</div>
+    {% endif %}
+  </div>
+</div>
+<h6>Lots commerciaux</h6>
+<table class="table table-sm">
+  <thead><tr><th>Code lot</th><th>Cuvée</th><th>Format</th><th>Qté</th><th></th></tr></thead>
+  <tbody>
+    {% for l in lots %}
+    <tr>
+      <td>{{ l.code_lot }}</td>
+      <td>{{ l.cuvee|default:'-' }}</td>
+      <td>{{ l.format_ml }} mL</td>
+      <td>{{ l.quantite_unites }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/produits/lots-commerciaux/{{ l.id }}/">Voir</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="text-muted">Aucun lot commercial</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

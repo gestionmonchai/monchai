@@ -1,0 +1,30 @@
+T06 — Vérification Cut #6 (CRM opérationnel basique)
+====================================================
+But
+---
+Certifier que les roadmaps 36→40 sont **Done** et conformes aux critères de 41.
+
+Checklists
+----------
+- [ ] Tous les AC de 36..40 passent (automatisés quand possible).
+- [ ] p95 < 600 ms /clients & /clients/:id ; exports fonctionnels.
+- [ ] RBAC/RLS & PII/GDPR respectés (masking viewer si policy active).
+- [ ] Déduplication signalée sur liste/nouveau; unicité TVA effective.
+- [ ] Dev Book sections à jour; runbooks (import, export).
+
+Transverses
+-----------
+- [ ] Tags créés/assignés visibles en liste & fiche; filtres fonctionnels.
+- [ ] Import CSV crée/maj des clients; recherche /clients retrouve les nouveaux.
+- [ ] Inline edit (fiche) ne casse pas FTS ni name_norm.
+
+Résilience
+----------
+- [ ] Rejouer POST création client (même TVA) → 409 propre.
+- [ ] Pannes ponctuelles (DB/worker import) → retries/backoff ; pas d’état partiel.
+- [ ] Logs & métriques: taux 0‑result recherche maîtrisé; alertes latence OK.
+
+Livrables
+---------
+- Rapport T06 (résultats, captures, exports dashboards).
+- Liste écarts/dettes + plan de correction.

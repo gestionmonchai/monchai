@@ -1,0 +1,26 @@
+<div id="parcelle-prefill" class="card mt-2">
+  <div class="card-body row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Section</label>
+      <input class="form-control" name="section" value="{{ data.section|default_if_none:'' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Numéro</label>
+      <input class="form-control" name="numero" value="{{ data.numero|default_if_none:'' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Commune</label>
+      <input class="form-control" name="commune" value="{{ data.commune|default_if_none:'' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">INSEE</label>
+      <input class="form-control" name="insee" value="{{ data.insee|default_if_none:'' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Surface (ha)</label>
+      <input class="form-control" name="surface_ha" value="{{ data.surface_ha }}">
+    </div>
+    <input type="hidden" name="geom_wkt" value="{{ data.geom_wkt }}">
+    <div class="form-text">Source : {{ data.source }}</div>
+  </div>
+</div>

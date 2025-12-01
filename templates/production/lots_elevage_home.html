@@ -1,0 +1,74 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Lots & Élevage - Mon Chai{% endblock %}
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Lots & Élevage</h1>
+  <div class="btn-group">
+    <a href="/production/lots-techniques/" class="btn btn-outline-primary"><i class="bi bi-collection me-1"></i>Voir tous les lots</a>
+    <a href="/production/lots-techniques/nouveau/" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Nouveau lot</a>
+    <a href="/production/assemblages/nouveau/" class="btn btn-outline-secondary"><i class="bi bi-shuffle me-1"></i>Nouvel assemblage</a>
+    <a href="/production/mises/" class="btn btn-outline-secondary"><i class="bi bi-box-seam me-1"></i>Mises (OF)</a>
+    <a href="/production/lots-techniques/?scope=elevage" class="btn btn-outline-secondary"><i class="bi bi-table me-1"></i>Vue BDD</a>
+  </div>
+ </div>
+
+ <!-- KPIs rapides -->
+ <div class="row g-3 mb-3">
+   <div class="col-md-3"><div class="card p-3">
+     <div class="small text-muted">Lots actifs</div>
+     <div class="fs-4">{{ kpi.lots_actifs|default:"—" }}</div>
+   </div></div>
+   <div class="col-md-3"><div class="card p-3">
+     <div class="small text-muted">Volume total (hL)</div>
+     <div class="fs-4">{{ kpi.volume_hl|default:"—" }}</div>
+   </div></div>
+   <div class="col-md-3"><div class="card p-3">
+     <div class="small text-muted">Prêt mise</div>
+     <div class="fs-4">{{ kpi.pret_mise|default:"—" }}</div>
+   </div></div>
+   <div class="col-md-3"><div class="card p-3">
+     <div class="small text-muted">Alertes analyses</div>
+     <div class="fs-4">{{ kpi.alertes|default:"—" }}</div>
+   </div></div>
+ </div>
+
+ <!-- Barre filtres (HTMX) -->
+ <form id="lots-filter-form" class="row g-2 align-items-end mb-3"
+       hx-get="/production/lots-elevage/table/"
+       hx-target="#lots-table" hx-trigger="change, keyup delay:300ms from:.js-q"
+       hx-push-url="true">
+   {% csrf_token %}
+   <div class="col-md-3">
+     <label class="form-label">Recherche</label>
+     <input type="search" name="q" class="form-control js-q" placeholder="code lot / cuvée">
+   </div>
+   <div class="col-md-3">
+     <label class="form-label">Statut</label>
+     <select name="status" class="form-select">
+       <option value="">Tous</option>
+       <option value="en_cours">En cours</option>
+       <option value="stabilise">Stabilisé</option>
+       <option value="pret_mise">Prêt mise</option>
+       <option value="epuise">Épuisé</option>
+     </select>
+   </div>
+   <div class="col-md-2">
+     <label class="form-label">Millésime</label>
+     <input type="number" name="millesime" class="form-control" min="1990" max="2100">
+   </div>
+   <div class="col-md-4 text-end">
+     <a href="/production/vendanges/" class="btn btn-outline-secondary">+ Encuver</a>
+     <a href="/production/assemblages/nouveau/" class="btn btn-outline-secondary">+ Assemblage</a>
+   </div>
+ </form>
+
+ <!-- Table HTMX -->
+ <div id="lots-table"
+      hx-get="/production/lots-elevage/table/"
+      hx-trigger="load"
+      hx-swap="innerHTML"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+{% endblock %}

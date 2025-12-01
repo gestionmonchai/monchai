@@ -1,0 +1,45 @@
+CSV_4 — Exécution réelle : upsert idempotent & transactions (junior step-by-step)
+=================================================================================
+
+But
+---
+Réaliser l’**import effectif** avec **upsert** (INSERT/UPDATE) **idempotent**, transactions par chunk, **verrou logique** pour éviter les doubles écritures et métriques de progression.
+
+Livrables
+---------
+1) Endpoint `POST /import/:job_id/execute` (async, 202 Accepted) + polling `GET /import/:job_id/report`
+2) **Upsert** par clé (ex: cépages.code ou name_norm) ; champs autorisés **whitelist**
+3) Transactions **par chunk** (100–1000 lignes) + rollback du chunk si erreur bloquante
+4) Verrouillage **logique** par `(org, unique_key)` pour empêcher doublons en concurrence
+5) Compteurs: `inserted, updated, skipped, errors, warnings`
+
+Algorithme Upsert (par ligne ok du dry‑run)
+-------------------------------------------
+- Construire `key = (org_id, unique_value)`
+- SELECT … FOR UPDATE NOWAIT sur la cible (si existe) **ou** verrou logique en table `import_locks(key hash)`
+- Si trouvée → **UPDATE** uniquement des champs autorisés
+- Sinon → **INSERT**
+- Sur collision unique → marquer **error** (ne jamais surécrire silencieusement une autre clé)
+
+Concurrence & reprise
+---------------------
+- **Un seul** job actif par org & entité (garde)
+- Reprise: si worker crash → relire `import_job_row` et continuer à partir de la dernière `row_index` traitée
+- Idempotence: relancer `execute` sur le même job **ne crée pas** de doublons (clé unique + verrous)
+
+Progress & UX
+-------------
+- `report`: `{ status, progress_pct, inserted, updated, skipped, errors, warnings, elapsed_s, eta_s }`
+- UI: barre de progression, logs succincts, bouton **Annuler** (met job en `failed` → stop après chunk courant)
+
+Sécurité
+--------
+- RLS logique (filtre org) à **toutes** les requêtes
+- Champs éditables **whitelist** (anti-overposting)
+- Permissions: `editor+` pour exécuter; `read_only` interdit
+
+Tests
+-----
+- Double lancement parallèle du même job → 409 (ou file d’attente)
+- Conflit unique → error, ligne ignorée (compteurs cohérents)
+- Crash milieu import → relance reprend au bon endroit, compteurs intacts

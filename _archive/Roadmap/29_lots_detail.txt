@@ -1,0 +1,61 @@
+Roadmap 29 — /lots/:id (Détail lot — historique des mouvements)
+===============================================================
+Rôle & objectif
+---------------
+Afficher la **fiche lot**: infos générales, **solde par entrepôt**, **historique des mouvements** (transfert, sortie, ajustement, embouteillage), et opérations autorisées. Traçabilité irréprochable.
+
+Livrables
+---------
+- Page `/lots/:id` avec sections:
+  1) **Infos lot**: cuvée, millésime, degré, statut, code
+  2) **Stocks par entrepôt** (agrégat des moves)
+  3) **Mouvements** (table chronologique, pagination keyset sur `(created_at,id)`)
+  4) **Actions**: Transférer, Sortie, Ajustement, Embouteillage
+- Endpoints POST:
+  - `/lots/:id/transfer` body: `{to_warehouse_id, volume_l}`
+  - `/lots/:id/adjust` body: `{delta_l, reason}`
+  - `/lots/:id/bottle` body: `{sku_id, volume_l, loss_l?}` → crée mouvements SKU et baisse vrac
+
+Intégrité & verrous
+-------------------
+- Avant écriture d’un move: **SELECT FOR UPDATE** sur solde (ou verrou logique par lot)
+- Pas de solde négatif autorisé
+- Mouvements **append‑only** ; corrections via move d’ajustement (jamais de delete)
+
+Validations
+-----------
+- transfer: `volume_l > 0` ; entrepôts valides ; solde suffisant
+- adjust: delta_l peut être ± ; raison requise
+- bottle: `sku_id` existant ; volume disponible ; `loss_l` optionnel
+
+UX
+--
+- Timeline des mouvements ; filtres par type
+- Boutons d’actions contextuels (selon rôle & statut)
+- Annulation (undo) limitée: seulement si mouvement récent et pas d’effets secondaires (option)
+
+Sécurité
+--------
+- RBAC par action ; RLS org ; audit complet
+- Anti‑overposting: body whitelists ; CSRF
+- Logs d’accès & de modifications
+
+Tests d’acceptation
+-------------------
+- AC‑29‑01: Transfert valide met à jour solde et ajoute 2 moves (out/in)
+- AC‑29‑02: Sortie > solde → rejet, aucun move écrit
+- AC‑29‑03: Embouteillage crée move vrac + mouvements SKU liés
+- AC‑29‑04: Pagination mouvements stable (keyset)
+
+Robustesse (tests)
+------------------
+- R‑29‑01: Double submit transfert → un seul set de moves
+- R‑29‑02: Conflits concurrentiels → verrous OK, pas de solde négatif
+- R‑29‑03: 100k mouvements → latence pagination < 600 ms
+
+Plan d’implémentation
+---------------------
+1) GET fiche `/api/lots/:id` + calcul/lecture des stocks par entrepôt
+2) POST actions avec verrous + validations + audit
+3) UI timeline + keyset + filtres
+4) Tests AC/robustesse + doc `lots_detail.md`

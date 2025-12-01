@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Nouvel inventaire{% endblock %}
+{% block content %}
+{% include '_layout/breadcrumbs.html' %}
+<h1 class="h4 mb-3">Nouvel inventaire</h1>
+<form method="get" class="card p-3">
+  <div class="mb-3">
+    <label class="form-label">Entrepôt</label>
+    <select class="form-select" name="warehouse">
+      {% for w in warehouses %}
+        <option value="{{ w.id }}">{{ w.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-primary" type="submit" disabled>Continuer (à implémenter)</button>
+</form>
+{% endblock %}

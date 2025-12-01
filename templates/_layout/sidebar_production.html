@@ -1,0 +1,77 @@
+<!--
+=====================================================================
+SIDEBAR PRODUCTION - REFONTE UX (structure par contextes métier)
+=====================================================================
+Structure: Vigne > Récolte > Chai > Conditionnement & Stock
+
+Les opérations suivantes ont été RETIRÉES du menu sidebar
+(elles sont accessibles via la fiche lot technique - timeline) :
+- Encuvages → production:encuvages_list (route conservée)
+- Vinification → production:vinification_home (route conservée)
+- Soutirages → production:soutirages_list (route conservée)
+- Assemblages → production:assemblages_list (route conservée)
+=====================================================================
+-->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 text-primary text-truncate">
+            <i class="bi bi-grid-3x3-gap-fill me-2"></i><span class="sidebar-label">Production</span>
+        </h5>
+        <button class="btn btn-sm btn-link text-decoration-none text-secondary p-0" id="btnToggleSidebarFromHeader" title="Réduire/Déplier le menu">
+            <i class="bi bi-chevron-left transition-all"></i>
+        </button>
+    </div>
+    <div class="list-group list-group-flush">
+        <!-- VUE D'ENSEMBLE -->
+        <a href="{% url 'production:production_home' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'production_home' %}active{% endif %}">
+            <i class="bi bi-speedometer2 me-2"></i><span class="sidebar-label">Vue d'ensemble</span>
+        </a>
+
+        <!-- ========== VIGNE ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-success text-uppercase small py-1 mt-2">
+            <i class="bi bi-geo-alt me-2"></i><span class="sidebar-label">Vigne</span>
+        </div>
+        <a href="{% url 'production:parcelles_list' %}" class="list-group-item list-group-item-action {% if 'parcelle' in request.path %}active{% endif %}">
+            <i class="bi bi-map me-2"></i><span class="sidebar-label">Parcelles</span>
+        </a>
+
+        <!-- ========== RÉCOLTE ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-warning text-uppercase small py-1 mt-2">
+            <i class="bi bi-basket me-2"></i><span class="sidebar-label">Récolte</span>
+        </div>
+        <a href="{% url 'production:vendanges_list' %}" class="list-group-item list-group-item-action {% if 'vendange' in request.path %}active{% endif %}">
+            <i class="bi bi-clipboard-check me-2"></i><span class="sidebar-label">Vendanges</span>
+        </a>
+
+        <!-- ========== CHAI ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-primary text-uppercase small py-1 mt-2">
+            <i class="bi bi-boxes me-2"></i><span class="sidebar-label">Chai</span>
+        </div>
+        <a href="{% url 'production:lots_tech_list' %}" class="list-group-item list-group-item-action {% if 'lots-techniques' in request.path %}active{% endif %}">
+            <i class="bi bi-box-seam me-2"></i><span class="sidebar-label">Lots techniques</span>
+        </a>
+        <a href="{% url 'production:lots_elevage_analyses' %}" class="list-group-item list-group-item-action {% if 'analyses' in request.path %}active{% endif %}">
+            <i class="bi bi-droplet me-2"></i><span class="sidebar-label">Analyses</span>
+        </a>
+        <a href="{% url 'production:lots_elevage_home' %}" class="list-group-item list-group-item-action {% if 'lots-elevage' in request.path and 'analyses' not in request.path %}active{% endif %}">
+            <i class="bi bi-hourglass-split me-2"></i><span class="sidebar-label">Élevage</span>
+        </a>
+        <a href="{% url 'production:contenants_list' %}" class="list-group-item list-group-item-action {% if 'contenant' in request.path %}active{% endif %}">
+            <i class="bi bi-archive me-2"></i><span class="sidebar-label">Contenants</span>
+        </a>
+
+        <!-- ========== CONDITIONNEMENT & STOCK ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-info text-uppercase small py-1 mt-2">
+            <i class="bi bi-box2 me-2"></i><span class="sidebar-label">Conditionnement & Stock</span>
+        </div>
+        <a href="{% url 'production:dash_conditionnement' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dash_conditionnement' %}active{% endif %}">
+            <i class="bi bi-box2-heart me-2"></i><span class="sidebar-label">Conditionnement</span>
+        </a>
+        <a href="{% url 'production:mises_list' %}" class="list-group-item list-group-item-action {% if 'mises' in request.path %}active{% endif %}">
+            <i class="bi bi-upc-scan me-2"></i><span class="sidebar-label">Mises (OF)</span>
+        </a>
+        <a href="{% url 'production:inventaire' %}" class="list-group-item list-group-item-action {% if 'inventaire' in request.path %}active{% endif %}">
+            <i class="bi bi-clipboard-data me-2"></i><span class="sidebar-label">Inventaire</span>
+        </a>
+    </div>
+</div>

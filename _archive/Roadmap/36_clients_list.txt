@@ -1,0 +1,75 @@
+Roadmap 36 — /clients (Liste + filtres + recherche — segments)
+==============================================================
+Rôle & objectif
+---------------
+Afficher la **liste des clients** avec **filtres** (Segment: Particulier/Pro/Caviste/Export/Autre + tag-based), recherche tolérante, tri, pagination **keyset** et actions rapides. Préparer le terrain pour déduplication et export ciblé.
+
+Segments & définitions (v1)
+---------------------------
+- `segment` ENUM: `individual` (Particulier), `business` (Pro), `wine_shop` (Caviste), `export`, `other`.
+- Impacts UI/valideurs (ex: `vat_number` attendu pour `business/export`).
+
+Modèle (DB — minimum viable robuste)
+-------------------------------------
+- `customer(id, org_id, segment ENUM, name, name_norm, vat_number?, country_code?, email?, phone?, is_active bool, created_at, updated_at, row_version)`
+  • Index: `(org_id, name_norm GIN trigram)`, `(org_id, segment)`, `(org_id, vat_number UNIQUE NULLS NOT DISTINCT)`
+- `customer_tag(id, org_id, name UNIQUE)` ; `customer_tag_link(customer_id, tag_id UNIQUE(org,customer,tag))`
+- `customer_contact` (option v1.1) si contacts multiples par client
+- `customer_activity` (lié à fiche, roadmap 38)
+
+Endpoints
+---------
+- GET `/clients?q=&segment=&tags[]=...&country=&sort=&cursor=&page_size=`
+  → `{items:[{id,name,segment,email,phone,vat_number,tags[],last_activity_at}], next_cursor, facets{segment,country,tag}, perf{}}`
+- (Option) GET `/api/clients` (JSON) même schéma (pour intégrations)
+- GET `/clients/export` (si activé) avec encodage/séparateur + neutralisation CSV
+
+Recherche & perfs
+-----------------
+- FTS (tsvector) sur `name,email,phone,vat_number`, **trigram** sur `name_norm`.
+- Requête: `q='cav du rhone'` → “Cave du Rhône” via unaccent+trigram.
+- Pagination **keyset** `(updated_at DESC, id DESC)` ; page_size=50 (config).
+- Caches (Redis 30–120s) sur listes stables.
+- p95 < 600 ms (1M clients).
+
+UX (liste)
+----------
+- Barre de recherche (debounce 200 ms, cancel obsolètes).
+- Facettes à gauche: Segment, Tags, Pays ; compteur par facette.
+- Colonnes (configurables) : Nom, Segment, Email, Tel, TVA, Tags, Dernière activité.
+- Actions rapides: **Voir** (fiche), **Nouveau** (client), (option) **Exporter**.
+- État “pas de résultat” → suggestions (orthographe, détendre filtres).
+
+Validations & sécurité
+----------------------
+- **GDPR** : limiter l’affichage des PIIs (ex. masquer partiel téléphone/email en liste si rôle restreint).
+- RBAC: `viewer` lit; `editor+` modifie; `admin` accès étendu (ex. export volumineux).
+- RLS: filtre `(org_id)` systématique.
+- Whitelist tri/filtre; toute clé inconnue → 400 (erreur claire).
+- Anti‑XSS: champs rendus échappés.
+
+Déduplication (préparation)
+---------------------------
+- Score “proximité” (name trigram + country + phone/email normalisés). **Pas d’auto‑merge v1** ; signaler **doublons potentiels** (badge).
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑36‑01: Recherche “cave rhone” → “Cave du Rhône” top 3 (p95 < 600 ms).
+- AC‑36‑02: Facettes Segment=Pro + Tag=VIP + Country=FR → < 700 ms p95, liste cohérente.
+- AC‑36‑03: Tri updated_at stable; pagination keyset sans trous/doublons.
+- AC‑36‑04: RBAC/PII: viewer ne voit pas tel complet si policy activée.
+
+Robustesse (tests)
+------------------
+- R‑36‑01: Spam requêtes → annulation server des anciennes.
+- R‑36‑02: Query invalide → 400 propre.
+- R‑36‑03: Volumétrie 1M → perfs respectées (index ok).
+- R‑36‑04: Export (si activé) neutralise cellules dangereuses `= + - @ \t`.
+
+Étapes d’implémentation
+-----------------------
+1) Migrations tables + index + tsvector + trigram.
+2) Service recherche (query builder v2) + keyset + caches.
+3) UI facettes + recherche + colonnes configurables.
+4) RBAC/RLS + PII masking (feature flag).
+5) Tests AC/robustesse + doc `clients_list.md`.

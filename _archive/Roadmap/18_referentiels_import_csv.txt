@@ -1,0 +1,53 @@
+18 — Import CSV des référentiels — Guide pas-à-pas + Robustesse
+===============================================================
+Objectif: permettre l’import CSV (sécurisé, idempotent) pour UOM, Entrepôts, Cépages, Appellations, Millésimes, Parcelles, Cuvées.
+
+Portée & Done
+--------------
+- DONE si: une page /settings/referentials/import/ permet d’uploader un CSV, d’en prévisualiser le parsing (10 lignes),
+  de mapper les colonnes attendues, d’exécuter l’import en “upsert” (création/activation), et de fournir un rapport d’erreurs.
+
+Étape 1 — Spécification parsing (60–90 min)
+-------------------------------------------
+- Encodages: essayer UTF-8, UTF-8 BOM, Latin-1 ; sinon rejeter avec message clair.
+- Séparateurs: ‘,’ ‘;’ tab auto-détectés ; guillemets supportés.
+- Limites: 10k lignes max par fichier (configurable).
+
+Étape 2 — Mapping & modèles (60–90 min)
+---------------------------------------
+- Sélectionner le “type” à l’import (uom, warehouse, grape, appellation, vintage, plot, cuvee).
+- Afficher les colonnes attendues par type et proposer un mapping par select (auto si headers identiques).
+- Normaliser (name_norm, upper pour codes) ; valider ranges (year, ratios, areas).
+
+Étape 3 — Upsert & règles (60–90 min)
+-------------------------------------
+- Upsert par (organization, key) ; key = code/name_norm/year selon type.
+- Soft reactiver is_active si déjà présent inactif.
+- Ne jamais créer d’entités cross-org ; toutes forcées sur current_org.
+
+Étape 4 — Rapport & rollback (45–60 min)
+-----------------------------------------
+- Prévisualisation: montrer 10 lignes, avec erreurs détectées.
+- Exécution: transactionnelle par batch (ex: 500 lignes) ; compter créés, mis à jour, ignorés, erreurs.
+- Export des erreurs en CSV (ligne d’origine + message).
+
+Étape 5 — Routes & permissions (15–20 min)
+-------------------------------------------
+- /settings/referentials/import/ — GET (form upload + mapping), POST (prévisualisation + import) — admin+
+
+Étape 6 — Tests (60–90 min)
+----------------------------
+- Import simple de 5 cépages ; doublons → upsert sans crash.
+- Encodage latin-1 avec accents ; séparateur ‘;’ → OK.
+- Rapport d’erreurs exporté et téléchargeable.
+
+### Tests de robustesse
+-----------------------
+R1. Fichier > limite (taille/lignes) → rejet propre, message clair.
+R2. Encodage inconnu → erreur explicite (indiquer encodages acceptés).
+R3. Mapping manquant (colonne clé non mappée) → empêcher exécution.
+R4. Valeurs invalides (year hors plage, base_ratio ≤ 0, area négative) → signalées ligne par ligne.
+R5. Lignes vides/espaces/quotes mal fermées → parser robuste (ou erreurs localisées).
+R6. Upsert concurrent (double submit) → idempotent (conflits gérés ou verrouillage logique).
+R7. Injection CSV (=FORMULA()) → neutraliser à l’export rapport (prefix ').
+R8. Non admin → 403/redirect ; aucune importation.

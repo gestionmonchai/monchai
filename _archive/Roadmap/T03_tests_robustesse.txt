@@ -1,0 +1,173 @@
+Mon-Chai — Liste de tests de robustesse (Auth, Onboarding & Préférences)
+=============================================================================
+But : détecter les failles “non-happy path” (entrées extrêmes, sécurité, erreurs réseau, états limites). 
+Portée : Auth & Identité (signup/login/reset/logout, invitations), Onboarding (first-run, checklist), Préférences & Paramètres (profil, billing, general).
+Format : chaque test = (Précondition) → Action → Attendu.
+
+A) Validation & entrées extrêmes
+--------------------------------
+A1. Emails invalides (signup/reset/invite)
+    - Action : saisir "test", "a@b", "a@b..c", "a@b.c-" etc.
+    - Attendu : erreur inline ; pas de crash ; message neutre (pas de fuite “email inconnu”).
+A2. Mots de passe limites
+    - Action : vide, 1 char, 256+ chars, espaces en début/fin.
+    - Attendu : validation côté serveur ; trimming raisonnable ; pas de logs mdp.
+A3. Chaînes très longues
+    - Action : name org = 5k chars ; adresse très longue ; display_name = 512+.
+    - Attendu : refus propre (max_length) ; message clair ; pas de 500.
+A4. Caractères spéciaux / Unicode
+    - Action : emojis, accents, RTL, caractères de contrôle dans noms/champs.
+    - Attendu : stockage correct ou rejet clair ; rendu UI sans casse d’encodage.
+A5. Champs optionnels incohérents
+    - Action : TVA status=subject_to_vat sans numéro ; siret = “00000000000000” ; timezone vide.
+    - Attendu : erreurs ciblées ; pas de d’enregistrement partiel incohérent.
+
+B) Sécurité (auth/session/CSRF)
+-------------------------------
+B1. CSRF
+    - Action : POST sans CSRF sur /auth/*, /settings/*, /settings/roles.
+    - Attendu : 403 CSRF ; aucun effet côté serveur.
+B2. Fixation de session
+    - Action : créer session anonyme → login ; vérifier rotation de sessionid.
+    - Attendu : cookie session régénéré au login.
+B3. Cookie flags
+    - Action : en prod-like, inspecter cookies.
+    - Attendu : Secure/HttpOnly/SameSite=Lax (ou Strict) sur session/CSRF.
+B4. Brute-force simple (manuel)
+    - Action : 5–10 tentatives login sur même email avec mauvais mdp.
+    - Attendu : mêmes messages neutres ; pas de fuite ; (throttling hors scope si non prévu).
+B5. Réutilisation de token reset
+    - Action : utiliser 2 fois le même lien de reset.
+    - Attendu : premier OK ; second invalide (erreur propre).
+B6. Réutilisation de token d’invitation
+    - Action : accepter une invitation puis réutiliser le lien.
+    - Attendu : redirection propre (déjà membre) ; pas de crash.
+
+C) Permissions & accès
+----------------------
+C1. Accès sans membership
+    - Action : user authentifié sans org → GET /clients, /settings/billing.
+    - Attendu : redirection vers /auth/first-run/.
+C2. Matrice rôles
+    - Action : read_only vers /settings/roles ; editor vers /settings/billing.
+    - Attendu : refus (403/redirect) ; message standard.
+C3. Dernier owner
+    - Action : tenter rétrograder/désactiver le dernier owner.
+    - Attendu : blocage avec message explicite.
+C4. Élément d’une autre org (IDs)
+    - Action : manipuler un ID d’une autre org dans l’URL/POST.
+    - Attendu : 404/403 propre ; pas de fuite d’informations.
+
+D) Concurrence & idempotence
+----------------------------
+D1. Double submit
+    - Action : cliquer 2x “Enregistrer” sur /settings/billing (latence simulée).
+    - Attendu : un seul enregistrement ; pas de doublon/incohérence.
+D2. Invitations en double
+    - Action : envoyer 2 invitations pour le même email/org.
+    - Attendu : seconde refusée proprement (ou remplace l’ancienne, selon règle).
+D3. Race sur acceptation d’invite
+    - Action : ouvrir le lien d’invitation dans 2 onglets et valider.
+    - Attendu : un Membership ; l’autre onglet affiche “déjà accepté”.
+D4. Création d’org (first-run) concurrente
+    - Action : POST /auth/first-run/org/ 2 fois.
+    - Attendu : une seule Organization + Membership ; pas de 500.
+
+E) Tokens, e-mails & fichiers
+-----------------------------
+E1. Tokens expirés/invalides (reset/invite)
+    - Action : altérer 1 char ; avancer l’horloge ; utiliser après exp.
+    - Attendu : message “lien invalide/expiré”, proposition de renvoyer.
+E2. Emails destinataire différent
+    - Action : accepter une invitation avec un compte dont l’email ≠ invitation.
+    - Attendu : refuser ou demander l’email exact (selon design) ; jamais créer mauvais membership.
+E3. Upload avatar
+    - Action : fichier > 2 Mo ; type non image ; image corrompue.
+    - Attendu : rejet propre ; pas d’écriture disque ; message clair.
+E4. Upload CGV (PDF)
+    - Action : > 5 Mo ; type non PDF ; double upload (remplacement).
+    - Attendu : rejet propre ; ancien fichier nettoyé si remplacé.
+
+F) Données & contraintes DB
+---------------------------
+F1. Unicité Membership (user, org)
+    - Action : créer 2 Membership identiques.
+    - Attendu : contrainte empêche doublon ; message propre.
+F2. Longueurs & NOT NULL
+    - Action : forcer via API/console des champs trop longs ou NULL interdits.
+    - Attendu : ValidationError/400 ; pas de 500.
+F3. Migrations propres
+    - Action : fresh DB → migrate ; DB existante → migrate.
+    - Attendu : succès ; aucune migration manquante ; rollback possible.
+
+G) Localisation, fuseaux & formats
+----------------------------------
+G1. Timezones
+    - Action : user en Europe/Paris ; enregistrer/afficher dates (checklist updated_at).
+    - Attendu : affichage cohérent ; pas d’erreur DST.
+G2. Formats nombre/date
+    - Action : choisir number_format "1 234,56", date "DD/MM/YYYY".
+    - Attendu : aperçu correct ; pas d’ambiguïté côté serveur.
+G3. Langue interface
+    - Action : profil locale=‘en’ ; vérifier messages critiques.
+    - Attendu : fallback raisonnable ; pas de mélange cassé.
+
+H) Résilience réseau & erreurs serveur
+--------------------------------------
+H1. Timeout email (reset/invite)
+    - Action : simuler exception backend d’email.
+    - Attendu : rollback ; message générique ; pas d’invitation fantôme.
+H2. Stockage indisponible (upload)
+    - Action : lever exception FileStorage.
+    - Attendu : échec propre ; aucun fichier partiel.
+H3. DB read-only / exception
+    - Action : forcer exception lors d’un POST.
+    - Attendu : rollback ; message générique ; logs adéquats.
+
+I) Navigation & états UI
+------------------------
+I1. Back/refresh après POST
+    - Action : signup puis back/refresh ; settings save puis refresh.
+    - Attendu : pas de double action ; pas de 400 CSRF ; UI cohérente.
+I2. Onglets multiples
+    - Action : logout dans un onglet ; agir dans l’autre.
+    - Attendu : redirection vers login sur action ; pas d’état zombie.
+I3. Accessibilité
+    - Action : navigation clavier ; lecteurs d’écran.
+    - Attendu : focus visible ; labels associés ; ARIA pour bannières.
+
+J) Performances (smoke)
+-----------------------
+J1. Pages auth & settings
+    - Action : mesurer TTFB/TBT basiques.
+    - Attendu : pas de N+1 ; assets raisonnables.
+J2. Requêtes DB
+    - Action : activer DEBUG toolbar ; soumettre forms.
+    - Attendu : nombre de requêtes stable ; pas de requêtes inutiles.
+
+K) Journalisation & traces
+--------------------------
+K1. Logs d’erreurs
+    - Action : provoquer ValidationError, token invalide.
+    - Attendu : message neutre UI ; log utile (niveau WARN/INFO).
+K2. Actions sensibles
+    - Action : changer rôle, désactiver membre, modifier billing.
+    - Attendu : log INFO “qui/quand/quoi” ; pas de données sensibles.
+
+Annexe — Jeu de données minimal
+-------------------------------
+- 3 utilisateurs : owner@x, admin@x, viewer@x (mdp simples en dev).
+- 1 organisation “Domaine Démo”.
+- Invitations : une en attente (editor), une expirée.
+- Checklist org en “doing” (2/4).
+- Profil : avatar valide + tentative invalide.
+- Settings : billing rempli (non assujetti), general avec EUR, DD/MM/YYYY, CGV URL.
+
+Exécution rapide (ordre suggéré)
+--------------------------------
+1) Auth & sessions → 2) Permissions → 3) Tokens/fichiers → 4) Validations →
+5) Concurrence → 6) Données/DB → 7) Localisation → 8) Résilience → 9) UX → 10) Perf → 11) Logs.
+
+Critère global
+--------------
+- Aucun 500 ; erreurs contrôlées ; pas de fuite d’information ; états cohérents ; idempotence ; tokens uniques ; uploads sûrs.

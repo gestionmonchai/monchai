@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Mon Chai - Du cep à la bouteille</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|playfair-display:500,600,700" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          },
+          colors: {
+            chai: {
+              beige:  '#F4EDE4', // fond clair / ciel diffus
+              bordeaux: '#7B1E22', // nervures, vin
+              raisin: '#4E2A41', // grappes
+              vert: '#A3A04A',   // feuilles vert doré
+              orange: '#C75A3A', // feuilles rougies
+              gold: '#E5B14C',   // lumière dorée
+            }
+          },
+          boxShadow: {
+            soft: '0 18px 40px rgba(0,0,0,0.25)',
+          },
+          borderRadius: {
+            '3xl': '1.5rem',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-chai-beige text-chai-raisin font-sans antialiased">
+  <!-- Fond général : beige -> or -> bordeaux -->
+  <div class="min-h-screen bg-gradient-to-b from-chai-beige via-chai-gold/30 to-chai-bordeaux/90">
+    <!-- NAV -->
+    <header class="sticky top-0 z-30 border-b border-chai-bordeaux/20 bg-chai-beige/90 backdrop-blur-md">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full border border-chai-bordeaux/60 bg-chai-bordeaux text-chai-beige flex items-center justify-center font-serif text-sm tracking-[0.2em]">
+            MC
+          </div>
+          <div class="leading-tight">
+            <div class="font-serif text-lg tracking-wide text-chai-raisin">Mon Chai</div>
+            <div class="text-[11px] text-chai-bordeaux uppercase tracking-[0.2em]">
+              SaaS viticole
+            </div>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center gap-8 text-sm text-chai-raisin/90">
+          <a href="#pourquoi" class="hover:text-chai-bordeaux transition">Pourquoi ?</a>
+          <a href="#parcours" class="hover:text-chai-bordeaux transition">Les 5 étapes</a>
+          <a href="#apercu" class="hover:text-chai-bordeaux transition">Aperçu</a>
+          <a href="#cta-final" class="hover:text-chai-bordeaux transition">Contact</a>
+          <a href="#cta-final" class="ml-3 inline-flex items-center rounded-full border border-chai-bordeaux bg-chai-bordeaux px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-chai-beige hover:bg-chai-orange transition">
+            Demander une démo
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="pt-16 pb-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-12 items-center">
+          <!-- Texte -->
+          <div>
+            <span class="inline-flex items-center gap-2 rounded-full border border-chai-bordeaux/40 bg-chai-bordeaux/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-chai-bordeaux mb-6">
+              Du cep à la bouteille
+            </span>
+            <h1 class="font-serif text-4xl sm:text-5xl text-chai-raisin leading-tight">
+              Le logiciel de chai<br>
+              <span class="text-chai-bordeaux">pensé pour les vignerons.</span>
+            </h1>
+            <p class="mt-6 text-lg text-chai-raisin/90 max-w-xl">
+              Mon Chai centralise traitements, vendanges, encuvages, mises et ventes dans un outil clair, inspiré du chai : chaleureux, précis et sans perte de temps.
+            </p>
+
+            <div class="mt-8 flex flex-wrap gap-3">
+              <a href="#cta-final" class="inline-flex items-center justify-center rounded-full bg-chai-bordeaux px-5 py-2.5 text-sm font-medium text-chai-beige shadow-soft hover:bg-chai-orange transition">
+                Demander une démo
+              </a>
+              <a href="#parcours" class="inline-flex items-center justify-center rounded-full border border-chai-bordeaux px-5 py-2.5 text-sm font-medium text-chai-bordeaux hover:bg-chai-bordeaux/10 transition">
+                Découvrir les 5 étapes
+              </a>
+            </div>
+
+            <p class="mt-4 text-xs text-chai-raisin/75">
+              Sans carte bancaire • Données hébergées en France • Pensé avec des vignerons
+            </p>
+          </div>
+
+          <!-- Carte hero -->
+          <div class="relative">
+            <div class="absolute inset-0 blur-3xl opacity-70 bg-gradient-to-br from-chai-orange/50 via-transparent to-chai-gold/60 pointer-events-none"></div>
+            <div class="relative rounded-3xl border border-chai-bordeaux/30 bg-chai-beige/95 backdrop-blur-md p-6 shadow-soft">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.18em] text-chai-raisin/80">Aperçu du chai</p>
+                  <p class="mt-1 font-serif text-lg text-chai-raisin">Flux de vos vins</p>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-chai-raisin/80">
+                  <span class="w-2 h-2 rounded-full bg-chai-vert"></span> Cohérence OK
+                </div>
+              </div>
+
+              <!-- Ligne 5 étapes -->
+              <div class="relative mt-4 mb-6">
+                <div class="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-[2px] bg-gradient-to-r from-chai-gold via-chai-orange to-chai-bordeaux/80"></div>
+                <div class="relative flex justify-between text-[10px] text-chai-raisin/90">
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="w-8 h-8 rounded-full bg-white border border-chai-vert/60 flex items-center justify-center">
+                      Vigne
+                    </div>
+                    <span>Traitements</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="w-8 h-8 rounded-full bg-white border border-chai-gold/60 flex items-center justify-center">
+                      Vend.
+                    </div>
+                    <span>Vendanges</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="w-8 h-8 rounded-full bg-chai-bordeaux text-chai-beige border border-chai-bordeaux flex items-center justify-center">
+                      Cuves
+                    </div>
+                    <span>Encuvage</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="w-8 h-8 rounded-full bg-white border border-chai-orange/70 flex items-center justify-center">
+                      Mise
+                    </div>
+                    <span>Bouteilles</span>
+                  </div>
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="w-8 h-8 rounded-full bg-white border border-chai-bordeaux/70 flex items-center justify-center">
+                      Vte
+                    </div>
+                    <span>Clients</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Liste lots -->
+              <div class="rounded-2xl border border-chai-bordeaux/15 bg-chai-beige/90 p-4">
+                <div class="flex justify-between text-[11px] text-chai-raisin/80 mb-2">
+                  <span>Lots suivis</span>
+                  <span class="text-chai-bordeaux">Aujourd’hui</span>
+                </div>
+                <div class="space-y-1.5 text-[11px] text-chai-raisin/90">
+                  <div class="flex justify-between">
+                    <span>Cuvée parcellaire 2024</span>
+                    <span class="text-chai-vert">Encuvage • OK</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Blanc de presse 2023</span>
+                    <span class="text-chai-gold">Mise en cours</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Rouge assemblage 2022</span>
+                    <span class="text-chai-orange">Ventes • 68 % stock</span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="mt-3 text-[11px] text-chai-raisin/70">
+                Illustration d’interface. Les écrans réels peuvent évoluer.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- POURQUOI MON CHAI -->
+      <section id="pourquoi" class="py-16 bg-chai-beige/90 border-t border-chai-bordeaux/15">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+          <div class="max-w-2xl">
+            <h2 class="font-serif text-3xl text-chai-raisin">Pourquoi Mon Chai ?</h2>
+            <p class="mt-4 text-chai-raisin/90 text-base">
+              Carnets, tableurs, outils réglementaires : les informations se dispersent vite. Mon Chai rassemble vos données de vigne, de chai et de vente dans un même flux, pour que tout reste lisible et cohérent, même en pleine vendange.
+            </p>
+          </div>
+
+          <div class="mt-10 grid gap-6 md:grid-cols-3">
+            <article class="rounded-3xl border border-chai-bordeaux/25 bg-white/95 p-6 shadow-sm">
+              <h3 class="font-serif text-lg text-chai-bordeaux mb-3">Clair et sobre</h3>
+              <p class="text-sm text-chai-raisin/90">
+                Une interface épurée qui va à l’essentiel : vos parcelles, vos cuves, vos lots, vos ventes. Pas de menus perdus, pas d’usine à gaz.
+              </p>
+            </article>
+            <article class="rounded-3xl border border-chai-bordeaux/25 bg-white/95 p-6 shadow-sm">
+              <h3 class="font-serif text-lg text-chai-bordeaux mb-3">Ancré dans le réel du chai</h3>
+              <p class="text-sm text-chai-raisin/90">
+                Encuvage flou,

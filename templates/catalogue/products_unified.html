@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Produits - {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Dashboard Produits
+            </h1>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'catalogue:home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Catalogue
+                </a>
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-plus"></i> Nouveau
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'catalogue:products_cuvees' %}">
+                                <i class="bi bi-wine me-2"></i>Nouvelle cuvée
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'catalogue:products_lots' %}">
+                                <i class="bi bi-box me-2"></i>Nouveau lot
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'catalogue:products_skus' %}">
+                                <i class="bi bi-upc me-2"></i>Nouveau SKU
+                            </a></li>
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation tabs -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <nav class="nav nav-pills nav-fill">
+                    <a class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'catalogue:products_dashboard' %}">
+                        <i class="bi bi-house me-2"></i>Dashboard
+                    </a>
+                    <a class="nav-link {% if active_tab == 'cuvees' %}active{% endif %}" 
+                       href="{% url 'catalogue:products_cuvees' %}">
+                        <i class="bi bi-wine me-2"></i>Cuvées
+                    </a>
+                    <a class="nav-link {% if active_tab == 'lots' %}active{% endif %}" 
+                       href="{% url 'catalogue:products_lots' %}">
+                        <i class="bi bi-box me-2"></i>Lots
+                    </a>
+                    <a class="nav-link {% if active_tab == 'skus' %}active{% endif %}" 
+                       href="{% url 'catalogue:products_skus' %}">
+                        <i class="bi bi-upc me-2"></i>Produits finis
+                    </a>
+                    <a class="nav-link {% if active_tab == 'referentiels' %}active{% endif %}" 
+                       href="{% url 'catalogue:products_referentiels' %}">
+                        <i class="bi bi-gear me-2"></i>Référentiels
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-wine fs-1 text-primary mb-2"></i>
+                <h3 class="card-title">{{ stats.cuvees_count }}</h3>
+                <p class="card-text text-muted">Cuvées</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-box fs-1 text-success mb-2"></i>
+                <h3 class="card-title">{{ stats.lots_count }}</h3>
+                <p class="card-text text-muted">Lots</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-upc fs-1 text-info mb-2"></i>
+                <h3 class="card-title">{{ stats.sku_count }}</h3>
+                <p class="card-text text-muted">Produits finis</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-grape fs-1 text-warning mb-2"></i>
+                <h3 class="card-title">{{ stats.cepages_count }}</h3>
+                <p class="card-text text-muted">Cépages</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-geo fs-1 text-secondary mb-2"></i>
+                <h3 class="card-title">{{ stats.parcelles_count }}</h3>
+                <p class="card-text text-muted">Parcelles</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-building fs-1 text-dark mb-2"></i>
+                <h3 class="card-title">{{ stats.entrepots_count }}</h3>
+                <p class="card-text text-muted">Entrepôts</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenu principal -->
+<div class="row">
+    <!-- Cuvées récentes -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-wine me-2"></i>Cuvées récentes
+                </h5>
+                <a href="{% url 'catalogue:products_cuvees' %}" class="btn btn-sm btn-outline-primary">
+                    Voir tout
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_cuvees %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Appellation</th>
+                                    <th>Millésime</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cuvee in recent_cuvees %}
+                                <tr>
+                                    <td><strong>{{ cuvee.name }}</strong></td>
+                                    <td>{{ cuvee.appellation.name|default:"N/A" }}</td>
+                                    <td>{{ cuvee.vintage.year|default:"N/A" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-wine fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucune cuvée créée</p>
+                        <a href="{% url 'catalogue:products_cuvees' %}" class="btn btn-primary">
+                            Créer une cuvée
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Lots récents -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-box me-2"></i>Lots récents
+                </h5>
+                <a href="{% url 'catalogue:products_lots' %}" class="btn btn-sm btn-outline-primary">
+                    Voir tout
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_lots %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Cuvée</th>
+                                    <th>Volume</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lot in recent_lots %}
+                                <tr>
+                                    <td><strong>{{ lot.code }}</strong></td>
+                                    <td>{{ lot.cuvee.name }}</td>
+                                    <td>{{ lot.volume_l|default:0 }}L</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-box fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucun lot créé</p>
+                        <a href="{% url 'catalogue:products_lots' %}" class="btn btn-primary">
+                            Créer un lot
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertes stock -->
+{% if low_stock_skus %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <h5 class="alert-heading">
+                <i class="bi bi-exclamation-triangle me-2"></i>Alertes stock
+            </h5>
+            <p>Les produits finis suivants ont un stock faible :</p>
+            <ul class="mb-0">
+                {% for sku in low_stock_skus %}
+                <li>
+                    <strong>{{ sku.label }}</strong> 
+                    ({{ sku.total_stock|default:0 }} unités)
+                    - <a href="{% url 'catalogue:products_skus' %}" class="alert-link">Voir détails</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des cartes statistiques
+    const statCards = document.querySelectorAll('.card');
+    statCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Mise à jour automatique des statistiques (optionnel)
+    function updateStats() {
+        // Ici on pourrait ajouter une requête AJAX pour mettre à jour les stats
+        console.log('Statistiques mises à jour');
+    }
+
+    // Actualiser les stats toutes les 5 minutes
+    setInterval(updateStats, 300000);
+});
+</script>
+{% endblock %}

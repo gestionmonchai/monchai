@@ -1,0 +1,643 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon compte - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-card, .team-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+    .card-header-custom {
+        background: linear-gradient(135deg, #8B1538 0%, #722f37 100%);
+        color: white;
+        padding: 20px 24px;
+        border-radius: 16px 16px 0 0;
+    }
+    .card-header-custom.team {
+        background: linear-gradient(135deg, #5a7c59 0%, #4a6649 100%);
+    }
+    .card-header-custom h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .card-body-custom {
+        padding: 24px;
+    }
+    
+    /* Avatar */
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #e9ecef;
+        object-fit: cover;
+        margin: -60px auto 16px;
+        display: block;
+        background: white;
+    }
+    .avatar-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #e9ecef;
+        margin: -60px auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        font-size: 48px;
+        color: #adb5bd;
+    }
+    .avatar-upload-btn {
+        position: absolute;
+        bottom: 0;
+        right: calc(50% - 76px);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #8B1538;
+        color: white;
+        border: 3px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    
+    /* Info rows */
+    .info-group {
+        margin-bottom: 20px;
+    }
+    .info-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .info-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    .info-value.editable {
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    /* Member cards */
+    .member-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 12px;
+        background: #f8f9fa;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+    .member-item:hover {
+        background: #e9ecef;
+        transform: translateX(4px);
+    }
+    .member-item.current-user {
+        background: linear-gradient(90deg, rgba(139, 21, 56, 0.1) 0%, #f8f9fa 100%);
+        border-left: 3px solid #8B1538;
+    }
+    .member-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #6c757d;
+        flex-shrink: 0;
+    }
+    .member-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .member-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+    .member-name {
+        font-weight: 600;
+        color: #2c3e50;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .member-email {
+        font-size: 0.85rem;
+        color: #6c757d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .role-badge {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .role-owner { background: #8B1538; color: white; }
+    .role-admin { background: #d4af37; color: #333; }
+    .role-member { background: #e9ecef; color: #495057; }
+    
+    /* Invitation pending */
+    .invitation-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: #fff3cd;
+        margin-bottom: 8px;
+    }
+    
+    /* Organisation section */
+    .org-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 24px;
+    }
+    .org-section h6 {
+        color: #8B1538;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+    
+    /* Actions */
+    .action-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #495057;
+        transition: all 0.2s;
+    }
+    .action-link:hover {
+        background: #f8f9fa;
+        color: #8B1538;
+    }
+    .action-link i {
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% include 'components/django_messages.html' %}
+    
+    <div class="row g-4">
+        <!-- Colonne gauche: Mon profil -->
+        <div class="col-lg-5">
+            <div class="profile-card">
+                <div class="card-header-custom">
+                    <h5><i class="bi bi-person-fill me-2"></i>Mon profil</h5>
+                </div>
+                
+                <div class="card-body-custom" style="padding-top: 0;">
+                    <form method="post" enctype="multipart/form-data" id="profile-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="profile">
+                        
+                        <!-- Avatar centré -->
+                        <div class="text-center position-relative" style="margin-bottom: 24px;">
+                            {% if profile.get_avatar_url %}
+                                <img src="{{ profile.get_avatar_url }}" alt="Avatar" class="profile-avatar" id="avatar-preview">
+                            {% else %}
+                                <div class="avatar-placeholder" id="avatar-preview">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                            {% endif %}
+                            <label class="avatar-upload-btn" for="id_avatar" title="Changer la photo">
+                                <i class="bi bi-camera-fill"></i>
+                            </label>
+                            <input type="file" name="avatar" id="id_avatar" class="d-none" accept="image/*">
+                        </div>
+                        
+                        <!-- Infos personnelles -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="info-group">
+                                    <div class="info-label">Email</div>
+                                    <div class="info-value">{{ user.email }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-label">Prénom</div>
+                                <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" placeholder="Prénom">
+                            </div>
+                            <div class="col-6">
+                                <div class="info-label">Nom</div>
+                                <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" placeholder="Nom">
+                            </div>
+                            <div class="col-12">
+                                <div class="info-label">Nom d'affichage</div>
+                                <input type="text" name="display_name" class="form-control" value="{{ profile.display_name }}" placeholder="Comment vous voulez être appelé">
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="#" class="text-decoration-none text-muted" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                <i class="bi bi-key me-1"></i>Mot de passe
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Section Organisation -->
+                    {% if organization %}
+                    <div class="org-section">
+                        <h6><i class="bi bi-building me-2"></i>Mon organisation</h6>
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <div class="info-label">Nom</div>
+                                <div class="info-value">{{ organization.name }}</div>
+                            </div>
+                            {% if organization.siret %}
+                            <div class="col-6">
+                                <div class="info-label">SIRET</div>
+                                <div class="info-value">{{ organization.siret }}</div>
+                            </div>
+                            {% endif %}
+                            {% if organization.city %}
+                            <div class="col-6">
+                                <div class="info-label">Ville</div>
+                                <div class="info-value">{{ organization.city }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <a href="#" class="btn btn-outline-secondary btn-sm mt-3" data-bs-toggle="modal" data-bs-target="#editOrgModal">
+                            <i class="bi bi-pencil me-1"></i>Modifier l'organisation
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Colonne droite: Mes collaborateurs -->
+        <div class="col-lg-7">
+            <div class="team-card">
+                <div class="card-header-custom team d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-people-fill me-2"></i>Mes collaborateurs</h5>
+                    {% if can_manage_team %}
+                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#inviteModal">
+                        <i class="bi bi-person-plus me-1"></i>Inviter
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body-custom">
+                    {% if members %}
+                        {% for member in members %}
+                        <a href="{% if can_manage_team and member.user != user %}{% url 'auth:member_detail' member.id %}{% else %}#{% endif %}" 
+                           class="member-item {% if member.user == user %}current-user{% endif %}">
+                            <div class="member-avatar">
+                                {% if member.user.profile.get_avatar_url %}
+                                    <img src="{{ member.user.profile.get_avatar_url }}" alt="">
+                                {% else %}
+                                    {{ member.user.first_name|slice:":1"|upper|default:"?" }}{{ member.user.last_name|slice:":1"|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="member-info">
+                                <div class="member-name">
+                                    {{ member.user.get_full_name|default:member.user.email }}
+                                    {% if member.user == user %}<small class="text-muted">(vous)</small>{% endif %}
+                                </div>
+                                <div class="member-email">{{ member.user.email }}</div>
+                            </div>
+                            <span class="role-badge role-{{ member.role }}">
+                                {% if member.role == 'owner' %}Propriétaire
+                                {% elif member.role == 'admin' %}Admin
+                                {% else %}Membre{% endif %}
+                            </span>
+                            {% if can_manage_team and member.user != user %}
+                            <i class="bi bi-chevron-right text-muted"></i>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                        
+                        {% if pending_invitations %}
+                        <h6 class="text-muted mt-4 mb-3">
+                            <i class="bi bi-hourglass-split me-1"></i>Invitations en attente
+                        </h6>
+                        {% for inv in pending_invitations %}
+                        <div class="invitation-item flex-wrap">
+                            <div class="member-avatar bg-warning text-white">
+                                <i class="bi bi-envelope"></i>
+                            </div>
+                            <div class="member-info">
+                                <div class="member-name">{{ inv.email }}</div>
+                                <div class="member-email">Invité le {{ inv.created_at|date:"d/m/Y" }}</div>
+                            </div>
+                            {% if inv.invite_code %}
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-dark font-monospace fs-6 px-3 py-2" title="Code à partager">
+                                    {{ inv.invite_code }}
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyCode('{{ inv.invite_code }}')" title="Copier le code">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                            {% if can_manage_team %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="cancel_invite">
+                                <input type="hidden" name="invite_id" value="{{ inv.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Annuler">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-people text-muted" style="font-size: 48px;"></i>
+                            <p class="text-muted mt-3">Vous êtes le seul membre de cette organisation.</p>
+                            {% if can_manage_team %}
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteModal">
+                                <i class="bi bi-person-plus me-2"></i>Inviter un collaborateur
+                            </button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Rejoindre une organisation -->
+                    <div class="mt-4 p-3 rounded-3" style="background: linear-gradient(135deg, #e8f4ea 0%, #d4edda 100%); border: 1px dashed #5a7c59;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle p-2" style="background: #5a7c59;">
+                                <i class="bi bi-ticket-perforated text-white"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark">Vous avez un code d'invitation ?</div>
+                                <small class="text-muted">Entrez-le pour rejoindre une organisation</small>
+                            </div>
+                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#joinOrgModal">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Rejoindre
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions rapides -->
+                    <hr class="my-4">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'auth:roles_management' %}" class="action-link">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Gérer les rôles</span>
+                        </a>
+                        <a href="{% url 'auth:logout' %}" class="action-link text-danger">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Déconnexion</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Invitation -->
+<div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="invite">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="bi bi-person-plus me-2 text-success"></i>Inviter un collaborateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email du collaborateur</label>
+                        <input type="email" name="invite_email" class="form-control form-control-lg" required placeholder="collaborateur@email.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rôle</label>
+                        <select name="invite_role" class="form-select">
+                            <option value="member">👤 Membre - Accès standard</option>
+                            <option value="admin">⚙️ Admin - Peut gérer l'équipe</option>
+                        </select>
+                        <small class="text-muted">Vous pourrez modifier les droits plus tard.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-send me-2"></i>Envoyer l'invitation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifier Organisation -->
+<div class="modal fade" id="editOrgModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="organization">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="bi bi-building me-2"></i>Modifier l'organisation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {% if organization %}
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Nom de l'exploitation <span class="text-danger">*</span></label>
+                            <input type="text" name="org_name" class="form-control" value="{{ organization.name }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Devise</label>
+                            <select name="org_currency" class="form-select">
+                                <option value="EUR" {% if organization.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                <option value="USD" {% if organization.currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                                <option value="CHF" {% if organization.currency == 'CHF' %}selected{% endif %}>CHF</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">SIRET <small class="text-muted">(optionnel)</small></label>
+                            <input type="text" name="org_siret" class="form-control" value="{{ organization.siret|default:'' }}" maxlength="14">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">N° TVA <small class="text-muted">(optionnel)</small></label>
+                            <input type="text" name="org_tva" class="form-control" value="{{ organization.tva_number|default:'' }}">
+                        </div>
+                        <div class="col-12"><hr></div>
+                        <div class="col-12">
+                            <label class="form-label">Adresse</label>
+                            <input type="text" name="org_address" class="form-control" value="{{ organization.address|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Code postal</label>
+                            <input type="text" name="org_postal_code" class="form-control" value="{{ organization.postal_code|default:'' }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Ville</label>
+                            <input type="text" name="org_city" class="form-control" value="{{ organization.city|default:'' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Pays</label>
+                            <input type="text" name="org_country" class="form-control" value="{{ organization.country|default:'France' }}">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Changement mot de passe -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="password">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="bi bi-key me-2"></i>Changer le mot de passe</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Mot de passe actuel</label>
+                        <input type="password" name="current_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nouveau mot de passe</label>
+                        <input type="password" name="new_password" class="form-control" required minlength="8">
+                        <small class="text-muted">Minimum 8 caractères</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Confirmer</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Changer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rejoindre une organisation -->
+<div class="modal fade" id="joinOrgModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="join_by_code">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title"><i class="bi bi-ticket-perforated me-2 text-success"></i>Rejoindre une organisation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-muted mb-4">Entrez le code d'invitation que vous avez reçu</p>
+                    <div class="mb-4">
+                        <input type="text" name="invite_code" class="form-control form-control-lg text-center font-monospace" 
+                               required placeholder="ABC123" maxlength="8" 
+                               style="font-size: 2rem; letter-spacing: 0.5rem; text-transform: uppercase;"
+                               oninput="this.value = this.value.toUpperCase()">
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Le code est composé de 6 caractères (lettres et chiffres)
+                    </small>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg me-2"></i>Rejoindre
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Copier le code d'invitation
+function copyCode(code) {
+    navigator.clipboard.writeText(code).then(function() {
+        // Afficher un feedback visuel
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check text-success"></i>';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-secondary');
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Prévisualisation avatar
+    const avatarInput = document.getElementById('id_avatar');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    let preview = document.getElementById('avatar-preview');
+                    if (preview.tagName === 'IMG') {
+                        preview.src = e.target.result;
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.alt = 'Avatar';
+                        img.id = 'avatar-preview';
+                        img.className = 'profile-avatar';
+                        preview.parentNode.replaceChild(img, preview);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

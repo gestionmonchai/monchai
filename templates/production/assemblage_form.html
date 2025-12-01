@@ -1,0 +1,168 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Table d'Assemblage{% endblock %}
+
+{% block production_content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h4 mb-0"><i class="bi bi-funnel"></i> Table d'Assemblage</h1>
+      <div class="text-muted small">Composez votre cuvée en sélectionnant les lots sources</div>
+    </div>
+    <div class="text-end">
+        <div class="badge bg-primary fs-6 p-2">
+            Total Prévisionnel : <span id="total-vol-display">0.00</span> hL
+        </div>
+    </div>
+  </div>
+
+  <form method="post" id="assemblage-form">
+    {% csrf_token %}
+    
+    <div class="row g-4">
+      <!-- Paramètres du Lot Cible -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white fw-bold">
+            <i class="bi bi-tag"></i> Lot Résultant
+          </div>
+          <div class="card-body bg-light">
+             <div class="mb-3">
+               <label class="form-label fw-bold">Code Assemblage / Lot</label>
+               {{ form.code }}
+               {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors|join:', ' }}</div>{% endif %}
+               <div class="form-text small">Laisser vide pour auto-génération</div>
+             </div>
+             <div class="mb-3">
+               <label class="form-label">Campagne</label>
+               {{ form.campagne }}
+             </div>
+             <div class="mb-3">
+               <label class="form-label">Date d'opération</label>
+               {{ form.date }}
+             </div>
+             <div class="mb-3">
+               <label class="form-label">Notes / Objectifs</label>
+               {{ form.notes }}
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Composition (Recette) -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-check"></i> Composition</span>
+            <span class="badge bg-secondary rounded-pill" id="source-count">0 sources</span>
+          </div>
+          <div class="card-body p-0">
+            {{ formset.management_form }}
+            
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 align-middle" id="composition-table">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 50%">Lot Source</th>
+                    <th style="width: 30%">Volume prélevé (L)</th>
+                    <th style="width: 20%">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for f in formset %}
+                  <tr class="assemblage-row">
+                    <td class="p-3">
+                      {{ f.id }}
+                      {{ f.lot_source }}
+                      {% if f.lot_source.errors %}
+                        <div class="text-danger small">{{ f.lot_source.errors|join:', ' }}</div>
+                      {% endif %}
+                    </td>
+                    <td class="p-3">
+                      <div class="input-group">
+                        {{ f.volume_l }}
+                        <span class="input-group-text">L</span>
+                      </div>
+                      {% if f.volume_l.errors %}
+                        <div class="text-danger small">{{ f.volume_l.errors|join:', ' }}</div>
+                      {% endif %}
+                    </td>
+                    <td class="p-3 text-center">
+                      <div class="form-check d-inline-block">
+                        {{ f.DELETE }}
+                        <label class="form-check-label text-muted small" for="{{ f.DELETE.id_for_label }}">Retirer</label>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer bg-white p-3">
+             <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+               <i class="bi bi-check-circle-fill me-2"></i> Valider et Créer l'Assemblage
+             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.assemblage-row');
+    const totalDisplay = document.getElementById('total-vol-display');
+    const sourceCountBadge = document.getElementById('source-count');
+
+    function calculateTotal() {
+        let totalL = 0;
+        let activeSources = 0;
+
+        rows.forEach(row => {
+            const volInput = row.querySelector('input[name$="volume_l"]');
+            const deleteInput = row.querySelector('input[name$="DELETE"]');
+            const sourceSelect = row.querySelector('select[name$="lot_source"]');
+
+            // Ignorer si marqué pour suppression
+            if (deleteInput && deleteInput.checked) return;
+            // Ignorer si pas de source sélectionnée
+            if (sourceSelect && !sourceSelect.value) return;
+
+            const val = parseFloat(volInput.value) || 0;
+            totalL += val;
+            activeSources++;
+        });
+
+        // Affichage en hL (1 hL = 100 L)
+        totalDisplay.textContent = (totalL / 100).toFixed(2);
+        sourceCountBadge.textContent = activeSources + " sources";
+    }
+
+    // Ecouteurs d'événements
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('change', calculateTotal);
+            input.addEventListener('input', calculateTotal);
+        });
+    });
+
+    // Calcul initial
+    calculateTotal();
+});
+</script>
+
+<style>
+  /* Custom styling for inputs to blend in table */
+  #composition-table select.form-select {
+    border: 1px solid #dee2e6;
+    font-weight: 500;
+  }
+  #composition-table input.form-control {
+    text-align: right;
+    font-family: monospace;
+    font-size: 1.1em;
+  }
+</style>
+{% endblock %}

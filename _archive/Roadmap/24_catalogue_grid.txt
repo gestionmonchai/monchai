@@ -1,0 +1,34 @@
+
+Roadmap — /catalogue (Grille cuvées — carte + recherche)
+=======================================================
+Objectif
+--------
+Présenter le **catalogue des cuvées** en grille/cartes avec recherche rapide, filtres et tri. Point d’entrée vers la fiche produit.
+
+Portée & Done
+-------------
+- Grille responsive (cartes) + barre de recherche + facettes (Appellation, Vintage, Couleur).
+- Tri multi‑colonnes (Nom, Récence mise à jour), pagination (keyset sur updated_at,id).
+- Vues sauvegardées (option) et export CSV limité (conformité).
+
+Endpoints
+---------
+- GET /catalogue?q=&appellation=&vintage=&color=&sort=&page=&page_size=
+- (option) GET /api/catalogue (JSON pour intégrations).
+
+UI & UX
+-------
+- Carte: visuel (étiquette si présente), Nom, Appellation/Millésime, Couleur, CTA “Voir fiche”.
+- Barre `Ctrl/Cmd+K` pour recherche globale.
+- “No-result” → suggestions (orthographe, détendre filtres).
+
+Recherche & perfs
+-----------------
+- FTS + trigram sur cuvee.search_tsv ; caches 30–120s.
+- Index: updated_at DESC, name GIN trigram ; EXPLAIN top requêtes.
+
+Tests & robustesse
+------------------
+- AC1: “cote r” → cuvées Côtes-du‑Rhône visibles en <600ms p95.
+- AC2: Facettes combinées (≥3) <700ms p95.
+- R1: Image manquante → placeholder sobre ; XSS safe sur champs.

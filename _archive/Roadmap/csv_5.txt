@@ -1,0 +1,49 @@
+CSV_5 — Rapports, Observabilité, Sécurité avancée & Runbook (junior step-by-step)
+=================================================================================
+
+But
+---
+Finaliser l’expérience: **rapports téléchargeables**, **tableaux de bord**, **alertes**, **tests automatiques** et **runbook** pour rollback & diagnostics. Renforcer la **sécurité** (anti-CSRF, quotas, rate-limit).
+
+Livrables
+---------
+1) `GET /import/:job_id/report` → liens **erreurs.csv** / **warnings.csv** + stats complètes
+2) Dashboards: latences (p50/p95/p99), taux d’erreurs, 0‑result lookups, taille fichiers, lignes/s
+3) Alertes: >10% erreurs, >5% lookups ambigus, job > SLA, taille > seuil
+4) Sécurité avancée: quotas/jour/org, **rate-limit** IP/user, CSRF pour POST, audit trail
+5) **Runbook**: rollback, lecture des logs, relance partielle, annexes
+
+Rapports (formats)
+------------------
+- `erreurs.csv` colonnes: `row_index, field, message, suggestion`
+- `warnings.csv` colonnes: `row_index, field, message`
+- Neutraliser toute cellule commençant par `= + - @ \t` (CSV injection)
+- Encodage **UTF‑8**, séparateur `,` (ou `;` selon locale), guillemets sur cellules
+
+Observabilité
+-------------
+- **Metrics** (Prometheus/OpenTelemetry): `import_duration_seconds`, `import_rows_total`, `import_rows_errors_total`, `lookup_ambiguous_total`, `dry_run_duration_seconds`
+- **Logs structurés** (JSON): `job_id, org, entity, stage, msg, row_index?, field?, elapsed_ms`
+- **Dashboards** (Grafana): 4 vues: “Volume”, “Qualité”, “Perfs”, “Erreurs”
+
+Sécurité avancée
+----------------
+- **Quotas**: max 20 imports/jour/org (config) ; refuser au‑delà (429 + message)
+- **Rate-limit**: ex. 10 req/min sur endpoints import utilisateur
+- **CSRF** pour POST/PUT/DELETE ; **CORS** limité aux origins connues
+- **Permissions**: seul `editor+` peut exécuter `execute`; `admin` peut forcer `cancel`
+- **Nettoyage**: suppression automatique des fichiers temporaires après 7 jours
+
+Runbook (opérations)
+--------------------
+- **Rollback**: si import mauvais → lancer un **script d’annulation** si audit complet (sinon informer que non réversible)
+- **Diagnostics**: vérifier `report`, ouvrir `erreurs.csv`, chercher patterns; consulter logs `stage="dry_run"` vs `"execute"`
+- **Canary**: activer l’import que sur 1–2 organisations d’abord, surveiller dashboards
+- **Amélioration continue**: enrichir `synonyms` selon erreurs fréquentes
+
+Plan de tests automatiques (à livrer)
+-------------------------------------
+- **Unitaires**: parsers, transforms (number_locale, date), détecteurs (delimiter, encoding), FK lookup
+- **Intégration**: dry‑run complet sur 3 entités ; exécution avec upsert ; reprise après crash simulé
+- **E2E** (Playwright/Cypress): upload→mapping→dry‑run→execute→report
+- **Sécurité**: CSV injection (cells starting with `=`), rate-limit, quotas, CSRF

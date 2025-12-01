@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Entrepôts{% endblock %}
+{% block content %}
+{% include '_layout/breadcrumbs.html' %}
+<h1 class="h4 mb-3">Entrepôts</h1>
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead><tr><th>Nom</th><th>Localisation</th></tr></thead>
+    <tbody>
+      {% for w in warehouses %}
+        <tr><td>{{ w.name }}</td><td>{{ w.location }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2" class="text-muted">Aucun entrepôt</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

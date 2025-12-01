@@ -1,0 +1,58 @@
+{% for q in quotes %}
+<tr class="align-middle">
+  <td>
+    <div class="fw-semibold">{{ q.created_at|date:"d/m/Y" }}</div>
+    <div class="text-muted small">{{ q.created_at|date:"H:i" }}</div>
+  </td>
+  <td>
+    <div class="fw-semibold">{{ q.customer.legal_name }}</div>
+    <div class="text-muted small">
+      <i class="bi bi-hash"></i> {{ q.id|slice:":8" }}
+    </div>
+  </td>
+  <td>
+    <span class="badge {% if q.status == 'accepted' %}bg-success{% elif q.status == 'sent' %}bg-info{% elif q.status == 'expired' %}bg-warning text-dark{% elif q.status == 'lost' %}bg-danger{% else %}bg-secondary{% endif %}">
+      <i class="bi bi-{% if q.status == 'accepted' %}check-circle{% elif q.status == 'sent' %}send{% elif q.status == 'expired' %}clock-history{% elif q.status == 'lost' %}x-circle{% else %}pencil{% endif %}"></i>
+      {{ q.get_status_display }}
+    </span>
+  </td>
+  <td class="text-end">
+    <div class="fw-bold">{{ q.total_ttc|default:"0.00" }} {{ q.currency }}</div>
+    <div class="text-muted small">{{ q.total_ht|default:"0.00" }} HT</div>
+  </td>
+  <td>
+    <div>{{ q.valid_until|date:"d/m/Y" }}</div>
+    {% now "Y-m-d" as today %}
+    {% if q.valid_until|date:"Y-m-d" < today and q.status not in 'accepted,lost,expired' %}
+      <span class="badge bg-danger small">Expiré</span>
+    {% elif q.valid_until|date:"Y-m-d" == today %}
+      <span class="badge bg-warning text-dark small">Aujourd'hui</span>
+    {% endif %}
+  </td>
+  <td class="text-end">
+    <div class="btn-group btn-group-sm">
+      <a href="{% url 'ventes:devis_detail' quote_id=q.id %}" class="btn btn-outline-primary" title="Voir le détail">
+        <i class="bi bi-eye"></i>
+      </a>
+      {% if user.get_active_membership.can_edit_data %}
+      <a href="{% url 'ventes:devis_edit' quote_id=q.id %}" class="btn btn-outline-secondary" title="Modifier">
+        <i class="bi bi-pencil"></i>
+      </a>
+      <button class="btn btn-outline-info" onclick="alert('Duplication à venir')" title="Dupliquer">
+        <i class="bi bi-files"></i>
+      </button>
+      {% endif %}
+    </div>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="6" class="text-center text-muted py-5">
+    <div class="mb-2">
+      <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+    </div>
+    <div>Aucun devis trouvé</div>
+    <div class="small">Essayez de modifier vos critères de recherche</div>
+  </td>
+</tr>
+{% endfor %}

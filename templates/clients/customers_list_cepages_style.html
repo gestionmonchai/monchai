@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+
+{% block title %}Clients - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-people me-2 text-primary"></i>Clients
+            </h1>
+            <div class="d-flex align-items-center">
+                <!-- Boutons Export -->
+                <div class="btn-group me-2" role="group">
+                    <a href="{% url 'ventes:clients_export' %}" class="btn btn-outline-success">
+                        <i class="bi bi-download"></i> Export CSV
+                    </a>
+                </div>
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'ventes:client_new' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouveau client
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche avancée par champs -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filtres de recherche
+            </h6>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+                    <i class="bi bi-chevron-down"></i> Avancé
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="clear-filters">
+                    <i class="bi bi-x-circle"></i> Effacer
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Recherche rapide -->
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <input type="text" 
+                           id="quick-search" 
+                           name="search"
+                           value="{{ filters.search|default:'' }}" 
+                           placeholder="Recherche rapide dans tous les champs..." 
+                           class="form-control pe-5"
+                           autocomplete="off">
+                    <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i class="bi bi-search text-muted" id="search-icon"></i>
+                        <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                            <span class="visually-hidden">Recherche...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div id="search-info" class="text-muted small mt-2">
+                    {% if stats.filtered != stats.total %}
+                        {{ stats.filtered }} résultat{{ stats.filtered|pluralize }} sur {{ stats.total }}
+                    {% else %}
+                        {{ stats.total }} client{{ stats.total|pluralize }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres avancés (masqués par défaut) -->
+        <div id="advanced-filters" class="collapse">
+            <hr>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-name" class="form-label">Nom</label>
+                    <input type="text" 
+                           id="filter-name" 
+                           name="name"
+                           value="{{ filters.name|default:'' }}" 
+                           placeholder="Nom du client..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-email" class="form-label">Email</label>
+                    <input type="text" 
+                           id="filter-email" 
+                           name="email"
+                           value="{{ filters.email|default:'' }}" 
+                           placeholder="Email..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-phone" class="form-label">Téléphone</label>
+                    <input type="text" 
+                           id="filter-phone" 
+                           name="phone"
+                           value="{{ filters.phone|default:'' }}" 
+                           placeholder="Téléphone..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-vat-number" class="form-label">N° TVA</label>
+                    <input type="text" 
+                           id="filter-vat-number" 
+                           name="vat_number"
+                           value="{{ filters.vat_number|default:'' }}" 
+                           placeholder="N° TVA..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-segment" class="form-label">Segment</label>
+                    <select id="filter-segment" name="segment" class="form-select">
+                        <option value="">Tous</option>
+                        {% for segment_value, segment_label in segment_choices %}
+                            <option value="{{ segment_value }}" 
+                                    {% if filters.segment == segment_value %}selected{% endif %}>
+                                {{ segment_label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mt-2">
+                <div class="col-md-2">
+                    <label for="filter-is-active" class="form-label">Statut</label>
+                    <select id="filter-is-active" name="is_active" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>Actif</option>
+                        <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>Inactif</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-country-code" class="form-label">Pays</label>
+                    <input type="text" 
+                           id="filter-country-code" 
+                           name="country_code"
+                           value="{{ filters.country_code|default:'' }}" 
+                           placeholder="Code pays..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-sort" class="form-label">Tri</label>
+                    <div class="input-group">
+                        <select id="filter-sort" name="sort" class="form-select">
+                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nom</option>
+                            <option value="email" {% if sort_by == 'email' %}selected{% endif %}>Email</option>
+                            <option value="segment" {% if sort_by == 'segment' %}selected{% endif %}>Segment</option>
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Création</option>
+                            <option value="updated_at" {% if sort_by == 'updated_at' %}selected{% endif %}>Modification</option>
+                        </select>
+                        <select id="filter-order" name="order" class="form-select" style="max-width: 100px;">
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>↑</option>
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>↓</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des clients -->
+{% if page_obj %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Segment</th>
+                                    <th>Contact</th>
+                                    <th>Pays</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% include 'clients/partials/customer_table_rows.html' with customers=page_obj %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination-container" class="mt-4">
+        {% include 'clients/partials/customer_pagination.html' %}
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-people display-1 text-muted mb-3"></i>
+            <h4 class="text-muted">Aucun client trouvé</h4>
+            <p class="text-muted">Aucun client ne correspond aux critères de recherche.</p>
+            {% if user.get_active_membership.can_edit_data %}
+                <a href="{% url 'ventes:client_new' %}" class="btn btn-primary">
+                    <i class="bi bi-plus"></i> Créer le premier client
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments du DOM
+    const quickSearchInput = document.getElementById('quick-search');
+    const filterInputs = {
+        name: document.getElementById('filter-name'),
+        email: document.getElementById('filter-email'),
+        phone: document.getElementById('filter-phone'),
+        vat_number: document.getElementById('filter-vat-number'),
+        segment: document.getElementById('filter-segment'),
+        is_active: document.getElementById('filter-is-active'),
+        country_code: document.getElementById('filter-country-code'),
+        sort: document.getElementById('filter-sort'),
+        order: document.getElementById('filter-order')
+    };
+    
+    const searchInfo = document.getElementById('search-info');
+    const resultsTable = document.getElementById('results-table');
+    const paginationContainer = document.getElementById('pagination-container');
+    const toggleAdvancedBtn = document.getElementById('toggle-advanced-search');
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    const advancedFilters = document.getElementById('advanced-filters');
+    const searchIcon = document.getElementById('search-icon');
+    const searchSpinner = document.getElementById('search-spinner');
+    
+    let searchTimeout;
+    let currentController; // AbortController pour cancellation
+    let currentPage = 1;
+    
+    // Configuration
+    const DEBOUNCE_MS = 300; // Debounce pour filtres multiples
+    
+    // Collecter tous les filtres actifs
+    function collectFilters() {
+        const filters = {};
+        
+        // Recherche rapide
+        const quickSearch = quickSearchInput.value.trim();
+        if (quickSearch) filters.search = quickSearch;
+        
+        // Filtres avancés
+        Object.keys(filterInputs).forEach(key => {
+            const input = filterInputs[key];
+            if (input && input.value.trim()) {
+                filters[key] = input.value.trim();
+            }
+        });
+        
+        return filters;
+    }
+    
+    // Construire l'URL avec les paramètres
+    function buildURL(filters, page = 1) {
+        const params = new URLSearchParams();
+        
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                params.set(key, filters[key]);
+            }
+        });
+        
+        if (page > 1) {
+            params.set('page', page);
+        }
+        
+        return `/clients/search-ajax/?${params.toString()}`;
+    }
+    
+    // Mettre à jour l'URL du navigateur
+    function updateBrowserURL(filters, page = 1) {
+        const params = new URLSearchParams();
+        
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                params.set(key, filters[key]);
+            }
+        });
+        
+        if (page > 1) {
+            params.set('page', page);
+        }
+        
+        const baseUrl = "{% url 'ventes:clients_list' %}";
+        const newURL = `${baseUrl}${params.toString() ? '?' + params.toString() : ''}`;
+        window.history.replaceState({}, '', newURL);
+    }
+    
+    // Fonction de recherche avec filtres multiples
+    function performSearch(page = 1) {
+        // Annuler la requête précédente (cancellation)
+        if (currentController) {
+            currentController.abort();
+        }
+        currentController = new AbortController();
+        
+        // Collecter tous les filtres
+        const filters = collectFilters();
+        console.log('Performing search with filters:', filters);
+        
+        // Afficher le spinner
+        if (searchIcon && searchSpinner) {
+            searchIcon.classList.add('d-none');
+            searchSpinner.classList.remove('d-none');
+        }
+        
+        // Construire l'URL de recherche
+        const searchURL = buildURL(filters, page);
+        
+        // Mettre à jour l'URL du navigateur
+        updateBrowserURL(filters, page);
+        
+        // Faire la requête AJAX
+        fetch(searchURL, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            signal: currentController.signal
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mettre à jour le tableau
+                resultsTable.innerHTML = data.table_html;
+                
+                // Mettre à jour la pagination
+                paginationContainer.innerHTML = data.pagination_html;
+                
+                // Mettre à jour les statistiques
+                const stats = data.stats;
+                searchInfo.innerHTML = stats.filtered !== stats.total 
+                    ? `${stats.filtered} résultat${stats.filtered > 1 ? 's' : ''} sur ${stats.total}`
+                    : `${stats.total} client${stats.total > 1 ? 's' : ''}`;
+                
+                // Réattacher les événements de pagination
+                attachPaginationEvents();
+                
+                currentPage = page;
+            }
+        })
+        .catch(error => {
+            if (error.name !== 'AbortError') {
+                console.error('Erreur de recherche:', error);
+            }
+        })
+        .finally(() => {
+            // Masquer le spinner
+            if (searchIcon && searchSpinner) {
+                searchIcon.classList.remove('d-none');
+                searchSpinner.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Fonction pour obtenir le token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Fonction debounce
+    function debounceSearch(page = 1) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => performSearch(page), DEBOUNCE_MS);
+    }
+    
+    // Attacher les événements de pagination
+    function attachPaginationEvents() {
+        const paginationLinks = paginationContainer.querySelectorAll('a[data-page]');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = parseInt(this.getAttribute('data-page'));
+                performSearch(page);
+            });
+        });
+    }
+    
+    // Événements pour la recherche rapide
+    quickSearchInput.addEventListener('input', () => debounceSearch(1));
+    
+    // Événements pour les filtres avancés
+    Object.keys(filterInputs).forEach(key => {
+        const input = filterInputs[key];
+        if (input) {
+            if (input.type === 'text') {
+                input.addEventListener('input', () => debounceSearch(1));
+            } else {
+                input.addEventListener('change', () => performSearch(1));
+            }
+        }
+    });
+    
+    // Toggle filtres avancés
+    toggleAdvancedBtn.addEventListener('click', function() {
+        const isCollapsed = advancedFilters.classList.contains('collapse');
+        if (isCollapsed) {
+            advancedFilters.classList.remove('collapse');
+            this.innerHTML = '<i class="bi bi-chevron-up"></i> Simple';
+        } else {
+            advancedFilters.classList.add('collapse');
+            this.innerHTML = '<i class="bi bi-chevron-down"></i> Avancé';
+        }
+    });
+    
+    // Effacer tous les filtres
+    clearFiltersBtn.addEventListener('click', function() {
+        quickSearchInput.value = '';
+        Object.keys(filterInputs).forEach(key => {
+            const input = filterInputs[key];
+            if (input) {
+                input.value = '';
+            }
+        });
+        performSearch(1);
+    });
+    
+    // Attacher les événements de pagination initiaux
+    attachPaginationEvents();
+    
+    console.log('Recherche avancée par champs initialisée');
+});
+</script>
+{% endblock %}

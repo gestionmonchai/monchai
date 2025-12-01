@@ -1,0 +1,56 @@
+T06 — Tests /clients/new (Roadmap 37 — Formulaire dynamique)
+===========================================================
+But
+---
+Valider la **création** d’un client avec règles par **segment**, validations PIIs (email, E.164, TVA), déduplication live.
+
+Fixtures
+--------
+- Pays par défaut org = FR.
+- TVA valides: FR12345678901, IT12345678901 (exemple).
+- Doublons potentiels: “Cave du Rhône” / “Cave du Rhone” + mêmes email/phone.
+
+A) Smoke
+--------
+- [ ] Le formulaire charge, la sélection segment change les champs visibles.
+- [ ] Les placeholders & aides sont corrects.
+
+B) Fonctionnels par segment
+---------------------------
+- [ ] Particulier: `name` seul → création OK; email/tel optionnels.
+- [ ] Pro: TVA **requise** → création OK si TVA FR valide; 400 sinon.
+- [ ] Export: TVA requise également; pays peut être ≠ FR.
+- [ ] Caviste: TVA facultative; pays & tel normalisés.
+
+C) Validations PIIs
+-------------------
+- [ ] email mal formé → 400 (message clair).
+- [ ] phone non E.164 → 400; avec +33... → OK; stockage E.164.
+- [ ] country_code hors ISO‑3166‑1 → 400.
+
+D) Déduplication (live)
+-----------------------
+- [ ] Saisie “Cave du Rhone” avec email déjà existant → affiche **doublon potentiel**.
+- [ ] Forcer la création malgré alerte (policy) → 201 ou blocage selon flag.
+
+E) Concurrence & unicité
+------------------------
+- [ ] Créations parallèles même TVA → 1 seule passe (UNIQUE); 409 propre pour l’autre.
+
+F) Sécurité & GDPR
+------------------
+- [ ] RBAC: viewer interdit; editor/admin OK.
+- [ ] RLS: org boundary.
+- [ ] Consentement marketing **non** pris ici (v1) → pas de champ stocké.
+
+G) Observabilité
+----------------
+- [ ] Logs testent erreurs 4xx (validation) avec champs anonymisés; métriques création OK.
+
+IDs
+---
+- pytest::t06_clients_new_segment_rules
+- pytest::t06_clients_new_email_phone_validation
+- pytest::t06_clients_new_duplicate_detection
+- pytest::t06_clients_new_unique_vat_race
+- playwright::t06_clients_new_segment_ui_toggle

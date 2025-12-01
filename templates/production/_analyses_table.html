@@ -1,0 +1,45 @@
+<div class="d-none" id="analyses-table-meta" data-total="{{ total_count }}"></div>
+<div class="table-responsive">
+  <table class="table align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Lot</th>
+        <th>Cuvée</th>
+        <th class="text-end">Valeur</th>
+        <th>Unité</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in measures %}
+      <tr>
+        <td>{{ m.date|date:"Y-m-d H:i" }}</td>
+        <td>{{ m.get_type_display }}</td>
+        <td>{{ m.lot.code }}</td>
+        <td>{{ m.lot.cuvee.nom }}</td>
+        <td class="text-end">{{ m.value }}</td>
+        <td>{{ m.unit|default:"" }}</td>
+        <td class="small text-muted">{{ m.notes|default:"" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted py-5">Aucune mesure trouvée.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<nav class="d-flex justify-content-end">
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.previous_page_number }}&{{ querystring }}" hx-include="#analyses-filter-form" hx-target="#analyses-table" hx-swap="innerHTML">«</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.next_page_number }}&{{ querystring }}" hx-include="#analyses-filter-form" hx-target="#analyses-table" hx-swap="innerHTML">»</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mon Chai{% endblock %}</title>
+    
+    {% load static %}
+    {% load profile_tags %}
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- 🍷 Design Viticole Global -->
+    <link href="{% static 'css/viticole_dense.css' %}" rel="stylesheet">
+    <!-- Product Tour CSS (global) -->
+    <link href="{% static 'css/tour.css' %}" rel="stylesheet">
+    
+    <!-- Styles personnalisés pour le header -->
+    <style>
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .navbar-nav .nav-link {
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            margin: 0 0.25rem;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .navbar-nav .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+        }
+        
+        .navbar-nav .dropdown-menu {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .navbar-nav .dropdown-item {
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .navbar-nav .dropdown-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(4px);
+        }
+        
+        .navbar-text {
+            font-size: 0.875rem;
+        }
+        
+        /* Fix z-index for dropdowns to be above everything else (including sidebar) */
+        .dropdown-menu {
+            z-index: 1050 !important;
+        }
+
+        /* Nested Dropdown (Menu en cascade) */
+        .dropdown-submenu {
+            position: relative;
+        }
+        
+        .dropdown-submenu > .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -5px;
+            margin-left: 0px;
+            display: none;
+        }
+        
+        .dropdown-submenu:hover > .dropdown-menu {
+            display: block;
+        }
+
+        /* Rotation de la petite flèche au survol */
+        .dropdown-submenu > a::after {
+            transform: rotate(-90deg);
+        }
+        
+        #alertsBadge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.4rem;
+        }
+        
+        .table tbody tr.row-click {
+            cursor: pointer;
+        }
+        
+        @media (max-width: 991.98px) {
+            .navbar-nav .nav-link {
+                margin: 0.25rem 0;
+            }
+        }
+        @media (min-width: 992px) {
+            .navbar .navbar-collapse {
+                flex-wrap: wrap;
+                min-width: 0;
+            }
+            .navbar .navbar-nav {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+            .navbar .navbar-nav .nav-link {
+                padding: 0.5rem 0.75rem;
+                white-space: nowrap;
+            }
+            .navbar form[role="search"] .form-control {
+                max-width: 320px;
+            }
+            .navbar .dropdown-toggle.btn-link,
+            .navbar .dropdown > .nav-link.dropdown-toggle {
+                max-width: clamp(160px, 18vw, 260px);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% include '_layout/header.html' %}
+    
+    <!-- Banniere contexte chai (Point 7) -->
+    {% include 'components/org_banner.html' %}
+
+    <!-- Messages Django -->
+    {% if messages %}
+    <div class="container mt-1">
+        {% include 'components/django_messages.html' %}
+    </div>
+    {% endif %}
+
+    <!-- Contenu principal -->
+    <main class="container mt-1">
+        {% include '_layout/breadcrumbs.html' %}
+        {% block local_nav %}{% include '_layout/local_nav.html' %}{% endblock %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light mt-5 py-4">
+        <div class="container text-center text-muted">
+            <p>&copy; 2025 Mon Chai - Gestion d'exploitation agricole</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Product Tour JS (global) -->
+    <script src="{% static 'js/tour.js' %}"></script>
+    
+    <!-- Scripts pour le header et les alertes -->
+    {% if user.is_authenticated %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Charger le nombre d'alertes actives
+        fetch('/stocks/api/alertes/badge-count/')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('alertsBadge');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline';
+                }
+            })
+            .catch(error => {
+                console.log('Erreur lors du chargement du badge alertes:', error);
+            });
+        
+        // Amélioration UX des dropdowns
+        const dropdowns = document.querySelectorAll('.navbar-nav .dropdown');
+        dropdowns.forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            
+            // Fermer les autres dropdowns quand on en ouvre un
+            toggle.addEventListener('click', function() {
+                dropdowns.forEach(otherDropdown => {
+                    if (otherDropdown !== dropdown) {
+                        const otherMenu = otherDropdown.querySelector('.dropdown-menu');
+                        if (otherMenu && otherMenu.classList.contains('show')) {
+                            const otherToggle = otherDropdown.querySelector('.dropdown-toggle');
+                            otherToggle.click();
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Marquer la page active dans la navigation
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+        
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && currentPath.startsWith(href) && href !== '/') {
+                link.classList.add('active');
+                // Si c'est dans un dropdown, marquer aussi le parent
+                const dropdown = link.closest('.dropdown');
+                if (dropdown) {
+                    const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
+                    if (dropdownToggle) {
+                        dropdownToggle.classList.add('active');
+                    }
+                }
+            }
+        });
+
+        // Lignes de tableaux cliquables: toute la ligne redirige vers data-href
+        document.addEventListener('click', function(e) {
+            const row = e.target.closest('tr.row-click');
+            if (!row) return;
+            if (e.target.closest('a, button, input, select, textarea')) return;
+            const href = row.getAttribute('data-href');
+            if (href) window.location.href = href;
+        });
+    });
+    </script>
+    {% endif %}
+    
+    {% block extra_modals %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+    <script>
+    // Cross-page onboarding flow: launch with ?flow=1 and resume automatically
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!window.MonChaiTourFlow) return;
+      var steps = [
+        { url: '/production/parcelles/',         target: '#btn-new-parcelle',   title: 'Créer une parcelle',       content: 'Déclarez vos parcelles : nom, cépage, surface, appellation.' },
+        { url: '/production/vendanges/',         target: '#btn-new-vendange',   title: 'Créer une vendange',       content: 'Enregistrez vos vendanges : dates, parcelles, quantités.' },
+        { url: '/production/pressurages/',       target: '#tour-primary-button',title: 'Créer un pressurage',      content: 'Votre page dédiée aux pressurages.' },
+        { url: '/production/encuvages/',         target: '#menu-op-encuvage, #menu-op-encuvage-mobile, #quick-encuvage', title: 'Nouvel encuvage', content: 'Cliquez pour créer un encuvage.' },
+        { url: '/production/vinification/',      target: '#tour-primary-button',title: 'Vinification',             content: 'Suivez la fermentation et les mesures clés.' },
+        { url: '/production/soutirages/',        target: '#tour-primary-button',title: 'Soutirages',               content: 'Programmez et tracez vos soutirages.' },
+        { url: '/production/analyses/',          target: '#tour-primary-button',title: 'Analyses',                 content: 'Suivez vos analyses par lot.' },
+        { url: '/production/assemblages/',       target: '#tour-primary-button',title: 'Assemblages',              content: 'Gérez et préparez vos assemblages.' },
+        { url: '/production/lots-techniques/',   target: '#menu-lots-elevage',  title: 'Élevage / Analyses',       content: 'Suivez interventions et analyses sur vos lots.' },
+        { url: '/production/mises/',             target: '#menu-mises',         title: 'Créer une mise',           content: 'Planifiez une mise en bouteilles depuis Production > Mises.' },
+        { url: '/production/lots-techniques/',   target: '#btn-new-lot-tech',   title: 'Créer un lot technique',   content: 'Regroupez vos opérations en lots traçables.' },
+        { url: '/production/inventaire/',        target: '#menu-inventaire',    title: 'Voir le stock bouteilles', content: 'Consultez vos niveaux de stocks (onglet Produits).'},
+        { url: '/ventes/commandes/',             target: '#menu-commandes',     title: 'Créer une vente',          content: 'Créez une commande client (Ventes > Commandes).'}
+      ];
+      try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('flow') === '1') {
+          window.MonChaiTourFlow.startFlow(steps);
+        } else {
+          window.MonChaiTourFlow.resumeFlow(steps);
+        }
+      } catch (e) { /* silent */ }
+    });
+    </script>
+    {% include '_help_widget.html' %}
+</body>
+</html>

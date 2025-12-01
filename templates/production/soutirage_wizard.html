@@ -1,0 +1,84 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Soutirage – {{ lot.code }}{% endblock %}
+{% block production_content %}
+<div class="container-fluid">
+  <h1 class="h4 mb-4">Assistant Soutirage – <span class="text-muted">{{ lot.code }}</span></h1>
+
+  <div class="alert alert-info">
+    <strong>Lot source :</strong> {{ lot.code }} ({{ lot.campagne }})<br>
+    Volume actuel : <strong>{{ lot.volume_l|floatformat:2 }} L</strong><br>
+    Contenant actuel : {{ lot.contenant }}
+  </div>
+
+  <form method="post" class="card shadow-sm">
+    {% csrf_token %}
+    <div class="card-header bg-white py-3">
+      <h5 class="card-title mb-0">Paramètres de l'opération</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <!-- Colonne Gauche: Séparation -->
+        <div class="col-md-6 border-end">
+          <h6 class="text-uppercase text-muted small mb-3">1. Séparation</h6>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold text-danger">Volume de Lies / Bourbes (L)</label>
+            {{ form.volume_lies_pertes_l }}
+            <div class="form-text">Volume éliminé ou perdu lors de l'opération. Sera déduit du total.</div>
+            {% if form.volume_lies_pertes_l.errors %}
+              <div class="text-danger small mt-1">{{ form.volume_lies_pertes_l.errors|join:', ' }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+             <label class="form-label">Type de soutirage</label>
+             <select name="type_soutirage" class="form-select">
+               <option value="aere">Aéré (oxygénation)</option>
+               <option value="protege" selected>Protégé (sous gaz neutre)</option>
+             </select>
+          </div>
+        </div>
+
+        <!-- Colonne Droite: Destination -->
+        <div class="col-md-6">
+          <h6 class="text-uppercase text-muted small mb-3">2. Destination du Vin Clair</h6>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold text-success">Nouveau contenant (Transfert)</label>
+            {{ form.destination_contenant }}
+            <div class="form-text">
+              Saisissez le code/nom de la cuve propre de destination.<br>
+              <i class="bi bi-info-circle"></i> Si laissé vide, le vin clair reste dans le contenant actuel (soutirage "sur place").
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes / Observations</label>
+            {{ form.notes }}
+            <div class="form-text">Ex: aspect des lies, turbidité, etc.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer bg-light d-flex justify-content-between py-3">
+      <a href="/production/lots-techniques/{{ lot.id }}/" class="btn btn-outline-secondary">Annuler</a>
+      <button type="submit" class="btn btn-primary px-4">
+        <i class="bi bi-check-lg"></i> Valider le soutirage
+      </button>
+    </div>
+  </form>
+
+  <!-- Style rapide pour les inputs -->
+  <style>
+    input[name="volume_lies_pertes_l"] {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #dc3545;
+      border-color: #dc3545;
+    }
+    input[name="destination_contenant"] {
+      border-color: #198754;
+    }
+  </style>
+</div>
+{% endblock %}

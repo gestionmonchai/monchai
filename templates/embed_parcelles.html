@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Parcelles</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="/static/css/embed.css">
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <script>
+    const url = new URL(location.href);
+    const tenant = url.searchParams.get('tenant');
+    const token = url.searchParams.get('token');
+
+    const PMTILES_URL = "{{ PMTILES_URL|default:'' }}";
+    const MODE = "{{ PARCELLES_MODE|default:'LITE' }}";
+
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          'basemap': { type: 'vector', url: `pmtiles://${PMTILES_URL}` }
+        },
+        layers: [
+          { id:'land', type:'fill', source:'basemap', 'source-layer':'land', paint:{'fill-opacity':0.15} }
+        ]
+      },
+      center: [2, 46], zoom: 5
+    });
+
+    map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-right');
+
+    map.on('load', () => {
+      if (MODE === 'PRO') {
+        map.addSource('parcelles', {
+          type: 'vector',
+          tiles: [`/tiles/{z}/{x}/{y}.mvt?tenant=${encodeURIComponent(tenant)}&token=${encodeURIComponent(token)}`],
+          minzoom:5, maxzoom:22
+        });
+        map.addLayer({ id:'parcelles-fill', type:'fill', source:'parcelles', 'source-layer':'parcelles', paint:{'fill-color':'#2f80ed','fill-opacity':0.25}});
+        map.addLayer({ id:'parcelles-outline', type:'line', source:'parcelles', 'source-layer':'parcelles', paint:{'line-color':'#1b4db3','line-width':1.25}});
+      } else {
+        map.addSource('parcelles', { type:'geojson', data:{ type:'FeatureCollection', features:[] }});
+        map.addLayer({ id:'parcelles-fill', type:'fill', source:'parcelles', paint:{'fill-color':'#2f80ed','fill-opacity':0.25}});
+        map.addLayer({ id:'parcelles-outline', type:'line', source:'parcelles', paint:{'line-color':'#1b4db3','line-width':1.25}});
+        const fetchDebounced = (()=>{let t; return ()=>{ clearTimeout(t); t=setTimeout(loadBBox,250); };})();
+        map.on('moveend', fetchDebounced);
+        loadBBox();
+        function loadBBox(){
+          const b = map.getBounds();
+          const bbox = [b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].join(',');
+          fetch(`/api/parcelles?tenant=${encodeURIComponent(tenant)}&token=${encodeURIComponent(token)}&bbox=${bbox}&lod=2`)
+            .then(r=>r.json()).then(fc=>{
+              map.getSource('parcelles').setData(fc);
+            });
+        }
+      }
+
+      map.on('click', 'parcelles-fill', (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+        const name = f.properties && (f.properties.name || f.properties.id);
+        const area_m2 = f.properties && f.properties.area_m2;
+        new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`
+          <div style="min-width:180px">
+            <div style="font-weight:600">${name || 'Parcelle'}</div>
+            <div style="font-size:12px;color:#666">${area_m2? (area_m2/10000).toFixed(2)+' ha' : ''}</div>
+          </div>
+        `).addTo(map);
+      });
+    });
+  </script>
+</body>
+</html>

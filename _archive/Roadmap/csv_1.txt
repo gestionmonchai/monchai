@@ -1,0 +1,76 @@
+CSV_1 — Ingestion sécurisée & Prévisualisation (junior step-by-step)
+====================================================================
+
+But
+---
+Construire le **pipeline d’entrée** (upload → stockage temporaire → analyse → prévisualisation) ultra-sécurisé.
+Objectif: accepter CSV/XLSX, **ne jamais planter**, détecter encodage/séparateur proprement, et préparer le mapping.
+
+Livrables
+---------
+1) Endpoints upload/preview opérationnels et testés
+2) Stockage temporaire isolé + hash SHA-256
+3) Détection **encodage**, **séparateur**, **entêtes** robuste
+4) **Prévisualisation** (10 lignes) en UI avec garde-fous anti-injection
+5) Journal `import_job` initialisé
+
+Endpoints (contrats)
+--------------------
+- `POST /import/:entity/upload` (multipart)
+  - Fichier ≤ 10 Mo (configurable), types: `.csv`, `.xlsx`
+  - Retour: `{ job_id, filename, size_bytes, sha256 }`
+- `GET /import/:job_id/preview`
+  - Params: `rows=10` (max=50), `sheet=0` pour XLSX
+  - Retour: `{ header: [..], sample: [[..],..], detected: {encoding, delimiter, decimal, has_header}, warnings: [] }`
+
+Sécurité immédiate (OBLIGATOIRE)
+--------------------------------
+- Taille max: refuser > 10 Mo → 413 Payload Too Large
+- Type → vérifier **mimetype** ET **magic bytes** (csv text, xlsx ZIP + `[Content_Types].xml`)
+- Nom fichier → **normaliser** (strip path, remplace espaces, remove control chars)
+- Stockage → dossier sandbox `/tmp/imports/{org_id}/{job_uuid}` avec **permissions minimales** (0700)
+- Calculer **SHA-256** du binaire et stocker dans `import_job.sha256`
+- Pas de lecture complète en RAM : lecture **streaming** (chunk 64–256 KB)
+- Prévention CSV Injection **dès l’affichage**: si une cellule **commence par** `= + - @ \t` → préfixer `'` côté UI preview
+
+Détection encodage/séparateur (algo)
+------------------------------------
+1) Encodage:
+   - Essayer UTF-8 strict → si OK → prendre UTF-8
+   - Sinon, utiliser **charset-normalizer** (ou chardet) sur premier 128 KB
+   - Si incertain (<0.4 de confiance) → demander à l’utilisateur (UI)
+2) Séparateur CSV:
+   - Essayer `,` `;` `\t` via `csv.Sniffer` sur 2–5 KB
+   - Si scores proches, choisir **celui avec plus de colonnes stables** (écart-type lignes 5–50 minimal)
+3) Décimal:
+   - Heuristique: si **`,`** présent dans nombres + peu de `.` → décimal=`','`, sinon `'.'`
+4) En-têtes:
+   - Déterminer si la 1ère ligne est un header (non-numérique majoritaire, diversité des cellules)
+   - Si doute: UI propose un toggle “la 1ère ligne contient des entêtes”
+
+Stockage & modèle
+-----------------
+- `import_job` (à créer si pas présent)
+  - `id, organization_id, entity, filename, size_bytes, sha256, status={'uploaded','previewed','mapped','dry_run','running','done','failed'}, total_rows, created_by, started_at, ended_at`
+- `import_job_row` (sera rempli plus tard, ici uniquement si on loggue des erreurs de preview)
+
+Prévisualisation (UI)
+---------------------
+- Afficher 10 lignes **brutes**, mais neutralisées à l’affichage (CSV injection)
+- Afficher `detected` + **warnings** (ex: encodage incertain, lignes de longueurs variables)
+- Bouton **“Continuer vers Mapping”**
+
+Cas d’erreurs à gérer (retours propres)
+--------------------------------------
+- 415 Unsupported Media Type (mimetype/magic bytes incorrects)
+- 422 Unprocessable Entity (encodage indétectable, CSV irrégulier)
+- 413 Payload Too Large (> taille max configurable)
+- 401/403 si org/user invalide
+
+Tests (à écrire)
+----------------
+- Upload CSV UTF-8, ISO-8859-1 → preview ok
+- XLSX multi-feuilles → preview de la 1ère feuille, param `sheet` fonctionne
+- Fichier binaire renommé .csv → rejet (magic bytes)
+- Cellule `=2+3` → preview **affiche** `'`2+3 (neutralisée)
+- CSV énorme (ex: 20 Mo) → 413 sans crash, journal `import_job` créé avec status `failed`

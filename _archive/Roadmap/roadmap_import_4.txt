@@ -1,0 +1,3 @@
+ROADMAP_IMPORT_4 — Exécution réelle : upsert idempotent & transactions (junior step-by-step)
+============================================================================================
+[Contenu identique au guide CSV_4 : upsert idempotent, transactions par chunk, verrous, reprise après crash, progress/report, sécurité, tests.]

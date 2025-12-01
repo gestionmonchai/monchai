@@ -1,0 +1,216 @@
+{% comment %}
+Modals réutilisables pour Import/Export
+À inclure une seule fois dans la page parent
+{% endcomment %}
+
+{% load static %}
+
+<!-- Modal Import -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalTitle">
+                    <i class="bi bi-upload me-2"></i>Importer des données
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Étape 1: Sélection du fichier -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">
+                            <span class="badge bg-primary me-2">1</span>Sélectionner le fichier
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label for="importFileInput" class="form-label">Fichier à importer</label>
+                            <input type="file" class="form-control" id="importFileInput" 
+                                   accept=".csv,.xlsx,.xls" onchange="handleImportFile()">
+                            <div class="form-text">
+                                Formats supportés: CSV, XLSX, XLS (max 10MB)
+                            </div>
+                        </div>
+                        
+                        <!-- Aperçu du fichier -->
+                        <div id="importPreview" class="alert alert-info" style="display: none;">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-file-earmark-text me-2"></i>Fichier sélectionné
+                            </h6>
+                            <p class="mb-1"><strong>Nom:</strong> <span id="importFileName"></span></p>
+                            <p class="mb-0"><strong>Taille:</strong> <span id="importFileSize"></span></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Étape 2: Options d'import -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">
+                            <span class="badge bg-primary me-2">2</span>Options d'import
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="importEncoding" class="form-label">Encodage</label>
+                                <select class="form-select" id="importEncoding">
+                                    <option value="utf-8">UTF-8 (recommandé)</option>
+                                    <option value="utf-8-sig">UTF-8 avec BOM</option>
+                                    <option value="latin-1">Latin-1 (ISO-8859-1)</option>
+                                    <option value="cp1252">Windows-1252</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="importSeparator" class="form-label">Séparateur CSV</label>
+                                <select class="form-select" id="importSeparator">
+                                    <option value=";">Point-virgule (;)</option>
+                                    <option value=",">Virgule (,)</option>
+                                    <option value="\t">Tabulation</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="importSkipErrors" checked>
+                                <label class="form-check-label" for="importSkipErrors">
+                                    Ignorer les lignes avec erreurs
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="importDryRun">
+                                <label class="form-check-label" for="importDryRun">
+                                    Mode test (validation sans import réel)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Aide -->
+                    <div class="alert alert-light">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle me-2"></i>Aide
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>La première ligne doit contenir les en-têtes de colonnes</li>
+                            <li>Les colonnes obligatoires seront mappées automatiquement</li>
+                            <li>Vous pourrez ajuster le mapping avant l'import final</li>
+                            <li>Un rapport détaillé sera généré après l'import</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="startImportBtn" onclick="startImport()">
+                    <i class="bi bi-upload me-1"></i>Démarrer l'import
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Export -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalTitle" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalTitle">
+                    <i class="bi bi-download me-2"></i>Exporter des données
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportForm">
+                    <!-- Format d'export -->
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label">Format d'export</label>
+                        <select class="form-select" id="exportFormat">
+                            <option value="csv">CSV (Comma Separated Values)</option>
+                            <option value="xlsx">Excel (XLSX)</option>
+                            <option value="json">JSON (pour développeurs)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Options CSV -->
+                    <div id="csvOptions">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="exportEncoding" class="form-label">Encodage</label>
+                                <select class="form-select" id="exportEncoding">
+                                    <option value="utf-8">UTF-8 (recommandé)</option>
+                                    <option value="utf-8-sig">UTF-8 avec BOM (Excel)</option>
+                                    <option value="latin-1">Latin-1 (ISO-8859-1)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="exportSeparator" class="form-label">Séparateur</label>
+                                <select class="form-select" id="exportSeparator">
+                                    <option value=";">Point-virgule (;)</option>
+                                    <option value=",">Virgule (,)</option>
+                                    <option value="\t">Tabulation</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Options avancées -->
+                    <div class="mt-3">
+                        <h6 class="fw-bold">Options avancées</h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportActiveOnly" checked>
+                            <label class="form-check-label" for="exportActiveOnly">
+                                Exporter uniquement les éléments actifs
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportWithIds">
+                            <label class="form-check-label" for="exportWithIds">
+                                Inclure les identifiants techniques
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exportWithTimestamps">
+                            <label class="form-check-label" for="exportWithTimestamps">
+                                Inclure les dates de création/modification
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Limite d'export -->
+                    <div class="mt-3">
+                        <label for="exportLimit" class="form-label">Limite d'export</label>
+                        <select class="form-select" id="exportLimit">
+                            <option value="">Tous les éléments</option>
+                            <option value="100">100 premiers</option>
+                            <option value="500">500 premiers</option>
+                            <option value="1000">1000 premiers</option>
+                            <option value="5000">5000 premiers</option>
+                        </select>
+                        <div class="form-text">
+                            Pour de gros volumes, utilisez les filtres de la liste avant l'export
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="startExport()">
+                    <i class="bi bi-download me-1"></i>Télécharger
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Masquer/afficher les options CSV selon le format sélectionné
+document.getElementById('exportFormat').addEventListener('change', function() {
+    const csvOptions = document.getElementById('csvOptions');
+    if (this.value === 'csv') {
+        csvOptions.style.display = 'block';
+    } else {
+        csvOptions.style.display = 'none';
+    }
+});
+</script>

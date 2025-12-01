@@ -1,0 +1,45 @@
+T06 — Tests /clients/tags (Roadmap 39 — Étiquettes libres)
+==========================================================
+But
+---
+Assurer la gestion des **tags** (création, suppression, assignation), filtres liste, unicité, sécurité.
+
+Fixtures
+--------
+- Tags initiaux: VIP, GrosCompte, Prospect.
+- Clients: 100 clients aléatoires avec assignations multiples.
+
+A) Smoke
+--------
+- [ ] GET /clients/tags liste; compteurs usage_count affichés.
+- [ ] Modal gestion tags s’ouvre depuis la fiche client.
+
+B) CRUD tags
+------------
+- [ ] Créer tag “Salon2025” → visible et assignable.
+- [ ] Supprimer “Prospect” → liens supprimés (cascade); filtres mis à jour.
+
+C) Assignation
+--------------
+- [ ] Ajouter “VIP” + “GrosCompte” à un client → visible en fiche et filtre liste.
+- [ ] Retirer “VIP” → plus présent en fiche; filtres répercutés.
+
+D) Unicité & normalisation
+--------------------------
+- [ ] Créer “vip”, “V.I.P”, “Vîp” → un seul passe (name_norm unique).
+- [ ] XSS dans name → échappé; max length 40 respecté.
+
+E) Sécurité & RLS
+-----------------
+- [ ] RBAC: viewer pas de CRUD; editor/admin OK.
+- [ ] RLS: impossible de voir tags d’une autre org.
+
+F) Perfs
+--------
+- [ ] 10k tags: filtre par tag en liste /clients p95 < 600 ms.
+
+IDs
+---
+- pytest::t06_tags_crud_and_assignments
+- pytest::t06_tags_unique_norm
+- playwright::t06_tags_modal_and_pills

@@ -1,0 +1,58 @@
+13 — /settings/roles — Membres & rôles (admin domaine, collaborateur, lecture seule) — Guide pas-à-pas
+======================================================================================================
+Objectif: permettre aux admins d’organiser l’accès par rôle ; inviter/révoquer des membres.
+
+Prérequis
+---------
+- Rôles & accès (owner/admin/editor/read_only) opérationnels (voir fichier 04).
+- Invitations token/email opérationnelles (voir fichier 07).
+
+Portée & Done
+--------------
+- DONE si: page listant membres actifs (nom/email, rôle, depuis quand), actions (changer rôle, désactiver),
+  section “Invitations” (envoyer, renvoyer, statut), et permissions appliquées (admin+).
+
+Étape 1 — Routes & permissions (15–20 min)
+-------------------------------------------
+1.1 URL: **GET/POST** `/settings/roles/` (require_membership role_min=admin).
+1.2 GET: récupérer membres (Membership actifs) + invitations en attente (Invitation.accepted_at null).
+
+Étape 2 — Template (60–90 min)
+-------------------------------
+2.1 Table “Membres”:
+    - Colonnes: Utilisateur, Rôle (select), Statut (actif), Actions
+    - Select rôle avec options {owner, admin, editor, read_only} (désactiver “owner” si dernier owner)
+    - Bouton “Désactiver” (soft delete: is_active=False)
+2.2 Table “Invitations”:
+    - Colonnes: Email, Rôle, Envoyée le, Statut (envoyée/acceptée), Actions (Renvoyer)
+    - Form “Inviter” (email + rôle) en haut ou à droite
+2.3 Messages: succès/erreur (bannières), confirmations pour actions critiques.
+
+Étape 3 — Actions serveur (60–90 min)
+--------------------------------------
+3.1 POST “changer rôle”: vérifier permissions admin+, empêcher retrait du **dernier owner**.
+3.2 POST “désactiver membre”: is_active=False, empêcher si c’est **le dernier owner**.
+3.3 POST “inviter”: crée Invitation + email console (token); éviter doublon actif même email/org.
+3.4 POST “renvoyer”: régénère token + email (console); met à jour date d’envoi.
+
+Étape 4 — Audit & cohérence (30 min)
+-------------------------------------
+4.1 Journal minimal (logging INFO): qui change quel rôle, quand.
+4.2 Afficher “dernière activité” (optionnel) depuis Membership.created_at/updated.
+
+Étape 5 — Tests (60 min)
+-------------------------
+- Non admin → refus.
+- Changement rôle editor→read_only → succès visible en table ; droits appliqués ensuite.
+- Tentative de désactivation du dernier owner → bloquée (message clair).
+- Invitation envoyée → visible en “Invitations” avec statut “envoyée”; acceptation → passe en “acceptée”.
+
+UX & Accessibilité
+------------------
+- Désactiver les actions non permises en UI (mais revérifier côté serveur).
+- Tooltips courts expliquant les rôles.
+- Boutons clairs, libellés explicites (“Renvoyer l’invitation”).
+
+Interactions avec la checklist
+------------------------------
+- Cette page n’impacte pas la checklist (onboarding). Elle vit en “Paramètres avancés”.

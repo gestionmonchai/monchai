@@ -1,0 +1,38 @@
+DB Roadmap 06 — Recherche temps réel & Query Builder v2
+=======================================================
+Objectif
+--------
+Refondre la recherche pour supporter la **mise à jour à chaque frappe** (debounce + cancellation), FTS Postgres + trigram, ranking, facettes et pagination keyset, tout en **préservant v1** (double-write + feature flags).
+
+Livrables (Done)
+----------------
+- Endpoint `/api/search` v2 (compatible v1 via `v=1|2`)
+- Colonnes `*_search_tsv_v2` + triggers + indexes GIN (CONCURRENTLY)
+- Query Builder v2 (filtres, tri, facettes, keyset) avec **whitelists** attributs
+- Caches (Redis) pour facettes et requêtes identiques, **bust sélectif**
+- Metrics/Logs spécifiques recherche v2 (p95, 0-result rate, cache hit)
+
+Points clés d’implémentation
+----------------------------
+- Debounce client 150–250ms ; AbortController/htmx `changed delay:200ms` ; annulation serveur si client abandonne
+- FTS: `tsvector(simple + unaccent)` ; fallback trigram `gin_trgm_ops`
+- Ranking: `ts_rank_cd` + bonus exact match + récence ; pénalité `is_active=false`
+- Facettes: déclarées via `meta_attribute.is_facet` ; top-N + “plus…”
+- Pagination: offset par défaut ; keyset `(sort_key,id)` pour gros jeux
+- Caching: TTL 30–120s ; clé = hash(params+org+rôle+engine_version)
+
+Tests d’acceptation (AC)
+------------------------
+- AC-06-01: “cote r…” renvoie **Côtes-du-Rhône** en < 600ms (p95)
+- AC-06-02: 0 résultat → suggestions affichées (orthographe/synonymes)
+- AC-06-03: Facettes combinées (≥3) restent < 700ms p95
+- AC-06-04: v1 inchangée si `v=1` ou flag off ; **aucune** 500
+- AC-06-05: keyset stable (aucun doublon/manque en insert concurrent)
+
+Robustesse
+----------
+- R-06-01: spam frappes → requêtes obsolètes **annulées**
+- R-06-02: champ tri/filtre non whitelisté → 400, message clair
+- R-06-03: index CONCURRENTLY (pas de lock bloquant)
+- R-06-04: cache-busting sur mutation (création/maj/suppression)
+- R-06-05: protection injection: SQL paramétré ; pas de concat dynamique

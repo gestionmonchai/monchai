@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import CSV - {{ pricelist.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="mb-4">
+                <h1><i class="bi bi-upload"></i> Import de Prix en Masse</h1>
+                <p class="text-muted">{{ pricelist.name }} - Importez vos tarifs depuis un fichier CSV</p>
+            </div>
+
+            <!-- Instructions -->
+            <div class="alert alert-info mb-4">
+                <strong><i class="bi bi-info-circle"></i> Format CSV requis :</strong>
+                <p class="mb-2 mt-2">Votre fichier doit contenir les colonnes suivantes (séparateur <code>;</code>) :</p>
+                <ul class="mb-2">
+                    <li><code>code_sku</code> : Code du produit (obligatoire)</li>
+                    <li><code>prix_unitaire</code> : Prix unitaire en euros (obligatoire)</li>
+                    <li><code>qte_min</code> : Quantité minimum (optionnel, 0 = prix par défaut)</li>
+                    <li><code>remise_pct</code> : Remise en pourcentage (optionnel, 0 = pas de remise)</li>
+                </ul>
+                <p class="mb-0"><strong>Exemple de fichier :</strong></p>
+                <pre class="bg-light p-2 rounded"><code>code_sku;prix_unitaire;qte_min;remise_pct
+SKU-001;15.50;0;0
+SKU-001;14.00;6;5
+SKU-001;13.00;12;10
+SKU-002;25.00;0;0</code></pre>
+            </div>
+
+            <!-- Télécharger le modèle -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-download"></i> Modèle CSV</h5>
+                    <p class="card-text">Téléchargez un modèle pré-rempli avec vos produits actuels</p>
+                    <button class="btn btn-secondary" id="downloadTemplateBtn">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Télécharger le modèle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulaire d'upload -->
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Upload fichier -->
+                        <div class="mb-4">
+                            <label for="{{ form.file.id_for_label }}" class="form-label">
+                                {{ form.file.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.file }}
+                            {% if form.file.help_text %}
+                                <div class="form-text">{{ form.file.help_text }}</div>
+                            {% endif %}
+                            {% if form.file.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.file.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'sales:pricelist_detail' pricelist.pk %}" 
+                               class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Importer et prévisualiser
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Conseils -->
+            <div class="alert alert-warning mt-3">
+                <strong><i class="bi bi-exclamation-triangle"></i> Important :</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Le fichier doit être au format CSV avec séparateur point-virgule (<code>;</code>)</li>
+                    <li>Les codes SKU doivent correspondre à vos produits existants</li>
+                    <li>Vous pourrez prévisualiser avant d'importer définitivement</li>
+                    <li>Taille maximum : 5 MB</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('downloadTemplateBtn');
+    
+    // Générer un modèle CSV
+    downloadBtn.addEventListener('click', function() {
+        // Créer le contenu CSV
+        const csvContent = 'code_sku;prix_unitaire;qte_min;remise_pct\nSKU-001;15.50;0;0\nSKU-001;14.00;6;5\nSKU-001;13.00;12;10\nSKU-002;25.00;0;0\n';
+        
+        // Créer un blob et télécharger
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'modele_import_tarifs.csv');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // Prévisualisation du fichier sélectionné
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(2);
+                console.log(`Fichier sélectionné : ${fileName} (${fileSize} KB)`);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

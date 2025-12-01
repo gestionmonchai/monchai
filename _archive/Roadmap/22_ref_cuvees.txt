@@ -1,0 +1,43 @@
+
+Roadmap — /ref/cuvees (Cuvées — CRUD + AOC/IGP/couleur)
+=======================================================
+Objectif
+--------
+CRUD pour **Cuvées** (nom, couleur, AOC/IGP, millésime optionnel), avec recherche, liens aux référentiels.
+
+Portée & Done
+-------------
+- Liste + création/édition/suppression (soft si utilisée).
+- Recherche FTS (name/code) + trigram ; filtres par appellation, vintage, couleur.
+- Affichage étiquette (si uploadé via /media/upload).
+
+Endpoints
+---------
+- GET  /ref/cuvees
+- GET  /ref/cuvees/new
+- POST /ref/cuvees
+- GET  /ref/cuvees/:id/edit
+- POST /ref/cuvees/:id
+- POST /ref/cuvees/:id/delete
+
+Modèle (rappel)
+---------------
+- cuvee(org, name UNIQUE, code?, default_uom_id, appellation_id?, vintage_id?, color?, is_active, row_version)
+- tsvector `search_tsv` + index GIN; index trigram sur name
+
+UI & UX
+-------
+- Carte/cuadricule ou table ; colonnes configurables (Nom, Appellation, Millésime, Couleur). 
+- Double‑clic inline sur Nom/Couleur ; select Appellation/Vintage.
+- Bouton “Voir fiche /catalogue/:id”.
+
+Validations
+-----------
+- name requis ; default_uom obligatoire ; FK org‑cohérentes.
+
+Tests & robustesse
+------------------
+- AC1: Recherche “cote r” → Côtes‑du‑Rhône dans top 3.
+- AC2: Soft delete si cuvée liée (lots/SKU).
+- R1: XSS Nom rendu échappé ; image étiquette via /media/upload sécurisée.
+- R2: Conflit row_version → 409.

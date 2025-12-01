@@ -1,0 +1,55 @@
+T06 — Tests /clients/:id (Roadmap 38 — Fiche + contacts + adresses + activités)
+===============================================================================
+But
+---
+Valider la **fiche client**: CRUD contacts/adresses, timeline d’activités, tags affichés, verrou optimiste (row_version).
+
+Fixtures
+--------
+- Client “Cave du Rhône (Pro)” avec 2 contacts, 1 adresse billing, 1 shipping, 3 activités (note, call, email).
+
+A) Smoke
+--------
+- [ ] GET fiche rend sections (Infos, Contacts, Adresses, Activités, Tags).
+
+B) Contacts
+-----------
+- [ ] Ajouter un contact secondaire; le définir **primaire** bascule l’ancien à false.
+- [ ] Supprimer un contact utilisé n’est pas autorisé si policy (sinon autorisé).
+
+C) Adresses
+-----------
+- [ ] Ajouter shipping; définir shipping **par défaut** unique (l’autre passe à false).
+- [ ] Valider formats code postal / pays (FR/DE/IT régles simples).
+
+D) Activités
+------------
+- [ ] Ajouter une Note → affichée en tête de timeline avec auteur/date.
+- [ ] Append‑only (pas d’edit/del) ; suppression “soft” via un champ (option v2).
+
+E) Inline edit & verrou
+-----------------------
+- [ ] Modifier “Nom” en inline; sauvegarde OK.
+- [ ] Conflit 409 simulé (row_version stale) → message clair; “Actualiser” corrige.
+
+F) Sécurité & GDPR
+------------------
+- [ ] RBAC: viewer no‑edit; editor OK.
+- [ ] RLS: accès à un client d’une autre org → 404/403.
+- [ ] XSS dans note/contact rendu échappé; upload PJ (si activé) mime‑check.
+
+G) Perfs & pagination
+---------------------
+- [ ] 100k activités: timeline keyset < 600 ms; pas de n+1 queries.
+
+H) Observabilité
+----------------
+- [ ] Logs append activités; métriques créations/latences par type.
+
+IDs
+---
+- pytest::t06_clients_fiche_contacts_primary_unique
+- pytest::t06_clients_fiche_addresses_default_unique
+- pytest::t06_clients_fiche_activity_append_only
+- pytest::t06_clients_fiche_inline_edit_conflict_409
+- k6::t06_clients_fiche_activities_keyset_perf

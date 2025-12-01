@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+printf "[pre-push] Smoke tests…\n"
+export E2E_BASE_URL="${E2E_BASE_URL:-http://127.0.0.1:8000}"
+
+# Unitaires rapides
+if command -v pytest >/dev/null 2>&1; then
+  pytest -q -k "not slow"
+else
+  printf "pytest not found, skipping unit tests\n"
+fi
+
+# E2E smoke (bloquant)
+if command -v npx >/dev/null 2>&1; then
+  npx playwright test tests/e2e/smoke.spec.ts --reporter=line
+  # Prompts (non bloquant)
+  if npx --yes promptfoo --version >/dev/null 2>&1; then
+    npx promptfoo eval -c prompt-tests/promptfooconfig.yaml --max-concurrency=2 || printf "Prompt tests failed (non-blocking)\n"
+  fi
+else
+  printf "npx not found, skipping Playwright/Prompt tests\n"
+fi

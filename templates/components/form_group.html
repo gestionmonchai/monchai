@@ -1,0 +1,56 @@
+{% load widget_tweaks %}
+{% comment %}
+Composant FormGroup - Design System Mon Chai
+Roadmap 05 : label (obligatoire), input, help-text (optionnel), error-text (visible si validation échoue)
+Ajouter aria-describedby sur l'input quand help-text ou erreur existent
+
+Usage:
+{% include 'components/form_group.html' with field=form.email %}
+{% include 'components/form_group.html' with field=form.password help_text="8 caractères minimum" %}
+{% endcomment %}
+
+<div class="mb-3">
+    {% if field.label %}
+        <label for="{{ field.id_for_label }}" class="form-label">
+            {{ field.label }}
+            {% if field.field.required %}
+                <span class="text-danger" aria-label="requis">*</span>
+            {% endif %}
+        </label>
+    {% endif %}
+    
+    {% comment %}Construire aria-describedby si help_text ou erreurs{% endcomment %}
+    {% if field.help_text or field.errors or help_text %}
+        {% with describedby_id=field.id_for_label|add:"_help" %}
+            {% if field.errors %}
+                {{ field|add_class:"form-control is-invalid" }}
+            {% else %}
+                {{ field|add_class:"form-control" }}
+            {% endif %}
+            
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    var field = document.getElementById('{{ field.id_for_label }}');
+                    if (field) {
+                        field.setAttribute('aria-describedby', '{{ describedby_id }}');
+                    }
+                });
+            </script>
+            
+            {% comment %}Help text ou erreurs{% endcomment %}
+            <div id="{{ describedby_id }}" class="form-text">
+                {% if field.errors %}
+                    <div class="invalid-feedback d-block" role="alert">
+                        {{ field.errors.0 }}
+                    </div>
+                {% elif help_text %}
+                    <small class="text-muted">{{ help_text }}</small>
+                {% elif field.help_text %}
+                    <small class="text-muted">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+        {% endwith %}
+    {% else %}
+        {{ field|add_class:"form-control" }}
+    {% endif %}
+</div>

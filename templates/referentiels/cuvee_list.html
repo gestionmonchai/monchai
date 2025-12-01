@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}Cuvées - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <h1>
+                    <i class="bi bi-cup-straw me-2 text-primary"></i>Cuvées
+                </h1>
+                <!-- View Switcher -->
+                <div class="btn-group btn-group-sm" role="group" aria-label="Switch view">
+                    <button type="button" class="btn btn-outline-primary view-switch-btn active" data-view="table" data-page="cuvees">
+                        <i class="bi bi-table me-1"></i>Table BDD
+                    </button>
+                    <button type="button" class="btn btn-outline-primary view-switch-btn" data-view="dashboard" data-page="cuvees">
+                        <i class="bi bi-pie-chart me-1"></i>Dashboard
+                    </button>
+                    <button type="button" class="btn btn-outline-primary view-switch-btn" data-view="cards" data-page="cuvees">
+                        <i class="bi bi-grid-3x3 me-1"></i>Cartes
+                    </button>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Référentiels
+                </a>
+                
+                <!-- Boutons Import/Export -->
+                {% include 'components/import_export_buttons.html' with entity_type='cuvee' entity_name='Cuvées' %}
+                
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouvelle cuvée
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche temps réel -->
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="position-relative">
+            <input type="text" 
+                   id="quick-search" 
+                   name="search"
+                   value="{{ search|default:'' }}" 
+                   placeholder="Recherche rapide dans toutes les cuvées..." 
+                   class="form-control pe-5"
+                   autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                <i class="bi bi-search text-muted" id="search-icon"></i>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                    <span class="visually-hidden">Recherche...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div id="search-info" class="text-muted small mt-2">
+            {% if page_obj %}
+                {{ page_obj.paginator.count }} cuvée{{ page_obj.paginator.count|pluralize }}
+            {% else %}
+                0 cuvée
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Multi-View Container -->
+<div id="view-container">
+    <!-- TABLE VIEW -->
+    <div class="view-panel" data-view="table" data-page="cuvees">
+{% if page_obj %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Couleur</th>
+                                    <th>Classification</th>
+                                    <th>Degré</th>
+                                    <th>Créé le</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% include 'referentiels/partials/cuvee_table_rows.html' %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="row mt-3">
+        <div class="col-12" id="pagination-container">
+            {% include 'referentiels/partials/pagination.html' %}
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucune cuvée trouvée</h4>
+                {% if search %}
+                    <p>Aucune cuvée ne correspond à votre recherche "{{ search }}".</p>
+                    <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-primary">
+                        Voir toutes les cuvées
+                    </a>
+                {% else %}
+                    <p>Vous n'avez pas encore créé de cuvée.</p>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Créer votre première cuvée
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+    </div>
+    <!-- End TABLE VIEW -->
+
+    <!-- DASHBOARD VIEW -->
+    <div class="view-panel d-none" data-view="dashboard" data-page="cuvees">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Répartition par couleur</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="colorChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Statistiques</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="text-muted small">Total Cuvées</div>
+                            <h3 class="mb-0" id="stat-total">{{ page_obj.paginator.count|default:0 }}</h3>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-muted small">AOC</div>
+                            <h4 class="mb-0 text-success" id="stat-aoc">-</h4>
+                        </div>
+                        <div>
+                            <div class="text-muted small">IGP</div>
+                            <h4 class="mb-0 text-info" id="stat-igp">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Répartition par classification</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="classificationChart" style="max-height: 250px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End DASHBOARD VIEW -->
+
+    <!-- CARDS VIEW -->
+    <div class="view-panel d-none" data-view="cards" data-page="cuvees">
+        <div class="row g-3" id="cards-container">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End CARDS VIEW -->
+</div>
+<!-- End Multi-View Container -->
+
+<!-- Info -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light">
+            <h6><i class="bi bi-lightbulb me-2"></i>À propos des cuvées</h6>
+            <p class="mb-0">
+                Les cuvées représentent vos différents vins. Elles serviront de base pour créer 
+                vos lots de production et gérer votre catalogue produits.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% load static %}{% static 'js/realtime-search.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser la recherche temps réel
+    new RealtimeSearch({
+        ajaxUrl: '{% url "referentiels:cuvee_search_ajax" %}',
+        entityName: 'cuvée'
+    });
+
+    // VIEW SWITCHER LOGIC
+    const pageId = 'cuvees';
+    const storageKey = pageId + '_view';
+    const viewButtons = document.querySelectorAll(`.view-switch-btn[data-page="${pageId}"]`);
+    const viewPanels = document.querySelectorAll(`.view-panel[data-page="${pageId}"]`);
+    
+    let colorChart, classificationChart;
+    
+    // Load saved preference
+    const savedView = localStorage.getItem(storageKey) || 'table';
+    switchToView(savedView);
+
+    viewButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetView = this.getAttribute('data-view');
+            switchToView(targetView);
+            localStorage.setItem(storageKey, targetView);
+        });
+    });
+
+    function switchToView(viewName) {
+        viewButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
+        });
+
+        viewPanels.forEach(panel => {
+            const isTarget = panel.getAttribute('data-view') === viewName;
+            panel.classList.toggle('d-none', !isTarget);
+            
+            if (isTarget && !panel.hasAttribute('data-loaded')) {
+                if (viewName === 'dashboard') {
+                    loadDashboardData();
+                } else if (viewName === 'cards') {
+                    loadCardsView();
+                }
+                panel.setAttribute('data-loaded', 'true');
+            }
+        });
+    }
+
+    function loadDashboardData() {
+        // Fetch cuvees data for charts
+        fetch('{% url "referentiels:cuvee_search_ajax" %}?all=1')
+            .then(response => response.json())
+            .then(data => {
+                if (data.cuvees) {
+                    renderCharts(data.cuvees);
+                }
+            })
+            .catch(err => console.error('Error loading dashboard:', err));
+    }
+
+    function renderCharts(cuvees) {
+        // Count by color
+        const colorCounts = {};
+        const classifCounts = {};
+        let aocCount = 0, igpCount = 0;
+
+        cuvees.forEach(c => {
+            const color = c.couleur || 'Autre';
+            colorCounts[color] = (colorCounts[color] || 0) + 1;
+            
+            const classif = c.classification || 'Autre';
+            classifCounts[classif] = (classifCounts[classif] || 0) + 1;
+            
+            if (classif.toLowerCase() === 'aoc') aocCount++;
+            if (classif.toLowerCase() === 'igp') igpCount++;
+        });
+
+        // Update stats
+        document.getElementById('stat-aoc').textContent = aocCount;
+        document.getElementById('stat-igp').textContent = igpCount;
+
+        // Color Chart
+        const colorCtx = document.getElementById('colorChart');
+        if (colorCtx) {
+            if (colorChart) colorChart.destroy();
+            colorChart = new Chart(colorCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(colorCounts),
+                    datasets: [{
+                        data: Object.values(colorCounts),
+                        backgroundColor: [
+                            '#dc3545', // Rouge
+                            '#ffc107', // Blanc (jaune)
+                            '#e83e8c', // Rosé
+                            '#17a2b8', // Effervescent
+                            '#6c757d'  // Autre
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+
+        // Classification Chart
+        const classifCtx = document.getElementById('classificationChart');
+        if (classifCtx) {
+            if (classificationChart) classificationChart.destroy();
+            classificationChart = new Chart(classifCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(classifCounts),
+                    datasets: [{
+                        label: 'Nombre de cuvées',
+                        data: Object.values(classifCounts),
+                        backgroundColor: '#0d6efd'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    }
+
+    function loadCardsView() {
+        const container = document.getElementById('cards-container');
+        fetch('{% url "referentiels:cuvee_search_ajax" %}?all=1')
+            .then(response => response.json())
+            .then(data => {
+                if (data.cuvees) {
+                    container.innerHTML = '';
+                    data.cuvees.forEach(cuvee => {
+                        const card = createCuveeCard(cuvee);
+                        container.appendChild(card);
+                    });
+                }
+            })
+            .catch(err => {
+                container.innerHTML = '<div class="col-12 text-center text-danger">Erreur de chargement</div>';
+            });
+    }
+
+    function createCuveeCard(cuvee) {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 col-lg-3';
+        
+        const colorBadge = {
+            'rouge': 'danger',
+            'blanc': 'warning',
+            'rose': 'pink',
+            'effervescent': 'info'
+        }[cuvee.couleur?.toLowerCase()] || 'secondary';
+        
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">${cuvee.nom}</h5>
+                    <div class="mb-2">
+                        <span class="badge bg-${colorBadge}">${cuvee.couleur || 'N/A'}</span>
+                        <span class="badge bg-secondary">${cuvee.classification || 'N/A'}</span>
+                    </div>
+                    ${cuvee.degre_alcool ? '<p class="text-muted mb-0"><i class="bi bi-thermometer-half me-1"></i>' + cuvee.degre_alcool + '%</p>' : ''}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="/referentiels/cuvees/${cuvee.id}/" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-eye me-1"></i>Voir
+                    </a>
+                </div>
+            </div>
+        `;
+        return col;
+    }
+});
+</script>
+
+<!-- Modals Import/Export -->
+{% include 'components/import_export_modals.html' %}
+
+{% endblock %}

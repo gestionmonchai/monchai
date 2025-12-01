@@ -1,0 +1,24 @@
+Roadmap 41 — Cut #6 : CRM opérationnel basique
+==============================================
+Objectif de sortie
+------------------
+À la fin des roadmaps 36→40, le **CRM de base** est en production : 
+- Liste clients avec filtres/facettes, recherche tolérante, export optionnel
+- Création via formulaire **dynamique** par segment, validations robustes (email, E.164, TVA)
+- Fiche client avec **contacts multiples**, **adresses**, **activités**, **tags**
+- Import CSV minimal réutilisant le **service générique**
+- RBAC/RLS, anti‑XSS, budgets de perfs respectés
+
+Critères “Done”
+---------------
+- ✅ **Tous les AC** de 36..40 sont passés (tests automatiques inclus).
+- ✅ p95 < 600 ms sur `/clients` et `/clients/:id` (hors uploads).
+- ✅ Déduplication **signalée** (badge) et contrôles d’unicité TVA OK.
+- ✅ Dev Book à jour: `clients_list.md`, `clients_new.md`, `clients_fiche.md`, `clients_tags.md`, `clients_import.md`.
+
+Revue & tests intermédiaires (T06)
+----------------------------------
+- Smoke & fonctionnels sur 36..40
+- Perfs volumétrie (1M clients / 5M activités) — sampling + index check
+- Sécurité (RLS/RBAC), XSS notes/nom, CSV‑inj exports
+- Rapport écarts/dettes + plan de correction

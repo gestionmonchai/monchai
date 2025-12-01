@@ -1,0 +1,83 @@
+{% extends 'auth_base.html' %}
+{% load static %}
+
+{% block title %}Accepter l'invitation{% endblock %}
+
+{% block auth_content %}
+<div class="text-center mb-4">
+    <h1 class="h3 mb-3">Invitation à rejoindre une exploitation</h1>
+    <p class="text-muted">
+        Vous avez été invité(e) à rejoindre l'exploitation
+        <strong>{{ organization.name }}</strong>
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row align-items-center mb-3">
+            <div class="col-auto">
+                <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                    <i class="bi bi-building text-primary fs-4"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h5 class="card-title mb-1">{{ organization.name }}</h5>
+                <p class="text-muted mb-0">
+                    Rôle proposé : <span class="badge bg-secondary">{{ role_display }}</span>
+                </p>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <h6 class="fw-bold">Votre nouveau rôle vous permettra de :</h6>
+            <ul class="list-unstyled">
+                {% if invitation.role == 'read_only' %}
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Consulter les données de l'exploitation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Accéder aux rapports</li>
+                {% elif invitation.role == 'editor' %}
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Consulter les données de l'exploitation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Modifier et créer du contenu</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Accéder aux rapports</li>
+                {% elif invitation.role == 'admin' %}
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Consulter et modifier toutes les données</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Gérer les utilisateurs et invitations</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Accéder à tous les rapports</li>
+                {% elif invitation.role == 'owner' %}
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Accès complet à l'exploitation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Gérer tous les aspects de l'organisation</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Contrôle total des permissions</li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        {% if user.is_authenticated %}
+            <div class="alert alert-info" role="status">
+                <i class="bi bi-info-circle me-2"></i>
+                Vous êtes connecté(e) en tant que <strong>{{ user.email }}</strong>.
+                En acceptant, vous rejoindrez immédiatement cette exploitation.
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="status">
+                <i class="bi bi-info-circle me-2"></i>
+                Vous devrez créer un compte ou vous connecter pour finaliser votre adhésion.
+            </div>
+        {% endif %}
+        
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'auth:login' %}" class="btn btn-outline-secondary">
+                    Annuler
+                </a>
+                {% include 'components/submit_button.html' with text="Accepter l'invitation" class="btn-success" %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="text-center mt-4">
+    <small class="text-muted">
+        Cette invitation expire le {{ invitation.expires_at|date:"d/m/Y à H:i" }}
+    </small>
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            
+            <!-- En-tête -->
+            <div class="d-flex align-items-center mb-4">
+                <div class="me-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                        <i class="bi bi-receipt text-primary fs-3"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="h3 mb-1">{{ page_title }}</h1>
+                    <p class="text-muted mb-0">
+                        Informations légales, fiscales et coordonnées de facturation
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Bandeau info selon roadmap 11 -->
+            <div class="mb-4">
+                {% include 'components/banner.html' with type="info" message="ℹ️ Ces informations apparaîtront sur vos factures et documents légaux." dismissible=False %}
+            </div>
+            
+            <!-- Messages Django -->
+            {% include 'components/django_messages.html' %}
+            
+            <!-- Formulaire -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Identité légale -->
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                                <i class="bi bi-building me-2"></i>Identité légale
+                            </h5>
+                            
+                            {% include 'components/form_group.html' with field=form.legal_name %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% include 'components/form_group.html' with field=form.siret %}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mt-4 pt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Le SIRET est requis pour les entreprises françaises
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Adresse de facturation -->
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                                <i class="bi bi-geo-alt me-2"></i>Adresse de facturation
+                            </h5>
+                            
+                            {% include 'components/form_group.html' with field=form.billing_address_line1 %}
+                            {% include 'components/form_group.html' with field=form.billing_address_line2 %}
+                            
+                            <div class="row">
+                                <div class="col-md-3">
+                                    {% include 'components/form_group.html' with field=form.billing_postal_code %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% include 'components/form_group.html' with field=form.billing_city %}
+                                </div>
+                                <div class="col-md-3">
+                                    {% include 'components/form_group.html' with field=form.billing_country %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Informations fiscales TVA -->
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                                <i class="bi bi-file-earmark-text me-2"></i>Informations fiscales (TVA)
+                            </h5>
+                            
+                            {% include 'components/form_group.html' with field=form.vat_status %}
+                            
+                            <div id="vat-number-group" style="display: none;">
+                                {% include 'components/form_group.html' with field=form.vat_number %}
+                            </div>
+                            
+                            <div class="alert alert-light">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>TVA intracommunautaire :</strong> Si vous êtes assujetti à la TVA, 
+                                    votre numéro sera au format FR + 11 chiffres (ex: FR12345678901)
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact de facturation -->
+                        <div class="mb-5">
+                            <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                                <i class="bi bi-person-badge me-2"></i>Contact de facturation <span class="text-muted fs-6">(optionnel)</span>
+                            </h5>
+                            
+                            {% include 'components/form_group.html' with field=form.billing_contact_name %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% include 'components/form_group.html' with field=form.billing_contact_email %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% include 'components/form_group.html' with field=form.billing_contact_phone %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{% url 'onboarding:checklist' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Retour à la checklist
+                            </a>
+                            
+                            {% include 'components/submit_button.html' with text="Enregistrer les informations" class="btn-primary" %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Script pour afficher/masquer le champ TVA -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const vatStatusField = document.querySelector('select[name="vat_status"]');
+    const vatNumberGroup = document.getElementById('vat-number-group');
+    const vatNumberField = document.querySelector('input[name="vat_number"]');
+    
+    function toggleVatNumber() {
+        if (vatStatusField.value === 'subject_to_vat') {
+            vatNumberGroup.style.display = 'block';
+            vatNumberField.required = true;
+        } else {
+            vatNumberGroup.style.display = 'none';
+            vatNumberField.required = false;
+            vatNumberField.value = '';
+        }
+    }
+    
+    // Initialiser l'état au chargement
+    toggleVatNumber();
+    
+    // Écouter les changements
+    vatStatusField.addEventListener('change', toggleVatNumber);
+});
+</script>
+{% endblock %}

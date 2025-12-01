@@ -1,0 +1,58 @@
+Roadmap 32 — /stocks/transferts (Transferts entre entrepôts)
+============================================================
+Rôle & objectif
+---------------
+Enregistrer un **transfert** atomique d’un entrepôt **source** vers un entrepôt **destination** pour un **lot**.
+Doit créer **2 mouvements** (out source, in dest) dans une seule transaction, avec **verrou** et **idempotence**.
+
+Portée
+------
+- Écran `/stocks/transferts` (formulaire + historique dédié, option)
+- Endpoint `POST /api/stocks/transferts` (JSON)
+- Double écriture `stock_vrac_move` (out/in) + MAJ balances
+- Règles : interdiction solde négatif source ; org cohérente ; même lot ; entrepôts distincts
+
+Modèle (réutilise 31)
+---------------------
+- `stock_vrac_move` (append-only), `stock_vrac_balance`
+- `stock_transfer(id, org_id, lot_id, from_warehouse_id, to_warehouse_id, volume_l, client_token, created_by, created_at)`
+  • Index `(org_id, client_token UNIQUE)` ; `(org_id, lot_id, created_at DESC)`
+
+UX (formulaire)
+---------------
+- Champs : `lot`, `from_warehouse`, `to_warehouse`, `volume_l` (>0), `client_token` (caché)
+- Affichage **solde source** en temps réel ; bouton “Transférer”
+- Toast succès + lien vers `/lots/:id` (timeline) ; voir 2 moves créés
+
+Étapes d’implémentation (intermédiaires, guidées)
+-------------------------------------------------
+1) **Migrations**: créer `stock_transfer` (journal logique).
+2) **Endpoint POST**
+   2.1 Valider : `from_warehouse != to_warehouse`, `volume_l > 0`.
+   2.2 `with_lot_lock(org, lot_id)` pour sérialiser.
+   2.3 Charger balance **source** ; si insuffisant → 422.
+   2.4 Transaction : insérer OUT (‑v) pour `from`, insérer IN (+v) pour `to`, MAJ 2 balances.
+   2.5 Idempotence via `(org, client_token)` ; si existe → 200 avec l’existant.
+3) **Historique**
+   3.1 Liste des transferts (filtres période, lot, entrepôts) ; pagination keyset.
+4) **Observabilité**
+   4.1 Metrics: `stock_transfers_total`, `stock_transfer_rejected_total{reason}`, latences.
+   4.2 Logs: `org, lot, from, to, v, ok|reject`.
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑32‑01: Transfert 50 L → moves `out` source & `in` dest ; balances mises à jour
+- AC‑32‑02: Volume > solde source → 422 ; rien écrit
+- AC‑32‑03: Double submit (même token) → un seul transfert appliqué
+- AC‑32‑04: Historique liste correctement les transferts récents
+
+Robustesse (tests)
+------------------
+- R‑32‑01: Concurrence (N transferts sur même lot) → pas de solde négatif ; verrous OK
+- R‑32‑02: Crash entre out/in → rollback totalité, pas d’état intermédiaire
+- R‑32‑03: Données cross‑org → 403/404 propre
+- R‑32‑04: 100k transferts → requêtes keyset < 600 ms p95
+
+Documentation DevBook
+---------------------
+- `stocks_transferts.md`: séquence atomique double move, modèles, endpoints, erreurs courantes.

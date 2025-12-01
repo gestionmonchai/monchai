@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Nouvelle mise – Étape 2{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Nouvelle mise – Étape 2: Formats et cuvée</h1>
+<form method="post" class="card p-3">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="2">
+  <h6>Formats</h6>
+  {{ formset.management_form }}
+  <div class="vstack gap-2 mb-3">
+    {% for f in formset %}
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">{{ f.format_ml.label_tag }} {{ f.format_ml }}</div>
+        <div class="col-md-3">{{ f.quantite_unites.label_tag }} {{ f.quantite_unites }}</div>
+        <div class="col-md-3">{{ f.pertes_pct.label_tag }} {{ f.pertes_pct }}</div>
+        <div class="col-md-2 form-check">{{ f.DELETE }} Supprimer</div>
+      </div>
+    {% endfor %}
+  </div>
+  <h6>Méta</h6>
+  <div class="row g-3">
+    <div class="col-md-4">{{ meta_form.cuvee.label_tag }} {{ meta_form.cuvee }}</div>
+    <div class="col-12">{{ meta_form.notes.label_tag }} {{ meta_form.notes }}</div>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary" type="submit">Continuer</button>
+    <a class="btn btn-secondary" href="/production/mises/">Annuler</a>
+  </div>
+</form>
+{% endblock %}

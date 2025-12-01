@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      {% for item in breadcrumb_items %}
+        {% if item.url %}
+          <li class="breadcrumb-item"><a href="{{ item.url }}" class="text-decoration-none">{{ item.name }}</a></li>
+        {% else %}
+          <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+        {% endif %}
+      {% endfor %}
+    </ol>
+  </nav>
+
+  <div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="h2 mb-1"><i class="bi bi-box-seam me-2 text-primary"></i>{{ page_title|default:'Nouveau produit' }}</h1>
+        <p class="text-muted mb-0">Produit à volets — Type & Source dynamiques</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'produits:catalog_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Catalogue</a>
+      </div>
+    </div>
+  </div>
+
+  <form id="product-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <!-- Général -->
+    <div class="card mb-3">
+      <div class="card-header">Général</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Type</label>
+            {{ form.product_type|add_class:'form-select' }}
+            {{ form.product_type.errors }}
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Nom / Étiquette</label>
+            {{ form.name|add_class:'form-control' }}
+            {{ form.name.errors }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Unité de vente</label>
+            {{ form.unit|add_class:'form-select' }}
+            {{ form.unit.errors }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Prix (€ / u)</label>
+            {{ form.price_eur_u|add_class:'form-control' }}
+            {{ form.price_eur_u.errors }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">TVA (%)</label>
+            {{ form.vat_rate|add_class:'form-control' }}
+            {{ form.vat_rate.errors }}
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <div class="form-check">
+              {{ form.is_active|add_class:'form-check-input' }}
+              <label class="form-check-label">Actif</label>
+            </div>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <div class="form-check">
+              {{ form.stockable|add_class:'form-check-input' }}
+              <label class="form-check-label">Stockable</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Volets spécifiques au type -->
+    <div id="type-panels"
+         hx-get="{% url 'produits:panels' %}"
+         hx-include="#product-form"
+         hx-trigger="load, change from:#id_product_type"
+         hx-target="#type-panels">
+      {% include 'produits/_product_panels.html' %}
+    </div>
+
+    <!-- Source -->
+    <div class="card mb-3">
+      <div class="card-header">Source</div>
+      <div class="card-body">
+        <div class="btn-group mb-3" role="group">
+          <input class="btn-check" type="radio" name="source_mode" value="domaine" id="sm1" checked
+                 hx-get="{% url 'produits:source_partial' %}?mode=domaine"
+                 hx-include="#product-form" hx-target="#source-panel">
+          <label for="sm1" class="btn btn-outline-primary">Domaine</label>
+
+          <input class="btn-check" type="radio" name="source_mode" value="negoce_vrac" id="sm2"
+                 hx-get="{% url 'produits:source_partial' %}?mode=negoce_vrac"
+                 hx-include="#product-form" hx-target="#source-panel">
+          <label for="sm2" class="btn btn-outline-primary">Négoce (vrac)</label>
+
+          <input class="btn-check" type="radio" name="source_mode" value="negoce_bout" id="sm3"
+                 hx-get="{% url 'produits:source_partial' %}?mode=negoce_bout"
+                 hx-include="#product-form" hx-target="#source-panel">
+          <label for="sm3" class="btn btn-outline-primary">Négoce (bouteilles)</label>
+
+          <input class="btn-check" type="radio" name="source_mode" value="libre" id="sm4"
+                 hx-get="{% url 'produits:source_partial' %}?mode=libre"
+                 hx-include="#product-form" hx-target="#source-panel">
+          <label for="sm4" class="btn btn-outline-secondary">Libre</label>
+        </div>
+
+        <div id="source-panel"
+             hx-get="{% url 'produits:source_partial' %}?mode=domaine"
+             hx-include="#product-form"
+             hx-trigger="load">
+          <div class="text-muted">Chargement…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Médias & Description -->
+    <div class="card mb-3">
+      <div class="card-header">Médias & Description</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Image</label>
+            {{ form.image|add_class:'form-control' }}
+            {{ form.image.errors }}
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Description</label>
+            {{ form.description|add_class:'form-control' }}
+            {{ form.description.errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-light" href="{% url 'produits:catalog_list' %}">Annuler</a>
+    </div>
+
+    {# Hidden legacy fields to keep compatibility #}
+    {{ form.type_code }}{{ form.brand }}{{ form.slug }}{{ form.cuvee }}{{ form.tax_class }}{{ form.attrs }}
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function updateStockable() {
+    const sel = document.getElementById('id_product_type');
+    const stockable = document.getElementById('id_stockable');
+    if (!sel || !stockable) return;
+    if (sel.value === 'service') {
+      stockable.checked = false;
+      stockable.disabled = true;
+    } else {
+      stockable.disabled = false;
+    }
+  }
+  updateStockable();
+  document.getElementById('id_product_type')?.addEventListener('change', updateStockable);
+});
+</script>
+{% endblock %}

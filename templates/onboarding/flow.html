@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Découvrir Mon Chai – Parcours guidé{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tour.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h4 mb-1">Découvrez Mon Chai</h1>
+      <p class="text-muted mb-0">Un parcours simple en 9 étapes pour mettre votre chai sur rails.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" id="btn-start-tour" class="btn btn-outline-primary">
+        <i class="bi bi-compass me-1"></i>Démarrer le tour
+      </button>
+      <form method="post" action="{% url 'onboarding:dismiss' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-secondary">
+          <i class="bi bi-eye-slash me-1"></i>Ne plus afficher
+        </button>
+      </form>
+      {% if user.get_active_membership and user.get_active_membership.can_manage_roles %}
+      <form method="post" action="{% url 'onboarding:reset' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include 'onboarding/_content.html' %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tour.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function getSteps(){
+    return [
+      { target: '#tour-create-parcelles',   title: 'Créer une parcelle',        content: 'Déclarez vos parcelles : nom, cépage, surface, appellation.' },
+      { target: '#tour-create-vendanges',   title: 'Créer une vendange',        content: 'Enregistrez vos vendanges : dates, parcelles, quantités.' },
+      { target: '#tour-create-pressurages', title: 'Créer un pressurage',       content: 'Associez la presse et les rendements à la vendange.' },
+      { target: '#tour-create-encuvages',   title: 'Créer un encuvage',         content: 'Créez le lot d’encuvage à partir des vendanges.' },
+      { target: '#tour-create-elevage',     title: 'Élevage / Analyses',        content: 'Ajoutez interventions et analyses pour suivre l’évolution.' },
+      { target: '#tour-create-mises',       title: 'Créer une mise',            content: 'Créez votre opération de mise en bouteille.' },
+      { target: '#tour-create-lots',        title: 'Créer un lot technique',    content: 'Regroupez vos opérations en lots traçables.' },
+      { target: '#tour-create-stocks',      title: 'Voir le stock bouteilles',  content: 'Consultez et suivez vos stocks de bouteilles.' },
+      { target: '#tour-create-ventes',      title: 'Créer une vente',           content: 'Enregistrez une première commande/expédition.' }
+    ];
+  }
+
+  function startTour(){
+    try {
+      var tour = window.MonChaiTour && window.MonChaiTour.create({ steps: getSteps() });
+      if (tour) tour.start();
+    } catch (e) { console.warn('Tour init error', e); }
+  }
+
+  // Manual trigger
+  var btn = document.getElementById('btn-start-tour');
+  if (btn) btn.addEventListener('click', startTour);
+
+  // URL parameters control
+  var params = new URLSearchParams(window.location.search);
+  var orgKey = 'mc_tour_started_{{ organization.id }}';
+  if (params.get('tour') === 'reset') {
+    try { localStorage.removeItem(orgKey); } catch (e) {}
+  }
+  var force = params.get('tour') === '1';
+  var shouldStart = ("{{ all_pending|yesno:'true,false' }}" === 'true');
+
+  // Auto-start: new orgs OR forced via ?tour=1, but only once unless forced
+  if ((shouldStart || force) && !localStorage.getItem(orgKey)) {
+    startTour();
+    try { localStorage.setItem(orgKey, '1'); } catch (e) {}
+  }
+});
+</script>
+{% endblock %}

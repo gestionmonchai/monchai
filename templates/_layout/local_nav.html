@@ -1,0 +1,62 @@
+{% comment %}
+Reusable local navigation for top-level sections.
+Auto-detects current section from request.path if not provided.
+Usage: {% include '_layout/local_nav.html' %}
+Optional: {% include '_layout/local_nav.html' with section='production' %}
+{% endcomment %}
+{% load static %}
+{% with p=request.path %}
+  {% if not section %}
+    {% if p|slice:":12" == '/production/' %}{% with section='production' %}{% include '_layout/local_nav.html' %}{% endwith %}
+    {% elif p|slice:":8" == '/ventes/' and p|slice:":16" != '/ventes/clients' and p|slice:":17" != '/ventes/clients/' %}{% with section='ventes' %}{% include '_layout/local_nav.html' %}{% endwith %}
+    {% elif p|slice:":6" == '/drm/' %}{% with section='drm' %}{% include '_layout/local_nav.html' %}{% endwith %}
+    {% elif p|slice:":8" == '/compta/' %}{% with section='compta' %}{% include '_layout/local_nav.html' %}{% endwith %}
+    {% elif p|slice:":14" == '/referentiels/' or p|slice:":5" == '/ref/' %}{% with section='referentiels' %}{% include '_layout/local_nav.html' %}{% endwith %}
+    {% elif p|slice:":9" == '/clients/' or p|slice:":16" == '/ventes/clients' or p|slice:":17" == '/ventes/clients/' or '/clients/tarifs/' in p or '/clients/conditions/' in p %}{% with section='clients' %}{% include '_layout/local_nav.html' %}{% endwith %}
+    {% endif %}
+    {% else %}
+    {% if section == 'production' %}
+      {% with s=request.GET.scope %}
+      <ul class="nav nav-pills mb-2">
+        <li class="nav-item"><a class="nav-link {% if '/production/parcelles/' in p %}active{% endif %}" href="{% url 'production:parcelles_list' %}">Parcelles</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/production/vendanges/' in p %}active{% endif %}" href="{% url 'production:vendanges_list' %}">Vendanges & Encuvage</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/production/lots-elevage/' in p or '/production/lots-techniques/' in p %}active{% endif %}" href="{% url 'production:lots_elevage_home' %}">Lots & Élevage</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/production/contenants/' in p %}active{% endif %}" href="{% url 'production:contenants_list' %}">Contenants</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/production/mises/' in p %}active{% endif %}" href="{% url 'production:mises_list' %}">Mises en bouteilles (OF)</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/production/inventaire/' in p %}active{% endif %}" href="{% url 'production:inventaire' %}">Inventaire</a></li>
+      </ul>
+      {% endwith %}
+    {% elif section == 'ventes' %}
+      <ul class="nav nav-pills mb-2">
+        <li class="nav-item"><a class="nav-link {% if '/ventes/devis/' in p %}active{% endif %}" href="{% url 'ventes:devis_list' %}">Devis</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/ventes/commandes/' in p %}active{% endif %}" href="{% url 'ventes:cmd_list' %}">Commandes</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/ventes/factures/' in p %}active{% endif %}" href="{% url 'ventes:factures_list' %}">Factures</a></li>
+      </ul>
+    {% elif section == 'drm' %}
+      <ul class="nav nav-pills mb-2">
+        <li class="nav-item"><a class="nav-link {% if p == '/drm/' %}active{% endif %}" href="/drm/">DRM / DAE / DSA</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/drm/crd/' in p %}active{% endif %}" href="/drm/crd/">CRD</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/drm/inao/' in p %}active{% endif %}" href="/drm/inao/">Codes INAO</a></li>
+      </ul>
+    {% elif section == 'compta' %}
+      <ul class="nav nav-pills mb-2">
+        <li class="nav-item"><a class="nav-link {% if '/compta/stock/' in p %}active{% endif %}" href="{% url 'compta_stock' %}">Écritures stock</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/compta/ventes/' in p %}active{% endif %}" href="{% url 'compta_ventes' %}">Ventes (CA, TVA)</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/compta/exports/' in p %}active{% endif %}" href="{% url 'compta_exports' %}">Exports (Sage/Quadratus/CSV)</a></li>
+      </ul>
+    {% elif section == 'referentiels' %}
+      <ul class="nav nav-pills mb-2">
+        <li class="nav-item"><a class="nav-link {% if '/referentiels/cepages/' in p %}active{% endif %}" href="{% url 'referentiels:cepage_list' %}">Cépages</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/referentiels/cuvees/' in p %}active{% endif %}" href="{% url 'referentiels:cuvee_list' %}">Cuvées (modèles & millésimes)</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/referentiels/unites/' in p %}active{% endif %}" href="{% url 'referentiels:unite_list' %}">Unités</a></li>
+      </ul>
+    {% elif section == 'clients' %}
+      <ul class="nav nav-pills mb-2">
+        <li class="nav-item"><a class="nav-link {% if p == '/ventes/clients/' or p == '/clients/' %}active{% endif %}" href="{% url 'ventes:clients_list' %}">Clients</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/clients/tarifs/' in p %}active{% endif %}" href="{% url 'sales:pricelist_list' %}">Tarifs & listes de prix</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/ventes/conditions/' in p or '/clients/conditions/' in p %}active{% endif %}" href="{% url 'ventes:conditions_list' %}">Conditions</a></li>
+      </ul>
+    {% endif %}
+  {% endif %}
+{% endwith %}
+

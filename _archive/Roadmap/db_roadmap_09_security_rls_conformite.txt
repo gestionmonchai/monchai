@@ -1,0 +1,34 @@
+DB Roadmap 09 — Sécurité, RLS & Conformité (export, privacy)
+===========================================================
+Objectif
+--------
+Renforcer la sécurité **au niveau des données**: RBAC + **RLS logique** (filtre org + ownership), masquage de colonnes sensibles, journaux d’accès/export, et politique de **dépréciation** sécurisée.
+
+Livrables (Done)
+----------------
+- Service de filtrage serveur injectant `organization_id = current_org` + règles additionnelles
+- Masquage de colonnes sensibles en lecture + export (ex: marges)
+- Journal d’export (qui/quoi/quand, vue, filtres), **watermark** sur CSV/XLSX
+- Policy de dépréciation: registre des capacités (active/deprecated/disabled/removed) + délais
+- Quotas export + liens “lecture seule” signés (option)
+
+Points clés d’implémentation
+----------------------------
+- Whitelist stricte des champs exportables ; anti `=FORMULA()`
+- Contrôle de volume export (≤ 50k lignes) ; pagination streaming
+- Vues privées/sauvegardées honorent RBAC & RLS
+- Hooks d’audit: modification de rôles, changements sensibles
+
+Tests d’acceptation (AC)
+------------------------
+- AC-09-01: Utilisateur sans droit export → 403
+- AC-09-02: Colonne sensible masquée dans UI **et** export
+- AC-09-03: Lien partagé (lecture seule) n’autorise pas l’édition/exports
+- AC-09-04: Dépréciation d’une fonction → bannière + doc + flag
+
+Robustesse
+----------
+- R-09-01: tentative d’accès cross‑org → 404/403 propre, pas de fuite
+- R-09-02: export volumineux → stream + watermark ; pas d’OOM
+- R-09-03: journal d’export ne contient pas de PII inutile ; rétention
+- R-09-04: suppression d’une capacité sans période de grâce → **interdite** par garde

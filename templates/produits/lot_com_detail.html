@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Lot commercial {{ lot.code_lot }}{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Lot commercial {{ lot.code_lot }}</h1>
+<div class="card mb-3"><div class="card-body">
+  <div class="row g-3">
+    <div class="col-md-4"><strong>Cuvée</strong><div>{{ lot.cuvee|default:'-' }}</div></div>
+    <div class="col-md-2"><strong>Format</strong><div>{{ lot.format_ml }} mL</div></div>
+    <div class="col-md-2"><strong>Date</strong><div>{{ lot.date_mise }}</div></div>
+    <div class="col-md-2"><strong>Quantité</strong><div>{{ lot.quantite_unites }}</div></div>
+    <div class="col-md-2"><strong>Stock</strong><div>{{ lot.stock_disponible }}</div></div>
+  </div>
+</div></div>
+<div class="card mb-3">
+  <div class="card-header">Traçabilité vendanges</div>
+  <div class="card-body">
+    {% if trace_vendanges and trace_vendanges|length %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>Code</th><th>Date</th><th>Parcelle</th><th></th></tr></thead>
+        <tbody>
+          {% for v in trace_vendanges %}
+          <tr>
+            <td>{{ v.code|default:'—' }}</td>
+            <td>{{ v.date }}</td>
+            <td>{{ v.parcelle|default:'—' }}</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/production/vendanges/{{ v.id }}/">Voir la vendange</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-muted">Aucune vendange liée trouvée.</div>
+    {% endif %}
+  </div>
+</div>
+<h6>Sources (lots techniques)</h6>
+<table class="table table-sm">
+  <thead><tr><th>Lot technique</th><th>Note</th></tr></thead>
+  <tbody>
+    {% for s in sources %}
+    <tr><td><a href="/production/lots-techniques/{{ s.lot_tech_source.id }}/">{{ s.lot_tech_source.code }}</a></td><td>-</td></tr>
+    {% empty %}
+    <tr><td colspan="2" class="text-muted">Non disponible</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

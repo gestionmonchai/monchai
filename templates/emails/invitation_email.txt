@@ -1,0 +1,19 @@
+Bonjour,
+
+{{ inviter_name }} vous invite à rejoindre l'exploitation "{{ organization_name }}" sur Mon Chai.
+
+Rôle proposé : {{ role_display }}
+
+Pour accepter cette invitation, cliquez sur le lien suivant :
+{{ accept_url }}
+
+Cette invitation expire dans 72 heures.
+
+Si vous n'avez pas de compte Mon Chai, vous pourrez en créer un lors de l'acceptation de l'invitation.
+
+Cordialement,
+L'équipe Mon Chai
+
+---
+Si vous ne souhaitez pas recevoir ces emails, vous pouvez ignorer ce message.
+Ce lien d'invitation ne peut être utilisé qu'une seule fois.

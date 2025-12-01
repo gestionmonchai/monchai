@@ -1,0 +1,133 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Inventaire - Mon Chai{% endblock %}
+{% block production_content %}
+<div class="container-fluid" id="inv-root" data-feature-ms="{% if feature_ms %}1{% else %}0{% endif %}">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Inventaire</h1>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-3">
+    <div class="col-md-3"><div class="card p-3">
+      <div class="small text-muted">Vrac actif (hL)</div>
+      <div class="fs-4">{{ kpi_vrac_hl|default:"—" }}</div>
+    </div></div>
+    <div class="col-md-3"><div class="card p-3">
+      <div class="small text-muted">Lots actifs</div>
+      <div class="fs-4">{{ kpi_lots_actifs|default:"—" }}</div>
+    </div></div>
+    <div class="col-md-3"><div class="card p-3">
+      <div class="small text-muted">Prêt mise</div>
+      <div class="fs-4">{{ kpi_pret_mise|default:"—" }}</div>
+    </div></div>
+    <div class="col-md-3"><div class="card p-3">
+      <div class="small text-muted">Pertes M-1 (€ / L)</div>
+      <div class="fs-6 mb-0">€ {{ kpi_pertes_m1_eur|default:"0" }}</div>
+      <div class="text-muted">L {{ kpi_pertes_m1_l|default:"0" }}</div>
+    </div></div>
+  </div>
+
+  <!-- Barre de filtres globale -->
+  <form id="inv-filters" class="row g-2 align-items-end mb-3">
+    <div class="col-md-3">
+      <label class="form-label">Recherche</label>
+      <input type="search" name="q" class="form-control js-q" placeholder="lot, cuvée, produit fini…">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Campagne</label>
+      <input type="text" name="campagne" class="form-control" placeholder="2024-2025">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Cuvée</label>
+      <select name="cuvee" class="form-select">
+        <option value="">Toutes</option>
+        {% for c in cuvees %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group">
+        <button class="btn btn-outline-secondary" type="button" onclick="invReset()">Réinitialiser</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Onglets -->
+  <ul class="nav nav-tabs mb-2" id="inv-tabs">
+    <li class="nav-item"><a class="nav-link active" data-tab="vrac" href="#">Vrac</a></li>
+    <li class="nav-item"><a class="nav-link" data-tab="produits" href="#">Produits finis</a></li>
+    {% if feature_ms %}
+    <li class="nav-item"><a class="nav-link" data-tab="ms" href="#">Matières sèches</a></li>
+    {% endif %}
+  </ul>
+
+  <!-- Barre d'actions -->
+  <div id="inv-actions" class="mb-2 d-flex gap-2"></div>
+
+  <!-- Zone table -->
+  <div id="inv-table"
+       hx-get="{% url 'production:inventaire_vrac' %}"
+       hx-include="#inv-filters"
+       hx-trigger="load, change from:#inv-filters, keyup delay:300ms from:.js-q"
+       hx-swap="innerHTML"
+       hx-push-url="true"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script>
+(function(){
+  const tabs = document.querySelectorAll('#inv-tabs a.nav-link');
+  const table = document.getElementById('inv-table');
+  const form = document.getElementById('inv-filters');
+  const actionsBar = document.getElementById('inv-actions');
+
+  function valuesFromForm(formEl){
+    return Object.fromEntries(new FormData(formEl));
+  }
+
+  const root = document.getElementById('inv-root');
+  const FEATURE_MS = (root && root.dataset && root.dataset.featureMs === '1');
+
+  function renderActions(tab){
+    actionsBar.innerHTML = '';
+    if(tab==='vrac'){
+      actionsBar.innerHTML = `
+        <a class="btn btn-outline-secondary" href="/production/assemblages/nouveau/">+ Assemblage</a>
+        <a class="btn btn-outline-secondary" href="/production/lots-techniques/">Gérer les lots</a>
+        <a class="btn btn-outline-secondary" href="/production/mises/">Préparer une mise</a>`;
+    } else if(tab==='produits'){
+      actionsBar.innerHTML = `
+        <a class="btn btn-outline-secondary" href="/ventes/commandes/">Aller aux commandes</a>`;
+    } else {
+      actionsBar.innerHTML = FEATURE_MS ? '' : `
+        <span class="text-muted">Module Matières sèches non activé.</span>`;
+    }
+  }
+
+  tabs.forEach(a=>{
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      tabs.forEach(x=>x.classList.remove('active'));
+      a.classList.add('active');
+      const tab = a.dataset.tab;
+      const url = {
+        vrac: "{% url 'production:inventaire_vrac' %}",
+        produits: "{% url 'production:inventaire_produits' %}",
+        ms: "{% url 'production:inventaire_ms' %}"
+      }[tab];
+      htmx.ajax('GET', url, { target:'#inv-table', swap:'innerHTML', values: valuesFromForm(form) });
+      renderActions(tab);
+    });
+  });
+
+  window.invReset = function(){
+    form.reset();
+    const active = document.querySelector('#inv-tabs a.nav-link.active');
+    active && active.click();
+  }
+
+  renderActions('vrac');
+})();
+</script>
+{% endblock %}

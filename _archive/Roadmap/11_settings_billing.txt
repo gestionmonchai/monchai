@@ -1,0 +1,59 @@
+11 — /settings/billing — Coordonnées facturation, SIRET, TVA — Guide pas-à-pas
+=============================================================================
+Objectif: paramétrer les informations légales & fiscales de l’organisation (exploitation).
+
+Portée & Done
+--------------
+- DONE si: un admin peut saisir/modifier: raison sociale, adresse de facturation, SIRET, TVA intracom (ou statut non assujetti),
+  et (optionnel) contact de facturation. La validation met à jour la checklist (company_info & taxes).
+
+Étape 1 — Modèle & champs (60–90 min)
+-------------------------------------
+1.1 Étendre `Organization` ou créer `OrgBilling` (FK Organization, unique) avec:
+    - legal_name (obligatoire)
+    - billing_address (lignes, CP, ville, pays)
+    - siret (string, validation simple 14 chiffres, optionnel)
+    - vat_status (enum: 'subject_to_vat' | 'not_subject_to_vat')
+    - vat_number (si subject_to_vat; format FR intracom FRxx… validation légère)
+    - billing_contact_name / email / phone (optionnels)
+    - updated_at
+1.2 Data migration: créer `OrgBilling` pour org existantes avec valeurs vides.
+
+Étape 2 — Routes & permissions (15–20 min)
+-------------------------------------------
+2.1 URL: **GET/POST** `/settings/billing/` (require_membership role_min=admin).
+2.2 GET affiche le formulaire pré-rempli si données existantes.
+
+Étape 3 — Formulaire & validation (60 min)
+-------------------------------------------
+3.1 Champs groupes: Identité légale, Adresse, TVA, Contact.
+3.2 Règles:
+    - legal_name requis.
+    - siret: 14 chiffres ou vide; afficher aide “si pertinent”.
+    - vat_status requis; si 'subject_to_vat' → vat_number requis + motif simple (regex FR).
+    - Emails/phones validateurs classiques.
+3.3 Boutons: “Enregistrer” (primaire), “Annuler” (retour checklist).
+
+Étape 4 — Hooks checklist (30 min)
+-----------------------------------
+4.1 Après POST valide:
+    - if legal_name & adresse présents → checklist.company_info = done
+    - if vat_status choisi (avec ou sans numéro) → checklist.taxes = done
+    - Appeler service `checklist_update(org, key, is_done)`
+
+Étape 5 — Template (30–45 min)
+-------------------------------
+5.1 Sections visuellement séparées, hints courts, erreurs inline.
+5.2 Bandeau info: “Ces infos apparaîtront sur vos factures et documents.”
+
+Étape 6 — Tests (45–60 min)
+----------------------------
+- Non admin → accès refusé (403/redirect).
+- POST minimal valide (non assujetti) → checklist.taxes done.
+- POST avec TVA complète → vat_number persisté, checklist keys mises à jour.
+- SIRET invalide → erreur inline; pas de crash.
+
+Sécurité/Conformité
+-------------------
+- CSRF sur POST; journaux audit (qui modifie quand) à prévoir plus tard.
+- Afficher masquage partiel du numéro TVA dans UI publique si jamais.

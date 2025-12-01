@@ -1,0 +1,67 @@
+T06 — Tests /clients (Roadmap 36 — Liste + filtres + recherche)
+===============================================================
+But
+---
+Valider la **liste clients**: recherche tolérante, facettes, tri, pagination keyset, export optionnel, PII/GDPR, perfs, sécurité.
+
+Pré‑requis (fixtures)
+---------------------
+- 1 org avec 50k clients (10k/segment: individual, business, wine_shop, export, other).
+- Tags: VIP (3k), GrosCompte (1k), Prospect (5k).
+- PII variées (emails/phones valides & invalides), pays (FR/ES/IT/DE/US).
+- Utilisateurs: admin@org, editor@org, viewer@org.
+
+A) Smoke
+--------
+- [ ] GET /clients affiche 50 lignes (page_size=50), pas d’erreur JS/500.
+- [ ] Facettes visibles: Segment, Tags, Pays; compteurs cohérents.
+- [ ] Recherche chargée (placeholder, debounce).
+
+B) Fonctionnels
+---------------
+- [ ] Recherche “cave rhone” → “Cave du Rhône” dans le top‑3 (ft/trigram/unaccent).
+- [ ] Combinaison facettes: Segment=business + Tag=VIP + Country=FR → liste cohérente.
+- [ ] Tri updated_at desc (défaut) → cohérence visuelle entre pages, aucun trou/doublon (keyset).
+
+C) Contrats API
+---------------
+- [ ] GET /api/clients retourne `{items[], next_cursor, facets{segment,country,tag}}`.
+- [ ] Champs string échappés (anti‑XSS) ; whitelist tri/filtres → clés inconnues = 400.
+
+D) Intégration
+--------------
+- [ ] Lien vers fiche `/clients/:id` OK ; retour conserve filtres.
+- [ ] Export (si activé) reprend filtres + colonnes sélectionnées.
+
+E) PII & GDPR
+-------------
+- [ ] viewer@org: téléphone tronqué (masqué) si policy activée; admin voit complet.
+- [ ] Aucune PII d’autre org (RLS).
+
+F) Perfs
+--------
+- [ ] p95 < 600 ms pour q simple ; < 700 ms facettes 3+.
+- [ ] 1M clients (dataset perf): p95 < 700 ms (index & caches).
+
+G) Sécurité
+-----------
+- [ ] RLS (cross‑org) vérifié; RBAC viewer read‑only.
+- [ ] XSS nom/segment/tag neutralisés à l’affichage.
+- [ ] Rate‑limit raisonnable (ex. 60/min IP) → 429 si dépassé.
+
+H) Accessibilité
+----------------
+- [ ] Navigation clavier sur facettes & tableau; aria‑labels présents; focus visible.
+
+I) Observabilité
+----------------
+- [ ] Metrics: latences p50/p95/p99; cache hit‑rate visible.
+- [ ] Logs structurés des erreurs 4xx/5xx avec request_id.
+
+IDs d’automatisation (exemples)
+-------------------------------
+- pytest::t06_clients_schema_contract
+- pytest::t06_clients_search_trigram
+- pytest::t06_clients_filters_and_keyset_pagination
+- playwright::t06_clients_filters_persist_after_back
+- k6::t06_clients_list_rps_20_p95_lt_600ms

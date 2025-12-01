@@ -1,0 +1,107 @@
+{% extends 'production/base_production.html' %}
+{% load static %}
+{% block title %}Contenants - Mon Chai{% endblock %}
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Contenants</h1>
+  <div class="btn-group">
+    <a href="/production/contenants/nouveau/" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Nouveau contenant</a>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Nombre</div><div class="fs-4">{{ kpi.count|default:"—" }}</div></div></div>
+  <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Capacité utile totale (L)</div><div class="fs-4">{{ kpi.cap_utile|default:"0" }}</div></div></div>
+  <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Occupé total (L)</div><div class="fs-4">{{ kpi.occ|default:"0" }}</div></div></div>
+</div>
+
+<!-- Filtres -->
+<form method="get" class="card card-body mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Recherche</label>
+      <input type="search" name="q" value="{{ request.GET.q }}" class="form-control" placeholder="code / libellé / localisation">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Type</label>
+      <select class="form-select" name="type">
+        <option value="">Tous</option>
+        {% for v,l in types %}
+          <option value="{{ v }}" {% if request.GET.type == v %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Statut</label>
+      <select class="form-select" name="statut">
+        <option value="">Tous</option>
+        {% for v,l in statuts %}
+          <option value="{{ v }}" {% if request.GET.statut == v %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 text-end">
+      <button class="btn btn-outline-secondary" type="submit">Filtrer</button>
+    </div>
+  </div>
+</form>
+
+<!-- Table -->
+<div class="table-responsive">
+  <table class="table align-middle table-hover">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Type</th>
+        <th class="text-end">Cap. utile (L)</th>
+        <th class="text-end">Occupé (L)</th>
+        <th class="text-end">Libre (L)</th>
+        <th>Lot courant</th>
+        <th>Localisation</th>
+        <th>Statut</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in contenants %}
+      <tr class="row-click" data-href="/production/contenants/{{ c.id }}/">
+        <td><a href="/production/contenants/{{ c.id }}/">{{ c.code }}</a></td>
+        <td>{{ c.get_type_display }}</td>
+        <td class="text-end">{{ c.capacite_utile_l|default:c.capacite_l }}</td>
+        <td class="text-end">{{ c.volume_occupe_l }}</td>
+        <td class="text-end">{{ c.free_capacity_l }}</td>
+        <td>
+          {% if c.lot_courant %}
+            <a href="/production/lots-techniques/{{ c.lot_courant.id }}/">{{ c.lot_courant.code }}</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ c.localisation|default:'—' }}</td>
+        <td><span class="badge text-bg-light">{{ c.get_statut_display }}</span></td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary" href="/production/contenants/{{ c.id }}/edit/">Modifier</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9" class="text-muted">Aucun contenant.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Pagination">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

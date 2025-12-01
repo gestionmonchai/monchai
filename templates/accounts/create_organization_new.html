@@ -1,0 +1,91 @@
+{% extends 'base_minimal.html' %}
+{% load static %}
+
+{% block title %}Creer un nouveau chai - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+    <div class="container" style="max-width: 550px;">
+        
+        {% include 'components/django_messages.html' %}
+        
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                         style="width: 64px; height: 64px; background: #722F37;">
+                        <i class="bi bi-building text-white fs-3"></i>
+                    </div>
+                    <h2 class="h4 mb-1">Creer un nouveau chai</h2>
+                    <p class="text-muted small mb-0">Un espace de travail independant pour votre domaine</p>
+                </div>
+                
+                <!-- Alerte garde-fou (Point 4) -->
+                <div class="alert alert-warning mb-4">
+                    <div class="d-flex gap-2">
+                        <i class="bi bi-exclamation-triangle flex-shrink-0 mt-1"></i>
+                        <div>
+                            <div class="fw-bold mb-1">Attention</div>
+                            <p class="mb-2 small">
+                                Vous etes sur le point de creer un <strong>nouveau chai totalement independant</strong>.
+                            </p>
+                            <p class="mb-0 small">
+                                Utilisez cette option uniquement si vous gerez un autre domaine viticole distinct.
+                                Pour rejoindre le chai de quelqu'un d'autre, demandez-lui de vous envoyer une invitation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if pending_invitations_count > 0 %}
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-envelope me-2"></i>
+                    Vous avez <strong>{{ pending_invitations_count }}</strong> invitation(s) en attente.
+                    <a href="{% url 'auth:select_organization' %}" class="alert-link">Voir les invitations</a>
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-medium">Nom du chai</label>
+                        <input type="text" name="name" id="name" class="form-control form-control-lg" 
+                               placeholder="Ex: Domaine de la Vigne" required>
+                        <div class="form-text">Le nom de votre domaine ou exploitation</div>
+                    </div>
+                    
+                    <!-- Case de confirmation (Point 4) -->
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="confirm_create" id="confirm_create" required>
+                        <label class="form-check-label" for="confirm_create">
+                            Je comprends que ce nouveau chai sera <strong>vide et separe</strong> de mes autres chais
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="createBtn" disabled>
+                        <i class="bi bi-plus-lg me-2"></i>Creer le nouveau chai
+                    </button>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <a href="{% url 'auth:my_organizations' %}" class="text-muted">
+                        <i class="bi bi-arrow-left me-1"></i>Retour a mes chais
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<script>
+// Activer le bouton seulement si la case est cochee
+document.getElementById('confirm_create').addEventListener('change', function() {
+    document.getElementById('createBtn').disabled = !this.checked;
+});
+</script>
+{% endblock %}

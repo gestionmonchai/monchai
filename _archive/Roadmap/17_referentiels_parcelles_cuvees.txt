@@ -1,0 +1,52 @@
+17 — Référentiels : Parcelles & Cuvées — Guide pas-à-pas + Robustesse
+=====================================================================
+Objectif: décrire les entités de base “terrain/produit” : Parcelles (vignes) et Cuvées (produits finis/candidats).
+
+Portée & Done
+--------------
+- DONE si: modèles, CRUD admin+, liens aux référentiels (cépages, appellations, millésimes optionnels), validations clés.
+
+Étape 1 — Modèles (90–120 min)
+-------------------------------
+1.1 VineyardPlot (Parcelle)
+    - organization FK
+    - name (unique par org), area_ha (Decimal 4), grape (FK GrapeVariety), appellation (FK Appellation, optionnel)
+    - planting_year (int optionnel), is_active (bool)
+    - unique(organization, name)
+1.2 Cuvee
+    - organization FK
+    - name (unique par org)
+    - grape (FK GrapeVariety, optionnel si assemblage géré plus tard)
+    - appellation (FK Appellation, optionnel), vintage (FK Vintage, optionnel)
+    - default_uom (FK UnitOfMeasure)
+    - is_active (bool)
+    - unique(organization, name)
+
+Étape 2 — Routes & permissions (20–30 min)
+-------------------------------------------
+- /settings/referentials/plots/ — admin+
+- /settings/referentials/cuvees/ — admin+
+
+Étape 3 — Vues & validations (60–90 min)
+----------------------------------------
+- Parcelle: area_ha > 0 ; planting_year raisonnable (1900..current_year) ; FK valides de la même org.
+- Cuvée: name requis ; FK valides ; default_uom obligatoire ; empêcher suppression si cuvée utilisée plus tard.
+
+Étape 4 — Templates (45 min)
+-----------------------------
+- Tables + formulaires avec selects dépendants (grape/appellation/vintage). Recherche simple.
+- Indication d’inactivité (gris) pour éléments désactivés.
+
+Étape 5 — Tests (60–90 min)
+----------------------------
+- Création parcelle avec area_ha limite ; année plantation hors plage → erreurs.
+- Création cuvée ; unicité par org ; FK cross-org refusées.
+
+### Tests de robustesse
+-----------------------
+R1. FK cross-organization par altération d’ID → 403/404 ; pas de fuite d’info.
+R2. area_ha = 0, négatif, très grand (10000) → rejets cohérents, pas de 500.
+R3. planting_year futur (now+5) → rejet spécifique.
+R4. Suppression cuvée liée (future ventes/stock) → soft delete, message explicite.
+R5. XSS name (balises HTML) → rendu échappé.
+R6. Non admin POST → 403/redirect ; aucun changement.

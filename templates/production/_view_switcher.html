@@ -1,0 +1,49 @@
+<!-- Reusable View Switcher Component -->
+<!-- Usage: {% include 'production/_view_switcher.html' with views=views_config page_id='vendanges' %} -->
+<div class="btn-group btn-group-sm" role="group" aria-label="Switch view">
+  {% for view in views %}
+  <button type="button" class="btn btn-outline-primary view-switch-btn {% if forloop.first %}active{% endif %}" 
+          data-view="{{ view.id }}" data-page="{{ page_id }}">
+    <i class="bi bi-{{ view.icon }} me-1"></i>{{ view.label }}
+  </button>
+  {% endfor %}
+</div>
+
+<script>
+// View switcher logic (inline for each page)
+(function() {
+  const pageId = '{{ page_id }}';
+  const storageKey = pageId + '_view';
+  const viewButtons = document.querySelectorAll(`.view-switch-btn[data-page="${pageId}"]`);
+  const viewPanels = document.querySelectorAll(`.view-panel[data-page="${pageId}"]`);
+  
+  // Load saved preference
+  const savedView = localStorage.getItem(storageKey) || '{{ views.0.id }}';
+  switchToView(savedView);
+
+  viewButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const targetView = this.getAttribute('data-view');
+      switchToView(targetView);
+      localStorage.setItem(storageKey, targetView);
+    });
+  });
+
+  function switchToView(viewName) {
+    viewButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
+    });
+
+    viewPanels.forEach(panel => {
+      const isTarget = panel.getAttribute('data-view') === viewName;
+      panel.classList.toggle('d-none', !isTarget);
+      
+      // Trigger custom load event for lazy loading
+      if (isTarget && !panel.hasAttribute('data-loaded')) {
+        panel.dispatchEvent(new CustomEvent('view:loaded', { detail: { view: viewName } }));
+        panel.setAttribute('data-loaded', 'true');
+      }
+    });
+  }
+})();
+</script>

@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ pricelist.name }} - Grilles Tarifaires{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pricelist-header {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(114, 47, 55, 0.95));
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        color: var(--wine-champagne);
+        box-shadow: 0 8px 32px rgba(139, 21, 56, 0.3);
+    }
+
+    .pricelist-header h1 {
+        color: var(--wine-champagne);
+        margin-bottom: 0.5rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .info-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        opacity: 0.8;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        font-size: 1.125rem;
+        font-weight: 700;
+    }
+
+    /* Table des prix */
+    .price-table {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(139, 21, 56, 0.12);
+        margin-bottom: 2rem;
+    }
+
+    .sku-header {
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(139, 21, 56, 0.08));
+        padding: 1rem 1.25rem;
+        font-weight: 700;
+        color: var(--wine-burgundy);
+        border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .price-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 1rem;
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        align-items: center;
+    }
+
+    .price-row:hover {
+        background: rgba(247, 231, 206, 0.2);
+    }
+
+    .price-label {
+        font-weight: 600;
+        color: var(--wine-burgundy);
+    }
+
+    .price-value {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--wine-bordeaux);
+    }
+
+    .discount-badge {
+        background: var(--success-gradient);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 700;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--wine-oak);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="pricelist-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1><i class="bi bi-currency-euro"></i> {{ pricelist.name }}</h1>
+                <p class="mb-0">Grille tarifaire {{ pricelist.currency }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'sales:pricelist_edit' pricelist.pk %}" class="btn btn-light">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+                <a href="{% url 'sales:pricelist_grid_edit' pricelist.pk %}" class="btn btn-warning">
+                    <i class="bi bi-grid-3x3"></i> Éditer en grille
+                </a>
+                <a href="{% url 'sales:pricelist_import' pricelist.pk %}" class="btn btn-success">
+                    <i class="bi bi-upload"></i> Importer
+                </a>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Validité</div>
+                <div class="info-value">
+                    {{ pricelist.valid_from|date:"d/m/Y" }}
+                    {% if pricelist.valid_to %}
+                        → {{ pricelist.valid_to|date:"d/m/Y" }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Devise</div>
+                <div class="info-value">{{ pricelist.currency }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Statut</div>
+                <div class="info-value">
+                    {% if pricelist.is_active %}
+                        <i class="bi bi-check-circle text-success"></i> Active
+                    {% else %}
+                        <i class="bi bi-x-circle"></i> Inactive
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Nombre de prix</div>
+                <div class="info-value">{{ pricelist.items.count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutons action -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'sales:pricelist_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour à la liste
+        </a>
+        <form method="post" action="{% url 'sales:pricelist_delete' pricelist.pk %}" 
+              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette grille tarifaire ?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </form>
+    </div>
+
+    <!-- Prix par produit -->
+    <h2 class="mb-3"><i class="bi bi-tag"></i> Prix des produits</h2>
+
+    {% if items_by_sku %}
+        {% for sku_id, data in items_by_sku.items %}
+        <div class="price-table mb-3">
+            <div class="sku-header">
+                <i class="bi bi-box"></i> {{ data.sku.label }}
+                <small class="text-muted ms-2">({{ data.sku.code }})</small>
+            </div>
+            
+            {% for item in data.items %}
+            <div class="price-row">
+                <div class="price-label">
+                    {% if item.min_qty %}
+                        À partir de {{ item.min_qty }} unités
+                    {% else %}
+                        Prix unitaire
+                    {% endif %}
+                </div>
+                <div class="price-value">
+                    {{ item.unit_price }} {{ pricelist.currency }}
+                </div>
+                <div>
+                    {% if item.discount_pct > 0 %}
+                        <span class="discount-badge">
+                            -{{ item.discount_pct }}%
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="text-end">
+                    {% if item.discount_pct > 0 %}
+                        <small class="text-muted">
+                            Prix net : {{ item.unit_price|floatformat:2 }} {{ pricelist.currency }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="card-body empty-state">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: var(--wine-gold);"></i>
+                <h4>Aucun prix défini</h4>
+                <p class="text-muted">Ajoutez des prix à cette grille tarifaire</p>
+                <a href="{% url 'sales:pricelist_grid_edit' pricelist.pk %}" class="btn btn-warning">
+                    <i class="bi bi-grid-3x3"></i> Éditer en grille
+                </a>
+                ou
+                <a href="{% url 'sales:pricelist_import' pricelist.pk %}" class="btn btn-success">
+                    <i class="bi bi-upload"></i> Importer depuis CSV
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

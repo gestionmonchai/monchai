@@ -1,0 +1,657 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+/* Styles pour la fiche cuvée */
+.cuvee-detail-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.cuvee-image-placeholder {
+    width: 200px;
+    height: 280px;
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 3rem;
+    transition: all 0.3s ease;
+}
+
+.cuvee-image-placeholder:hover {
+    border-color: #007bff;
+    background: #f0f8ff;
+    color: #007bff;
+}
+
+.info-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.info-card .card-header {
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 600;
+}
+
+.badge-color {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.badge-rouge { background-color: #dc3545; }
+.badge-blanc { background-color: #f8f9fa; color: #495057; border: 1px solid #dee2e6; }
+.badge-rose { background-color: #e91e63; }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #e9ecef;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.inline-edit {
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.inline-edit:hover {
+    background-color: #f8f9fa;
+}
+
+.inline-edit.editing {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'admin:index' %}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'catalogue:home' %}">Catalogue</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ cuvee.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header avec informations principales -->
+    <div class="cuvee-detail-header">
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <!-- Image de la cuvée -->
+                <div class="cuvee-image-placeholder" id="main-image">
+                    {% if media_info.main_image %}
+                        <img src="{{ media_info.main_image }}" alt="{{ cuvee.name }}" class="img-fluid rounded">
+                    {% else %}
+                        <i class="bi bi-image"></i>
+                        <div class="mt-2 text-center">
+                            <small>Aucune image</small>
+                            {% if user_permissions.can_edit %}
+                                <br><small><a href="#" class="text-primary">Ajouter une image</a></small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h1 class="mb-0">
+                        <span class="inline-edit" data-field="name" data-value="{{ cuvee.name }}">{{ cuvee.name }}</span>
+                        {% if cuvee.code %}
+                            <small class="text-muted">
+                                (<span class="inline-edit" data-field="code" data-value="{{ cuvee.code }}">{{ cuvee.code }}</span>)
+                            </small>
+                        {% endif %}
+                    </h1>
+                    <div>
+                        <a href="{% url 'catalogue:home' %}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Retour au catalogue
+                        </a>
+                        {% if user_permissions.can_edit %}
+                            <button type="button" class="btn btn-outline-primary me-2" id="edit-mode-toggle">
+                                <i class="bi bi-pencil"></i> Édition rapide
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            {% if cuvee.appellation %}
+                            <dt class="col-sm-4">Appellation :</dt>
+                            <dd class="col-sm-8">
+                                <span class="inline-edit" data-field="appellation_id" data-value="{{ cuvee.appellation.id }}">
+                                    {{ cuvee.appellation.name }}
+                                </span>
+                                {% if cuvee.appellation.type %}
+                                    <span class="badge badge-color badge-{{ cuvee.appellation.type }} ms-2">
+                                        {{ cuvee.appellation.type|title }}
+                                    </span>
+                                {% endif %}
+                            </dd>
+                            {% endif %}
+
+                            {% if cuvee.vintage %}
+                            <dt class="col-sm-4">Millésime :</dt>
+                            <dd class="col-sm-8">
+                                <span class="inline-edit" data-field="vintage_id" data-value="{{ cuvee.vintage.id }}">
+                                    {{ cuvee.vintage.year }}
+                                </span>
+                            </dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Unité par défaut :</dt>
+                            <dd class="col-sm-8">
+                                <span class="inline-edit" data-field="default_uom_id" data-value="{{ cuvee.default_uom.id }}">
+                                    {{ cuvee.default_uom.name }} ({{ cuvee.default_uom.code }})
+                                </span>
+                            </dd>
+
+                            <dt class="col-sm-4">Dernière modification :</dt>
+                            <dd class="col-sm-8">
+                                <small class="text-muted">{{ cuvee.updated_at|date:"d/m/Y H:i" }}</small>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Statistiques et liens -->
+        <div class="col-md-4">
+            <div class="card info-card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>Statistiques
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ lots_stats.total }}</div>
+                            <div class="stat-label">Lots total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ lots_stats.en_stock }}</div>
+                            <div class="stat-label">En stock</div>
+                        </div>
+                    </div>
+                    
+                    {% if lots_stats.total > 0 %}
+                        <div class="mt-3">
+                            <a href="{% url 'catalogue:lot_list' %}?cuvee={{ cuvee.id }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-box-seam me-2"></i>Voir tous les lots
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="mt-3">
+                            <a href="{% url 'catalogue:lot_create' %}?cuvee={{ cuvee.id }}" class="btn btn-primary w-100">
+                                <i class="bi bi-plus me-2"></i>Créer le premier lot
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Audit trail -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Historique
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <small class="text-muted">Créé le {{ cuvee.created_at|date:"d/m/Y à H:i" }}</small>
+                        </div>
+                        {% if cuvee.updated_at != cuvee.created_at %}
+                        <div class="timeline-item">
+                            <small class="text-muted">Modifié le {{ cuvee.updated_at|date:"d/m/Y à H:i" }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations détaillées -->
+        <div class="col-md-8">
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Informations détaillées
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Fonctionnalité en développement</strong><br>
+                        L'intégration avec le système de lots et de médias sera disponible dans les prochaines versions.
+                        En attendant, vous pouvez utiliser l'API pour modifier les informations de base de cette cuvée.
+                    </div>
+
+                    <h6>Informations techniques :</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>ID :</strong> <code>{{ cuvee.id }}</code></li>
+                        <li><strong>Version :</strong> <code>{{ cuvee.row_version }}</code></li>
+                        <li><strong>Organisation :</strong> {{ cuvee.organization.name }}</li>
+                        <li><strong>Statut :</strong> {% if cuvee.is_active %}Actif{% else %}Inactif{% endif %}</li>
+                    </ul>
+
+                    {% if user_permissions.can_edit %}
+                    <div class="mt-3">
+                        <h6>Actions disponibles :</h6>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="testApiCall()">
+                                <i class="bi bi-cloud-arrow-up me-1"></i>Test API
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour les conflits de version -->
+<div class="modal fade" id="conflictModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conflit de version détecté</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Cette cuvée a été modifiée par un autre utilisateur. Vos modifications ne peuvent pas être sauvegardées.
+                </div>
+                <p>Que souhaitez-vous faire ?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="refreshData()">Actualiser les données</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let currentRowVersion = {{ cuvee.row_version|default:1 }};
+let isEditMode = false;
+let currentEditField = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialisation des événements
+    initInlineEdit();
+    initEditModeToggle();
+});
+
+function initInlineEdit() {
+    {% if user_permissions.can_edit %}
+    const editableElements = document.querySelectorAll('.inline-edit');
+    editableElements.forEach(element => {
+        element.addEventListener('dblclick', function() {
+            if (!isEditMode) return;
+            startInlineEdit(this);
+        });
+    });
+    {% endif %}
+}
+
+function initEditModeToggle() {
+    const toggleBtn = document.getElementById('edit-mode-toggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            isEditMode = !isEditMode;
+            toggleEditMode();
+        });
+    }
+}
+
+function toggleEditMode() {
+    const editableElements = document.querySelectorAll('.inline-edit');
+    const toggleBtn = document.getElementById('edit-mode-toggle');
+    
+    if (isEditMode) {
+        editableElements.forEach(el => el.classList.add('border', 'border-primary'));
+        toggleBtn.innerHTML = '<i class="bi bi-check"></i> Mode édition actif';
+        toggleBtn.classList.remove('btn-outline-primary');
+        toggleBtn.classList.add('btn-primary');
+        
+        // Afficher un toast d'information
+        showToast('Mode édition activé', 'Double-cliquez sur un champ pour le modifier', 'info');
+    } else {
+        editableElements.forEach(el => el.classList.remove('border', 'border-primary'));
+        toggleBtn.innerHTML = '<i class="bi bi-pencil"></i> Édition rapide';
+        toggleBtn.classList.remove('btn-primary');
+        toggleBtn.classList.add('btn-outline-primary');
+        
+        // Annuler toute édition en cours
+        if (currentEditField) {
+            cancelInlineEdit();
+        }
+    }
+}
+
+function startInlineEdit(element) {
+    if (currentEditField) {
+        cancelInlineEdit();
+    }
+    
+    currentEditField = element;
+    const field = element.dataset.field;
+    const currentValue = element.dataset.value || element.textContent.trim();
+    
+    element.classList.add('editing');
+    
+    // Créer l'input selon le type de champ
+    let inputHtml;
+    if (field.endsWith('_id')) {
+        // Pour les champs de relation, on devrait charger les options via API
+        inputHtml = `<input type="text" class="form-control form-control-sm" value="${currentValue}" readonly>`;
+        showToast('Non implémenté', 'L\'édition des relations sera disponible prochainement', 'warning');
+        return;
+    } else {
+        inputHtml = `<input type="text" class="form-control form-control-sm" value="${currentValue}">`;
+    }
+    
+    element.innerHTML = inputHtml;
+    const input = element.querySelector('input');
+    input.focus();
+    input.select();
+    
+    // Événements pour sauvegarder ou annuler
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveInlineEdit(element, field, input.value);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancelInlineEdit();
+        }
+    });
+    
+    input.addEventListener('blur', function() {
+        // Sauvegarder après un court délai pour permettre les clics sur les boutons
+        setTimeout(() => {
+            if (currentEditField === element) {
+                saveInlineEdit(element, field, input.value);
+            }
+        }, 100);
+    });
+}
+
+function saveInlineEdit(element, field, newValue) {
+    const originalValue = element.dataset.value || element.dataset.originalText;
+    
+    if (newValue === originalValue) {
+        cancelInlineEdit();
+        return;
+    }
+    
+    // Préparer les données pour l'API
+    const data = {};
+    data[field] = newValue;
+    
+    // Appel API pour sauvegarder
+    fetch(`/catalogue/api/catalogue/{{ cuvee.id }}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
+            'If-Match': currentRowVersion.toString()
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (response.status === 409) {
+            // Conflit de version
+            return response.json().then(data => {
+                showConflictModal(data);
+                throw new Error('Version conflict');
+            });
+        } else if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Succès
+        currentRowVersion = data.row_version;
+        element.dataset.value = newValue;
+        element.textContent = newValue;
+        element.classList.remove('editing');
+        currentEditField = null;
+        
+        showToast('Sauvegardé', 'La modification a été enregistrée avec succès', 'success');
+    })
+    .catch(error => {
+        if (error.message !== 'Version conflict') {
+            console.error('Erreur lors de la sauvegarde:', error);
+            showToast('Erreur', 'Impossible de sauvegarder la modification', 'error');
+            cancelInlineEdit();
+        }
+    });
+}
+
+function cancelInlineEdit() {
+    if (!currentEditField) return;
+    
+    const originalValue = currentEditField.dataset.value || currentEditField.dataset.originalText;
+    currentEditField.textContent = originalValue;
+    currentEditField.classList.remove('editing');
+    currentEditField = null;
+}
+
+function showConflictModal(conflictData) {
+    const modal = new bootstrap.Modal(document.getElementById('conflictModal'));
+    modal.show();
+}
+
+function refreshData() {
+    window.location.reload();
+}
+
+function testApiCall() {
+    fetch(`/catalogue/api/catalogue/{{ cuvee.id }}/`)
+    .then(response => response.json())
+    .then(data => {
+        console.log('Données API:', data);
+        showToast('Test API', 'Données récupérées avec succès (voir console)', 'success');
+    })
+    .catch(error => {
+        console.error('Erreur API:', error);
+        showToast('Erreur API', 'Impossible de récupérer les données', 'error');
+    });
+}
+
+function showToast(title, message, type = 'info') {
+    // Implémentation simple de toast
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toastId = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : 
+                   type === 'error' ? 'bg-danger' : 
+                   type === 'warning' ? 'bg-warning' : 'bg-info';
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert">
+            <div class="toast-header ${bgClass} text-white border-0">
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Nettoyer après fermeture
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1055';
+    document.body.appendChild(container);
+    return container;
+}
+
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.querySelector('meta[name=csrf-token]')?.content || '';
+}
+</script>
+
+{% endblock %}
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-warning mb-0">{{ lots_stats.en_production }}</h5>
+                            <small class="text-muted">En production</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-secondary mb-0">{{ lots_stats.vendus }}</h5>
+                        <small class="text-muted">Vendus</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'catalogue:lot_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus me-1"></i>Nouveau lot
+                        </a>
+                        <a href="{% url 'referentiels:cuvee_update' cuvee.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i>Modifier la cuvée
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'catalogue:home' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-grid-3x3-gap me-1"></i>Retour au catalogue
+                    </a>
+                    
+                    <a href="{% url 'catalogue:lot_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-boxes me-1"></i>Tous les lots
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations techniques -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-clipboard-data me-2"></i>Fiche technique
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Type :</strong> 
+                    {{ cuvee.get_couleur_display }} {{ cuvee.get_classification_display }}
+                </p>
+                
+                {% if cuvee.degre_alcool %}
+                    <p class="mb-2">
+                        <strong>Titre alcoométrique :</strong> {{ cuvee.degre_alcool }}% vol.
+                    </p>
+                {% endif %}
+                
+                {% if cuvee.appellation %}
+                    <p class="mb-2">
+                        <strong>Appellation :</strong> {{ cuvee.appellation }}
+                    </p>
+                {% endif %}
+                
+                {% if cuvee.cepages.exists %}
+                    <p class="mb-2">
+                        <strong>Assemblage :</strong> {{ cuvee.cepages.count }} cépage{{ cuvee.cepages.count|pluralize }}
+                    </p>
+                {% endif %}
+                
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Créée le {{ cuvee.created_at|date:"d/m/Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

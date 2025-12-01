@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Lots commerciaux - Mon Chai{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Lots commerciaux</h1>
+<table class="table table-sm">
+  <thead><tr><th>Code</th><th>Cuvée</th><th>Format</th><th>Date mise</th><th>Stock</th><th></th></tr></thead>
+  <tbody>
+    {% for l in lots %}
+    <tr>
+      <td>{{ l.code_lot }}</td>
+      <td>{{ l.cuvee|default:'-' }}</td>
+      <td>{{ l.format_ml }} mL</td>
+      <td>{{ l.date_mise }}</td>
+      <td>{{ l.stock_disponible }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/produits/lots-commerciaux/{{ l.id }}/">Voir</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-muted">Aucun lot</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

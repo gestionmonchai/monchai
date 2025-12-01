@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Mon Chai — Cadastre</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<link rel="stylesheet" href="/static/cadastre_app/viewer.css">
+</head>
+<body>
+<div id="topbar">
+  <div class="left">
+    <input id="addr-q" placeholder="Adresse…">
+    <button id="addr-go">🔎</button>
+    <input id="insee" placeholder="INSEE" maxlength="5">
+    <input id="section" placeholder="Section" maxlength="3">
+    <input id="numero" placeholder="Numéro" maxlength="4">
+    <button id="parcel-go">Parcelle</button>
+    <input id="pid" placeholder="parcelleId (ex 35238000CV0132)" size="18">
+    <button id="pid-go">ID</button>
+  </div>
+  <div class="right">
+    <label><input type="checkbox" id="toggle-ortho"> Orthophoto (clé IGN)</label>
+  </div>
+</div>
+<div id="map"></div>
+
+<div id="drawer">
+  <h3>Mes parcelles</h3>
+  <div id="list"></div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+<script>
+  window.JWT_TOKEN = localStorage.getItem('jwt') || 'DEV_TOKEN';
+</script>
+<script src="/static/cadastre_app/viewer.js"></script>
+</body>
+</html>

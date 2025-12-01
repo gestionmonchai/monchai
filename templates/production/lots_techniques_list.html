@@ -1,0 +1,352 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Lots Techniques - Mon Chai{% endblock %}
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <h1 class="h4 mb-0">Lots Techniques</h1>
+    <!-- View Switcher -->
+    <div class="btn-group btn-group-sm" role="group" aria-label="Switch view">
+      <button type="button" class="btn btn-outline-primary view-switch-btn active" data-view="table" data-page="lots">
+        <i class="bi bi-table me-1"></i>Vue BDD
+      </button>
+      <button type="button" class="btn btn-outline-primary view-switch-btn" data-view="cuvees" data-page="lots">
+        <i class="bi bi-cup-straw me-1"></i>Par Cuvée
+      </button>
+    </div>
+  </div>
+  <a class="btn btn-primary" href="/production/lots-techniques/nouveau/">
+    <i class="bi bi-plus-lg me-1"></i>Nouveau Lot
+  </a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+          <i class="bi bi-chevron-down"></i> Avancé
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="clear-filters">
+          <i class="bi bi-x-circle"></i> Effacer
+        </button>
+      </div>
+    </div>
+
+    <form id="lots-filter-form"
+          hx-get="{% url 'production:lots_tech_table' %}"
+          hx-target="#lots-table"
+          hx-swap="innerHTML"
+          hx-trigger="change, keyup delay:200ms from:input">
+      <!-- Recherche rapide -->
+      <div class="row mb-3">
+        <div class="col-md-8">
+          <div class="position-relative">
+            <input type="text" name="q" id="quick-search" value="{{ selected.q }}" placeholder="Recherche rapide (code, cuvée, contenant)" class="form-control pe-5" autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+              <i class="bi bi-search text-muted" id="search-icon"></i>
+              <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                <span class="visually-hidden">Recherche...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="search-info" class="text-muted small mt-2">—</div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div id="advanced-filters" class="collapse">
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-2">
+            <label class="form-label">Campagne</label>
+            <select name="campagne" class="form-select">
+              <option value="">— Toutes —</option>
+              {% for c in campagnes %}
+                <option value="{{ c }}" {% if selected.campagne == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Statut</label>
+            <select name="statut" class="form-select">
+              <option value="">— Tous —</option>
+              {% for code,label in statut_choices %}
+                <option value="{{ code }}" {% if selected.statut == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Code</label>
+            <input type="text" name="code" value="{{ selected.code }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Cuvée</label>
+            <input type="text" name="cuvee" value="{{ selected.cuvee }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Contenant</label>
+            <input type="text" name="contenant" value="{{ selected.contenant }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Volume min (L)</label>
+            <input type="number" step="0.1" name="volume_min" value="{{ selected.volume_min }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Volume max (L)</label>
+            <input type="number" step="0.1" name="volume_max" value="{{ selected.volume_max }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tri</label>
+            <select name="sort" class="form-select">
+              <option value="created_desc" {% if selected.sort == 'created_desc' %}selected{% endif %}>Date Création ↓</option>
+              <option value="created_asc" {% if selected.sort == 'created_asc' %}selected{% endif %}>Date Création ↑</option>
+              <option value="code" {% if selected.sort == 'code' %}selected{% endif %}>Code</option>
+              <option value="vol_desc" {% if selected.sort == 'vol_desc' %}selected{% endif %}>Volume ↓</option>
+              <option value="vol_asc" {% if selected.sort == 'vol_asc' %}selected{% endif %}>Volume ↑</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Multi-View Container -->
+<div id="view-container">
+  <!-- TABLE VIEW (BDD) -->
+  <div class="view-panel" data-view="table" data-page="lots">
+    <div id="lots-table" hx-get="{% url 'production:lots_tech_table' %}" hx-trigger="load" hx-target="#lots-table" hx-swap="innerHTML">
+      <div class="text-center text-muted py-4">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- BY CUVEE VIEW -->
+  <div class="view-panel d-none" data-view="cuvees" data-page="lots">
+    <div id="lots-by-cuvee" class="row g-3">
+      <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.cuvee-card { transition: all 0.2s; }
+.cuvee-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.lot-mini-card { 
+  padding: 0.5rem;
+  border-left: 3px solid #dee2e6;
+  margin-bottom: 0.5rem;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.lot-mini-card:hover { 
+  border-left-color: #0d6efd;
+  background: #e7f1ff;
+  transform: translateX(4px);
+}
+.status-badge-sm { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const advBtn = document.getElementById('toggle-advanced-search');
+    const clearBtn = document.getElementById('clear-filters');
+    const adv = document.getElementById('advanced-filters');
+    const quick = document.getElementById('quick-search');
+    const spinner = document.getElementById('search-spinner');
+    const icon = document.getElementById('search-icon');
+    const info = document.getElementById('search-info');
+    const form = document.getElementById('lots-filter-form');
+
+    function setLoading(isLoading) {
+      if (isLoading) {
+        spinner.classList.remove('d-none');
+        icon.classList.add('d-none');
+      } else {
+        spinner.classList.add('d-none');
+        icon.classList.remove('d-none');
+      }
+    }
+
+    if (advBtn && adv) {
+      advBtn.addEventListener('click', function() {
+        adv.classList.toggle('show');
+        const i = advBtn.querySelector('i');
+        if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        form.reset();
+        form.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
+    if (quick) {
+      quick.addEventListener('input', function() { setLoading(true); });
+    }
+
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      if (evt.target && evt.target.id === 'lots-table') {
+        setLoading(false);
+        const meta = document.getElementById('lots-table-meta');
+        if (meta && info) {
+          const total = meta.getAttribute('data-total') || '0';
+          info.textContent = total + ' lot' + (parseInt(total) > 1 ? 's' : '');
+        }
+      }
+    });
+
+    // VIEW SWITCHER LOGIC
+    const pageId = 'lots';
+    const storageKey = pageId + '_view';
+    const viewButtons = document.querySelectorAll(`.view-switch-btn[data-page="${pageId}"]`);
+    const viewPanels = document.querySelectorAll(`.view-panel[data-page="${pageId}"]`);
+    
+    const savedView = localStorage.getItem(storageKey) || 'table';
+    switchToView(savedView);
+
+    viewButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const targetView = this.getAttribute('data-view');
+        switchToView(targetView);
+        localStorage.setItem(storageKey, targetView);
+      });
+    });
+
+    function switchToView(viewName) {
+      viewButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
+      });
+
+      viewPanels.forEach(panel => {
+        const isTarget = panel.getAttribute('data-view') === viewName;
+        panel.classList.toggle('d-none', !isTarget);
+        
+        if (isTarget && viewName === 'cuvees' && !panel.hasAttribute('data-loaded')) {
+          loadByCuveeView();
+          panel.setAttribute('data-loaded', 'true');
+        }
+      });
+    }
+
+    function loadByCuveeView() {
+      const container = document.getElementById('lots-by-cuvee');
+      
+      // Fetch all lots with cuvee info
+      fetch('{% url "production:lots_tech_table" %}?format=json&sort=cuvee')
+        .then(response => response.json())
+        .then(data => {
+          if (data.lots && data.lots.length > 0) {
+            renderByCuveeView(data.lots, container);
+          } else {
+            container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Aucun lot technique trouvé</p></div>';
+          }
+        })
+        .catch(err => {
+          console.error('Error loading by-cuvee view:', err);
+          container.innerHTML = '<div class="col-12 text-center text-danger py-5">Erreur de chargement</div>';
+        });
+    }
+
+    function renderByCuveeView(lots, container) {
+      // Group lots by cuvee
+      const byCuvee = {};
+      lots.forEach(lot => {
+        const cuveeId = lot.cuvee_id || 'sans_cuvee';
+        const cuveeName = lot.cuvee_nom || 'Sans cuvée';
+        
+        if (!byCuvee[cuveeId]) {
+          byCuvee[cuveeId] = {
+            id: cuveeId,
+            name: cuveeName,
+            lots: [],
+            totalVolume: 0,
+            statusCounts: {}
+          };
+        }
+        
+        byCuvee[cuveeId].lots.push(lot);
+        byCuvee[cuveeId].totalVolume += parseFloat(lot.volume_l || 0);
+        
+        const status = lot.statut || 'inconnu';
+        byCuvee[cuveeId].statusCounts[status] = (byCuvee[cuveeId].statusCounts[status] || 0) + 1;
+      });
+
+      // Render cuvee cards
+      container.innerHTML = '';
+      Object.values(byCuvee).forEach(cuvee => {
+        const card = createCuveeCard(cuvee);
+        container.appendChild(card);
+      });
+    }
+
+    function createCuveeCard(cuvee) {
+      const col = document.createElement('div');
+      col.className = 'col-lg-6';
+      
+      const statusBadges = Object.entries(cuvee.statusCounts)
+        .map(([status, count]) => {
+          const statusColors = {
+            'en_cours': 'primary',
+            'termine': 'success',
+            'archive': 'secondary'
+          };
+          const color = statusColors[status] || 'secondary';
+          return `<span class="badge bg-${color} status-badge-sm">${status}: ${count}</span>`;
+        }).join(' ');
+      
+      col.innerHTML = `
+        <div class="card cuvee-card h-100">
+          <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h5 class="mb-1"><i class="bi bi-cup-straw me-2"></i>${cuvee.name}</h5>
+                <div class="text-muted small">${cuvee.lots.length} lot${cuvee.lots.length > 1 ? 's' : ''} · ${Math.round(cuvee.totalVolume)} L</div>
+              </div>
+              <div class="text-end">
+                ${statusBadges}
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-2">
+            ${cuvee.lots.map(lot => `
+              <div class="lot-mini-card" onclick="window.location='/production/lots-techniques/${lot.id}/'">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>${lot.code || 'Sans code'}</strong>
+                    <span class="text-muted small ms-2">${lot.contenant || ''}</span>
+                  </div>
+                  <div class="text-end">
+                    <span class="text-primary fw-bold">${Math.round(lot.volume_l || 0)} L</span>
+                    <span class="badge bg-${getStatusColor(lot.statut)} ms-2">${lot.statut || 'inconnu'}</span>
+                  </div>
+                </div>
+                ${lot.campagne ? '<div class="text-muted small">Campagne: ' + lot.campagne + '</div>' : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      return col;
+    }
+
+    function getStatusColor(statut) {
+      const colors = {
+        'en_cours': 'primary',
+        'termine': 'success',
+        'archive': 'secondary'
+      };
+      return colors[statut] || 'secondary';
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+<form hx-post="{% url 'production:container_create' %}" hx-target="closest .modal" hx-swap="outerHTML">
+  <div class="modal d-block" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nouveau contenant</h5>
+          <button type="button" class="btn-close" aria-label="Close" onclick="this.closest('.modal').remove()"></button>
+        </div>
+        <div class="modal-body">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label class="form-label">Lot</label>
+            <select name="lot_id" class="form-select" required>
+              {% for l in lots %}<option value="{{ l.id }}">{{ l.code }} — {{ l.cuvee.nom }} ({{ l.volume_l }} L)</option>{% endfor %}
+            </select>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label">Type</label>
+              <select name="type" class="form-select" required>
+                {% for code, label in choices %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Capacité (L)</label>
+              <input class="form-control" type="number" name="capacite_l" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Occupé (L)</label>
+              <input class="form-control" type="number" name="volume_occupe_l" step="0.01" min="0" value="0">
+            </div>
+          </div>
+          <div class="mt-2">
+            <label class="form-label">Identifiant</label>
+            <input class="form-control" name="identifiant" placeholder="Ex: C12, Fût #8">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary">Créer</button>
+          <button type="button" class="btn btn-light" onclick="this.closest('.modal').remove()">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-flower1 me-2 text-success"></i>{{ cepage.nom }}
+            </h1>
+            <div>
+                <a href="{% url 'referentiels:cepage_list' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:cepage_update' cepage.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Informations du cépage
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nom :</dt>
+                    <dd class="col-sm-9">{{ cepage.nom }}</dd>
+
+                    <dt class="col-sm-3">Code :</dt>
+                    <dd class="col-sm-9">
+                        {% if cepage.code %}
+                            <span class="badge bg-light text-dark">{{ cepage.code }}</span>
+                        {% else %}
+                            <span class="text-muted">Non défini</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">Couleur :</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-{% if cepage.couleur == 'rouge' %}danger{% elif cepage.couleur == 'blanc' %}warning{% else %}info{% endif %} fs-6">
+                            {{ cepage.get_couleur_display }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-3">Créé le :</dt>
+                    <dd class="col-sm-9">{{ cepage.created_at|date:"d/m/Y à H:i" }}</dd>
+
+                    {% if cepage.updated_at != cepage.created_at %}
+                        <dt class="col-sm-3">Modifié le :</dt>
+                        <dd class="col-sm-9">{{ cepage.updated_at|date:"d/m/Y à H:i" }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if cepage.notes %}
+                    <hr>
+                    <h6>Notes :</h6>
+                    <p class="text-muted">{{ cepage.notes|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Actions -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cepage_update' cepage.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i>Modifier ce cépage
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'referentiels:cepage_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-1"></i>Tous les cépages
+                    </a>
+                    
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cepage_create' %}" class="btn btn-outline-success">
+                            <i class="bi bi-plus me-1"></i>Nouveau cépage
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if user.get_active_membership.can_manage_roles %}
+                    <hr>
+                    <form method="post" action="{% url 'referentiels:cepage_delete' cepage.pk %}" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce cépage ? Cette action est irréversible.')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-trash me-1"></i>Supprimer
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-bar-chart me-2"></i>Utilisation
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Les statistiques d'utilisation seront disponibles 
+                    après l'implémentation des cuvées.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

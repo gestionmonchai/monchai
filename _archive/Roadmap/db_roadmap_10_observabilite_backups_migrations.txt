@@ -1,0 +1,34 @@
+DB Roadmap 10 — Observabilité, Backups & Migrations réversibles
+===============================================================
+Objectif
+--------
+Mettre en place une **observabilité** exploitable (metrics, logs, alertes), des **sauvegardes** testées (restore), et des **migrations réversibles** (indexes CONCURRENTLY, double‑write, canary, rollback).
+
+Livrables (Done)
+----------------
+- Metrics: latences p50/p95/p99, taux 0‑result, cache hit‑rate, erreurs 4xx/5xx, annulations
+- Logs: requêtes longues (>1s), erreurs FTS, exports, éditions sensibles
+- Backups: stratégie + journal + test de **restore** trimestriel (read‑only sanity)
+- Playbook migrations: checklists PR + scripts rollback + flags
+- Dashboards comparant v1 vs v2 (search) + alertes seuils
+
+Points clés d’implémentation
+----------------------------
+- `statement_timeout` soigneusement paramétré (ex: 700–900ms pour live search)
+- Index `CREATE INDEX CONCURRENTLY`; drop après période de grâce
+- Double‑write pendant cutover ; kill switch pour bascule
+- Datasets synthétiques 100k+ pour benchs perfs
+
+Tests d’acceptation (AC)
+------------------------
+- AC-10-01: Dashboard montre p95 par endpoint + 0‑result rate
+- AC-10-02: Restore dry‑run OK, lecture seules cohérentes
+- AC-10-03: Migration index CONCURRENT → aucune indispo constatable
+- AC-10-04: Rollback flag rétablit v1 en < 1 min (sans redéploiement)
+
+Robustesse
+----------
+- R-10-01: alerte si p95 > seuil 10 min ; si erreurs > 1%
+- R-10-02: logs sans PII; redaction appliquée
+- R-10-03: échec migration → auto‑abort + doc runbook
+- R-10-04: benchs perfs répétés (variabilité < 10%)

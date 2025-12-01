@@ -1,0 +1,388 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block extrahead %}
+<link href="{% static 'css/stock.css' %}" rel="stylesheet">
+<style>
+.alert-card {
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+}
+.alert-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.alert-high { border-left-color: #dc3545; }
+.alert-medium { border-left-color: #fd7e14; }
+.alert-low { border-left-color: #ffc107; }
+.alert-resolved { border-left-color: #28a745; opacity: 0.7; }
+
+.criticality-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+.badge-high { background-color: #dc3545; }
+.badge-medium { background-color: #fd7e14; }
+.badge-low { background-color: #ffc107; color: #000; }
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête avec statistiques -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                    Alertes de Stock
+                </h1>
+                <div class="stats-card p-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-bell-fill me-2"></i>
+                        <div>
+                            <div class="h4 mb-0">{{ active_count }}</div>
+                            <small>Alertes actives</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filtres
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="filtersForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Statut</label>
+                        <select name="status" class="form-select">
+                            <option value="">Tous</option>
+                            <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>Actives</option>
+                            <option value="acknowledged" {% if current_filters.status == 'acknowledged' %}selected{% endif %}>Acquittées</option>
+                            <option value="resolved" {% if current_filters.status == 'resolved' %}selected{% endif %}>Résolues</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cuvée</label>
+                        <select name="cuvee_id" class="form-select">
+                            <option value="">Toutes</option>
+                            {% for cuvee in cuvees %}
+                            <option value="{{ cuvee.id }}" {% if current_filters.cuvee_id == cuvee.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cuvee.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Entrepôt</label>
+                        <select name="warehouse_id" class="form-select">
+                            <option value="">Tous</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}" {% if current_filters.warehouse_id == warehouse.id|stringformat:"s" %}selected{% endif %}>
+                                {{ warehouse.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Criticité</label>
+                        <select name="criticality" class="form-select">
+                            <option value="">Toutes</option>
+                            <option value="high" {% if current_filters.criticality == 'high' %}selected{% endif %}>Haute (&lt;20%)</option>
+                            <option value="medium" {% if current_filters.criticality == 'medium' %}selected{% endif %}>Moyenne (20-50%)</option>
+                            <option value="low" {% if current_filters.criticality == 'low' %}selected{% endif %}>Faible (&gt;50%)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tri</label>
+                        <select name="sort" class="form-select">
+                            <option value="criticality" {% if current_sort == 'criticality' %}selected{% endif %}>Criticité</option>
+                            <option value="first_seen_desc" {% if current_sort == 'first_seen_desc' %}selected{% endif %}>Plus récentes</option>
+                            <option value="first_seen_asc" {% if current_sort == 'first_seen_asc' %}selected{% endif %}>Plus anciennes</option>
+                            <option value="lot_code" {% if current_sort == 'lot_code' %}selected{% endif %}>Code lot</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search me-1"></i>Filtrer
+                        </button>
+                        <a href="{% url 'stock:alertes_view' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Actions groupées -->
+    {% if alerts %}
+    <div class="card mb-4" id="bulkActions" style="display: none;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <span id="selectedCount">0 alerte(s) sélectionnée(s)</span>
+                <div>
+                    <button type="button" class="btn btn-success btn-sm" id="acknowledgeSelected">
+                        <i class="bi bi-check-circle me-1"></i>Acquitter la sélection
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="exportSelected">
+                        <i class="bi bi-download me-1"></i>Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Liste des alertes -->
+    <div class="row">
+        {% if alerts %}
+            {% for alert in alerts %}
+            <div class="col-12 mb-3">
+                <div class="card alert-card alert-{% if alert.criticality_ratio < 0.2 %}high{% elif alert.criticality_ratio < 0.5 %}medium{% else %}low{% endif %}{% if not alert.is_active %} alert-resolved{% endif %}">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-1">
+                                {% if alert.is_active %}
+                                <input type="checkbox" class="form-check-input alert-checkbox" value="{{ alert.id }}">
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <h6 class="mb-1">{{ alert.lot.code }}</h6>
+                                <small class="text-muted">{{ alert.lot.cuvee.name }}</small>
+                            </div>
+                            <div class="col-md-2">
+                                <i class="bi bi-building me-1"></i>
+                                {{ alert.warehouse.name }}
+                            </div>
+                            <div class="col-md-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                        <div class="progress-bar 
+                                            {% if alert.criticality_ratio < 0.2 %}bg-danger
+                                            {% elif alert.criticality_ratio < 0.5 %}bg-warning
+                                            {% else %}bg-success{% endif %}"
+                                            style="width: 0%"
+                                            data-ratio="{{ alert.criticality_ratio }}">
+                                        </div>
+                                    </div>
+                                    <small>{{ alert.balance_l|floatformat:0 }}L</small>
+                                </div>
+                                <small class="text-muted">Seuil: {{ alert.threshold_l|floatformat:0 }}L ({{ alert.threshold_source }})</small>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="badge criticality-badge badge-{% if alert.criticality_ratio < 0.2 %}high{% elif alert.criticality_ratio < 0.5 %}medium{% else %}low{% endif %}">
+                                    {% if alert.criticality_ratio < 0.2 %}Critique
+                                    {% elif alert.criticality_ratio < 0.5 %}Moyenne
+                                    {% else %}Faible{% endif %}
+                                </span>
+                                <br>
+                                <small class="text-muted criticality-percent" data-ratio="{{ alert.criticality_ratio }}">0%</small>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">
+                                    Depuis {{ alert.days_since_first_seen }} jour{{ alert.days_since_first_seen|pluralize }}
+                                    <br>
+                                    {{ alert.first_seen_at|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                            <div class="col-md-1">
+                                {% if alert.is_active %}
+                                <button type="button" class="btn btn-outline-success btn-sm acknowledge-btn" data-alert-id="{{ alert.id }}">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                {% elif alert.acknowledged_at %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Acquittée
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ alert.acknowledged_by.get_full_name }}</small>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-check-circle me-1"></i>Résolue
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Aucune alerte</h4>
+                        <p class="text-muted">
+                            {% if current_filters %}
+                            Aucune alerte ne correspond aux filtres sélectionnés.
+                            {% else %}
+                            Tous vos stocks sont au-dessus des seuils configurés !
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'stock:seuils_view' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-gear me-1"></i>Configurer les seuils
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de confirmation -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer l'acquittement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir acquitter <span id="confirmCount"></span> alerte(s) ?</p>
+                <p class="text-muted">Cette action marquera les alertes comme traitées.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" id="confirmAcknowledge">Acquitter</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Corriger les pourcentages des progress bars et badges
+    document.querySelectorAll('.progress-bar[data-ratio]').forEach(bar => {
+        const ratio = parseFloat(bar.dataset.ratio);
+        bar.style.width = (ratio * 100).toFixed(1) + '%';
+    });
+    
+    document.querySelectorAll('.criticality-percent[data-ratio]').forEach(elem => {
+        const ratio = parseFloat(elem.dataset.ratio);
+        elem.textContent = (ratio * 100).toFixed(1) + '%';
+    });
+    
+    const checkboxes = document.querySelectorAll('.alert-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    const acknowledgeSelected = document.getElementById('acknowledgeSelected');
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    
+    // Gestion de la sélection multiple
+    function updateBulkActions() {
+        const selected = document.querySelectorAll('.alert-checkbox:checked');
+        const count = selected.length;
+        
+        if (count > 0) {
+            bulkActions.style.display = 'block';
+            selectedCount.textContent = `${count} alerte(s) sélectionnée(s)`;
+        } else {
+            bulkActions.style.display = 'none';
+        }
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    // Acquittement individuel
+    document.querySelectorAll('.acknowledge-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const alertId = this.dataset.alertId;
+            acknowledgeAlerts([alertId]);
+        });
+    });
+    
+    // Acquittement multiple
+    acknowledgeSelected.addEventListener('click', function() {
+        const selected = Array.from(document.querySelectorAll('.alert-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        if (selected.length > 0) {
+            document.getElementById('confirmCount').textContent = selected.length;
+            confirmModal.show();
+            
+            document.getElementById('confirmAcknowledge').onclick = function() {
+                acknowledgeAlerts(selected);
+                confirmModal.hide();
+            };
+        }
+    });
+    
+    // Fonction d'acquittement
+    function acknowledgeAlerts(alertIds) {
+        fetch('{% url "stock:acknowledge_alert_api" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                alert_ids: alertIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                // Afficher un toast de succès
+                showToast('success', data.message);
+                // Recharger la page après un court délai
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('error', data.error || 'Erreur lors de l\'acquittement');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Erreur de connexion');
+        });
+    }
+    
+    // Fonction pour afficher les toasts
+    function showToast(type, message) {
+        // Créer un toast Bootstrap
+        const toastHtml = `
+            <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter le toast au container
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+        toast.show();
+    }
+});
+</script>
+{% endblock %}

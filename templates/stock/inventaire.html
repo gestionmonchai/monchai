@@ -1,0 +1,842 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Accueil</a>
+    &rsaquo; <a href="{% url 'stock:dashboard' %}">Stocks</a>
+    &rsaquo; Inventaire
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="inventaire-container">
+    <div class="inventaire-header">
+        <h1><i class="bi bi-clipboard-check"></i> {{ page_title }}</h1>
+        <div class="inventaire-actions">
+            <a href="{% url 'stock:dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Retour dashboard
+            </a>
+            <button id="startInventoryBtn" class="btn btn-success">
+                <i class="bi bi-play-circle"></i> Démarrer inventaire
+            </button>
+        </div>
+    </div>
+
+    <!-- Onglets de navigation -->
+    <div class="inventory-tabs">
+        <button class="tab-button active" data-tab="lot">
+            <i class="bi bi-box-seam"></i> Par lot
+        </button>
+        <button class="tab-button" data-tab="warehouse">
+            <i class="bi bi-building"></i> Par entrepôt
+        </button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+        <form id="filtersForm" class="filters-form">
+            <div class="filter-group">
+                <label for="cuvee">Cuvée:</label>
+                <select name="cuvee_id" id="cuvee" class="form-control">
+                    <option value="">Toutes les cuvées</option>
+                    {% for cuvee in cuvees %}
+                    <option value="{{ cuvee.id }}">{{ cuvee.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="warehouse">Entrepôt:</label>
+                <select name="warehouse_id" id="warehouse" class="form-control">
+                    <option value="">Tous les entrepôts</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="vintage">Millésime:</label>
+                <select name="vintage_id" id="vintage" class="form-control">
+                    <option value="">Tous les millésimes</option>
+                    {% for vintage in vintages %}
+                    <option value="{{ vintage.id }}">{{ vintage.year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="search">Recherche:</label>
+                <input type="text" name="q" id="search" class="form-control" 
+                       placeholder="Code lot, nom cuvée...">
+            </div>
+            
+            <div class="filter-actions">
+                <button type="button" id="applyFilters" class="btn btn-primary">
+                    <i class="bi bi-funnel"></i> Filtrer
+                </button>
+                <button type="button" id="resetFilters" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </button>
+                <button type="button" id="exportBtn" class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> Export CSV
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Contenu des onglets -->
+    <div class="inventory-content">
+        <!-- Onglet Par lot -->
+        <div id="tab-lot" class="tab-content active">
+            <div class="inventory-controls">
+                <div class="sort-controls">
+                    <label for="sortBy">Trier par:</label>
+                    <select id="sortBy" class="form-control">
+                        <option value="volume_desc">Volume (décroissant)</option>
+                        <option value="volume_asc">Volume (croissant)</option>
+                        <option value="lot_code_asc">Code lot (A-Z)</option>
+                        <option value="updated_desc">Dernière activité</option>
+                    </select>
+                </div>
+                
+                <div class="results-info">
+                    <span id="resultsCount">Chargement...</span>
+                </div>
+            </div>
+            
+            <div id="inventoryTable" class="inventory-table">
+                <div class="loading-state">
+                    <i class="bi bi-hourglass-split"></i>
+                    <p>Chargement de l'inventaire...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Par entrepôt -->
+        <div id="tab-warehouse" class="tab-content">
+            <div id="warehouseInventory" class="warehouse-inventory">
+                <div class="loading-state">
+                    <i class="bi bi-hourglass-split"></i>
+                    <p>Chargement par entrepôt...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour démarrer inventaire -->
+<div id="startInventoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="bi bi-play-circle"></i> Démarrer un inventaire physique</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Sélectionnez l'entrepôt à inventorier :</p>
+            <select id="inventoryWarehouse" class="form-control">
+                <option value="">Choisir un entrepôt...</option>
+                {% for warehouse in warehouses %}
+                <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button id="startInventoryConfirm" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Commencer
+            </button>
+            <button class="modal-close btn btn-secondary">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.inventaire-container {
+    padding: 20px;
+}
+
+.inventaire-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.inventaire-header h1 {
+    margin: 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.inventaire-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.btn-outline-success {
+    background: transparent;
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.inventory-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-button {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-button.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+}
+
+.tab-button:hover {
+    color: #007bff;
+    background: #f8f9fa;
+}
+
+.filters-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    grid-column: 1 / -1;
+    justify-content: center;
+}
+
+.inventory-content {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    min-height: 400px;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.inventory-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-controls label {
+    font-weight: 500;
+    color: #333;
+}
+
+.sort-controls .form-control {
+    width: 200px;
+}
+
+.results-info {
+    color: #666;
+    font-size: 14px;
+}
+
+.inventory-table {
+    min-height: 300px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.loading-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.volume-badge {
+    background: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-en-cours {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-elevage {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-stabilise {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.warehouse-inventory {
+    min-height: 300px;
+}
+
+.warehouse-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.warehouse-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.warehouse-header h4 {
+    margin: 0;
+    color: #333;
+}
+
+.warehouse-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+.warehouse-lots {
+    padding: 15px 20px;
+}
+
+.lot-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.lot-item:last-child {
+    border-bottom: none;
+}
+
+.lot-code {
+    font-weight: 500;
+}
+
+.lot-cuvee {
+    color: #666;
+    font-size: 13px;
+}
+
+.lot-volume {
+    color: #007bff;
+    font-weight: bold;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .inventaire-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .inventaire-actions {
+        justify-content: center;
+    }
+    
+    .filters-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .inventory-controls {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .filter-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentTab = 'lot';
+    let currentFilters = {};
+    let currentSort = 'volume_desc';
+    
+    // Éléments DOM
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const filtersForm = document.getElementById('filtersForm');
+    const applyFiltersBtn = document.getElementById('applyFilters');
+    const resetFiltersBtn = document.getElementById('resetFilters');
+    const exportBtn = document.getElementById('exportBtn');
+    const sortBySelect = document.getElementById('sortBy');
+    const searchInput = document.getElementById('search');
+    const startInventoryBtn = document.getElementById('startInventoryBtn');
+    const startInventoryModal = document.getElementById('startInventoryModal');
+    const startInventoryConfirm = document.getElementById('startInventoryConfirm');
+    const modalCloses = document.querySelectorAll('.modal-close');
+    
+    // Gestion des onglets
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            switchTab(tab);
+        });
+    });
+    
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Mise à jour des boutons
+        tabButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tab);
+        });
+        
+        // Mise à jour du contenu
+        tabContents.forEach(content => {
+            content.classList.toggle('active', content.id === `tab-${tab}`);
+        });
+        
+        // Charger les données
+        loadInventoryData();
+    }
+    
+    // Gestion des filtres
+    applyFiltersBtn.addEventListener('click', function() {
+        collectFilters();
+        loadInventoryData();
+    });
+    
+    resetFiltersBtn.addEventListener('click', function() {
+        filtersForm.reset();
+        currentFilters = {};
+        loadInventoryData();
+    });
+    
+    // Recherche avec debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            collectFilters();
+            loadInventoryData();
+        }, 300);
+    });
+    
+    // Tri
+    sortBySelect.addEventListener('change', function() {
+        currentSort = this.value;
+        if (currentTab === 'lot') {
+            loadInventoryData();
+        }
+    });
+    
+    function collectFilters() {
+        const formData = new FormData(filtersForm);
+        currentFilters = {};
+        
+        for (let [key, value] of formData.entries()) {
+            if (value.trim()) {
+                currentFilters[key] = value.trim();
+            }
+        }
+    }
+    
+    // Chargement des données
+    function loadInventoryData() {
+        const params = new URLSearchParams({
+            mode: currentTab,
+            ...currentFilters
+        });
+        
+        if (currentTab === 'lot') {
+            params.append('sort', currentSort);
+            params.append('limit', '100');
+        }
+        
+        fetch(`/stocks/api/inventaire/?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (currentTab === 'lot') {
+                    displayLotInventory(data);
+                } else {
+                    displayWarehouseInventory(data);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showError('Erreur lors du chargement des données');
+            });
+    }
+    
+    function displayLotInventory(data) {
+        const container = document.getElementById('inventoryTable');
+        const resultsCount = document.getElementById('resultsCount');
+        
+        resultsCount.textContent = `${data.count} lots trouvés`;
+        
+        if (data.lots.length === 0) {
+            container.innerHTML = `
+                <div class="loading-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>Aucun lot trouvé avec les filtres sélectionnés</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let tableHtml = `
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Code lot</th>
+                        <th>Cuvée</th>
+                        <th>Millésime</th>
+                        <th>Entrepôt</th>
+                        <th>Volume</th>
+                        <th>Statut</th>
+                        <th>Dernière activité</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        data.lots.forEach(item => {
+            const lastMove = item.last_move_date ? 
+                new Date(item.last_move_date).toLocaleDateString('fr-FR') : 
+                'Aucune';
+            
+            tableHtml += `
+                <tr>
+                    <td><strong>${item.lot.code}</strong></td>
+                    <td>${item.lot.cuvee.name}</td>
+                    <td>${item.lot.cuvee.vintage || '-'}</td>
+                    <td>${item.warehouse.name}</td>
+                    <td><span class="volume-badge">${item.volume_l.toFixed(2)} L</span></td>
+                    <td><span class="status-badge status-${item.lot.status.toLowerCase().replace(' ', '-')}">${item.lot.status}</span></td>
+                    <td>${lastMove}</td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += '</tbody></table>';
+        container.innerHTML = tableHtml;
+    }
+    
+    function displayWarehouseInventory(data) {
+        const container = document.getElementById('warehouseInventory');
+        
+        if (data.warehouses.length === 0) {
+            container.innerHTML = `
+                <div class="loading-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>Aucun entrepôt trouvé</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let warehousesHtml = '';
+        
+        data.warehouses.forEach(warehouse => {
+            warehousesHtml += `
+                <div class="warehouse-card">
+                    <div class="warehouse-header">
+                        <h4>${warehouse.warehouse.name}</h4>
+                        <div class="warehouse-stats">
+                            <span><strong>${warehouse.total_volume_l.toFixed(2)} L</strong> total</span>
+                            <span><strong>${warehouse.lot_count}</strong> lots</span>
+                        </div>
+                    </div>
+                    <div class="warehouse-lots">
+            `;
+            
+            if (warehouse.lots.length > 0) {
+                warehouse.lots.forEach(lot => {
+                    warehousesHtml += `
+                        <div class="lot-item">
+                            <div>
+                                <div class="lot-code">${lot.lot.code}</div>
+                                <div class="lot-cuvee">${lot.lot.cuvee_name}</div>
+                            </div>
+                            <div class="lot-volume">${lot.volume_l.toFixed(2)} L</div>
+                        </div>
+                    `;
+                });
+                
+                if (warehouse.lot_count > warehouse.lots.length) {
+                    warehousesHtml += `
+                        <div class="lot-item">
+                            <div class="lot-code">...</div>
+                            <div class="lot-volume">+${warehouse.lot_count - warehouse.lots.length} lots</div>
+                        </div>
+                    `;
+                }
+            } else {
+                warehousesHtml += '<p>Aucun lot en stock</p>';
+            }
+            
+            warehousesHtml += '</div></div>';
+        });
+        
+        container.innerHTML = warehousesHtml;
+    }
+    
+    // Gestion du modal d'inventaire
+    startInventoryBtn.addEventListener('click', function() {
+        startInventoryModal.style.display = 'block';
+    });
+    
+    modalCloses.forEach(close => {
+        close.addEventListener('click', function() {
+            startInventoryModal.style.display = 'none';
+        });
+    });
+    
+    startInventoryConfirm.addEventListener('click', function() {
+        const warehouseId = document.getElementById('inventoryWarehouse').value;
+        if (warehouseId) {
+            window.location.href = `/stocks/inventaire/counting/${warehouseId}/`;
+        }
+    });
+    
+    // Export CSV
+    exportBtn.addEventListener('click', function() {
+        const params = new URLSearchParams({
+            mode: currentTab,
+            format: 'csv',
+            ...currentFilters
+        });
+        
+        if (currentTab === 'lot') {
+            params.append('sort', currentSort);
+        }
+        
+        window.open(`/stocks/api/inventaire/export/?${params}`, '_blank');
+    });
+    
+    function showError(message) {
+        // Simple notification d'erreur
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-error';
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 4px;
+            z-index: 1001;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+    
+    // Chargement initial
+    loadInventoryData();
+});
+</script>
+{% endblock %}

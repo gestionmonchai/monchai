@@ -1,0 +1,65 @@
+Roadmap 34 — /stocks/alertes (Seuils bas + badge sur menu)
+==========================================================
+Rôle & objectif
+---------------
+Surveiller les **seuils de stock bas** (par lot, par cuvée, par entrepôt) et afficher des **alertes** + **badge numérique** sur le menu. Notifier (email/Slack option).
+
+Portée
+------
+- Page `/stocks/alertes` : 
+  • Liste des alertes actives (Lot, Cuvée, Entrepôt, Solde, Seuil, Dernier mouvement, Depuis quand)
+  • Filtres : cuvée, entrepôt, criticité ; actions : “Masquer/Acquitter”
+- Badge sur le menu “Stocks” : compteur d’alertes actives (non acquittées)
+- Paramétrage des seuils : 
+  • Niveau **global** (ex: 50 L), **par cuvée**, **par lot**, **par entrepôt** (priorité : lot > cuvée > global)
+- Notifications (option) : webhook/Slack ou email (ratelimit 1/j/alerte)
+
+Modèle & tâches
+---------------
+- `stock_threshold(org, scope ENUM('global','cuvee','lot','warehouse'), ref_id?, threshold_l numeric(12,3), is_active bool, created_by, updated_at)`
+- `stock_alert(org, lot_id, warehouse_id, balance_l, threshold_l, first_seen_at, acknowledged_by?, acknowledged_at?)`
+  • Index: `(org, acknowledged_at NULLS FIRST, first_seen_at DESC)` ; `(org, lot_id, warehouse_id UNIQUE WHERE acknowledged_at IS NULL)`
+- **Job planifié** `compute_stock_alerts` (ex: toutes 15 min) :
+  1) Lire balances `stock_vrac_balance`
+  2) Déterminer seuil applicable (lot > cuvée > entrepôt > global)
+  3) Si `balance_l < threshold_l` → upsert `stock_alert` si non existante (active)
+  4) Si `balance_l >= threshold_l` → clôturer (ack auto) alertes correspondantes si pas acquittées manuellement
+  5) Mettre à jour compteur badge (cache)
+
+UX
+--
+- Badge sur menu (ex: pastille rouge “7”)
+- Table alertes avec tri par criticité (écart relatif), premières lignes = plus critiques
+- Bouton “Acquitter” fait simplement `acknowledged_at=now()` (n’efface pas l’alerte historique)
+
+Étapes d’implémentation (intermédiaires, guidées)
+-------------------------------------------------
+1) **Migrations**: `stock_threshold`, `stock_alert` + index.
+2) **Paramétrage**: UI seuils (global/cuvée/lot/entrepôt) avec priorités.
+3) **Job** `compute_stock_alerts` (cron/worker) + caches (compteur pour badge).
+4) **Page** `/stocks/alertes` + filtres + acquittement + export (option).
+5) **Notifications** (option): Slack/email via webhook avec ratelimit.
+
+Sécurité & perfs
+----------------
+- RLS sur toutes les lectures/écritures ; aucune fuite cross‑org
+- Job paginé par org (limiter charge) ; index pour lectures rapides
+- Rate-limit notifications (par alerte/jour) ; logs d’envoi
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑34‑01: Seuil global 100 L → lots < 100 L déclenchent une alerte visible
+- AC‑34‑02: Seuil cuvée plus bas que global → priorité cuvée respectée
+- AC‑34‑03: Alerte acquittée → disparaît du badge mais reste en historique
+- AC‑34‑04: Remontée de stock au‑dessus du seuil → alerte clôturée automatiquement
+
+Robustesse (tests)
+------------------
+- R‑34‑01: 0 seuil configuré → pas d’alertes ; badge=0
+- R‑34‑02: 1M balances → job termine < X min (mesurer, index/caches)
+- R‑34‑03: Webhook indisponible → retry exponentiel avec backoff, pas de blocage
+- R‑34‑04: Paramétrage incohérent (seuil négatif) → validation refuse
+
+Documentation DevBook
+---------------------
+- `stocks_alertes.md`: priorités des seuils, modèles, job planifié, intégrations notifications.

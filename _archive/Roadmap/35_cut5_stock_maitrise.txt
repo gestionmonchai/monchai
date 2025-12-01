@@ -1,0 +1,25 @@
+Roadmap 35 — Cut #5 : Stock maîtrisé (mouvements + inventaire)
+==============================================================
+Objectif de sortie
+------------------
+À l’issue des roadmaps 31→34, le **stock vrac** est maîtrisé : 
+- Ledger append‑only fiable, verrous & idempotence éprouvés
+- Transferts atomiques out/in
+- Vue inventaire temps réel + mode inventaire (comptage → ajustements)
+- Alertes de seuils bas + badge sur menu + (option) notifications
+
+Critères “Done” (vérifiables)
+-----------------------------
+- ✅ Tous les **AC** de 31, 32, 33, 34 sont **verts**
+- ✅ p95 < 600 ms sur lecture `/stocks/mouvements`, `/stocks/inventaire`
+- ✅ Tests robustesse concurrence (verrous) passés (pas de solde négatif)
+- ✅ Observabilité: dashboards actives (latences, erreurs, moves/s), alertes seuils opérationnelles
+- ✅ DevBook à jour (migrations, endpoints, runbooks)
+
+Plan de revue intermédiaire (T05)
+---------------------------------
+- Rejouer T04 partiellement centré stocks + ajouter :
+  • test transfert concurrent intensif
+  • test inventaire avec modifications en parallèle
+  • test notifications rate-limitées
+- Rapport final : “Écarts & actions” + dette technique (si any)

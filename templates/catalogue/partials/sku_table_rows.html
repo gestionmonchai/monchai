@@ -1,0 +1,59 @@
+{% for sku in skus %}
+<tr class="row-click" data-href="{% url 'catalogue:sku_detail' sku.id %}">
+  <td>
+    <strong>{{ sku.label }}</strong>
+  </td>
+  <td>
+    {% if sku.cuvee %}
+      <a href="{% url 'catalogue:cuvee_detail' sku.cuvee.pk %}" class="text-decoration-none">
+        <span class="badge bg-light text-dark">{{ sku.cuvee.name }}</span>
+      </a>
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if sku.uom %}
+      {{ sku.uom.name }} ({{ sku.uom.code }})
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    <span class="badge bg-light text-dark">{{ sku.volume_by_uom_to_l|floatformat:2 }} L</span>
+  </td>
+  <td>
+    {% if sku.code_barres %}
+      <code>{{ sku.code_barres }}</code>
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if sku.is_active %}
+      <span class="badge bg-light text-dark"><i class="bi bi-check-circle me-1"></i>Actif</span>
+    {% else %}
+      <span class="badge bg-light text-dark"><i class="bi bi-x-circle me-1"></i>Inactif</span>
+    {% endif %}
+  </td>
+  <td>
+    <div class="btn-group btn-group-sm" role="group">
+      <a href="{% url 'catalogue:sku_detail' sku.id %}" class="btn btn-outline-primary" title="Voir">
+        <i class="bi bi-eye"></i>
+      </a>
+      {% if user.get_active_membership.can_edit_data %}
+      <a href="/admin/stock/sku/{{ sku.id }}/change/" class="btn btn-outline-secondary" title="Modifier (admin)">
+        <i class="bi bi-pencil"></i>
+      </a>
+      {% endif %}
+    </div>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="7" class="text-center py-4">
+    <i class="bi bi-upc display-4 text-muted mb-3"></i>
+    <p class="text-muted">Aucun produit fini trouvé</p>
+  </td>
+</tr>
+{% endfor %}

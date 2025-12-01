@@ -1,0 +1,366 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Vendanges - Mon Chai{% endblock %}
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <h1 class="h4 mb-0">Vendanges</h1>
+    <!-- View Switcher -->
+    <div class="btn-group btn-group-sm" role="group" aria-label="Switch view">
+      <button type="button" class="btn btn-outline-primary view-switch-btn active" data-view="table">
+        <i class="bi bi-table me-1"></i>Table
+      </button>
+      <button type="button" class="btn btn-outline-primary view-switch-btn" data-view="kanban">
+        <i class="bi bi-kanban me-1"></i>Kanban
+      </button>
+    </div>
+  </div>
+  <a id="btn-new-vendange" class="btn btn-primary" href="/production/vendanges/nouveau/">
+    <i class="bi bi-plus-lg me-1"></i>Nouvelle vendange
+  </a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+          <i class="bi bi-chevron-down"></i> Avancé
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="clear-filters">
+          <i class="bi bi-x-circle"></i> Effacer
+        </button>
+      </div>
+    </div>
+
+    <form id="vendanges-filter-form"
+          hx-get="{% url 'production:vendanges_table' %}"
+          hx-target="#vendanges-table"
+          hx-swap="innerHTML"
+          hx-trigger="change, keyup delay:200ms from:input">
+      <!-- Recherche rapide -->
+      <div class="row mb-3">
+        <div class="col-md-8">
+          <div class="position-relative">
+            <input type="text" name="q" id="quick-search" value="{{ selected.q }}" placeholder="Recherche rapide (code, parcelle, cuvée)" class="form-control pe-5" autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+              <i class="bi bi-search text-muted" id="search-icon"></i>
+              <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                <span class="visually-hidden">Recherche...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="search-info" class="text-muted small mt-2">—</div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div id="advanced-filters" class="collapse">
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-2">
+            <label class="form-label">Campagne</label>
+            <select name="campagne" class="form-select">
+              <option value="">— Toutes —</option>
+              {% for c in campagnes %}
+                <option value="{{ c }}" {% if selected.campagne__exact == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Statut</label>
+            <select name="statut" class="form-select">
+              <option value="">— Tous —</option>
+              {% for code,label in statut_choices %}
+                <option value="{{ code }}" {% if selected.statut__exact == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Date début</label>
+            <input type="date" name="date_start" value="{{ selected.date_start }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Date fin</label>
+            <input type="date" name="date_end" value="{{ selected.date_end }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Poids min (kg)</label>
+            <input type="number" step="0.01" name="poids_min" value="{{ selected.poids_min }}" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Poids max (kg)</label>
+            <input type="number" step="0.01" name="poids_max" value="{{ selected.poids_max }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Code</label>
+            <input type="text" name="code" value="{{ selected.code }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Parcelle</label>
+            <input type="text" name="parcelle" value="{{ selected.parcelle }}" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Cuvée</label>
+            <input type="text" name="cuvee" value="{{ selected.cuvee }}" class="form-control" placeholder="Nom ou UUID">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tri</label>
+            <select name="sort" class="form-select">
+              <option value="date_desc" {% if selected.sort == 'date_desc' %}selected{% endif %}>Date ↓</option>
+              <option value="date_asc" {% if selected.sort == 'date_asc' %}selected{% endif %}>Date ↑</option>
+              <option value="code" {% if selected.sort == 'code' %}selected{% endif %}>Code</option>
+              <option value="campagne" {% if selected.sort == 'campagne' %}selected{% endif %}>Campagne</option>
+              <option value="poids_desc" {% if selected.sort == 'poids_desc' %}selected{% endif %}>Poids ↓</option>
+              <option value="poids_asc" {% if selected.sort == 'poids_asc' %}selected{% endif %}>Poids ↑</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Multi-View Container -->
+<div id="view-container">
+  <!-- TABLE VIEW -->
+  <div class="view-panel" data-view="table">
+    <div id="vendanges-table" hx-get="{% url 'production:vendanges_table' %}" hx-trigger="load" hx-target="#vendanges-table" hx-swap="innerHTML">
+      <div class="text-center text-muted py-4">Chargement…</div>
+    </div>
+  </div>
+
+  <!-- KANBAN VIEW -->
+  <div class="view-panel d-none" data-view="kanban">
+    <div class="kanban-board">
+      <div class="kanban-col">
+        <div class="kanban-header brouillon">
+          <span class="kanban-dot"></span>
+          <span>Brouillon</span>
+          <span class="kanban-count" data-status="brouillon">0</span>
+        </div>
+        <div class="kanban-column" data-status="brouillon">
+          <div class="kanban-empty">Aucune vendange</div>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-header receptionnee">
+          <span class="kanban-dot"></span>
+          <span>Réceptionnée</span>
+          <span class="kanban-count" data-status="receptionnee">0</span>
+        </div>
+        <div class="kanban-column" data-status="receptionnee">
+          <div class="kanban-empty">Chargement...</div>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-header affectee_cuvee">
+          <span class="kanban-dot"></span>
+          <span>Cuvée affectée</span>
+          <span class="kanban-count" data-status="affectee_cuvee">0</span>
+        </div>
+        <div class="kanban-column" data-status="affectee_cuvee">
+          <div class="kanban-empty">Chargement...</div>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <div class="kanban-header encuvee">
+          <span class="kanban-dot"></span>
+          <span>Encuvée</span>
+          <span class="kanban-count" data-status="encuvee">0</span>
+        </div>
+        <div class="kanban-column" data-status="encuvee">
+          <div class="kanban-empty">Chargement...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.view-panel { transition: opacity 0.2s; }
+/* Kanban Board */
+.kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+@media (max-width: 992px) { .kanban-board { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 576px) { .kanban-board { grid-template-columns: 1fr; } }
+.kanban-col { background: #f8f9fa; border-radius: 12px; overflow: hidden; }
+.kanban-header { padding: 0.75rem 1rem; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 2px solid; }
+.kanban-header.brouillon { background: #f3f4f6; border-color: #9ca3af; color: #4b5563; }
+.kanban-header.receptionnee { background: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+.kanban-header.affectee_cuvee { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.kanban-header.encuvee { background: #d1fae5; border-color: #10b981; color: #065f46; }
+.kanban-dot { width: 10px; height: 10px; border-radius: 50%; }
+.kanban-header.brouillon .kanban-dot { background: #9ca3af; }
+.kanban-header.receptionnee .kanban-dot { background: #3b82f6; }
+.kanban-header.affectee_cuvee .kanban-dot { background: #f59e0b; }
+.kanban-header.encuvee .kanban-dot { background: #10b981; }
+.kanban-count { margin-left: auto; background: rgba(0,0,0,0.1); padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem; }
+.kanban-column { padding: 0.75rem; min-height: 350px; max-height: 65vh; overflow-y: auto; }
+.kanban-empty { text-align: center; color: #9ca3af; font-size: 0.85rem; padding: 2rem 0.5rem; }
+.kanban-card { background: white; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: all 0.2s; cursor: pointer; position: relative; border-left: 3px solid transparent; }
+.kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.kanban-card .card-code { font-weight: 600; font-size: 0.9rem; color: #1f2937; margin-bottom: 0.25rem; }
+.kanban-card .card-parcelle { font-size: 0.8rem; color: #6b7280; margin-bottom: 0.35rem; }
+.kanban-card .card-cuvee { font-size: 0.75rem; color: #8b5cf6; background: #f3e8ff; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block; }
+.kanban-card .card-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af; }
+.kanban-card .card-poids { font-weight: 600; color: #059669; background: #d1fae5; padding: 0.15rem 0.4rem; border-radius: 4px; }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const advBtn = document.getElementById('toggle-advanced-search');
+    const clearBtn = document.getElementById('clear-filters');
+    const adv = document.getElementById('advanced-filters');
+    const quick = document.getElementById('quick-search');
+    const spinner = document.getElementById('search-spinner');
+    const icon = document.getElementById('search-icon');
+    const info = document.getElementById('search-info');
+    const form = document.getElementById('vendanges-filter-form');
+
+    // VIEW SWITCHER LOGIC
+    const viewButtons = document.querySelectorAll('.view-switch-btn');
+    const viewPanels = document.querySelectorAll('.view-panel');
+    
+    // Load saved view preference from localStorage
+    const savedView = localStorage.getItem('vendanges_view') || 'table';
+    switchToView(savedView);
+
+    viewButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const targetView = this.getAttribute('data-view');
+        switchToView(targetView);
+        localStorage.setItem('vendanges_view', targetView);
+      });
+    });
+
+    function switchToView(viewName) {
+      // Update buttons
+      viewButtons.forEach(btn => {
+        if (btn.getAttribute('data-view') === viewName) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Update panels
+      viewPanels.forEach(panel => {
+        if (panel.getAttribute('data-view') === viewName) {
+          panel.classList.remove('d-none');
+          // Load kanban data if switching to kanban view
+          if (viewName === 'kanban' && !panel.hasAttribute('data-loaded')) {
+            loadKanbanData();
+            panel.setAttribute('data-loaded', 'true');
+          }
+        } else {
+          panel.classList.add('d-none');
+        }
+      });
+    }
+
+    function loadKanbanData() {
+      // Fetch vendanges data and populate kanban columns
+      fetch('{% url "production:vendanges_table" %}?format=json')
+        .then(response => response.json())
+        .then(data => {
+          if (data.vendanges) {
+            populateKanbanColumns(data.vendanges);
+          }
+        })
+        .catch(err => console.error('Error loading kanban data:', err));
+    }
+
+    function populateKanbanColumns(vendanges) {
+      const columns = document.querySelectorAll('.kanban-column');
+      const counts = {};
+      
+      // Clear columns
+      columns.forEach(col => {
+        col.innerHTML = '';
+        counts[col.dataset.status] = 0;
+      });
+
+      // Populate cards
+      vendanges.forEach(v => {
+        const status = v.statut || 'brouillon';
+        const column = document.querySelector(`.kanban-column[data-status="${status}"]`);
+        if (column) {
+          const card = createKanbanCard(v);
+          column.appendChild(card);
+          counts[status] = (counts[status] || 0) + 1;
+        }
+      });
+
+      // Update counts and empty messages
+      columns.forEach(col => {
+        const status = col.dataset.status;
+        const countEl = document.querySelector(`.kanban-count[data-status="${status}"]`);
+        if (countEl) countEl.textContent = counts[status] || 0;
+        
+        if (col.children.length === 0) {
+          col.innerHTML = '<div class="kanban-empty">Aucune vendange</div>';
+        }
+      });
+    }
+
+    function createKanbanCard(vendange) {
+      const card = document.createElement('div');
+      card.className = 'kanban-card';
+      card.onclick = () => window.location = `/production/vendanges/${vendange.id}/`;
+      card.innerHTML = `
+        <div class="card-code">${vendange.code || 'Sans code'}</div>
+        <div class="card-parcelle"><i class="bi bi-geo-alt me-1"></i>${vendange.parcelle_nom || 'Parcelle inconnue'}</div>
+        ${vendange.cuvee_nom ? `<div class="card-cuvee"><i class="bi bi-cup me-1"></i>${vendange.cuvee_nom}</div>` : ''}
+        <div class="card-meta">
+          <span>${vendange.date || ''}</span>
+          <span class="card-poids">${vendange.poids_kg || 0} kg</span>
+        </div>
+      `;
+      return card;
+    }
+
+    // EXISTING FILTER LOGIC
+    function setLoading(isLoading) {
+      if (isLoading) {
+        spinner.classList.remove('d-none');
+        icon.classList.add('d-none');
+      } else {
+        spinner.classList.add('d-none');
+        icon.classList.remove('d-none');
+      }
+    }
+
+    if (advBtn && adv) {
+      advBtn.addEventListener('click', function() {
+        adv.classList.toggle('show');
+        const i = advBtn.querySelector('i');
+        if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        form.reset();
+        form.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
+    if (quick) {
+      quick.addEventListener('input', function() { setLoading(true); });
+    }
+
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      if (evt.target && evt.target.id === 'vendanges-table') {
+        setLoading(false);
+        const meta = document.getElementById('vendanges-table-meta');
+        if (meta && info) {
+          const total = meta.getAttribute('data-total') || '0';
+          info.textContent = total + ' vendange' + (parseInt(total) > 1 ? 's' : '');
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

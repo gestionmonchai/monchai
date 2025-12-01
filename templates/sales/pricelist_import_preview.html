@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Prévisualisation Import - {{ pricelist.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-table {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(139, 21, 56, 0.12);
+    }
+
+    .preview-table thead {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(114, 47, 55, 0.95));
+    }
+
+    .preview-table thead th {
+        color: var(--wine-champagne);
+        padding: 1rem;
+        font-weight: 700;
+    }
+
+    .preview-table tbody td {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    }
+
+    .error-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(250, 248, 245, 0.98));
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--wine-burgundy), var(--wine-bordeaux));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        color: var(--wine-oak);
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1><i class="bi bi-eye"></i> Prévisualisation de l'Import</h1>
+        <p class="text-muted">{{ pricelist.name }} - Vérifiez les données avant d'importer</p>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value text-success">{{ valid_count }}</div>
+            <div class="stat-label">
+                <i class="bi bi-check-circle"></i> Prix valides
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value text-danger">{{ error_count }}</div>
+            <div class="stat-label">
+                <i class="bi bi-x-circle"></i> Erreurs
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ valid_count|add:error_count }}</div>
+            <div class="stat-label">
+                <i class="bi bi-file-text"></i> Lignes traitées
+            </div>
+        </div>
+    </div>
+
+    <!-- Erreurs -->
+    {% if errors %}
+    <div class="alert alert-danger mb-4">
+        <h5><i class="bi bi-exclamation-triangle"></i> Erreurs détectées ({{ errors|length }})</h5>
+        <div class="error-list">
+            <ul class="mb-0">
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <p class="mb-0 mt-3">
+            <strong>Action :</strong> Corrigez les erreurs dans votre fichier et réessayez l'import.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Données valides -->
+    {% if preview_data %}
+    <div class="mb-4">
+        <h3><i class="bi bi-check-circle text-success"></i> Données à importer ({{ preview_data|length }})</h3>
+        <div class="preview-table">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Code SKU</th>
+                        <th class="text-end">Prix Unitaire</th>
+                        <th class="text-center">Qté Min</th>
+                        <th class="text-center">Remise %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in preview_data %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.sku_label }}</strong>
+                        </td>
+                        <td>
+                            <code>{{ item.sku_code }}</code>
+                        </td>
+                        <td class="text-end">
+                            <strong>{{ item.unit_price }} {{ pricelist.currency }}</strong>
+                        </td>
+                        <td class="text-center">
+                            {% if item.min_qty > 0 %}
+                                <span class="badge bg-primary">{{ item.min_qty }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if item.discount_pct > 0 %}
+                                <span class="badge badge-success">-{{ item.discount_pct }}%</span>
+                            {% else %}
+                                <span class="text-muted">0%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mode d'import -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-gear"></i> Mode d'import</h5>
+            <form method="post" action="{% url 'sales:pricelist_import_confirm' pricelist.pk %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mode" id="modeReplace" value="replace" checked>
+                        <label class="form-check-label" for="modeReplace">
+                            <strong>Remplacer</strong> - Supprimer tous les prix existants et importer les nouveaux
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mode" id="modeMerge" value="merge">
+                        <label class="form-check-label" for="modeMerge">
+                            <strong>Fusionner</strong> - Mettre à jour les prix existants et ajouter les nouveaux
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'sales:pricelist_import' pricelist.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle"></i> Confirmer l'import ({{ valid_count }} prix)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% else %}
+        {% if not errors %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Aucune donnée valide à importer.
+        </div>
+        {% endif %}
+        <a href="{% url 'sales:pricelist_import' pricelist.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    {% endif %}
+</div>
+{% endblock %}

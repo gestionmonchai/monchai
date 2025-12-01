@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-semibold mb-2">{{ page_title|default:'Modifier produit fini' }}</h1>
+  {% include 'navigation/breadcrumbs.html' with items=breadcrumb_items %}
+
+  <form method="post" class="mt-4 space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="grid grid-cols-1 gap-4">
+      <div>
+        <label class="label">Nom</label>
+        {{ form.name|add_class:'input input-bordered w-full' }}
+        {{ form.name.errors }}
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Unité</label>
+          {{ form.unite|add_class:'select select-bordered w-full' }}
+          {{ form.unite.errors }}
+        </div>
+        <div>
+          <label class="label">Pack</label>
+          {{ form.pack_of|add_class:'input input-bordered w-full' }}
+          {{ form.pack_of.errors }}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Code-barres</label>
+          {{ form.barcode|add_class:'input input-bordered w-full' }}
+          {{ form.barcode.errors }}
+        </div>
+        <div>
+          <label class="label">Réf interne</label>
+          {{ form.internal_ref|add_class:'input input-bordered w-full' }}
+          {{ form.internal_ref.errors }}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Prix défaut HT</label>
+          {{ form.default_price_ht|add_class:'input input-bordered w-full' }}
+          {{ form.default_price_ht.errors }}
+        </div>
+        <div class="flex items-center gap-2 mt-8">
+          {{ form.is_active }} <span>Actif</span>
+          {{ form.is_active.errors }}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex gap-3">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn" href="{% url 'produits:product_detail' slug=sku.product.slug %}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

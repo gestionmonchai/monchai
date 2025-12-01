@@ -1,0 +1,24 @@
+{% comment %}
+Composant Django Messages - Design System Mon Chai
+Roadmap 05 : Intégrer django.contrib.messages avec le composant Banner
+
+Usage:
+{% include 'components/django_messages.html' %}
+{% endcomment %}
+
+{% if messages %}
+    {% for message in messages %}
+        {% comment %}Mapper les tags Django vers les types Bootstrap{% endcomment %}
+        {% if message.tags == 'error' %}
+            {% include 'components/banner.html' with type="danger" message=message %}
+        {% elif message.tags == 'warning' %}
+            {% include 'components/banner.html' with type="warning" message=message %}
+        {% elif message.tags == 'success' %}
+            {% include 'components/banner.html' with type="success" message=message %}
+        {% elif message.tags == 'info' %}
+            {% include 'components/banner.html' with type="info" message=message %}
+        {% else %}
+            {% include 'components/banner.html' with type="info" message=message %}
+        {% endif %}
+    {% endfor %}
+{% endif %}

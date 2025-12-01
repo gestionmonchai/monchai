@@ -1,0 +1,70 @@
+ancien_url,nouveau_url,type_redirect,priorite,commentaire
+/admin/sales/customer/,/clients/,301,CRITIQUE,Migration clients hors admin
+/admin/sales/quote/,/ventes/devis/,301,CRITIQUE,Migration devis hors admin
+/admin/sales/order/,/ventes/commandes/,301,CRITIQUE,Migration commandes hors admin
+/admin/billing/invoice/,/ventes/factures/,301,CRITIQUE,Migration factures hors admin
+/admin/billing/payment/,/ventes/paiements/,301,CRITIQUE,Migration paiements hors admin
+/admin/viticulture/cuvee/,/backoffice/produits/cuvees/,301,HAUTE,Migration cuvées hors admin
+/admin/viticulture/lot/,/backoffice/produits/lots/,301,HAUTE,Migration lots hors admin
+/admin/viticulture/grapevariety/,/backoffice/referentiels/cepages/,301,HAUTE,Migration cépages hors admin
+/admin/viticulture/vineyardplot/,/backoffice/referentiels/parcelles/,301,HAUTE,Migration parcelles hors admin
+/admin/viticulture/unitofmeasure/,/backoffice/referentiels/unites/,301,HAUTE,Migration unités hors admin
+/admin/viticulture/warehouse/,/backoffice/referentiels/entrepots/,301,HAUTE,Migration entrepôts hors admin
+/auth/settings/roles/,/backoffice/utilisateurs/,301,HAUTE,Migration gestion utilisateurs
+/auth/settings/roles/invite/,/backoffice/utilisateurs/inviter/,301,HAUTE,Migration invitations
+/auth/invite/send/,/backoffice/utilisateurs/invitations/,301,HAUTE,Migration envoi invitations
+/auth/settings/billing/,/backoffice/parametres/facturation/,301,HAUTE,Migration paramètres facturation
+/auth/settings/general/,/backoffice/parametres/generaux/,301,HAUTE,Migration paramètres généraux
+/metadata/monitoring/,/backoffice/monitoring/,301,MOYENNE,Migration monitoring
+/metadata/feature-flags/,/backoffice/feature-flags/,301,MOYENNE,Migration feature flags
+/onboarding/checklist/,/backoffice/onboarding/,301,MOYENNE,Migration onboarding
+/ref/,/referentiels/,301,MOYENNE,Uniformisation nom
+/ref/cepages/,/referentiels/cepages/,301,MOYENNE,Uniformisation nom
+/ref/cepages/nouveau/,/referentiels/cepages/nouveau/,301,MOYENNE,Uniformisation nom
+/ref/cepages/search-ajax/,/referentiels/cepages/search/,301,MOYENNE,Uniformisation nommage
+/ref/parcelles/,/referentiels/parcelles/,301,MOYENNE,Uniformisation nom
+/ref/parcelles/nouvelle/,/referentiels/parcelles/nouvelle/,301,MOYENNE,Uniformisation nom
+/ref/parcelles/search-ajax/,/referentiels/parcelles/search/,301,MOYENNE,Uniformisation nommage
+/ref/unites/,/referentiels/unites/,301,MOYENNE,Uniformisation nom
+/ref/unites/nouvelle/,/referentiels/unites/nouvelle/,301,MOYENNE,Uniformisation nom
+/ref/unites/search-ajax/,/referentiels/unites/search/,301,MOYENNE,Uniformisation nommage
+/ref/cuvees/,/referentiels/cuvees/,301,MOYENNE,Uniformisation nom
+/ref/cuvees/nouvelle/,/referentiels/cuvees/nouvelle/,301,MOYENNE,Uniformisation nom
+/ref/cuvees/search-ajax/,/referentiels/cuvees/search/,301,MOYENNE,Uniformisation nommage
+/ref/entrepots/,/referentiels/entrepots/,301,MOYENNE,Uniformisation nom
+/ref/entrepots/nouveau/,/referentiels/entrepots/nouveau/,301,MOYENNE,Uniformisation nom
+/ref/entrepots/search-ajax/,/referentiels/entrepots/search/,301,MOYENNE,Uniformisation nommage
+/ref/import/,/referentiels/import/,301,MOYENNE,Uniformisation nom
+/ref/import/preview/,/referentiels/import/preview/,301,MOYENNE,Uniformisation nom
+/ref/import/execute/,/referentiels/import/execute/,301,MOYENNE,Uniformisation nom
+/ref/import/download-errors/,/referentiels/import/errors/,301,MOYENNE,Simplification nom
+/catalogue/<uuid:pk>/,/catalogue/cuvees/<uuid:pk>/,301,MOYENNE,Clarification ressource
+/catalogue/lots/<int:pk>/mouvement/,/catalogue/lots/<int:pk>/mouvements/nouveau/,301,MOYENNE,Clarification action
+/stocks/inventaire/counting/<uuid:warehouse_id>/,/stocks/inventaire/comptage/<uuid:warehouse_id>/,301,MOYENNE,Francisation
+/api/auth/session/,/api/v1/auth/session/,301,HAUTE,Versioning API
+/api/auth/whoami/,/api/v1/auth/whoami/,301,HAUTE,Versioning API
+/api/auth/logout/,/api/v1/auth/logout/,301,HAUTE,Versioning API
+/api/auth/csrf/,/api/v1/auth/csrf/,301,HAUTE,Versioning API
+/catalogue/api/catalogue/,/api/v1/catalogue/,301,HAUTE,Versioning API + uniformisation
+/catalogue/api/catalogue/facets/,/api/v1/catalogue/facets/,301,HAUTE,Versioning API + uniformisation
+/catalogue/api/catalogue/<uuid:cuvee_id>/,/api/v1/catalogue/cuvees/<uuid:cuvee_id>/,301,HAUTE,Versioning API + uniformisation
+/clients/api/,/api/v1/clients/,301,HAUTE,Versioning API + uniformisation
+/clients/api/suggestions/,/api/v1/clients/suggestions/,301,HAUTE,Versioning API + uniformisation
+/clients/api/duplicates/,/api/v1/clients/duplicates/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/transferts/,/api/v1/stocks/transferts/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/transferts/create/,/api/v1/stocks/transferts/,301,HAUTE,Versioning API + REST standard
+/stocks/api/inventaire/,/api/v1/stocks/inventaire/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/inventaire/counting/<uuid:warehouse_id>/,/api/v1/stocks/inventaire/comptage/<uuid:warehouse_id>/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/inventaire/calculate-adjustments/,/api/v1/stocks/inventaire/ajustements/calculer/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/inventaire/apply-adjustments/,/api/v1/stocks/inventaire/ajustements/appliquer/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/alertes/,/api/v1/stocks/alertes/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/alertes/acknowledge/,/api/v1/stocks/alertes/accuser-reception/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/alertes/badge-count/,/api/v1/stocks/alertes/compteur/,301,HAUTE,Versioning API + uniformisation
+/stocks/api/seuils/create/,/api/v1/stocks/seuils/,301,HAUTE,Versioning API + REST standard
+/stocks/api/seuils/<uuid:threshold_id>/,/api/v1/stocks/seuils/<uuid:threshold_id>/,301,HAUTE,Versioning API + uniformisation
+/ref/api/v2/search/,/api/v1/referentiels/search/,301,HAUTE,Versioning API uniforme
+/ref/api/v2/suggestions/,/api/v1/referentiels/suggestions/,301,HAUTE,Versioning API uniforme
+/ref/api/v2/facets/,/api/v1/referentiels/facets/,301,HAUTE,Versioning API uniforme
+/ref/api/v2/<str:entity_type>/<int:entity_id>/cell/<str:field_name>/,/api/v1/referentiels/<str:entity_type>/<int:entity_id>/fields/<str:field_name>/,301,HAUTE,Versioning API + uniformisation
+/ref/api/v2/<str:entity_type>/<int:entity_id>/cell/<str:field_name>/save/,/api/v1/referentiels/<str:entity_type>/<int:entity_id>/fields/<str:field_name>/,301,HAUTE,Versioning API + REST standard
+/ref/api/v2/undo/,/api/v1/referentiels/undo/,301,HAUTE,Versioning API uniforme

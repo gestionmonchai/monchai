@@ -1,0 +1,63 @@
+Roadmap 33 — /stocks/inventaire (Vue inventaire par lot / entrepôt)
+===================================================================
+Rôle & objectif
+---------------
+Fournir une **vue d’inventaire** consolidée (solde actuel) par **lot** et/ou par **entrepôt**, avec filtres (cuvée, millésime, entrepôt, statut), export, et **mode inventaire** (saisie de comptage physique → écritures d’ajustement proposées).
+
+Portée
+------
+- Page `/stocks/inventaire`
+  • Onglet **Par lot** : colonnes (Lot/Code, Cuvée, Millésime, Entrepôt, Solde (L), Dernier mouvement)
+  • Onglet **Par entrepôt** : agrégats par entrepôt → drill‑down sur lots
+  • Filtres : cuvée, millésime, entrepôt, statut, volume min/max
+  • Recherche `q` : lot.code + cuvée.name (FTS)
+  • Tri : volume desc, updated_at desc
+  • Export CSV/XLSX (colonnes whitelisted, neutralisation CSV injection)
+- **Mode Inventaire** (workflow guidé)
+  • Sélection entrepôt + filtre (option)
+  • Saisie **comptage** par lot (scanner/code barre option) → calcul `écart = compté - solde`
+  • Générer **propositions d’ajustements** (delta) par lot
+  • Écran de **revue** + **validation** → crée moves `adjust` (transaction par lot) + audit
+
+Sources & calculs
+-----------------
+- Solde = `stock_vrac_balance.balance_l` (31/32)
+- Dernier mouvement = max(created_at) des moves
+- Si balances recalculées en batch, déclencher **refresh** après écritures d’ajustements
+
+Étapes d’implémentation (intermédiaires, guidées)
+-------------------------------------------------
+1) **Endpoints lecture**
+   1.1 GET `/api/stocks/inventaire?mode=lot|warehouse&q=&filters...&sort=&cursor=` → keyset + totaux.
+   1.2 Index: `(org, warehouse_id, lot_id)` ; `(org, cuvee_id)` ; `(updated_at DESC, lot_id)`.
+2) **UI table**
+   2.1 Table réactive, colonnes configurables, facettes.
+   2.2 Recherche debounce 200 ms.
+   2.3 Export: param encodage/séparateur.
+3) **Mode Inventaire**
+   3.1 Page “Sélectionner entrepôt” → fetch lots/solde de cet entrepôt.
+   3.2 Saisie **comptage** (inline, scanner support) ; calcul des **écarts** en direct.
+   3.3 Bouton “Générer ajustements” → liste de deltas; champ `reason_code=inventory_count` auto.
+   3.4 Bouton “Valider” → POST `adjust` **par lot** (transaction par lot avec verrou); toaster succès.
+   3.5 Journal “campagne d’inventaire” (option): `inventory_session(id, org, warehouse_id, started_at, ended_at, created_by)`.
+4) **Observabilité**
+   4.1 Metrics: `inventory_sessions_total`, `inventory_adjustments_total`, `inventory_discrepancy_l_total`.
+   4.2 Logs: perfs requêtes, taux 0‑result, erreurs.
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑33‑01: Vue Par lot affiche soldes corrects (échantillon croisé avec moves)
+- AC‑33‑02: Mode Inventaire → saisies → génération d’ajustements → moves `adjust` écrits
+- AC‑33‑03: Export CSV/XLSX fonctionne et neutralise cellules dangereuses
+- AC‑33‑04: Pagination keyset stable, filtres/tri respectés
+
+Robustesse (tests)
+------------------
+- R‑33‑01: Concurrence (moves pendant inventaire) → avertir si solde a changé entre saisie et validation
+- R‑33‑02: Crash pendant validation → moves appliqués par lot (transactions isolées) ; affichage du statut par lot
+- R‑33‑03: 500k lots → perfs ok (index, keyset, caches)
+- R‑33‑04: Scanner entrepôt inconnu → 404 propre
+
+Documentation DevBook
+---------------------
+- `stocks_inventaire.md`: flux inventaire, écrans, API, performances, pièges fréquents.

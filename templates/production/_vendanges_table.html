@@ -1,0 +1,53 @@
+<div class="d-none" id="vendanges-table-meta" data-total="{{ total_count }}"></div>
+<table class="table align-middle">
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Date</th>
+      <th>Campagne</th>
+      <th>Parcelle</th>
+      <th>Cuvée</th>
+      <th class="text-end">Poids (kg)</th>
+      <th>Statut</th>
+      <th class="text-end">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for v in vendanges %}
+    <tr class="row-click" data-href="/production/vendanges/{{ v.id }}/">
+      <td><a href="/production/vendanges/{{ v.id }}/">{{ v.code|default:'—' }}</a></td>
+      <td>{{ v.date }}</td>
+      <td>{{ v.campagne|default:'—' }}</td>
+      <td>{{ v.parcelle }}</td>
+      <td>{% if v.cuvee %}{{ v.cuvee.nom }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      <td class="text-end">{{ v.poids_kg }}</td>
+      <td>
+        {% if v.statut %}
+          <span class="badge text-bg-secondary">{{ v.get_statut_display }}</span>
+        {% else %}
+          <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="/production/vendanges/{{ v.id }}/">Ouvrir</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="text-center text-muted py-5">Aucune vendange</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if is_paginated %}
+<nav class="d-flex justify-content-end">
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.previous_page_number }}&{{ querystring }}" hx-include="#vendanges-filter-form" hx-target="#vendanges-table" hx-swap="innerHTML">«</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.next_page_number }}&{{ querystring }}" hx-include="#vendanges-filter-form" hx-target="#vendanges-table" hx-swap="innerHTML">»</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

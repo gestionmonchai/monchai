@@ -1,0 +1,202 @@
+Mon‑Chai — GIGA ROADMAP (Recherche en temps réel + Édition inline) — robuste & réversible
+========================================================================================
+
+Contexte & objectif
+-------------------
+- Problème: la recherche existante est cassée; des remplacements hasardeux ont supprimé/rompu des fonctions.
+- But: livrer une **recherche en temps réel** (mise à jour à chaque frappe) + **modification directe** (sans ouvrir la fiche),
+  en **préservant** l’existant (compat ascendante), avec **migration sûre**, **observabilité**, **rollback** clair.
+
+Périmètre
+---------
+- Recherche multi-entités (cuvées, lots, SKUs, clients, commandes, factures), FR/EN, accents/diacritiques, synonymes.
+- UI: champ de recherche global (Ctrl/Cmd+K), listes avec **inline edit** (double‑clic + Enter/ESC), facettes, tri multi‑colonnes.
+- Back: Query Builder v2, FTS + trigram, caches, pagination keyset, throttling, **cancellation** (keystrokes), **live refresh**.
+- Ops: feature flags, shadow traffic, A/B, canary, migrations **CONCURRENT**, plan de dépréciation.
+
+Principes non négociables
+-------------------------
+1) **Compat ascendante**: aucune suppression d’API/route/param sans drapeau de version; période de recouvrement.
+2) **Réversibilité**: bascule `search_v2_enabled`/`inline_edit_v2_enabled` **à chaud**; rollback documenté.
+3) **Sécurité**: whitelists champs tri/filtre; anti‑injection; RLS logique par org; journaux d’accès; CSRF sur écritures.
+4) **Robustesse**: timeouts, budgets CPU/IO; p95 < 300 ms (liste tri), p95 < 600 ms (live search); pas de 500.
+5) **Observabilité**: métriques p50/p95/p99, hit‑rate cache, 0‑result rate, erreurs, saturation DB, queue jobs.
+
+Architecture — recherche en temps réel (V2)
+-------------------------------------------
+Client
+- Champ **Ctrl/Cmd+K** + barre de recherche sur pages listes.
+- **Debounce 150–250 ms** par frappe; **cancellation** (AbortController/htmx `hx-trigger: keyup changed delay:200ms`).
+- Paramètres envoyés: `q`, `entity`, `filters[]`, `sort`, `page`, `page_size`, `facets[]`, `v=2`, `live=1`, `cursor` (keyset).
+- UI affiche résultats incrémentaux (squelette), **“no‑result tips”** si vide, et **compteurs de facettes**.
+
+Serveur (Query Builder v2)
+- Whitelist `meta_attribute.is_sort/is_facet/is_fulltext` → map attribut→colonne; rejeter clés inconnues (400).
+- FTS: `tsvector` (profil `simple` + `unaccent`) + GIN; fallback **trigram** sur colonnes texte (name_norm, code).
+- **Ranking**: `ts_rank_cd(tsv,q)` + bonus exact match + bonus champs clés + pénalité `is_active=false`.
+- **Synonymes**: `meta_synonyms(entity, term, canonical)`; pipeline normalize: lowercase→unaccent→collapse spaces→hyphens/apostrophes.
+- **Facettes**: pour attributs `is_facet`; top N + “plus…” paginé.
+- **Pagination**: offset par défaut; **keyset** pour grandes listes (curseur `(sort_key,id)` signé).
+- **Caching**: facettes & réponses identiques 30–120 s (clé = hash params + org + rôle); bust sélectif sur mutation.
+- **Time budgets**: `statement_timeout` 700 ms; annulation requêtes si client abandonne (Django/uwsgi/ASGI + DB cancel).
+
+Données & index (add‑only, sans casser v1)
+- Colonnes v2 **nouvelles**: `*_search_tsv_v2` par entité; **ne pas supprimer** `*_search_tsv` v1 au début.
+- Index v2: `CREATE INDEX CONCURRENTLY idx_<ent>_tsv_v2 ON <ent> USING GIN (<col_v2>);`
+- Triggers v2: `trg_<ent>_tsv_v2` (BEFORE INSERT/UPDATE) → calcule la v2 (unaccent + champs additionnels).
+- **Plan d’activation**: code lit v2 si flag `search_v2_read=true`, sinon v1; **write**: alimenter **les deux** jusqu’au cutover (double‑write).
+
+Édition inline (liste) — V2
+---------------------------
+- Interaction: **double‑clic** pour entrer en édition; **Enter** sauvegarde; **ESC** annule; **Tab/Shift+Tab** navigation.
+- Endpoints (HTMX/JSON):
+  * `GET /<entity>/<id>/cell/<field>/` → éditeur (valeur brute)
+  * `PUT /<entity>/<id>/cell/<field>/` → `{value, row_version}`; headers `If-Match: W/"<row_version>"`
+- **Optimistic locking**: colonne `row_version BIGINT`; mismatch → **409** (UI propose Actualiser/Écraser (admin+)).
+- **Undo**: toast 5–10 s; `POST /undo/` avec `{entity,id,field,prev_value,prev_row_version}`; refuse si conflit.
+- **Permissions champ**: matrix RBAC; server refuse édition champ non autorisé (403). UI affiche disabled (tooltip).
+
+UX listes & facettes
+--------------------
+- **Colonnes configurables** (visibilité/ordre/taille); **group by** (1–2 niveaux) + agrégats (count/sum/avg).
+- **Bulk‑edit** (sélection multi‑lignes → set champ commun).
+- **Empty state** clair; **no‑result suggestions** (corriger orthographe, détendre filtres, synonymes proches).
+
+Migration & stratégie “zéro casse”
+----------------------------------
+1) **Pré‑flight** (S0)
+   - Activer extensions `unaccent`, `pg_trgm` (si manquantes). Capturer métriques v1 (latence, 0‑result, erreurs).
+   - **Feature flags** (DB ou LaunchDarkly‑like): `search_v2_read`, `search_v2_write`, `inline_edit_v2_enabled`.
+2) **Schéma v2 add‑only** (S1)
+   - Ajouter colonnes `*_search_tsv_v2` + triggers v2 + indexes **CONCURRENTLY** (aucun lock bloquant).
+   - Ajouter tables `meta_synonyms`, `saved_view`, `search_audit` (log q/latence/hits).
+3) **Double‑write** (S2)
+   - Au **write**, mettre à jour v1 **et** v2; **read** reste v1 (`search_v2_read=false`).
+   - **Shadow queries**: exécuter v2 en parallèle (non visible), comparer scores/top‑N vs v1; log divergences.
+4) **Canary** (S3)
+   - `search_v2_read=true` pour 5–10% des users/orgs; dashboards p95/p99, 0‑result rate, erreurs.
+   - Rollback instantané = remettre flag à false.
+5) **Full switch** (S4)
+   - `search_v2_read=true` pour 100%; garder double‑write quelques jours.
+6) **Cleanup** (S5)
+   - Stop double‑write (`search_v2_write=false`), **déprécier** v1, documenter removal S+2 versions.
+   - Supprimer colonnes/idx v1 **après** période de grâce (tâche S+2).
+
+Dépréciation / suppression de fonctions (politique stricte)
+-----------------------------------------------------------
+- **3 étapes** : (A) Deprecate (flag + logs + doc + avertissements UI), (B) Disable by default (opt‑in possible), (C) Remove (migration DB + code).
+- Chaque étape: **changelog**, **Dev Book**, **annonces internes** (et aux clients si nécessaire).
+- **Registry des capacités** (`capability_registry`) avec statut {active, deprecated, disabled, removed}.
+
+API & contrats (anti‑régression)
+--------------------------------
+- Endpoint stable `/api/search/` accepté: `v=1|2`; défaut = 1 tant que v2 non généralisée.
+- Paramètres inconnus → 400 (message clair) ; champs non whitelistés (tri/filtre) → 400.
+- Versionnement des **vues sauvegardées**: stocker `engine_version` + `params`; migrer si besoin (script).
+
+Performance & budgets
+---------------------
+- Cibles: p95 < 300 ms (liste tri indexée); p95 < 600 ms (recherche FTS); p99 < 1200 ms; taux 500 < 0.1%.
+- **EXPLAIN ANALYZE** pour top 10 requêtes; indexes couvrants sur clés de tri; table stats à jour.
+- **Caches** Redis: facettes/search TTL 30–120 s; clé: `search:{org}:{entity}:{hash(params)}:v2`.
+- **Keyset pagination** pour gros sets; limite `page_size ≤ 100`.
+
+Observabilité & garde‑fous
+--------------------------
+- **Metrics**: latence p50/p95/p99 par endpoint, 0‑result rate, cache hit‑rate, erreurs 4xx/5xx, annulations.
+- **Logs**: query hash, org, engine_version, #rows, score top‑1, time, cancelled?; **pas de PII** du texte intégral.
+- **Alertes**: p95 > seuil 10 min, erreurs > 1%, 0‑result rate > 15%.
+- **Dashboards**: comparatif v1 vs v2 (latence, qualité résultats).
+
+Modifs & créations — procédure sûre (Change Management)
+-------------------------------------------------------
+- **RFC/ADR** pour toute suppression/création majeure (template dans Dev Book).
+- **PR checklist**: migrations CONCURRENT, feature flags, tests robustesse, doc, métriques ajoutées, rollback.
+- **Canary** + **kill switch** (flag) + **rollback script** (SQL pour revert index/colonne si besoin).
+
+Détails d’implémentation (extraits concrets)
+--------------------------------------------
+SQL — Colonnes & index v2 (ex: cuvee)
+  ALTER TABLE cuvee ADD COLUMN search_tsv_v2 tsvector;
+  CREATE INDEX CONCURRENTLY idx_cuvee_search_tsv_v2 ON cuvee USING GIN (search_tsv_v2);
+  CREATE INDEX CONCURRENTLY idx_cuvee_name_trgm_v2 ON cuvee USING GIN (name gin_trgm_ops);
+
+Trigger v2 (ex: cuvee)
+  CREATE OR REPLACE FUNCTION cuvee_search_tsv_v2_refresh() RETURNS trigger AS $$
+  BEGIN
+    NEW.search_tsv_v2 := to_tsvector('simple', unaccent(coalesce(NEW.name,'') || ' ' || coalesce(NEW.code,'')));
+    RETURN NEW;
+  END; $$ LANGUAGE plpgsql;
+  DROP TRIGGER IF EXISTS trg_cuvee_search_tsv_v2 ON cuvee;
+  CREATE TRIGGER trg_cuvee_search_tsv_v2 BEFORE INSERT OR UPDATE ON cuvee
+  FOR EACH ROW EXECUTE FUNCTION cuvee_search_tsv_v2_refresh();
+
+Endpoint (contrat) `/api/search/` (résumé)
+  Query: q, entity, filters[], facets[], sort, page, page_size, v=2, live=1
+  Response: items[], total_estimate (optionnel), facets{}, perf{elapsed_ms, engine_version, cache_hit}
+
+Inline edit (HTMX)
+  GET /<ent>/<id>/cell/<field>/ → partial `_edit.html`
+  PUT /<ent>/<id>/cell/<field>/ body={value, row_version}; headers If-Match
+  Retour: partial `_read.html` + HX-Trigger: {toast:"Enregistré", undo:{...}}
+  409 → partial `_conflict.html` (affiche “Actualiser” / “Écraser (admin+)”).
+
+Contrôle de charge (keystrokes)
+  - Debounce 150–250 ms; **drop** les requêtes obsolètes (cancellation).
+  - **Limiter** page_size à 20–50 en live; élargir sur “Afficher plus”.
+  - Timeouts serveurs 700–900 ms; bascule fallback trigram si FTS expensive.
+
+Sécurité
+--------
+- RBAC + RLS logique (filtre org + ownership/équipe si applicable).
+- Anti‑overposting (whitelist champs éditables); CSRF pour PUT/POST/PATCH/DELETE.
+- Export: quotas, watermark, logs “qui/quoi/quand”.
+
+Tests d’acceptation (AC) — clés
+-------------------------------
+AC‑LIVE‑01: En tapant “cote r…” → **Côtes‑du‑Rhône** remonte en < 600 ms (p95).  
+AC‑LIVE‑02: Effacer `q` → liste par défaut; facettes restent cohérentes.  
+AC‑LIVE‑03: 0 résultat → suggestions (orthographe, synonymes) affichées; pas d’erreur.  
+AC‑EDIT‑01: Double‑clic cellule “Prix” → Enter sauvegarde; **toast “Enregistré”**; valeur formatée s’affiche.  
+AC‑EDIT‑02: Conflit concurrent → 409 + choix “Actualiser/Écraser (admin+)”.  
+AC‑COMPAT‑01: Endpoints v1 répondent comme avant avec flag off; **AUCUNE** 404/500 nouvelle.  
+AC‑MIG‑01: Index/colonnes v2 créés **CONCURRENTLY**; pas de lock bloquant sur tables principales.  
+AC‑ROLLBACK‑01: Remettre `search_v2_read=false` rétablit v1 immédiatement (sans redéploiement).
+
+Tests de robustesse (extraits)
+------------------------------
+R‑FTS‑01: fautes “cabernet sauviginon” → résultats pertinents via trigram; pas de 500.  
+R‑SYNO‑01: synonymes FR/EN configurés; collision de synonymes → canonical non boucle.  
+R‑CANCEL‑01: spam frappes; anciennes requêtes **annulées**; serveur ne sature pas.  
+R‑PERF‑01: p95 sous seuils (datasets 100k+).  
+R‑FAC‑01: 3 facettes combinées → temps stable; pas de full scan.  
+R‑EDIT‑01: édition champ non autorisé → 403 (server); UI feedback clair.  
+R‑EDIT‑02: undo dans toast restaure valeur si pas de conflit.  
+R‑COMPAT‑01: scripts v1 existants (exports, vues sauvegardées v1) fonctionnent.  
+R‑MIG‑01: drop v1 simulé **échoue** tant que “période de grâce” non expirée (garde dans migrator).
+
+Déroulé projet (planning indicatif)
+-----------------------------------
+S0: Pré‑flight (metrics v1, flags, dashboards).  
+S1: Schéma v2 add‑only (colonnes/idx/trigger **CONCURRENT**).  
+S2: Impl API v2 + UI live (champ + listes) + inline edit; **double‑write** + shadow queries.  
+S3: Canary 10% + A/B; corrections; **optimisations** (indexes manquants, caches).  
+S4: Full switch read→v2; monitoring renforcé; doc & formation.  
+S5: Fin double‑write; dépréciation documentée; plan de **remove** v1 S+2.  
+
+Runbook Rollback
+----------------
+1) Désactiver `search_v2_read` → retour v1 immédiat.  
+2) Si latence DB haute: réduire TTL caches, baisser page_size live, relever debounce à 250–300 ms.  
+3) Si erreurs massives: couper `inline_edit_v2_enabled`, réactiver formulaires fiches; logs + hotfix.  
+4) Revert migration destructive: **ne pas** lancer; v1 conservée jusqu’à S+2.  
+
+Documentation à produire (Dev Book)
+-----------------------------------
+- `search_v2.md` (contrats API, ranking, facet, caches, flags, runbook).  
+- `inline_editing_v2.md` (endpoints, locking, conflicts, undo, a11y).  
+- `deprecation_policy.md` (stades, messages, délais).  
+- `observability.md` (métriques/alertes, tableaux de bord).  
+- `migrations_playbook.md` (CONCURRENT indexes, double‑write, cutover).
+
+Fin de la GIGA ROADMAP.

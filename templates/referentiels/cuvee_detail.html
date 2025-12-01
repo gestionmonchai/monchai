@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-cup-straw me-2 text-primary"></i>{{ cuvee.nom }}
+            </h1>
+            <div>
+                <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:cuvee_update' cuvee.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Informations de la cuvée
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nom :</dt>
+                    <dd class="col-sm-9">{{ cuvee.nom }}</dd>
+
+                    <dt class="col-sm-3">Couleur :</dt>
+                    <dd class="col-sm-9">
+                        {% if cuvee.couleur %}
+                            <span class="badge bg-light text-dark fs-6">{{ cuvee.get_couleur_display }}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">Classification :</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-light text-dark fs-6">{{ cuvee.get_classification_display }}</span>
+                    </dd>
+
+                    {% if cuvee.appellation %}
+                        <dt class="col-sm-3">Appellation :</dt>
+                        <dd class="col-sm-9">{{ cuvee.appellation }}</dd>
+                    {% endif %}
+
+                    {% if cuvee.degre_alcool %}
+                        <dt class="col-sm-3">Degré d'alcool :</dt>
+                        <dd class="col-sm-9">
+                            <strong class="fs-5">{{ cuvee.degre_alcool }}°</strong>
+                        </dd>
+                    {% endif %}
+
+                    <dt class="col-sm-3">Créé le :</dt>
+                    <dd class="col-sm-9">{{ cuvee.created_at|date:"d/m/Y à H:i" }}</dd>
+
+                    {% if cuvee.updated_at != cuvee.created_at %}
+                        <dt class="col-sm-3">Modifié le :</dt>
+                        <dd class="col-sm-9">{{ cuvee.updated_at|date:"d/m/Y à H:i" }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if cuvee.description %}
+                    <hr>
+                    <h6>Description :</h6>
+                    <p class="text-muted">{{ cuvee.description|linebreaks }}</p>
+                {% endif %}
+
+                {% if cuvee.notes_degustation %}
+                    <hr>
+                    <h6>Notes de dégustation :</h6>
+                    <p class="text-muted">{{ cuvee.notes_degustation|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Cépages -->
+        {% if cuvee.cepages.exists %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-flower1 me-2"></i>Cépages utilisés
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for cepage in cuvee.cepages.all %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-light text-dark me-2">{{ cepage.get_couleur_display }}</span>
+                                    <a href="{% url 'referentiels:cepage_detail' cepage.pk %}" 
+                                       class="text-decoration-none">
+                                        {{ cepage.nom }}
+                                        {% if cepage.code %}({{ cepage.code }}){% endif %}
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- Actions -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cuvee_update' cuvee.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i>Modifier cette cuvée
+                        </a>
+                    {% endif %}
+                    <a href="/production/lots-techniques/?q={{ cuvee.nom|urlencode }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-diagram-3 me-1"></i>Lots techniques de cette cuvée
+                    </a>
+                    <a href="/production/mises/nouveau/?step=1" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-seam me-1"></i>Planifier une mise
+                    </a>
+                    
+                    <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-1"></i>Toutes les cuvées
+                    </a>
+                    
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-outline-success">
+                            <i class="bi bi-plus me-1"></i>Nouvelle cuvée
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if user.get_active_membership.can_manage_roles %}
+                    <hr>
+                    <form method="post" action="{% url 'referentiels:cuvee_delete' cuvee.pk %}" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette cuvée ? Cette action est irréversible.')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="bi bi-trash me-1"></i>Supprimer
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Informations techniques -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Informations techniques
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Type :</strong> 
+                    {{ cuvee.get_couleur_display }} {{ cuvee.get_classification_display }}
+                </p>
+                
+                {% if cuvee.degre_alcool %}
+                    <p class="mb-2">
+                        <strong>Titre alcoométrique :</strong> {{ cuvee.degre_alcool }}% vol.
+                    </p>
+                {% endif %}
+                
+                {% if cuvee.cepages.exists %}
+                    <p class="mb-2">
+                        <strong>Assemblage :</strong> {{ cuvee.cepages.count }} cépage{{ cuvee.cepages.count|pluralize }}
+                    </p>
+                {% endif %}
+                
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Les lots de production seront disponibles 
+                    après l'implémentation du catalogue.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

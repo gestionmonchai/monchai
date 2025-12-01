@@ -1,0 +1,731 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if mode == 'edit' %}Modifier le devis{% else %}Nouveau devis{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+  /* Optimisation affichage formulaire */
+  .table input[type="number"],
+  .table input[type="text"]:not(.sku-search):not(#cust_search),
+  .table select {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .table .form-control-sm {
+    font-size: 0.8rem;
+  }
+  
+  /* Suggestions client */
+  #cust_suggestions {
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  /* Suggestions SKU */
+  .sku-suggestions {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  /* Compact table */
+  .table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  /* Résultats de recherche client */
+  .customer-result-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .customer-result-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .customer-result-item.active {
+    background-color: #e7f3ff;
+    border-left: 3px solid #0d6efd;
+  }
+</style>
+
+<div class="row">
+  <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">
+      <i class="bi bi-receipt-cutoff me-2 text-primary"></i>
+      {% if mode == 'edit' %}Modifier le devis{% else %}Nouveau devis{% endif %}
+    </h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'ventes:devis_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+      </a>
+      {% if mode == 'edit' %}
+      <a href="{% url 'ventes:devis_detail' quote_id=quote.id %}" class="btn btn-outline-info">
+        <i class="bi bi-eye"></i> Voir
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card mb-3">
+    <div class="card-header">Informations</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-12">
+          <label class="form-label">Client *</label>
+          
+          <!-- Client sélectionné -->
+          <div id="selected_customer_card" style="display:none;">
+            <div class="card border-success">
+              <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="bi bi-person-check-fill text-success me-2"></i>
+                    <strong id="selected_customer_name"></strong>
+                    <span class="badge bg-secondary ms-2" id="selected_customer_type"></span>
+                  </div>
+                  <div>
+                    <span class="text-muted small me-3" id="selected_customer_city"></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="clear_customer">
+                      <i class="bi bi-x-circle"></i> Changer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Zone de recherche -->
+          <div id="customer_search_wrapper">
+            <div class="position-relative">
+              <input type="text" 
+                     id="cust_search" 
+                     class="form-control pe-5" 
+                     placeholder="Recherchez un client par nom, ville, email..." 
+                     autocomplete="off">
+              <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                <i class="bi bi-search text-muted" id="cust-search-icon"></i>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="cust-search-spinner" role="status">
+                  <span class="visually-hidden">Recherche...</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Résultats de recherche -->
+            <div id="customer_results" class="mt-2" style="display:none;">
+              <div class="card">
+                <div class="card-header py-2 bg-light">
+                  <small class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    <span id="customer_results_count">0</span> client(s) trouvé(s)
+                  </small>
+                </div>
+                <div class="list-group list-group-flush" id="customer_results_list" style="max-height: 300px; overflow-y: auto;">
+                  <!-- Résultats injectés ici -->
+                </div>
+              </div>
+            </div>
+            
+            <!-- Bouton création rapide -->
+            <div class="mt-2">
+              <button type="button" id="cust_quick_new" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-lg"></i> Créer un nouveau client
+              </button>
+            </div>
+          </div>
+          
+          <div style="display:none;">
+            {{ form.customer }}
+          </div>
+          {% if form.customer.errors %}<div class="text-danger small mt-1">{{ form.customer.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Devise</label>
+          {{ form.currency }}
+          {% if form.currency.errors %}<div class="text-danger small">{{ form.currency.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Valide jusqu'au</label>
+          {{ form.valid_until }}
+          {% if form.valid_until.errors %}<div class="text-danger small">{{ form.valid_until.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Statut</label>
+          {{ form.status }}
+          {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <span class="fw-semibold"><i class="bi bi-list-ul me-2"></i>Lignes du devis</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" id="add-line" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-plus"></i> Ajouter produit
+        </button>
+        <button type="button" id="add-service-line" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-plus"></i> Ajouter service
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      {{ formset.management_form }}
+      <div class="table-responsive">
+        <table class="table align-middle table-hover">
+          <thead class="table-light">
+            <tr>
+              <th style="width:20%">Produit</th>
+              <th style="width:25%">Description</th>
+              <th style="width:8%" class="text-end">Qté</th>
+              <th style="width:10%" class="text-end">PU HT</th>
+              <th style="width:8%" class="text-end">Remise %</th>
+              <th style="width:12%">TVA</th>
+              <th style="width:12%" class="text-end">Total HT</th>
+              <th style="width:5%" class="text-center">Suppr.</th>
+            </tr>
+          </thead>
+          <tbody id="lines-body">
+            {% for lf in formset.forms %}
+            <tr class="line-row" data-line-index="{{ forloop.counter0 }}">
+              <td>
+                <div class="position-relative">
+                  {{ lf.sku }}
+                  <input type="text" class="form-control form-control-sm mt-1 sku-search" placeholder="Rechercher..." autocomplete="off">
+                  <ul class="list-group position-absolute sku-suggestions" style="z-index:1000; display:none; max-height:200px; overflow-y:auto; width:300px;"></ul>
+                </div>
+                {% if lf.sku.errors %}<div class="text-danger small mt-1">{{ lf.sku.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ lf.description }}
+                {% if lf.description.errors %}<div class="text-danger small mt-1">{{ lf.description.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ lf.qty }}
+                {% if lf.qty.errors %}<div class="text-danger small mt-1">{{ lf.qty.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ lf.unit_price }}
+                {% if lf.unit_price.errors %}<div class="text-danger small mt-1">{{ lf.unit_price.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ lf.discount_pct }}
+                {% if lf.discount_pct.errors %}<div class="text-danger small mt-1">{{ lf.discount_pct.errors }}</div>{% endif %}
+              </td>
+              <td>
+                {{ lf.tax_code }}
+                {% if lf.tax_code.errors %}<div class="text-danger small mt-1">{{ lf.tax_code.errors }}</div>{% endif %}
+              </td>
+              <td class="text-end">
+                <span class="line-total fw-semibold">0.00 €</span>
+              </td>
+              <td class="text-center">
+                {% if lf.DELETE %}{{ lf.DELETE }}{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="border-top pt-3 mt-2">
+        <div class="row">
+          <div class="col-md-8">
+            <small class="text-muted"><i class="bi bi-info-circle"></i> Laissez les lignes vides inutilisées. Cochez "Suppr." pour retirer une ligne.</small>
+          </div>
+          <div class="col-md-4">
+            <table class="table table-sm mb-0">
+              <tr>
+                <td class="text-end">Total HT :</td>
+                <td class="text-end fw-semibold" id="total_ht">0.00 €</td>
+              </tr>
+              <tr>
+                <td class="text-end">Total TVA :</td>
+                <td class="text-end fw-semibold" id="total_tva">0.00 €</td>
+              </tr>
+              <tr class="table-primary">
+                <td class="text-end fw-bold">Total TTC :</td>
+                <td class="text-end fw-bold fs-5" id="total_ttc">0.00 €</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <template id="empty-row-template">
+        <tr class="line-row">
+          <td>
+            {{ formset.empty_form.sku }}
+            <input type="text" class="form-control form-control-sm mt-1 sku-search" placeholder="Rechercher produit...">
+            <ul class="list-group position-absolute w-25 sku-suggestions" style="z-index:1000; display:none;"></ul>
+          </td>
+          <td>{{ formset.empty_form.description }}</td>
+          <td>{{ formset.empty_form.qty }}</td>
+          <td>{{ formset.empty_form.unit_price }}</td>
+          <td>{{ formset.empty_form.discount_pct }}</td>
+          <td>{{ formset.empty_form.tax_code }}</td>
+          <td class="text-center">{% if formset.empty_form.DELETE %}{{ formset.empty_form.DELETE }}{% endif %}</td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <small class="text-muted"><i class="bi bi-shield-check"></i> Les modifications sont enregistrées de manière sécurisée</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'ventes:devis_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-x"></i> Annuler
+      </a>
+      <button type="submit" class="btn btn-primary" id="save-quote">
+        <i class="bi bi-check-lg"></i> Enregistrer le devis
+      </button>
+    </div>
+  </div>
+</form>
+<!-- Modale création rapide client -->
+<div class="modal fade" id="quickCustomerModal" tabindex="-1" aria-labelledby="quickCustomerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quickCustomerModalLabel"><i class="bi bi-person-plus"></i> Nouveau client</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="quick_legal_name" class="form-label">Nom du client *</label>
+          <input type="text" class="form-control" id="quick_legal_name" required>
+        </div>
+        <div class="mb-3">
+          <label for="quick_type" class="form-label">Type</label>
+          <select class="form-select" id="quick_type">
+            <option value="part">Particulier</option>
+            <option value="pro">Professionnel</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="quick_billing_address" class="form-label">Adresse de facturation *</label>
+          <input type="text" class="form-control" id="quick_billing_address" required>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="quick_billing_postal_code" class="form-label">Code postal *</label>
+            <input type="text" class="form-control" id="quick_billing_postal_code" required>
+          </div>
+          <div class="col-md-8 mb-3">
+            <label for="quick_billing_city" class="form-label">Ville *</label>
+            <input type="text" class="form-control" id="quick_billing_city" required>
+          </div>
+        </div>
+        <div id="quick_customer_error" class="alert alert-danger d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary" id="save_quick_customer">
+          <i class="bi bi-check-lg"></i> Créer le client
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+(function(){
+  // ========================================
+  // RECHERCHE CLIENT MODERNE
+  // ========================================
+  
+  const custSearch = document.getElementById('cust_search');
+  const custSelect = document.querySelector('select[name="customer"]');
+  const quickBtn = document.getElementById('cust_quick_new');
+  const searchWrapper = document.getElementById('customer_search_wrapper');
+  const selectedCard = document.getElementById('selected_customer_card');
+  const selectedName = document.getElementById('selected_customer_name');
+  const selectedType = document.getElementById('selected_customer_type');
+  const selectedCity = document.getElementById('selected_customer_city');
+  const clearBtn = document.getElementById('clear_customer');
+  const resultsDiv = document.getElementById('customer_results');
+  const resultsList = document.getElementById('customer_results_list');
+  const resultsCount = document.getElementById('customer_results_count');
+  const searchIcon = document.getElementById('cust-search-icon');
+  const searchSpinner = document.getElementById('cust-search-spinner');
+  
+  let searchTimeout;
+  const DEBOUNCE_MS = 300;
+  
+  console.log('Customer search initialized');
+
+  // Afficher le client déjà sélectionné si présent
+  if (custSelect && custSelect.value) {
+    const selectedOption = custSelect.options[custSelect.selectedIndex];
+    if (selectedOption && selectedOption.text) {
+      selectedName.textContent = selectedOption.text;
+      selectedCard.style.display = 'block';
+      searchWrapper.style.display = 'none';
+    }
+  }
+
+  // Fonction de recherche AJAX
+  function performCustomerSearch() {
+    const query = custSearch.value.trim();
+    
+    // Masquer les résultats si recherche vide
+    if (query.length < 2) {
+      resultsDiv.style.display = 'none';
+      searchIcon.classList.remove('d-none');
+      searchSpinner.classList.add('d-none');
+      return;
+    }
+    
+    // Afficher le spinner
+    searchIcon.classList.add('d-none');
+    searchSpinner.classList.remove('d-none');
+    
+    const suggestUrl = "{% url 'ventes:devis_sales_customers_suggestions' %}";
+    const fullUrl = suggestUrl + "?q=" + encodeURIComponent(query) + "&limit=20";
+    
+    console.log('Searching customers:', query);
+    
+    fetch(fullUrl)
+      .then(r => r.json())
+      .then(data => {
+        console.log('Search results:', data);
+        displayCustomerResults(data.suggestions || []);
+      })
+      .catch(err => {
+        console.error('Search error:', err);
+        displayCustomerResults([]);
+      })
+      .finally(() => {
+        searchIcon.classList.remove('d-none');
+        searchSpinner.classList.add('d-none');
+      });
+  }
+  
+  // Afficher les résultats de recherche
+  function displayCustomerResults(customers) {
+    resultsList.innerHTML = '';
+    resultsCount.textContent = customers.length;
+    
+    if (customers.length === 0) {
+      resultsList.innerHTML = `
+        <div class="list-group-item text-center text-muted py-3">
+          <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+          Aucun client trouvé
+        </div>
+      `;
+      resultsDiv.style.display = 'block';
+      return;
+    }
+    
+    customers.forEach(customer => {
+      const item = document.createElement('div');
+      item.className = 'list-group-item list-group-item-action customer-result-item';
+      item.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">
+              <i class="bi bi-person me-1"></i>
+              ${customer.name}
+            </div>
+            ${customer.city ? `<small class="text-muted"><i class="bi bi-geo-alt"></i> ${customer.city}</small>` : ''}
+          </div>
+          <div>
+            ${customer.type ? `<span class="badge bg-secondary">${customer.type}</span>` : ''}
+          </div>
+        </div>
+      `;
+      
+      item.addEventListener('click', () => {
+        selectCustomer(customer.id, customer.name, customer.type || '', customer.city || '');
+      });
+      
+      resultsList.appendChild(item);
+    });
+    
+    resultsDiv.style.display = 'block';
+  }
+  
+  // Sélectionner un client
+  function selectCustomer(id, name, type, city) {
+    console.log('Selecting customer:', id, name);
+    
+    // Mettre à jour le select caché
+    let opt = Array.from(custSelect.options).find(o => o.value === id);
+    if (!opt) {
+      opt = new Option(name, id, true, true);
+      custSelect.add(opt);
+    }
+    custSelect.value = id;
+    
+    // Afficher la carte du client sélectionné
+    selectedName.textContent = name;
+    selectedType.textContent = type || 'Client';
+    selectedCity.textContent = city || '';
+    
+    // Basculer l'affichage
+    searchWrapper.style.display = 'none';
+    selectedCard.style.display = 'block';
+    
+    // Réinitialiser la recherche
+    custSearch.value = '';
+    resultsDiv.style.display = 'none';
+  }
+  
+  // Changer de client
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      console.log('Clearing customer selection');
+      custSelect.value = '';
+      selectedCard.style.display = 'none';
+      searchWrapper.style.display = 'block';
+      custSearch.focus();
+    });
+  }
+  
+  // Événement de saisie avec debounce
+  if (custSearch) {
+    custSearch.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(performCustomerSearch, DEBOUNCE_MS);
+    });
+    
+    custSearch.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(searchTimeout);
+        performCustomerSearch();
+      }
+    });
+    
+    // Cacher les résultats si clic en dehors
+    document.addEventListener('click', (e) => {
+      if (!searchWrapper.contains(e.target)) {
+        resultsDiv.style.display = 'none';
+      }
+    });
+  }
+
+  // Quick create customer with Bootstrap modal
+  const quickModal = new bootstrap.Modal(document.getElementById('quickCustomerModal'));
+  const saveQuickBtn = document.getElementById('save_quick_customer');
+  const quickError = document.getElementById('quick_customer_error');
+
+  if (quickBtn){
+    quickBtn.addEventListener('click', ()=>{
+      // Reset form
+      document.getElementById('quick_legal_name').value = '';
+      document.getElementById('quick_type').value = 'part';
+      document.getElementById('quick_billing_address').value = '';
+      document.getElementById('quick_billing_postal_code').value = '';
+      document.getElementById('quick_billing_city').value = '';
+      quickError.classList.add('d-none');
+      quickModal.show();
+    });
+  }
+
+  if (saveQuickBtn) {
+    saveQuickBtn.addEventListener('click', async ()=>{
+      const name = document.getElementById('quick_legal_name').value.trim();
+      const type = document.getElementById('quick_type').value;
+      const addr = document.getElementById('quick_billing_address').value.trim();
+      const cp = document.getElementById('quick_billing_postal_code').value.trim();
+      const city = document.getElementById('quick_billing_city').value.trim();
+
+      if (!name || !addr || !cp || !city) {
+        quickError.textContent = 'Veuillez remplir tous les champs obligatoires.';
+        quickError.classList.remove('d-none');
+        return;
+      }
+
+      const payload = { legal_name: name, type: type, billing_address: addr, billing_postal_code: cp, billing_city: city, billing_country: 'FR' };
+      const quickCreateUrl = "{% url 'ventes:devis_sales_customers_quick_create' %}";
+      
+      try {
+        const res = await fetch(quickCreateUrl, { 
+          method:'POST', 
+          headers:{
+            'Content-Type':'application/json',
+            'X-CSRFToken': document.querySelector('input[name=csrfmiddlewaretoken]').value 
+          }, 
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (data && data.success){
+          const it = data.customer;
+          selectCustomer(it.id, it.name);
+          quickModal.hide();
+        } else {
+          quickError.textContent = data.errors?.__all__ || 'Erreur lors de la création du client';
+          quickError.classList.remove('d-none');
+        }
+      } catch(e) {
+        quickError.textContent = 'Erreur réseau. Veuillez réessayer.';
+        quickError.classList.remove('d-none');
+      }
+    });
+  }
+
+  // SKU autocomplete per line (event delegation)
+  const tbody = document.getElementById('lines-body');
+  function fetchSku(input, q){
+    const skuSuggestUrl = "{% url 'produits:products_suggestions_api' %}";
+    fetch(skuSuggestUrl + "?q=" + encodeURIComponent(q))
+      .then(r=>r.json()).then(d=>{
+        const list = input.parentElement.querySelector('.sku-suggestions');
+        list.innerHTML='';
+        const items = (d && d.suggestions) || [];
+        if (!items.length){ list.style.display='none'; return; }
+        items.forEach(it=>{
+          const li = document.createElement('li');
+          li.className='list-group-item list-group-item-action';
+          li.textContent = `${it.label} ${it.uom?('('+it.uom+')'):''}`;
+          li.addEventListener('click', ()=>{
+            // find the select in same cell
+            const select = input.parentElement.querySelector('select');
+            let opt = Array.from(select.options).find(o=>o.value===it.id);
+            if (!opt){ opt = new Option(it.label, it.id, true, true); select.add(opt); }
+            select.value = it.id;
+            list.style.display='none';
+            input.value = it.label;
+          });
+          list.appendChild(li);
+        });
+        list.style.display='block';
+      });
+  }
+  if (tbody){
+    let skuDebounce;
+    tbody.addEventListener('input', (e)=>{
+      if (e.target && e.target.classList.contains('sku-search')){
+        const q = (e.target.value||'').trim();
+        clearTimeout(skuDebounce);
+        if (q.length<2){ const list = e.target.parentElement.querySelector('.sku-suggestions'); if(list) list.style.display='none'; return; }
+        skuDebounce = setTimeout(()=> fetchSku(e.target, q), 200);
+      }
+    });
+    document.addEventListener('click', (e)=>{
+      document.querySelectorAll('.sku-suggestions').forEach(list=>{ if (!list.contains(e.target)) list.style.display='none'; });
+    });
+  }
+
+  // Dynamic add line using empty_form
+  const addBtn = document.getElementById('add-line');
+  const addServiceBtn = document.getElementById('add-service-line');
+  function addRow(setAsService){
+    const tmpl = document.getElementById('empty-row-template');
+    const totalForms = document.getElementById('id_lines-TOTAL_FORMS') || document.querySelector('input[name$="-TOTAL_FORMS"]');
+    if (!tmpl || !totalForms) return;
+    const idx = parseInt(totalForms.value, 10);
+    let html = tmpl.innerHTML.replace(/__prefix__/g, idx);
+    const tr = document.createElement('tbody');
+    tr.innerHTML = html.trim();
+    const row = tr.firstChild;
+    row.setAttribute('data-line-index', idx);
+    tbody.appendChild(row);
+    totalForms.value = idx + 1;
+    if (setAsService){
+      // Clear SKU and focus description
+      const select = row.querySelector('select[name$="-sku"]'); if (select) select.value = '';
+      const desc = row.querySelector('input[name$="-description"]'); if (desc) desc.focus();
+    }
+    // Attach event listeners for calculations
+    attachLineCalculations(row);
+    calculateTotals();
+  }
+  if (addBtn) addBtn.addEventListener('click', ()=> addRow(false));
+  if (addServiceBtn) addServiceBtn.addEventListener('click', ()=> addRow(true));
+
+  // Real-time calculations
+  function getTaxRate(taxSelect) {
+    if (!taxSelect || !taxSelect.value) return 0;
+    const selectedOption = taxSelect.options[taxSelect.selectedIndex];
+    const text = selectedOption.text || '';
+    // Extract rate from text like "TVA 20%" or similar
+    const match = text.match(/(\d+(?:\.\d+)?)\s*%/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  function calculateLineTotal(row) {
+    const qtyInput = row.querySelector('input[name$="-qty"]');
+    const priceInput = row.querySelector('input[name$="-unit_price"]');
+    const discountInput = row.querySelector('input[name$="-discount_pct"]');
+    const taxSelect = row.querySelector('select[name$="-tax_code"]');
+    const totalSpan = row.querySelector('.line-total');
+
+    if (!qtyInput || !priceInput || !totalSpan) return { ht: 0, tva: 0, ttc: 0 };
+
+    const qty = parseFloat(qtyInput.value) || 0;
+    const price = parseFloat(priceInput.value) || 0;
+    const discount = parseFloat(discountInput?.value) || 0;
+    const taxRate = getTaxRate(taxSelect);
+
+    const subtotal = qty * price;
+    const discountAmount = subtotal * (discount / 100);
+    const ht = subtotal - discountAmount;
+    const tva = ht * (taxRate / 100);
+    const ttc = ht + tva;
+
+    totalSpan.textContent = ht.toFixed(2) + ' €';
+
+    return { ht, tva, ttc };
+  }
+
+  function calculateTotals() {
+    let totalHT = 0;
+    let totalTVA = 0;
+    let totalTTC = 0;
+
+    const rows = tbody.querySelectorAll('.line-row');
+    rows.forEach(row => {
+      // Skip if marked for deletion
+      const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+      if (deleteCheckbox && deleteCheckbox.checked) return;
+
+      const lineTotals = calculateLineTotal(row);
+      totalHT += lineTotals.ht;
+      totalTVA += lineTotals.tva;
+      totalTTC += lineTotals.ttc;
+    });
+
+    document.getElementById('total_ht').textContent = totalHT.toFixed(2) + ' €';
+    document.getElementById('total_tva').textContent = totalTVA.toFixed(2) + ' €';
+    document.getElementById('total_ttc').textContent = totalTTC.toFixed(2) + ' €';
+  }
+
+  function attachLineCalculations(row) {
+    const inputs = row.querySelectorAll('input[name$="-qty"], input[name$="-unit_price"], input[name$="-discount_pct"]');
+    const taxSelect = row.querySelector('select[name$="-tax_code"]');
+    const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+
+    inputs.forEach(input => {
+      input.addEventListener('input', calculateTotals);
+    });
+
+    if (taxSelect) {
+      taxSelect.addEventListener('change', calculateTotals);
+    }
+
+    if (deleteCheckbox) {
+      deleteCheckbox.addEventListener('change', calculateTotals);
+    }
+  }
+
+  // Attach to existing rows
+  const existingRows = tbody.querySelectorAll('.line-row');
+  existingRows.forEach(row => {
+    attachLineCalculations(row);
+  });
+
+  // Initial calculation
+  calculateTotals();
+})();
+</script>
+{% endblock %}
+{% endblock %}

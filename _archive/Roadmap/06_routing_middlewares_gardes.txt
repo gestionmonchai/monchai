@@ -1,0 +1,55 @@
+06 — Routing, Middleware & Gardes d’accès — Guide mentor
+========================================================
+Objectif: éviter 404/loops et sécuriser les écrans métier. Les juniors doivent comprendre le
+cheminement utilisateur, les redirections, et la présence des “guards”.
+
+A) Convention d’URL (stable)
+----------------------------
+- Web auth: /auth/login/, /auth/logout/, /auth/signup/, /auth/password-reset/, /auth/reset/<uidb64>/<token>/
+- First-run: /auth/first-run/ (guard) → /auth/first-run/org/
+- API (optionnel): /api/auth/session/, /api/auth/whoami/, /api/auth/logout/
+- Dashboard: / (ou /dashboard/) — placeholder suffisant.
+- Rappel: ne mélangez pas /accounts/ et /auth/ si vos includes pointent sur /auth/.
+
+B) Redirections de référence
+----------------------------
+- settings: LOGIN_URL=/auth/login/
+- settings: LOGIN_REDIRECT_URL=/auth/first-run/
+- settings: LOGOUT_REDIRECT_URL=/auth/login/
+- login → guard → (has membership?) → dashboard
+- signup → guard → (idem)
+- logout → login
+
+C) Middleware / décorateurs utiles
+----------------------------------
+1. login_required sur toutes les vues métier.
+2. require_membership (custom):
+   - Si user non authentifié → LOGIN_URL
+   - Si user sans Membership actif → /auth/first-run/
+   - Option: role_min pour exiger admin/owner.
+3. Current organization resolver (plus tard):
+   - Lit current_org_id de la session; fallback sur 1er membership.
+   - Injecte request.current_org pour les vues.
+
+D) Erreurs classiques à prévenir
+--------------------------------
+- Boucles de redirection: LOGIN_REDIRECT_URL qui pointe vers une vue elle-même protégée par un redirect vers login.
+  * Testez en navigation privée et avec un user sans org.
+- 404 API: appeler /accounts/api/logout/ alors que vous avez routé /api/auth/logout/.
+- CSRF 403: endpoints POST sans {% csrf_token %} ou requêtes JS sans CSRF header.
+- URLconf order: mettez les includes dans un ordre logique; pas de catch-all avant les routes auth.
+
+E) Sécurité
+-----------
+- Toujours exiger la session pour les opérations sensibles (invites, settings).
+- CSRF activé partout (middleware + token form).
+- Pas de données d’organisation sans filtre par organization=current.
+- Logs d’accès (standard) + messages sobres (pas de détails système aux utilisateurs).
+
+F) Checklist technique avant merge
+----------------------------------
+- [ ] Toutes les routes listées répondent (GET) sans 500/404 (sauf nécessitant POST).
+- [ ] Guard first-run fonctionne pour user sans org.
+- [ ] Accès à une vue métier sans membership → redirect vers first-run (pas 500).
+- [ ] CSRF OK sur tous les formulaires POST.
+- [ ] API (si activée) : whoami renvoie des infos cohérentes avec la session.

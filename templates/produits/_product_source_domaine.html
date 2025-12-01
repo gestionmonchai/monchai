@@ -1,0 +1,24 @@
+{% comment %} Panneau Source: Domaine (composition par cuvée) {% endcomment %}
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th style="width:55%">Cuvée</th>
+        <th style="width:20%">Ratio (%)</th>
+        <th style="width:15%"></th>
+      </tr>
+    </thead>
+    <tbody id="source-cuvees-rows">
+      {% include 'produits/partials/_source_cuvee_row.html' with idx=0 cuvees=cuvees %}
+    </tbody>
+  </table>
+  <div class="text-muted small">Somme visée: 100%</div>
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-outline-primary"
+            type="button"
+            hx-get="{% url 'produits:source_cuvee_add' %}?idx={{ next_idx|default:1 }}"
+            hx-target="#source-cuvees-rows" hx-swap="beforeend">
+      + Ajouter une cuvée
+    </button>
+  </div>
+</div>

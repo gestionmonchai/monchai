@@ -1,0 +1,56 @@
+Roadmap 40 — /clients/import (Import CSV minimal — nom, email, tel)
+===================================================================
+Rôle & objectif
+---------------
+Proposer un **import CSV/XLSX minimal** pour créer/mettre à jour des **clients** (nom, email, téléphone, segment optionnel), en **réutilisant le service générique d’import** (roadmap_import_1..5 + import_service_spec).
+
+Portée
+------
+- Champs CSV v1: `name` (obligatoire), `email?`, `phone?`, `segment?`, `country_code?`, `vat_number?` (si Pro/Export)
+- **Upsert idempotent** par `vat_number` (si fourni), sinon `(name_norm + country_code)` avec seuil de similarité (attention aux collisions; v1 = insert-only si incertain).
+- **Mapping** UI (synonymes: Nom, Email, Tel, Segment, Pays, TVA), dry-run, rapports.
+
+Spécifique clients (adapter)
+----------------------------
+- `required_fields`: `['name']`
+- `optional_fields`: `['email','phone','segment','country_code','vat_number']`
+- `unique_key`: `'vat_number'` sinon `'name_norm+country_code'` (mode sécurisé: INSERT_ONLY si incertain)
+- `synonyms`: name→['nom','raison sociale','company'], email→['courriel','mail'], phone→['tel','téléphone'], segment→['type','segment'], country_code→['pays','country'], vat_number→['tva','vat']
+- `transforms_defaults`: name [trim,unaccent,collapse], email [trim,lower], phone [trim,phone_e164], segment [lower], country_code [upper], vat_number [trim,upper]
+
+Validations spécifiques
+----------------------
+- `email` format; `phone` E.164 ; `country_code` ISO‑3166‑1 ; `segment` ∈ {individual,business,wine_shop,export,other}
+- `vat_number` format pays si fourni ; unicité (org, vat_number)
+- GDPR: import de consentement marketing **désactivé** v1 (à gérer via campagne dédiée)
+
+Sécurité & anti‑injection
+-------------------------
+- Neutralisation **CSV injection** en preview/exports erreurs (préfix `'` pour `= + - @ \t`).
+- RLS/RBAC; rate-limit; quota fichiers/jour; logs d’audit.
+- Whitelist champs importables (anti-overposting).
+
+Endpoints (générique réutilisé)
+-------------------------------
+- `POST /import/customer/upload` → `{job_id}` ; preview; mapping; dry-run; execute; report (cf. 18 & roadmap_import_1..5)
+
+Tests d’acceptation (AC)
+------------------------
+- AC‑40‑01: CSV minimal (Nom, Email) → créations OK (segment=individual par défaut).
+- AC‑40‑02: CSV avec TVA (Pro) → upsert corrige/complète fiches existantes.
+- AC‑40‑03: Dry-run signale emails invalides, phones non E.164, segments inconnus.
+- AC‑40‑04: Rapports erreurs/warnings téléchargeables (UTF‑8, neutralisés).
+
+Robustesse (tests)
+------------------
+- R‑40‑01: Fichier 12 Mo → 413, pas de crash.
+- R‑40‑02: 100k lignes → streaming stable; idempotence respectée.
+- R‑40‑03: Doublons (même TVA) → une seule fiche mise à jour.
+- R‑40‑04: Données cross‑org → 403/404 propre.
+
+Étapes d’implémentation
+-----------------------
+1) Créer adapter `customer` avec règles ci‑dessus.
+2) Brancher la **modal Import** générique sur `/clients`.
+3) Champs par défaut (segment=individual, country=org.default_country).
+4) Tests AC/robustesse + doc `clients_import.md`.

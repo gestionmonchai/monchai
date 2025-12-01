@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-boxes me-2 text-warning"></i>Lots de production
+            </h1>
+            <div>
+                <a href="{% url 'catalogue:home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Catalogue
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'catalogue:lot_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouveau lot
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres et recherche avancés -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-funnel me-2"></i>Recherche et filtres
+                        {% if stats.filtered != stats.total %}
+                            <span class="badge bg-primary ms-2">{{ stats.filtered }}/{{ stats.total }}</span>
+                        {% endif %}
+                    </h6>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                        <i class="bi bi-chevron-down"></i> Filtres avancés
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <!-- Ligne 1: Recherche et tri -->
+                    <div class="col-md-6">
+                        <label class="form-label">Recherche globale</label>
+                        <input type="text" 
+                               name="search" 
+                               value="{{ search }}" 
+                               placeholder="Numéro, cuvée, entrepôt, notes..." 
+                               class="form-control">
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">Trier par</label>
+                        <select name="sort" class="form-select">
+                            <option value="numero_lot" {% if sort_by == 'numero_lot' %}selected{% endif %}>Numéro de lot</option>
+                            <option value="cuvee" {% if sort_by == 'cuvee' %}selected{% endif %}>Cuvée</option>
+                            <option value="millesime" {% if sort_by == 'millesime' %}selected{% endif %}>Millésime</option>
+                            <option value="volume_initial" {% if sort_by == 'volume_initial' %}selected{% endif %}>Volume initial</option>
+                            <option value="volume_actuel" {% if sort_by == 'volume_actuel' %}selected{% endif %}>Volume actuel</option>
+                            <option value="statut" {% if sort_by == 'statut' %}selected{% endif %}>Statut</option>
+                            <option value="entrepot" {% if sort_by == 'entrepot' %}selected{% endif %}>Entrepôt</option>
+                            <option value="degre_alcool" {% if sort_by == 'degre_alcool' %}selected{% endif %}>Degré d'alcool</option>
+                            <option value="date_creation" {% if sort_by == 'date_creation' %}selected{% endif %}>Date de création</option>
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Date d'ajout</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label">Ordre</label>
+                        <select name="order" class="form-select">
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Croissant</option>
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Décroissant</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Filtres avancés (collapsibles) -->
+                    <div class="collapse {% if statut_filter or millesime_filter or cuvee_filter or entrepot_filter or volume_min_filter or volume_max_filter or degre_min_filter or degre_max_filter or stock_status_filter %}show{% endif %}" id="advancedFilters">
+                        <hr>
+                        <div class="row g-3">
+                            <!-- Ligne 2: Filtres de base -->
+                            <div class="col-md-3">
+                                <label class="form-label">Statut</label>
+                                <select name="statut" class="form-select">
+                                    <option value="">Tous</option>
+                                    {% for statut in stats.statuts %}
+                                        <option value="{{ statut }}" {% if statut == statut_filter %}selected{% endif %}>
+                                            {% if statut == 'production' %}🔄 En production
+                                            {% elif statut == 'fermentation' %}🧪 En fermentation
+                                            {% elif statut == 'elevage' %}🍷 En élevage
+                                            {% elif statut == 'assemblage' %}🔀 En assemblage
+                                            {% elif statut == 'conditionnement' %}📦 En conditionnement
+                                            {% elif statut == 'stock' %}✅ En stock
+                                            {% elif statut == 'vendu' %}💰 Vendu
+                                            {% elif statut == 'perdu' %}❌ Perdu/Détruit
+                                            {% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label">Millésime</label>
+                                <select name="millesime" class="form-select">
+                                    <option value="">Tous</option>
+                                    {% for millesime in stats.millesimes %}
+                                        <option value="{{ millesime }}" {% if millesime|stringformat:"s" == millesime_filter %}selected{% endif %}>
+                                            {{ millesime }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label">Cuvée</label>
+                                <select name="cuvee" class="form-select">
+                                    <option value="">Toutes</option>
+                                    {% for cuvee in stats.cuvees %}
+                                        <option value="{{ cuvee }}" {% if cuvee == cuvee_filter %}selected{% endif %}>
+                                            {{ cuvee }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label">Entrepôt</label>
+                                <select name="entrepot" class="form-select">
+                                    <option value="">Tous</option>
+                                    {% for entrepot in stats.entrepots %}
+                                        <option value="{{ entrepot }}" {% if entrepot == entrepot_filter %}selected{% endif %}>
+                                            {{ entrepot }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Ligne 3: Filtres numériques -->
+                            <div class="col-md-2">
+                                <label class="form-label">Volume min (L)</label>
+                                <input type="number" 
+                                       name="volume_min" 
+                                       value="{{ volume_min_filter }}" 
+                                       step="0.1" 
+                                       min="0"
+                                       class="form-control"
+                                       placeholder="{{ stats.volume_range.min }}">
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Volume max (L)</label>
+                                <input type="number" 
+                                       name="volume_max" 
+                                       value="{{ volume_max_filter }}" 
+                                       step="0.1" 
+                                       min="0"
+                                       class="form-control"
+                                       placeholder="{{ stats.volume_range.max }}">
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Degré min (%)</label>
+                                <input type="number" 
+                                       name="degre_min" 
+                                       value="{{ degre_min_filter }}" 
+                                       step="0.1" 
+                                       min="0" 
+                                       max="20"
+                                       class="form-control"
+                                       placeholder="{{ stats.degre_range.min }}">
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">Degré max (%)</label>
+                                <input type="number" 
+                                       name="degre_max" 
+                                       value="{{ degre_max_filter }}" 
+                                       step="0.1" 
+                                       min="0" 
+                                       max="20"
+                                       class="form-control"
+                                       placeholder="{{ stats.degre_range.max }}">
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">État du stock</label>
+                                <select name="stock_status" class="form-select">
+                                    <option value="">Tous</option>
+                                    <option value="plein" {% if stock_status_filter == 'plein' %}selected{% endif %}>🟢 Plein (>80%)</option>
+                                    <option value="faible" {% if stock_status_filter == 'faible' %}selected{% endif %}>🟡 Faible (<20%)</option>
+                                    <option value="epuise" {% if stock_status_filter == 'epuise' %}selected{% endif %}>🔴 Épuisé</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Appliquer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions rapides -->
+                    <div class="col-12">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Rechercher
+                            </button>
+                            
+                            {% if search or statut_filter or millesime_filter or cuvee_filter or entrepot_filter or volume_min_filter or volume_max_filter or degre_min_filter or degre_max_filter or stock_status_filter %}
+                                <a href="{% url 'catalogue:lot_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Effacer les filtres
+                                </a>
+                            {% endif %}
+                            
+                            <!-- Filtres rapides -->
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-lightning"></i> Filtres rapides
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="?statut=stock">✅ En stock</a></li>
+                                    <li><a class="dropdown-item" href="?statut=production">🔄 En production</a></li>
+                                    <li><a class="dropdown-item" href="?stock_status=faible">🟡 Stock faible</a></li>
+                                    <li><a class="dropdown-item" href="?stock_status=epuise">🔴 Épuisés</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="?millesime={{ "now"|date:"Y" }}">Millésime {{ "now"|date:"Y" }}</a></li>
+                                    <li><a class="dropdown-item" href="?sort=volume_actuel&order=desc">Plus gros volumes</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des lots -->
+{% if page_obj %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>
+                                        <a href="?sort=numero_lot&order={% if sort_by == 'numero_lot' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Numéro de lot
+                                            {% if sort_by == 'numero_lot' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=cuvee&order={% if sort_by == 'cuvee' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Cuvée
+                                            {% if sort_by == 'cuvee' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=millesime&order={% if sort_by == 'millesime' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Millésime
+                                            {% if sort_by == 'millesime' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=volume_actuel&order={% if sort_by == 'volume_actuel' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Volume
+                                            {% if sort_by == 'volume_actuel' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=statut&order={% if sort_by == 'statut' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Statut
+                                            {% if sort_by == 'statut' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=entrepot&order={% if sort_by == 'entrepot' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Entrepôt
+                                            {% if sort_by == 'entrepot' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="?sort=date_creation&order={% if sort_by == 'date_creation' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}{% if cuvee_filter %}&cuvee={{ cuvee_filter }}{% endif %}{% if entrepot_filter %}&entrepot={{ entrepot_filter }}{% endif %}{% if volume_min_filter %}&volume_min={{ volume_min_filter }}{% endif %}{% if volume_max_filter %}&volume_max={{ volume_max_filter }}{% endif %}{% if degre_min_filter %}&degre_min={{ degre_min_filter }}{% endif %}{% if degre_max_filter %}&degre_max={{ degre_max_filter }}{% endif %}{% if stock_status_filter %}&stock_status={{ stock_status_filter }}{% endif %}" 
+                                           class="text-decoration-none text-dark">
+                                            Créé le
+                                            {% if sort_by == 'date_creation' %}
+                                                {% if sort_order == 'asc' %}
+                                                    <i class="bi bi-arrow-up"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        </a>
+                                    </th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lot in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'catalogue:lot_detail' lot.pk %}" 
+                                               class="text-decoration-none fw-semibold">
+                                                {{ lot.numero_lot }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'catalogue:cuvee_detail' lot.cuvee.pk %}" 
+                                               class="text-decoration-none">
+                                                {{ lot.cuvee.nom }}
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">{{ lot.cuvee.get_couleur_display }} {{ lot.cuvee.get_classification_display }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ lot.millesime }}</strong>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ lot.volume_actuel|floatformat:2 }}</strong> {{ lot.unite_volume.symbole }}
+                                            </div>
+                                            <small class="text-muted">
+                                                sur {{ lot.volume_initial|floatformat:2 }} {{ lot.unite_volume.symbole }}
+                                                ({{ lot.pourcentage_restant|floatformat:0 }}%)
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if lot.statut == 'production' %}
+                                                <span class="badge bg-primary">{{ lot.get_statut_display }}</span>
+                                            {% elif lot.statut == 'fermentation' %}
+                                                <span class="badge bg-info">{{ lot.get_statut_display }}</span>
+                                            {% elif lot.statut == 'elevage' %}
+                                                <span class="badge bg-warning">{{ lot.get_statut_display }}</span>
+                                            {% elif lot.statut == 'stock' %}
+                                                <span class="badge bg-success">{{ lot.get_statut_display }}</span>
+                                            {% elif lot.statut == 'vendu' %}
+                                                <span class="badge bg-secondary">{{ lot.get_statut_display }}</span>
+                                            {% elif lot.statut == 'perdu' %}
+                                                <span class="badge bg-danger">{{ lot.get_statut_display }}</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">{{ lot.get_statut_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ lot.entrepot.nom }}</small>
+                                        </td>
+                                        <td class="text-muted">
+                                            {{ lot.created_at|date:"d/m/Y" }}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'catalogue:lot_detail' lot.pk %}" 
+                                                   class="btn btn-outline-primary" 
+                                                   title="Voir">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if user.get_active_membership.can_edit_data %}
+                                                    <a href="{% url 'catalogue:lot_update' lot.pk %}" 
+                                                       class="btn btn-outline-secondary" 
+                                                       title="Modifier">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <div class="row mt-3">
+            <div class="col-12">
+                <nav aria-label="Navigation des lots">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if statut_filter %}&statut={{ statut_filter }}{% endif %}{% if millesime_filter %}&millesime={{ millesime_filter }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucun lot trouvé</h4>
+                {% if search or statut_filter or millesime_filter %}
+                    <p>Aucun lot ne correspond à vos critères de recherche.</p>
+                    <a href="{% url 'catalogue:lot_list' %}" class="btn btn-outline-primary">
+                        Voir tous les lots
+                    </a>
+                {% else %}
+                    <p>Vous n'avez pas encore créé de lot de production.</p>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'catalogue:lot_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Créer votre premier lot
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Aide contextuelle -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light">
+            <h6><i class="bi bi-lightbulb me-2"></i>À propos des lots</h6>
+            <p class="mb-0">
+                Les lots représentent vos productions de vin. Chaque lot est associé à une cuvée 
+                et suit un processus de production avec un historique des mouvements et volumes.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --bordeaux: #7B1E22;
+        --raisin: #4E2A41;
+    }
+    .form-card {
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .form-header {
+        background: linear-gradient(135deg, var(--raisin) 0%, var(--bordeaux) 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 1.25rem 1.5rem;
+    }
+    .form-header h4 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+    .form-body {
+        padding: 1.5rem;
+    }
+    .btn-bordeaux {
+        background: var(--bordeaux);
+        border-color: var(--bordeaux);
+        color: white;
+    }
+    .btn-bordeaux:hover {
+        background: #5a161a;
+        border-color: #5a161a;
+        color: white;
+    }
+    .form-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .form-section-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--raisin);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'referentiels:parcelle_list' %}">Parcelles</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'referentiels:parcelle_detail' pk=parcelle.pk %}">{{ parcelle.nom }}</a></li>
+            <li class="breadcrumb-item active">{% if encepagement %}Modifier{% else %}Ajouter{% endif %} encépagement</li>
+        </ol>
+    </nav>
+    
+    <div class="form-card">
+        <div class="form-header">
+            <h4>
+                <i class="bi bi-pie-chart me-2"></i>
+                {% if encepagement %}Modifier l'encépagement{% else %}Ajouter un encépagement{% endif %}
+            </h4>
+            <small class="opacity-75">{{ parcelle.nom }} · {{ parcelle.surface }} ha</small>
+        </div>
+        
+        <div class="form-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Cépage et pourcentage -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bi bi-flower1 me-1"></i>Cépage et proportion
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="id_cepage" class="form-label">Cépage <span class="text-danger">*</span></label>
+                            {{ form.cepage }}
+                            {% if form.cepage.errors %}
+                            <div class="invalid-feedback d-block">{{ form.cepage.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_pourcentage" class="form-label">Pourcentage <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                {{ form.pourcentage }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            {% if form.pourcentage.errors %}
+                            <div class="invalid-feedback d-block">{{ form.pourcentage.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Part de la parcelle</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Rangs -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bi bi-list-ol me-1"></i>Rangs (optionnel)
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_rang_debut" class="form-label">Rang de début</label>
+                            {{ form.rang_debut }}
+                            {% if form.rang_debut.errors %}
+                            <div class="invalid-feedback d-block">{{ form.rang_debut.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_rang_fin" class="form-label">Rang de fin</label>
+                            {{ form.rang_fin }}
+                            {% if form.rang_fin.errors %}
+                            <div class="invalid-feedback d-block">{{ form.rang_fin.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Caractéristiques plantation -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bi bi-tree me-1"></i>Caractéristiques de plantation
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_annee_plantation" class="form-label">Année de plantation</label>
+                            {{ form.annee_plantation }}
+                            {% if form.annee_plantation.errors %}
+                            <div class="invalid-feedback d-block">{{ form.annee_plantation.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_porte_greffe" class="form-label">Porte-greffe</label>
+                            {{ form.porte_greffe }}
+                            {% if form.porte_greffe.errors %}
+                            <div class="invalid-feedback d-block">{{ form.porte_greffe.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_densite_pieds_ha" class="form-label">Densité (pieds/ha)</label>
+                            {{ form.densite_pieds_ha }}
+                            {% if form.densite_pieds_ha.errors %}
+                            <div class="invalid-feedback d-block">{{ form.densite_pieds_ha.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notes -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="bi bi-journal-text me-1"></i>Notes
+                    </div>
+                    <div class="mb-3">
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Erreurs générales -->
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Boutons -->
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <a href="{% url 'referentiels:parcelle_detail' pk=parcelle.pk %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Annuler
+                    </a>
+                    <button type="submit" class="btn btn-bordeaux">
+                        <i class="bi bi-check-lg me-1"></i>
+                        {% if encepagement %}Enregistrer{% else %}Ajouter{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% load widget_tweaks %}
+{% for cepage in page_obj %}
+    <tr>
+        <td>
+            <a href="{% url 'referentiels:cepage_detail' cepage.pk %}" 
+               class="text-decoration-none fw-semibold">
+                {{ cepage.nom }}
+            </a>
+        </td>
+        <td>
+            {% if cepage.code %}
+                <span class="badge bg-light text-dark">{{ cepage.code }}</span>
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </td>
+        <td>
+            <span class="badge bg-{% if cepage.couleur == 'rouge' %}danger{% elif cepage.couleur == 'blanc' %}warning{% else %}info{% endif %}">
+                {{ cepage.get_couleur_display }}
+            </span>
+        </td>
+        <td class="text-muted">
+            {{ cepage.created_at|date:"d/m/Y" }}
+        </td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'referentiels:cepage_detail' cepage.pk %}" 
+                   class="btn btn-outline-primary" 
+                   title="Voir">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:cepage_update' cepage.pk %}" 
+                       class="btn btn-outline-secondary" 
+                       title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="5" class="text-center text-muted py-4">
+            <i class="bi bi-search fs-1 mb-2"></i>
+            <div>Aucun cépage trouvé</div>
+        </td>
+    </tr>
+{% endfor %}

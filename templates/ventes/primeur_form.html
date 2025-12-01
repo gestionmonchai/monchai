@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle Vente Primeur{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h1><i class="bi bi-hourglass-split"></i> Nouvelle Vente en Primeur</h1>
+    
+    <div class="alert alert-warning mt-3">
+        <strong>⚠️ Vente en primeur :</strong> Paiement anticipé, livraison différée 18-24 mois, remise -20-30%
+    </div>
+    
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="customer" class="form-label">Client *</label>
+            <select name="customer" id="customer" class="form-select" required>
+                <option value="">Sélectionner un client</option>
+                {% for customer in customers %}
+                <option value="{{ customer.id }}">{{ customer.legal_name }}</option>
+                {% endfor %}
+            </select>
+            {% if not customers %}
+            <div class="alert alert-danger mt-2">
+                <i class="bi bi-exclamation-triangle"></i> Aucun client disponible. 
+                <a href="{% url 'ventes:client_new' %}" class="alert-link">Créer un client</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="vintage_year" class="form-label">Millésime *</label>
+            <select name="vintage_year" id="vintage_year" class="form-select" required>
+                <option value="">Sélectionner un millésime</option>
+                {% for year in years %}
+                <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <label for="primeur_campaign" class="form-label">Campagne</label>
+            <input type="text" name="primeur_campaign" id="primeur_campaign" class="form-control" 
+                   placeholder="Ex: Primeurs 2025">
+        </div>
+        
+        <div class="mb-3">
+            <label for="expected_delivery" class="form-label">Livraison prévue</label>
+            <input type="date" name="expected_delivery" id="expected_delivery" class="form-control">
+            <small class="text-muted">Date de livraison estimée (18-24 mois après la vente)</small>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" {% if not customers %}disabled{% endif %}>
+                Créer la vente primeur
+            </button>
+            <a href="{% url 'ventes:primeur_list' %}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

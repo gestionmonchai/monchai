@@ -1,0 +1,30 @@
+T05 — Vérification Cut #5 (Stock maîtrisé)
+==========================================
+But
+---
+Certifier que l’ensemble 31→34 répond aux critères de sortie **Cut #5**.
+
+Checklists globales
+-------------------
+- [ ] **AC** de 31, 32, 33, 34: tous PASS.
+- [ ] p95 lectures clés: /stocks/mouvements & /stocks/inventaire < 600 ms.
+- [ ] Aucune **descente sous zéro** possible (tests concurrence passés).
+- [ ] Observabilité: dashboards latences/erreurs/moves/s actifs; alertes de seuil opérationnelles.
+- [ ] DevBook à jour (migrations, endpoints, runbooks verrous, jobs).
+
+Tests transverses
+-----------------
+- [ ] Import lots → Inventaire calcule correctement balances.
+- [ ] Transfert → Inventaire reflète changement; Alertes ré‑évaluées.
+- [ ] Mode inventaire (ajustements) → Mouvements listés; badge alertes mis à jour si franchissement seuil.
+
+Résilience & reprise
+--------------------
+- [ ] Mock pannes DB temporaires → retries avec backoff; pas d’états partiels.
+- [ ] Rejouer POST (idempotent) → pas de doublons.
+- [ ] Rétention & purge: logs/moves historiques gérés (politiques).
+
+Livrables
+---------
+- Rapport T05 (résultats, captures, export dashboards).
+- Liste d’écarts/dettes + plan de correction (si existants).

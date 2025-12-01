@@ -1,0 +1,22 @@
+{% for op in operations %}
+<tr>
+    <td class="ps-3 fw-medium text-nowrap">{{ op.date|date:"d/m/Y" }}</td>
+    <td><span class="badge bg-light text-dark border">{{ op.lot.code }}</span></td>
+    <td>
+        {% if op.source == 'measurement' %}
+            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ op.type_display }}</span>
+        {% else %}
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ op.type_display }}</span>
+        {% endif %}
+    </td>
+    <td class="font-monospace">{{ op.valeur|default:"-" }}</td>
+    <td class="small text-muted">{{ op.notes|default:"" }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="5" class="text-center py-5 text-muted">
+        <i class="bi bi-journal-text fs-1 d-block mb-2 opacity-50"></i>
+        Aucune opération de vinification enregistrée.
+    </td>
+</tr>
+{% endfor %}

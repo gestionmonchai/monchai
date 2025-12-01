@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon-Chai - Gestion simplifiée pour vignerons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #f8f3e6 0%, #e8d9c5 100%);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-800">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="http://static.photos/vintage/200x200/42" alt="Mon-Chai Logo" class="h-10 w-10 rounded-full mr-3">
+                <span class="text-xl font-bold text-amber-900">Mon-Chai</span>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#" class="font-medium text-amber-900 hover:text-amber-700">Accueil</a>
+                <a href="#" class="font-medium text-gray-600 hover:text-amber-700">Fonctionnalités</a>
+                <a href="#" class="font-medium text-gray-600 hover:text-amber-700">Tarifs</a>
+                <a href="#" class="font-medium text-gray-600 hover:text-amber-700">Contact</a>
+                <a href="#" class="font-medium text-gray-600 hover:text-amber-700">Connexion</a>
+            </nav>
+            <button class="bg-amber-700 hover:bg-amber-600 text-white px-4 py-2 rounded-full font-medium transition duration-300">
+                Essayer gratuitement
+            </button>
+            <button class="md:hidden">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient py-20">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-12 md:mb-0" data-aos="fade-right">
+                <h1 class="text-4xl md:text-5xl font-bold text-amber-900 mb-6">Gérez votre chai, vos ventes et vos DRM en quelques clics</h1>
+                <p class="text-xl text-gray-700 mb-8">La solution simple et conforme pour les vignerons qui veulent gagner du temps.</p>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button class="bg-amber-700 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-medium transition duration-300">
+                        Créer mon compte gratuit
+                    </button>
+                    <button class="border-2 border-amber-700 text-amber-700 hover:bg-amber-50 px-6 py-3 rounded-full font-medium transition duration-300">
+                        Voir la démo
+                    </button>
+                </div>
+            </div>
+            <div class="md:w-1/2" data-aos="fade-left">
+                <img src="http://static.photos/wine/640x360/1" alt="Interface Mon-Chai" class="rounded-lg shadow-xl">
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-amber-900 mb-16" data-aos="fade-up">Pourquoi choisir Mon-Chai ?</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-8 rounded-xl feature-card transition duration-300" data-aos="fade-up" data-aos-delay="100">
+                    <div class="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i data-feather="trending-up" class="text-amber-700 w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-amber-900 mb-3">Suivi facile</h3>
+                    <p class="text-gray-600">Stocks, ventes et clients visualisés en un coup d'œil sur votre tableau de bord personnalisé.</p>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-xl feature-card transition duration-300" data-aos="fade-up" data-aos-delay="200">
+                    <div class="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i data-feather="check-circle" class="text-amber-700 w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-amber-900 mb-3">Conformité DRM</h3>
+                    <p class="text-gray-600">Génération automatique des documents réglementaires, toujours à jour avec la législation.</p>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-xl feature-card transition duration-300" data-aos="fade-up" data-aos-delay="300">
+                    <div class="bg-amber-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
+                        <i data-feather="clock" class="text-amber-700 w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-amber-900 mb-3">Gain de temps</h3>
+                    <p class="text-gray-600">Moins d'administratif, plus de temps pour votre vignoble et vos clients.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-amber-900 mb-16" data-aos="fade-up">Fonctionnalités clés</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8" data-aos="fade-right">
+                    <div class="flex items-start">
+                        <div class="bg-amber-100 p-3 rounded-full mr-4">
+                            <i data-feather="users" class="text-amber-700 w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-amber-900 mb-2">Gestion clients</h3>
+                            <p class="text-gray-600">CRM simplifié pour suivre vos clients, leurs préférences et historiques d'achat.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-amber-100 p-3 rounded-full mr-4">
+                            <i data-feather="package" class="text-amber-700 w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-amber-900 mb-2">Gestion des cuvées</h3>
+                            <p class="text-gray-600">Suivez chaque cuvée, son stock et ses caractéristiques techniques.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-amber-100 p-3 rounded-full mr-4">
+                            <i data-feather="dollar-sign" class="text-amber-700 w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-amber-900 mb-2">Ventes & facturation</h3>
+                            <p class="text-gray-600">Créez des devis et factures en quelques clics, avec suivi des paiements.</p>
+                        </div>
+                    </div>
+                </div>
+                <div data-aos="fade-left">
+                    <img src="http://static.photos/technology/640x360/2" alt="Fonctionnalités Mon-Chai" class="rounded-lg shadow-xl">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-amber-900 mb-16" data-aos="fade-up">Ils nous font confiance</h2>
+            <div class="max-w-4xl mx-auto bg-amber-50 p-8 rounded-xl" data-aos="zoom-in">
+                <div class="flex items-center mb-6">
+                    <img src="http://static.photos/people/200x200/3" alt="Témoignage" class="w-16 h-16 rounded-full mr-4">
+                    <div>
+                        <h4 class="font-bold text-amber-900">Domaine des Coteaux</h4>
+                        <p class="text-gray-600">Vignoble familial en Bourgogne</p>
+                    </div>
+                </div>
+                <p class="text-xl italic text-gray-700 mb-6">"Avec Mon-Chai, je gagne près de 2h par semaine sur ma paperasse. La génération automatique des DRM est un vrai soulagement et me permet de me concentrer sur mon métier de vigneron."</p>
+                <div class="flex space-x-1 text-amber-500">
+                    <i data-feather="star" class="w-5 h-5 fill-current"></i>
+                    <i data-feather="star" class="w-5 h-5 fill-current"></i>
+                    <i data-feather="star" class="w-5 h-5 fill-current"></i>
+                    <i data-feather="star" class="w-5 h-5 fill-current"></i>
+                    <i data-feather="star" class="w-5 h-5 fill-current"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center text-amber-900 mb-16" data-aos="fade-up">Des tarifs adaptés</h2>
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200" data-aos="fade-right">
+                    <h3 class="text-2xl font-bold text-amber-900 mb-4">Essai gratuit</h3>
+                    <p class="text-gray-600 mb-6">Découvrez Mon-Chai sans engagement</p>
+                    <div class="flex items-end mb-6">
+                        <span class="text-4xl font-bold text-amber-900">0€</span>
+                        <span class="text-gray-500 ml-2">/mois</span>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>30 jours d'essai complet</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>Gestion de 50 clients</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>10 documents DRM/mois</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-amber-700 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-medium transition duration-300">
+                        Commencer l'essai
+                    </button>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border-2 border-amber-500 relative" data-aos="fade-left">
+                    <div class="absolute top-0 right-0 bg-amber-500 text-white px-3 py-1 text-sm font-bold rounded-bl-lg">Populaire</div>
+                    <h3 class="text-2xl font-bold text-amber-900 mb-4">Pro</h3>
+                    <p class="text-gray-600 mb-6">Pour les domaines professionnels</p>
+                    <div class="flex items-end mb-6">
+                        <span class="text-4xl font-bold text-amber-900">29,99€</span>
+                        <span class="text-gray-500 ml-2">/mois</span>
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>Clients illimités</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>Documents DRM illimités</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>Support prioritaire</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i data-feather="check" class="text-green-500 w-5 h-5 mr-2"></i>
+                            <span>Formation en ligne</span>
+                        </li>
+                    </ul>
+                    <button class="w-full bg-amber-700 hover:bg-amber-600 text-white px-6 py-3 rounded-full font-medium transition duration-300">
+                        Essayer maintenant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-amber-900 text-white">
+        <div class="container mx-auto px-4 text-center" data-aos="zoom-in">
+            <h2 class="text-3xl font-bold mb-6">Prêt à simplifier votre gestion ?</h2>
+            <p class="text-xl mb-8 max-w-2xl mx-auto">Rejoignez des centaines de vignerons qui font confiance à Mon-Chai pour gérer leur domaine plus sereinement.</p>
+            <button class="bg-white text-amber-900 hover:bg-gray-100 px-8 py-4 rounded-full font-bold text-lg transition duration-300">
+                Créer mon compte gratuit
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <img src="http://static.photos/vintage/200x200/42" alt="Mon-Chai Logo" class="h-8 w-8 rounded-full mr-2">
+                        <span class="text-xl font-bold">Mon-Chai</span>
+                    </div>
+                    <p class="text-gray-400">La solution simple et conforme pour les vignerons.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Navigation</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Accueil</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Fonctionnalités</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Tarifs</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Légal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Mentions légales</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">CGU</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Politique de confidentialité</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Contact</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-center">
+                            <i data-feather="mail" class="w-4 h-4 mr-2 text-gray-400"></i>
+                            <a href="mailto:contact@mon-chai.fr" class="text-gray-400 hover:text-white">contact@mon-chai.fr</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i data-feather="phone" class="w-4 h-4 mr-2 text-gray-400"></i>
+                            <span class="text-gray-400">01 23 45 67 89</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-500">
+                <p>© 2023 Mon-Chai. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+        feather.replace();
+    </script>
+</body>
+</html>

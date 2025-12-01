@@ -1,0 +1,67 @@
+Roadmap 44 — /tarifs/taxes (Paramétrage TVA FR/UE/Export + policies) — VERSION DÉTAILLÉE
+========================================================================================
+
+🎯 Objectif
+-----------
+Définir des **règles TVA** par pays/segment/produit et des **politiques contextuelles** (export 0%, reverse charge intra‑UE),
+appliquer les arrondis (ligne v1), et intégrer la vérification minimale du **n° TVA** (format + présence) côté client Pro/Export.
+
+📦 Modèle (DDL suggéré)
+-----------------------
+- `tax_rule(id, org_id, country_code, rate NUMERIC(5,2), name, segment ENUM NULL, product_type ENUM NULL, effective_from DATE, effective_to DATE NULL, priority INT DEFAULT 100, is_active BOOL)`
+  - INDEX(org, country_code, segment, product_type, effective_from, effective_to, priority)
+
+- `tax_context_policy(id, org_id, export_zero BOOL DEFAULT true, intra_eu_reverse_charge BOOL DEFAULT true, rounding ENUM('line','document') DEFAULT 'line', rounding_precision INT DEFAULT 2)`
+
+⚖️ Résolution (algorithme)
+--------------------------
+1) Déterminer **pays de taxation** (par défaut: pays du client/livraison).
+2) Si **export hors UE** ET `export_zero=true` → `rate=0`.
+3) Si **intra‑UE** ET client **segment Pro/Export** avec `vat_number` présent ET `intra_eu_reverse_charge=true` → `rate=0` + `reverse_charge=true`.
+4) Sinon, choisir la `tax_rule` la plus spécifique (segment+product > segment only > country only) **active** à la date.
+5) Arrondi **ligne**: `round(ht * rate/100, precision)` ; `ttc = ht + tva`.
+
+⛏️ Étapes d’implémentation
+--------------------------
+Étape 0 — Base
+- [ ] Migrations + seed : `FR 20%`, `FR 5.5%` (produits spéciaux v1.1), `DE 19%`, `ES 21%`.
+- [ ] `tax_context_policy` par défaut.
+
+Étape 1 — CRUD règles
+- [ ] GET `/tarifs/taxes` filtres pays/segment/actives ; keyset.
+- [ ] POST `/tarifs/taxes` : validation taux 0..100, dates cohérentes.
+- [ ] Disable (soft).
+
+Étape 2 — Résolveur
+- [ ] `resolve_tax(org, client, cuvee?, date)` :
+      - Détermine pays (client.country_code), segment (CRM), n° TVA.
+      - Applique 2/3 (export/reverse) ; sinon cherche `tax_rule` la plus spécifique.
+- [ ] Expose `GET /tarifs/taxes/resolve?client_id=...&date=...` (debug interne).
+
+Étape 3 — Arrondis & Policies
+- [ ] Implémenter rounding **line** (v1) ; stocker `rounding` dans policy (pour v1.1 document-level).
+- [ ] Tests arrondis aux 2 décimales (configurable).
+
+Étape 4 — Observabilité
+- [ ] Metrics : `tax_resolve_latency_ms`, `reverse_charge_rate`, `export_zero_rate`.
+- [ ] Logs : `org, client, country, rate, reverse_charge, rule_id`.
+
+Étape 5 — Sécurité
+- [ ] RBAC/RLS/Audit ; validations strictes ; XSS sur labels.
+
+🧪 AC
+-----
+- AC‑44‑01 : Client FR Particulier → 20 % appliqué (ex FR).
+- AC‑44‑02 : Client Pro DE (VAT présent) → reverse charge 0 % pour livraison intra‑UE.
+- AC‑44‑03 : Client Export (hors UE) → 0 % si policy active.
+- AC‑44‑04 : Arrondis ligne corrects (ex: 10.00 HT @ 20% → TVA 2.00, TTC 12.00).
+
+🛡️ Robustesse
+--------------
+- Chevauchements : si 2 règles concurrentes, prendre la plus **spécifique** puis `priority`.
+- Taux invalides → 400 ; dates inversées → 400.
+- Changement policy (line→document) : tests non‑régression (v1.1).
+
+📚 Dev Book
+-----------
+- `tax_rules.md` : matrices de décision, exemples chiffrés, références légales (à compléter métier), schéma d’arrondis.

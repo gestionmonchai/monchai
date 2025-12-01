@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Retirer un membre - {{ organization.name }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow border-danger">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-x text-danger" style="font-size: 3rem;"></i>
+                    <h2 class="card-title mt-3 text-danger">Retirer un membre</h2>
+                    <p class="text-muted">{{ organization.name }}</p>
+                </div>
+
+                <!-- Informations du membre -->
+                <div class="alert alert-light mb-4">
+                    <div class="row">
+                        <div class="col-sm-4"><strong>Nom :</strong></div>
+                        <div class="col-sm-8">{{ target_membership.user.full_name }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4"><strong>Email :</strong></div>
+                        <div class="col-sm-8">{{ target_membership.user.email }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4"><strong>Rôle :</strong></div>
+                        <div class="col-sm-8">
+                            {% if target_membership.role == 'owner' %}
+                                <span class="badge bg-warning">{{ target_membership.get_role_display }}</span>
+                            {% elif target_membership.role == 'admin' %}
+                                <span class="badge bg-info">{{ target_membership.get_role_display }}</span>
+                            {% elif target_membership.role == 'editor' %}
+                                <span class="badge bg-success">{{ target_membership.get_role_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ target_membership.get_role_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4"><strong>Membre depuis :</strong></div>
+                        <div class="col-sm-8">{{ target_membership.created_at|date:"d/m/Y" }}</div>
+                    </div>
+                </div>
+
+                <!-- Avertissement -->
+                <div class="alert alert-danger mb-4">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Attention !</strong><br>
+                    Cette action va retirer <strong>{{ target_membership.user.full_name }}</strong> 
+                    de l'organisation <strong>{{ organization.name }}</strong>.
+                    <br><br>
+                    Cette personne perdra immédiatement l'accès à toutes les données de l'organisation.
+                    <br><br>
+                    <strong>Cette action peut être annulée en réinvitant la personne.</strong>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Boutons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger flex-fill">
+                            <i class="bi bi-person-x"></i> Confirmer le retrait
+                        </button>
+                        <a href="{% url 'auth:roles_management' %}" class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

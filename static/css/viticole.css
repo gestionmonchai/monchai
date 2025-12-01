@@ -1,0 +1,964 @@
+/**
+ * 🍷 MON CHAI - DESIGN VITICOLE ÉLÉGANT
+ * Palette inspirée des domaines viticoles français
+ * Version: 2.0 - Château Edition
+ */
+
+:root {
+    /* ═══════════════════════════════════════════════
+       PALETTE VITICOLE ÉLÉGANTE
+       ═══════════════════════════════════════════════ */
+    --wine-burgundy: #722f37;      /* Bourgogne profond */
+    --wine-bordeaux: #8B1538;      /* Bordeaux intense */
+    --wine-gold: #d4af37;          /* Or champagne */
+    --wine-champagne: #f7e7ce;     /* Champagne clair */
+    --wine-green: #5a7c59;         /* Vert vigne */
+    --wine-oak: #8b7355;           /* Chêne tonneau */
+    --wine-purple: #6b4c7c;        /* Pourpre raisin */
+    
+    /* Dégradés Viticoles */
+    --harvest-gradient: linear-gradient(135deg, #8B1538 0%, #722f37 100%);
+    --stock-gradient: linear-gradient(135deg, #6b4c7c 0%, #8B1538 100%);
+    --revenue-gradient: linear-gradient(135deg, #d4af37 0%, #b8941e 100%);
+    --success-gradient: linear-gradient(135deg, #5a7c59 0%, #4a6649 100%);
+    --warning-gradient: linear-gradient(135deg, #d4af37 0%, #c49a2d 100%);
+    --danger-gradient: linear-gradient(135deg, #8B1538 0%, #6b0f28 100%);
+    --info-gradient: linear-gradient(135deg, #8b7355 0%, #6b5844 100%);
+    
+    /* Fond dégradé viticole doux */
+    --bg-gradient: linear-gradient(135deg, #f7e7ce 0%, #e8d5bb 50%, #d4c4aa 100%);
+    
+    /* Ombres élégantes */
+    --shadow-sm: 0 2px 8px rgba(139, 21, 56, 0.08);
+    --shadow-md: 0 4px 16px rgba(139, 21, 56, 0.12);
+    --shadow-lg: 0 8px 32px rgba(139, 21, 56, 0.15);
+    --shadow-xl: 0 12px 48px rgba(139, 21, 56, 0.2);
+    
+    /* Bordures dorées */
+    --border-gold: 2px solid rgba(212, 175, 55, 0.3);
+    --border-gold-hover: 2px solid rgba(212, 175, 55, 0.6);
+}
+
+/* ═══════════════════════════════════════════════
+   STYLES GLOBAUX
+   ═══════════════════════════════════════════════ */
+
+body {
+    background: var(--bg-gradient);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--wine-burgundy);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Titres avec dégradé */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--wine-burgundy);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+h1 {
+    color: var(--wine-burgundy);
+    background: none;
+    -webkit-text-fill-color: initial;
+    text-shadow: none;
+}
+
+/* Liens */
+a {
+    color: var(--wine-bordeaux);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: var(--wine-gold);
+    text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════════
+   CARTES (Cards)
+   ═══════════════════════════════════════════════ */
+
+.card {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 248, 245, 0.98) 100%);
+    border: var(--border-gold);
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    position: relative;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: var(--harvest-gradient);
+    box-shadow: 0 2px 8px rgba(139, 21, 56, 0.3);
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+.card-header {
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.05), rgba(212, 175, 55, 0.05));
+    border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+    font-weight: 700;
+    color: var(--wine-burgundy);
+    padding: 1rem 1.25rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-footer {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.03), rgba(139, 21, 56, 0.03));
+    border-top: 2px solid rgba(212, 175, 55, 0.2);
+    padding: 0.75rem 1.25rem;
+}
+
+/* ═══════════════════════════════════════════════
+   BOUTONS
+   ═══════════════════════════════════════════════ */
+
+.btn {
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 0.65rem 1.25rem;
+    transition: all 0.3s ease;
+    letter-spacing: 0.3px;
+    border: 2px solid transparent;
+}
+
+/* Bouton Principal (Primary) - Or */
+.btn-primary {
+    background: linear-gradient(135deg, var(--wine-gold) 0%, #c49a2d 100%);
+    border-color: var(--wine-gold);
+    color: var(--wine-burgundy);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #e8c04a 0%, var(--wine-gold) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    color: var(--wine-burgundy);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Bouton Danger - Bordeaux */
+.btn-danger {
+    background: var(--danger-gradient);
+    border-color: var(--wine-bordeaux);
+    color: white;
+    box-shadow: 0 4px 15px rgba(139, 21, 56, 0.4);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #a01947 0%, var(--wine-bordeaux) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 21, 56, 0.6);
+}
+
+/* Bouton Success - Vert Vigne */
+.btn-success {
+    background: var(--success-gradient);
+    border-color: var(--wine-green);
+    color: white;
+    box-shadow: 0 4px 15px rgba(90, 124, 89, 0.4);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #6a9469 0%, var(--wine-green) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(90, 124, 89, 0.6);
+}
+
+/* Bouton Secondary - Chêne */
+.btn-secondary {
+    background: var(--info-gradient);
+    border-color: var(--wine-oak);
+    color: white;
+    box-shadow: 0 4px 15px rgba(139, 115, 85, 0.4);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #a08b6b 0%, var(--wine-oak) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 115, 85, 0.6);
+}
+
+/* Bouton Warning - Or vif */
+.btn-warning {
+    background: var(--warning-gradient);
+    border-color: var(--wine-gold);
+    color: var(--wine-burgundy);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #e8c04a 0%, var(--wine-gold) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+}
+
+/* Bouton Info */
+.btn-info {
+    background: var(--info-gradient);
+    border-color: var(--wine-oak);
+    color: white;
+}
+
+/* Bouton Light - Crème */
+.btn-light {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 231, 206, 0.98));
+    border: var(--border-gold);
+    color: var(--wine-burgundy);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-light:hover {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 1), rgba(247, 231, 206, 1));
+    border-color: rgba(212, 175, 55, 0.6);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Bouton Outline */
+.btn-outline-primary {
+    border: 2px solid var(--wine-gold);
+    color: var(--wine-burgundy);
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--warning-gradient);
+    border-color: var(--wine-gold);
+    color: var(--wine-burgundy);
+}
+
+/* ═══════════════════════════════════════════════
+   FORMULAIRES
+   ═══════════════════════════════════════════════ */
+
+.form-control, .form-select {
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--wine-gold);
+    box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+    background: white;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--wine-burgundy);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.3px;
+}
+
+.form-text {
+    color: var(--wine-oak);
+    font-size: 0.875rem;
+}
+
+/* ═══════════════════════════════════════════════
+   BADGES
+   ═══════════════════════════════════════════════ */
+
+.badge {
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: 2px solid transparent;
+}
+
+.badge-primary {
+    background: var(--warning-gradient);
+    color: var(--wine-burgundy);
+    border-color: var(--wine-gold);
+}
+
+.badge-success {
+    background: var(--success-gradient);
+    color: white;
+    border-color: var(--wine-green);
+}
+
+.badge-danger {
+    background: var(--danger-gradient);
+    color: white;
+    border-color: var(--wine-bordeaux);
+}
+
+.badge-warning {
+    background: var(--warning-gradient);
+    color: var(--wine-burgundy);
+    border-color: var(--wine-gold);
+}
+
+.badge-info {
+    background: var(--info-gradient);
+    color: white;
+    border-color: var(--wine-oak);
+}
+
+/* ═══════════════════════════════════════════════
+   ALERTS
+   ═══════════════════════════════════════════════ */
+
+.alert {
+    border-radius: 16px;
+    border: 2px solid;
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(90, 124, 89, 0.15), rgba(74, 102, 73, 0.15));
+    border-color: var(--wine-green);
+    color: var(--wine-green);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.15), rgba(107, 15, 40, 0.15));
+    border-color: var(--wine-bordeaux);
+    color: var(--wine-bordeaux);
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(196, 154, 45, 0.15));
+    border-color: var(--wine-gold);
+    color: var(--wine-burgundy);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, rgba(139, 115, 85, 0.15), rgba(107, 88, 68, 0.15));
+    border-color: var(--wine-oak);
+    color: var(--wine-oak);
+}
+
+/* ═══════════════════════════════════════════════
+   TABLES
+   ═══════════════════════════════════════════════ */
+
+.table {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.table thead th {
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(114, 47, 55, 0.95));
+    color: var(--wine-champagne);
+    border: none;
+    font-weight: 700;
+    padding: 1rem 1.25rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.table tbody tr:hover {
+    background: linear-gradient(135deg, rgba(247, 231, 206, 0.3), rgba(232, 213, 187, 0.3));
+    transform: translateY(-2px);
+}
+
+.table tbody tr.row-click {
+    cursor: pointer;
+}
+
+.table tbody tr.row-click:hover {
+    background: rgba(0, 0, 0, 0.03);
+    transform: none;
+}
+
+.table tbody td {
+    padding: 0.75rem 1rem;
+    color: var(--wine-burgundy);
+    vertical-align: middle;
+}
+
+/* ═══════════════════════════════════════════════
+   MODALS
+   ═══════════════════════════════════════════════ */
+
+.modal-content {
+    border-radius: 20px;
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 20px 60px rgba(139, 21, 56, 0.3);
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(114, 47, 55, 0.95));
+    border-bottom: 2px solid rgba(212, 175, 55, 0.4);
+    padding: 1.5rem 2rem;
+    border-radius: 18px 18px 0 0;
+}
+
+.modal-title {
+    color: var(--wine-champagne);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-body {
+    padding: 2rem;
+    background: linear-gradient(145deg, #ffffff 0%, #faf8f5 100%);
+}
+
+.modal-footer {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(139, 21, 56, 0.05));
+    border-top: 2px solid rgba(212, 175, 55, 0.2);
+    padding: 1.25rem 2rem;
+}
+
+/* ═══════════════════════════════════════════════
+   NAVBAR / HEADER
+   ═══════════════════════════════════════════════ */
+
+.navbar {
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.98) 0%, rgba(114, 47, 55, 0.98) 100%);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 4px 20px rgba(139, 21, 56, 0.3);
+    border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+.navbar-brand {
+    color: var(--wine-champagne) !important;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+}
+
+.navbar-brand:hover {
+    color: var(--wine-gold) !important;
+}
+
+.navbar .nav-link {
+    color: rgba(247, 231, 206, 0.9) !important;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem !important;
+    border-radius: 10px;
+}
+
+.navbar .nav-link:hover {
+    color: var(--wine-gold) !important;
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.navbar .nav-link.active {
+    color: var(--wine-gold) !important;
+    background: rgba(212, 175, 55, 0.15);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(250, 248, 245, 0.98));
+    border: var(--border-gold);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    padding: 0.75rem;
+    max-width: calc(100vw - 2rem);
+    overflow-wrap: anywhere;
+}
+
+.dropdown-item {
+    color: var(--wine-burgundy);
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.10), rgba(139, 21, 56, 0.06));
+    color: var(--wine-bordeaux);
+}
+
+.dropdown-item.active, .dropdown-item:active {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--wine-burgundy) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   NAV PILLS (Sous-menus locaux)
+   ═══════════════════════════════════════════════ */
+
+.nav-pills {
+    gap: 0.5rem;
+    margin-bottom: 1.5rem !important;
+}
+
+.nav-pills .nav-link {
+    color: var(--wine-burgundy) !important;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.nav-pills .nav-link:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.10);
+    color: var(--wine-burgundy) !important;
+}
+
+.nav-pills .nav-link.active {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: var(--wine-burgundy) !important;
+}
+
+.nav-pills .nav-item {
+    margin: 0;
+}
+
+.nav-pills .nav-link:active {
+    background: rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.16);
+    color: var(--wine-burgundy) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   NAV TABS (Onglets locaux / scopes Production)
+   ═══════════════════════════════════════════════ */
+
+.nav-tabs {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+    gap: 0.5rem;
+}
+
+.nav-tabs .nav-link {
+    color: var(--wine-burgundy) !important;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    margin-bottom: 0; /* éviter le style tab par défaut */
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.10);
+    color: var(--wine-burgundy) !important;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+    color: var(--wine-burgundy) !important;
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.nav-tabs .nav-link:active {
+    background: rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.16);
+    color: var(--wine-burgundy) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   PAGINATION
+   ═══════════════════════════════════════════════ */
+
+.pagination {
+    gap: 0.5rem;
+}
+
+.page-link {
+    color: var(--wine-burgundy);
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background: var(--warning-gradient);
+    border-color: var(--wine-gold);
+    color: var(--wine-burgundy);
+    transform: translateY(-2px);
+}
+
+.page-item.active .page-link {
+    background: var(--harvest-gradient);
+    border-color: var(--wine-bordeaux);
+    color: white;
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR PERSONNALISÉE
+   ═══════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(247, 231, 206, 0.3);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--wine-gold) 0%, #c49a2d 100%);
+    border-radius: 10px;
+    border: 2px solid rgba(247, 231, 206, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--wine-burgundy) 0%, var(--wine-bordeaux) 100%);
+}
+
+/* ═══════════════════════════════════════════════
+   TOOLTIPS & POPOVERS
+   ═══════════════════════════════════════════════ */
+
+.tooltip-inner {
+    background: linear-gradient(135deg, var(--wine-burgundy), var(--wine-bordeaux));
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+}
+
+.popover {
+    border: var(--border-gold);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+}
+
+.popover-header {
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.1), rgba(212, 175, 55, 0.1));
+    border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+    color: var(--wine-burgundy);
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════
+   BREADCRUMB
+   ═══════════════════════════════════════════════ */
+
+.breadcrumb {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(247, 231, 206, 0.95));
+    border: var(--border-gold);
+    border-radius: 14px;
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.breadcrumb-item a {
+    color: var(--wine-burgundy);
+    font-weight: 600;
+}
+
+.breadcrumb-item.active {
+    color: var(--wine-gold);
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESS BARS
+   ═══════════════════════════════════════════════ */
+
+.progress {
+    height: 1.5rem;
+    border-radius: 12px;
+    background: rgba(247, 231, 206, 0.5);
+    border: 2px solid rgba(212, 175, 55, 0.2);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.progress-bar {
+    background: var(--harvest-gradient);
+    border-radius: 10px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(139, 21, 56, 0.3);
+}
+
+/* ═══════════════════════════════════════════════
+   SPINNERS / LOADERS
+   ═══════════════════════════════════════════════ */
+
+.spinner-border {
+    border-color: rgba(212, 175, 55, 0.3);
+    border-right-color: var(--wine-gold);
+}
+
+.spinner-grow {
+    background-color: var(--wine-gold);
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITAIRES
+   ═══════════════════════════════════════════════ */
+
+.text-primary {
+    color: var(--wine-burgundy) !important;
+}
+
+.text-gold {
+    color: var(--wine-gold) !important;
+}
+
+/* Media elements responsiveness */
+img, svg, video {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Accessibility: focus visible outlines */
+.nav-link:focus-visible, .dropdown-item:focus-visible, .btn:focus-visible {
+    outline: 3px solid var(--wine-burgundy);
+    outline-offset: 2px;
+}
+
+.bg-primary {
+    background: var(--harvest-gradient) !important;
+}
+
+.bg-gold {
+    background: var(--warning-gradient) !important;
+}
+
+.border-gold {
+    border: var(--border-gold) !important;
+}
+
+/* Conteneurs */
+.container, .container-fluid {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+    overflow-x: clip;
+}
+
+/* Ombres */
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow { box-shadow: var(--shadow-md) !important; }
+.shadow-lg { box-shadow: var(--shadow-lg) !important; }
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS VITICOLES
+   ═══════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes pulse-gold {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(212, 175, 55, 0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.pulse-gold {
+    animation: pulse-gold 2s infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    .card {
+        border-radius: 16px;
+    }
+    
+    .btn {
+        padding: 0.65rem 1.25rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+    }
+}
+
+/* Points de rupture additionnels pour un meilleur responsive */
+@media (max-width: 1200px) {
+    .card-body {
+        padding: 1rem;
+    }
+    .table thead th {
+        padding: 0.75rem 1rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .container, .container-fluid {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    .card-header {
+        padding: 0.875rem 1rem;
+    }
+    .card-footer {
+        padding: 0.625rem 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    .card-body {
+        padding: 0.875rem;
+    }
+    /* Tables défilables horizontalement sur mobile */
+    .table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table thead th, .table tbody td {
+        white-space: nowrap;
+        padding: 0.5rem 0.75rem;
+    }
+    .table tbody tr:hover {
+        transform: none;
+    }
+    .btn {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════
+   DROPDOWN SOUS-MENUS (pour menu Production)
+   ═══════════════════════════════════════════════ */
+
+/* Conteneur du sous-menu */
+.dropdown-submenu {
+    position: relative;
+}
+
+/* Sous-menu caché par défaut */
+.dropdown-submenu > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -1px;
+    margin-left: 0;
+    display: none;
+    min-width: 180px;
+}
+
+/* Affichage au survol */
+.dropdown-submenu:hover > .dropdown-menu {
+    display: block;
+}
+
+/* Flèche indiquant le sous-menu (vers la droite) */
+.dropdown-submenu > a.dropdown-toggle::after {
+    content: "";
+    border-top: 0.3em solid transparent;
+    border-bottom: 0.3em solid transparent;
+    border-left: 0.3em solid currentColor;
+    border-right: 0;
+    float: right;
+    margin-top: 0.6em;
+}
+
+/* Hover sur l'élément parent */
+.dropdown-submenu:hover > a {
+    background-color: rgba(114, 47, 55, 0.1);
+}
+
+/* Menu production compact */
+.dropdown-menu-production {
+    min-width: 240px;
+}
+
+/* Responsive : sous-menu en dessous sur mobile */
+@media (max-width: 991.98px) {
+    .dropdown-submenu > .dropdown-menu {
+        position: static;
+        left: 0;
+        margin-left: 1rem;
+        box-shadow: none;
+        border: none;
+        background: transparent;
+    }
+    .dropdown-submenu > a.dropdown-toggle::after {
+        border-left: 0.3em solid transparent;
+        border-right: 0.3em solid transparent;
+        border-top: 0.3em solid currentColor;
+        border-bottom: 0;
+        float: none;
+        margin-left: 0.5em;
+    }
+}
+
+/* ═══════════════════════════════════════════════
+   🍷 FIN DU DESIGN VITICOLE
+   ═══════════════════════════════════════════════ */

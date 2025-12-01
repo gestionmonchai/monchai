@@ -1,0 +1,15 @@
+{
+  "name": "mon-chai-tests",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "promptfoo": "^0.89.0"
+  },
+  "scripts": {
+    "e2e:install": "playwright install --with-deps",
+    "test:e2e": "playwright test tests/e2e --reporter=line",
+    "test:visual": "playwright test tests/visual --reporter=line",
+    "test:smoke": "playwright test tests/e2e/smoke.spec.ts --reporter=line",
+    "test:prompts": "promptfoo eval -c prompt-tests/promptfooconfig.yaml --max-concurrency=2"
+  }
+}

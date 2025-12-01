@@ -1,0 +1,36 @@
+Mon‑Chai — Export Service (réutilisable + sécurisé)
+==================================================
+Objectif
+--------
+Offrir un **export** générique pour toutes entités (listes/résultats/requêtes sauvegardées) avec choix **encodage**,
+**séparateur**, **colonnes**, et protection **anti CSV-injection**. Complément du bouton Importer.
+
+Endpoints
+---------
+- `GET /export/:entity`  (synchrones pour petits exports, sinon `202 + polling`)
+  - Params génériques: `columns[]=...`, `q`, `filters[...]`, `sort`, `view_id?`, `encoding={utf8|latin1|win1252}`, `delimiter={;|,|\t}`, `neutralize_formula=1`
+- `GET /export/:job_id` (si export asynchrone)
+- **Historique** (option): `GET /export/history`
+
+Sécurité
+--------
+- **Neutraliser** au rendu toute cellule commençant par `= + - @ \t`.
+- **Whitelists** de colonnes exportables par entité (jamais de secrets).
+- **Quota** (lignes max / jour / org), **rate-limit** par utilisateur, **journal d’export** (qui/quoi/quand/vue/filtres).
+- **Streaming** (generator) pour gros volumes; backpressure; timeout côté DB.
+
+UX
+--
+- Dialog Export : choisir **colonnes**, **encodage**, **séparateur**, **fichier CSV/XLSX**.
+- **Respecter le contexte** de la vue (filtres/tri/colonnes) si on exporte depuis une vue sauvegardée.
+- Watermark (option) : “Mon‑Chai — export {org} — {date}”.
+
+Formats & encodages
+-------------------
+- CSV : encodage sélectionnable (UTF‑8 par défaut), séparateur paramétrable (`;` souvent en FR).
+- XLSX : feuilles ≤ 1M lignes, colonnes whitelists; neutralisation aussi côté Excel writer.
+
+Observabilité
+-------------
+- Metrics: `export_duration_seconds`, `export_rows_total`, `export_rows_neutralized_total` (CSV-injection), erreurs.
+- Logs: paramètres, colonnes, volume, temps, erreurs.

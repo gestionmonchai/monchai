@@ -1,0 +1,227 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Lots | Mon Chai Administration{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/changelists.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs EXACTEMENT comme admin -->
+<nav aria-label="Fil d'Ariane">
+<div class="breadcrumbs">
+<a href="/admin/">Accueil</a>
+&rsaquo; <a href="/catalogue/produits/">Gestion des produits</a>
+&rsaquo; Lots
+</div>
+</nav>
+
+<div class="main" id="main">
+  <main id="content-start" class="content" tabindex="-1">
+    <div id="content" class="">
+      
+      <h1>Sélectionnez l'objet Lot à changer</h1>
+      
+      <div id="content-main">
+        <!-- Bouton Ajouter EXACTEMENT comme admin -->
+        <ul class="object-tools">
+          <li>
+            <a href="{% url 'catalogue:lot_create' %}" class="addlink">
+              Ajouter Lot
+            </a>
+          </li>
+        </ul>
+        
+        <!-- Module changelist EXACTEMENT comme admin -->
+        <div class="module filtered" id="changelist">
+          <div class="changelist-form-container">
+            
+            <!-- Barre de recherche EXACTEMENT comme admin -->
+            <div id="toolbar">
+              <form id="changelist-search" method="get" role="search">
+                <div>
+                  <label for="searchbar"><img src="{% static 'admin/img/search.svg' %}" alt="Search"></label>
+                  <input type="text" size="40" name="q" value="{{ request.GET.q|default:'' }}" id="searchbar">
+                  <input type="submit" value="Recherche">
+                </div>
+              </form>
+            </div>
+
+            <!-- Formulaire principal EXACTEMENT comme admin -->
+            <form id="changelist-form" method="post" novalidate>
+              {% csrf_token %}
+              
+              <!-- Actions EXACTEMENT comme admin -->
+              <div class="actions">
+                <label>Action : 
+                  <select name="action" required>
+                    <option value="" selected>---------</option>
+                    <option value="delete_selected">Supprimer les Lots sélectionnés</option>
+                  </select>
+                </label>
+                <input type="hidden" name="select_across" value="0" class="select-across">
+                <button type="submit" class="button" title="Exécuter l'action sélectionnée" name="index" value="0">Envoyer</button>
+                <span class="action-counter" data-actions-icnt="{{ lots|length }}">0 sur {{ lots|length }} sélectionné</span>
+              </div>
+
+              <!-- Tableau des résultats EXACTEMENT comme admin -->
+              <div class="results">
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="action-checkbox-column">
+                        <div class="text">
+                          <span><input type="checkbox" id="action-toggle" aria-label="Sélectionner tous les objets de cette page en vue d'une action"></span>
+                        </div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-code">
+                        <div class="text"><a href="?o=1">Code</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-cuvee">
+                        <div class="text"><a href="?o=2">Cuvée</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-volume_l">
+                        <div class="text"><a href="?o=3">Volume (L)</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-status">
+                        <div class="text"><a href="?o=4">Statut</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-warehouse">
+                        <div class="text"><a href="?o=5">Entrepôt</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-is_active">
+                        <div class="text"><a href="?o=6">Is active</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-organization">
+                        <div class="text"><a href="?o=7">Organisation</a></div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for lot in lots %}
+                    <tr>
+                      <td class="action-checkbox">
+                        <input type="checkbox" name="_selected_action" value="{{ lot.id }}" class="action-select" aria-label="Choisir cet objet pour une action - {{ lot.code }}">
+                      </td>
+                      <th class="field-code">
+                        <a href="/admin/viticulture/lot/{{ lot.id }}/change/">{{ lot.code }}</a>
+                      </th>
+                      <td class="field-cuvee">{{ lot.cuvee.name|default:"-" }}</td>
+                      <td class="field-volume_l">{{ lot.volume_l|floatformat:1 }} L</td>
+                      <td class="field-status">{{ lot.get_status_display|default:lot.status }}</td>
+                      <td class="field-warehouse">{{ lot.warehouse.name|default:"-" }}</td>
+                      <td class="field-is_active">
+                        {% if lot.is_active %}
+                          <img src="{% static 'admin/img/icon-yes.svg' %}" alt="True">
+                        {% else %}
+                          <img src="{% static 'admin/img/icon-no.svg' %}" alt="False">
+                        {% endif %}
+                      </td>
+                      <td class="field-organization nowrap">{{ lot.organization.name }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="8">Aucun lot trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination EXACTEMENT comme admin -->
+              <p class="paginator">
+                {{ lots|length }} Lot{{ lots|length|pluralize:"s" }}
+              </p>
+
+            </form>
+          </div>
+          
+          <!-- Filtres latéraux EXACTEMENT comme admin -->
+          <div id="changelist-filter">
+            <h2>Filtre</h2>
+            <div id="changelist-filter-extra-actions">
+              <h3>
+                <a href="?_facets=True" class="viewlink">Afficher les nombres</a>
+              </h3>
+            </div>
+            
+            <!-- Filtre par cuvée -->
+            <details data-filter-title="cuvee" open>
+              <summary>Par cuvée</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                {% for cuvee in cuvees %}
+                <li>
+                  <a href="?cuvee__id__exact={{ cuvee.id }}">{{ cuvee.name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+
+            <!-- Filtre par statut -->
+            <details data-filter-title="status" open>
+              <summary>Par statut</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                <li><a href="?status__exact=en_cours">En cours</a></li>
+                <li><a href="?status__exact=elevage">Élevage</a></li>
+                <li><a href="?status__exact=stabilise">Stabilisé</a></li>
+                <li><a href="?status__exact=embouteille">Embouteillé</a></li>
+                <li><a href="?status__exact=archive">Archivé</a></li>
+              </ul>
+            </details>
+
+            <!-- Filtre par statut actif -->
+            <details data-filter-title="is active" open>
+              <summary>Par is active</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                <li>
+                  <a href="?is_active__exact=1">Oui</a>
+                </li>
+                <li>
+                  <a href="?is_active__exact=0">Non</a>
+                </li>
+              </ul>
+            </details>
+
+            <!-- Filtre par organisation -->
+            <details data-filter-title="Organisation" open>
+              <summary>Par Organisation</summary>
+              <ul>
+                <li class="selected">
+                  <a href="?">Tout</a>
+                </li>
+                {% for org in organizations %}
+                <li>
+                  <a href="?organization__id__exact={{ org.id }}">{{ org.name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+
+          </div>
+        </div>
+      </div>
+      
+      <br class="clear">
+    </div>
+  </main>
+</div>
+{% endblock %}

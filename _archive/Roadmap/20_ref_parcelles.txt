@@ -1,0 +1,48 @@
+
+Roadmap — /ref/parcelles (Parcelles — CRUD minimal)
+===================================================
+Objectif
+--------
+CRUD minimal pour **Parcelles** (nom, surface) lié aux cépages et appellations, base des volumes amont.
+
+Portée & Done
+-------------
+- Liste + création/édition/suppression (soft si liée).
+- Champs: nom, surface (ha), cépage (FK), appellation (FK option), année plantation (option).
+- Recherche q + filtres (cépage, appellation), tri par nom/surface.
+
+Endpoints
+---------
+- GET  /ref/parcelles
+- GET  /ref/parcelles/new
+- POST /ref/parcelles
+- GET  /ref/parcelles/:id/edit
+- POST /ref/parcelles/:id
+- POST /ref/parcelles/:id/delete
+
+Modèle (rappel)
+---------------
+- vineyard_plot(org, name UNIQUE, area_ha>0, grape_variety_id, appellation_id?, planting_year?, is_active, row_version)
+
+UI & UX
+-------
+- Table: Nom, Surface (ha), Cépage, Appellation, Année, Statut, Actions.
+- Saisie surface avec format “1,25” → valeur brute en édition, formatée en lecture.
+- Édition inline possible sur Nom/Surface ; sélecteurs pour FK.
+
+Validations
+-----------
+- area_ha > 0 ; planting_year entre 1900 et année courante.
+- FK org‑cohérentes.
+
+Tests d’acceptation
+-------------------
+- AC1: Création 0.75 ha → affichage 0,7500 ha.
+- AC2: Doublon nom même org → rejet clair.
+- AC3: FK d’une autre org en POST → 403/404.
+
+Robustesse
+----------
+- R1: area_ha = 0 ou négatif → 400.
+- R2: planting_year futur → rejet.
+- R3: Conflit row_version en édition → 409.

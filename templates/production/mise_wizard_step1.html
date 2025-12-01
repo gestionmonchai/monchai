@@ -1,0 +1,158 @@
+{% extends 'production/base_production.html' %}
+{% load static %}
+{% block title %}Nouvelle mise — Étape 1{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3">Nouvelle mise — Étape 1: Sources vrac</h1>
+
+<form id="filters" class="row g-2 align-items-end mb-3" method="get" action="">
+  <input type="hidden" name="step" value="1">
+  <div class="col-md-3">
+    <label class="form-label">Cuvée</label>
+    <select class="form-select" name="cuvee">
+      <option value="">Toutes</option>
+      {% for c in cuvees %}
+        <option value="{{ c.id }}" {% if selected.cuvee == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Campagne</label>
+    <input class="form-control" name="campagne" value="{{ selected.campagne }}" placeholder="2024-2025">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Statut</label>
+    <select class="form-select" name="statut">
+      <option value="">Tous</option>
+      <option value="pret_mise" {% if selected.statut == 'pret_mise' %}selected{% endif %}>Prêt mise</option>
+      <option value="en_cours" {% if selected.statut == 'en_cours' %}selected{% endif %}>En cours</option>
+      <option value="stabilise" {% if selected.statut == 'stabilise' %}selected{% endif %}>Stabilisé</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Recherche</label>
+    <input class="form-control" name="q" value="{{ selected.q }}" placeholder="lot, cuve, cuvée…">
+  </div>
+  <div class="col-md-2 text-end">
+    <button class="btn btn-outline-secondary">Filtrer</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Lot</th>
+        <th>Cuvée</th>
+        <th>Campagne</th>
+        <th>Statut</th>
+        <th class="text-end">Volume dispo (L)</th>
+        <th class="text-end">Débit (L)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+      <tr data-lot-id="{{ lot.id }}">
+        <td>{{ lot.code }}</td>
+        <td>{{ lot.cuvee.nom|default:'—' }}</td>
+        <td>{{ lot.campagne }}</td>
+        <td>
+          <span class="badge {% if lot.statut == 'pret_mise' %}text-bg-success{% else %}text-bg-warning{% endif %}">{{ lot.get_statut_display }}</span>
+        </td>
+        <td class="text-end"><span class="js-dispo">{{ lot.vol_dispo }}</span></td>
+        <td class="text-end" style="width: 180px;">
+          <input type="number" step="0.001" min="0" class="form-control form-control-sm js-volume" placeholder="0.000">
+        </td>
+        <td>
+          {% if lot.statut != 'pret_mise' %}
+            <span class="text-warning" title="Lot non prêt mise — justification requise à l'étape 3">⚠︎</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-muted">Aucun lot</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="d-flex flex-wrap gap-3">
+      <div><strong>Total vrac sélectionné</strong>: <span id="kpi-total">0.000</span> L</div>
+      <div><strong>Lots sélectionnés</strong>: <span id="kpi-lots">0</span></div>
+    </div>
+    <div>
+      <a id="cta-step2" class="btn btn-primary disabled" href="?step=2" aria-disabled="true">Étape 2</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function getCookie(name){
+    const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return match ? match.pop() : '';
+  }
+  const csrftoken = getCookie('csrftoken');
+  // Auto-submit filters
+  const form = document.getElementById('filters');
+  const selCuvee = form.querySelector('select[name="cuvee"]');
+  const selStatut = form.querySelector('select[name="statut"]');
+  const inpCampagne = form.querySelector('input[name="campagne"]');
+  const inpQ = form.querySelector('input[name="q"]');
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms); } }
+  selCuvee && selCuvee.addEventListener('change', ()=> form.submit());
+  selStatut && selStatut.addEventListener('change', ()=> form.submit());
+  inpCampagne && inpCampagne.addEventListener('input', debounce(()=> form.submit(), 300));
+  inpQ && inpQ.addEventListener('input', debounce(()=> form.submit(), 300));
+  const rows = document.querySelectorAll('tr[data-lot-id]');
+  const kpiTotal = document.getElementById('kpi-total');
+  const kpiLots = document.getElementById('kpi-lots');
+  const cta = document.getElementById('cta-step2');
+  const selectedLots = new Map();
+
+  async function postUpdate(lotId, volume){
+    const fd = new FormData();
+    fd.append('lot_id', lotId);
+    fd.append('container_id', 'LOT');
+    fd.append('volume_l', volume || '0');
+    const resp = await fetch('{% url "production:mise_calc_step1" %}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+      body: fd,
+      credentials: 'same-origin'
+    });
+    const data = await resp.json();
+    if(data.errors && data.errors.length){
+      alert(data.errors.join('\n'));
+      return;
+    }
+    // Update KPIs
+    kpiTotal.textContent = data.global_debit_sum_l || '0.000';
+    // Maintain selected lots count
+    if(parseFloat(volume) > 0){ selectedLots.set(lotId, true); } else { selectedLots.delete(lotId); }
+    kpiLots.textContent = selectedLots.size;
+    // Enable/disable CTA
+    const tot = parseFloat(kpiTotal.textContent || '0');
+    if(tot > 0){
+      cta.classList.remove('disabled');
+      cta.removeAttribute('aria-disabled');
+    } else {
+      cta.classList.add('disabled');
+      cta.setAttribute('aria-disabled','true');
+    }
+  }
+
+  rows.forEach(row=>{
+    const lotId = row.getAttribute('data-lot-id');
+    const input = row.querySelector('.js-volume');
+    input.addEventListener('input', (e)=>{
+      const v = e.target.value || '0';
+      // debounce light
+      clearTimeout(input._t); input._t = setTimeout(()=>postUpdate(lotId, v), 250);
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,2313 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    :root {
+        --bordeaux: #7B1E22;
+        --raisin: #4E2A41;
+        --vert-dore: #A3A04A;
+        --jaune-dore: #E5B14C;
+    }
+    
+    /* Page Header */
+    .page-header {
+        background: linear-gradient(135deg, var(--raisin) 0%, var(--bordeaux) 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 1;
+    }
+    .page-header h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    
+    /* Tabs Navigation */
+    .form-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 12px;
+        position: relative;
+        z-index: 10;
+    }
+    .form-tab {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-weight: 500;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        position: relative;
+        z-index: 11;
+    }
+    .form-tab:hover {
+        background: rgba(123, 30, 34, 0.1);
+        color: var(--bordeaux);
+    }
+    .form-tab.active {
+        background: white;
+        color: var(--bordeaux);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .form-tab .badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    /* Tab Panels */
+    .tab-panel {
+        display: none;
+    }
+    .tab-panel.active {
+        display: block;
+    }
+    
+    /* Section Cards */
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    .section-card .section-header {
+        padding: 1rem 1.25rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .section-card .section-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--raisin);
+    }
+    .section-card .section-body {
+        padding: 1.25rem;
+    }
+    
+    /* Map */
+    #map {
+        height: 500px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+    
+    /* Zone Drawing Tools */
+    .zone-toolbar {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+    }
+    .zone-toolbar .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+    }
+    .zone-toolbar .btn.active {
+        background: var(--bordeaux);
+        border-color: var(--bordeaux);
+        color: white;
+        box-shadow: 0 2px 8px rgba(123, 30, 34, 0.3);
+    }
+    
+    /* Shape Picker */
+    .shape-picker {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    .shape-btn {
+        min-width: 50px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #495057;
+    }
+    .shape-btn:hover {
+        border-color: var(--bordeaux);
+        background: #fff5f5;
+        color: var(--bordeaux);
+    }
+    .shape-btn.active {
+        border-color: var(--bordeaux);
+        background: var(--bordeaux);
+        color: white;
+    }
+    .shape-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 1.5;
+    }
+    .zone-color-picker {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    .btn-add-zone {
+        background: var(--vert-dore);
+        border-color: var(--vert-dore);
+        color: white;
+        font-weight: 500;
+    }
+    .btn-add-zone:hover {
+        background: #8a8940;
+        border-color: #8a8940;
+        color: white;
+    }
+    
+    /* Zone Config Panel */
+    .zone-config {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    .zone-config-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .zone-config-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .zone-config-item label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        white-space: nowrap;
+        margin: 0;
+    }
+    .zone-config-item input, .zone-config-item select {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+    }
+    .zone-config-item input[type="number"] {
+        width: 70px;
+    }
+    
+    /* Zones List */
+    .zones-list {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .zone-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .zone-item:last-child { border-bottom: none; }
+    .zone-item:hover { background: #f8f9fa; }
+    .zone-item.selected { background: #fff3cd; }
+    .zone-item.editing { background: #e3f2fd; }
+    .zone-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+    .zone-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+    .zone-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .zone-details {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .zone-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+    .zone-actions .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Map Legend */
+    .map-legend {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: white;
+        padding: 0.75rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-size: 0.8rem;
+        z-index: 10;
+        max-width: 200px;
+    }
+    .map-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .map-legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+    }
+    
+    /* Drawing Instructions */
+    .drawing-instructions {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: 1px solid #90caf9;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.75rem;
+        display: none;
+        font-size: 0.9rem;
+    }
+    .drawing-instructions.active {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .drawing-instructions i {
+        color: #1976d2;
+        font-size: 1.1rem;
+    }
+    
+    /* Rangs Builder */
+    .rangs-builder {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .rangs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .rangs-preview {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        min-height: 100px;
+    }
+    .rangs-visual {
+        display: flex;
+        gap: 2px;
+        height: 80px;
+        align-items: stretch;
+        background: #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .rang-block {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        min-width: 30px;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+    }
+    .rang-block:hover {
+        filter: brightness(1.1);
+    }
+    .rang-block.rouge { background: var(--bordeaux); }
+    .rang-block.blanc { background: var(--jaune-dore); }
+    .rang-block.rose { background: #e91e63; }
+    .rang-block.empty { background: #dee2e6; color: #6c757d; }
+    
+    /* Encépagement List */
+    .encepagement-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .encepagement-item {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1rem;
+        transition: box-shadow 0.2s;
+    }
+    .encepagement-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .encepagement-item .item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    .encepagement-item .cepage-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+    }
+    .encepagement-item .cepage-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+    }
+    .encepagement-item .cepage-dot.rouge { background: var(--bordeaux); }
+    .encepagement-item .cepage-dot.blanc { background: var(--jaune-dore); }
+    .encepagement-item .cepage-dot.rose { background: #e91e63; }
+    
+    /* Quick Add Form */
+    .quick-add-form {
+        background: white;
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 1.25rem;
+        transition: border-color 0.2s;
+    }
+    .quick-add-form:focus-within {
+        border-color: var(--bordeaux);
+    }
+    
+    /* Buttons */
+    .btn-bordeaux {
+        background: var(--bordeaux);
+        border-color: var(--bordeaux);
+        color: white;
+    }
+    .btn-bordeaux:hover {
+        background: #5a161a;
+        border-color: #5a161a;
+        color: white;
+    }
+    .btn-outline-bordeaux {
+        border-color: var(--bordeaux);
+        color: var(--bordeaux);
+    }
+    .btn-outline-bordeaux:hover {
+        background: var(--bordeaux);
+        color: white;
+    }
+    
+    /* Footer Actions */
+    .form-footer {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        padding: 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        bottom: 1rem;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+        z-index: 5;
+    }
+</style>
+{% endblock %}
+
+{% block production_content %}
+<div class="py-3 px-2">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="bi bi-geo-alt me-2"></i>{{ page_title }}</h1>
+                <small class="opacity-75">{% if parcelle %}Modification de {{ parcelle.nom }}{% else %}Nouvelle parcelle{% endif %}</small>
+            </div>
+            <a href="{% url 'production:parcelles_list' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i>Retour
+            </a>
+        </div>
+    </div>
+    
+    <!-- Tabs Navigation -->
+    <div class="form-tabs">
+        <button type="button" class="form-tab active" data-tab="infos">
+            <i class="bi bi-card-text"></i>
+            <span>Informations</span>
+        </button>
+        <button type="button" class="form-tab" data-tab="carte">
+            <i class="bi bi-map"></i>
+            <span>Carte</span>
+        </button>
+        <button type="button" class="form-tab" data-tab="encepagement">
+            <i class="bi bi-pie-chart"></i>
+            <span>Encépagement</span>
+            <span class="badge bg-success" id="encepagement-count">0</span>
+        </button>
+    </div>
+    
+    <form method="post" novalidate id="parcelle-form">
+        {% csrf_token %}
+        {% if next %}
+        <input type="hidden" name="next" value="{{ next }}" />
+        {% endif %}
+        <div style="display: none;">{{ form.geojson }}</div>
+        
+        <!-- Tab 1: Informations -->
+        <div class="tab-panel active" data-panel="infos">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-info-circle me-2"></i>Informations de base</h5>
+                        </div>
+                        <div class="section-body">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label for="{{ form.nom.id_for_label }}" class="form-label">
+                                        Nom de la parcelle <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.nom|add_class:"form-control form-control-lg"|attr:"placeholder:Ex: Les Vignes du Haut" }}
+                                    {% if form.nom.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.nom.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.surface.id_for_label }}" class="form-label">
+                                        Surface (ha) <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.surface|add_class:"form-control form-control-lg"|attr:"placeholder:0.50" }}
+                                        <span class="input-group-text">ha</span>
+                                    </div>
+                                    {% if form.surface.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.surface.errors.0 }}</div>
+                                    {% endif %}
+                                    <div id="surfBadge" class="form-text"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.lieu_dit.id_for_label }}" class="form-label">Lieu-dit</label>
+                                    {{ form.lieu_dit|add_class:"form-control"|attr:"placeholder:Nom traditionnel du terrain" }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.commune.id_for_label }}" class="form-label">Commune</label>
+                                    {{ form.commune|add_class:"form-control"|attr:"placeholder:Commune" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-journal-text me-2"></i>Notes & Conseils</h5>
+                        </div>
+                        <div class="section-body">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                                {{ form.notes|add_class:"form-control"|attr:"rows:3,placeholder:Notes libres sur cette parcelle..." }}
+                            </div>
+                            <div>
+                                <label for="{{ form.conseils.id_for_label }}" class="form-label">Conseils de culture</label>
+                                {{ form.conseils|add_class:"form-control"|attr:"rows:3,placeholder:Conseils spécifiques pour cette parcelle..." }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-flower1 me-2"></i>Cépages (ancien)</h5>
+                        </div>
+                        <div class="section-body">
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Utilisez l'onglet "Encépagement" pour définir les cépages par rang avec plus de détails.
+                            </p>
+                            {{ form.cepages }}
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="bi bi-lightbulb me-2"></i>Conseils</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Nom :</strong> Utilisez un nom distinctif</li>
+                            <li><strong>Surface :</strong> En hectares (min 0.01)</li>
+                            <li><strong>Lieu-dit :</strong> Nom traditionnel du terrain</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Carte & Rangs -->
+        <div class="tab-panel" data-panel="carte">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-map me-2"></i>Localisation et dessin des rangs</h5>
+                        </div>
+                        <div class="section-body">
+                            <!-- Outils de recherche cadastrale -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-8">
+                                    <div class="input-group input-group-sm">
+                                        <input id="addrQForm" type="text" class="form-control" placeholder="Recherche par adresse..." autocomplete="off">
+                                        <button id="btnAddrGo" type="button" class="btn btn-outline-secondary">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                    <div id="addrResultsForm" class="list-group mt-1" style="max-height:120px;overflow:auto;"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group input-group-sm">
+                                        <input id="insee" type="text" maxlength="5" class="form-control" placeholder="INSEE">
+                                        <input id="section" type="text" maxlength="3" class="form-control" placeholder="Sect">
+                                        <input id="numero" type="text" maxlength="5" class="form-control" placeholder="Num">
+                                        <button id="btnSearchParcel" type="button" class="btn btn-outline-primary">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Toolbar principale -->
+                            <div class="zone-toolbar">
+                                <button type="button" class="btn btn-outline-secondary btn-sm active" id="btn-mode-select" title="Mode sélection">
+                                    <i class="bi bi-cursor"></i> Sélection
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-mode-move" title="Déplacer la zone">
+                                    <i class="bi bi-arrows-move"></i> Déplacer
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-zone" title="Supprimer la zone sélectionnée">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <div class="ms-auto">
+                                    <button type="button" class="btn btn-bordeaux btn-sm" id="btn-transfer-to-encepagement">
+                                        <i class="bi bi-arrow-right me-1"></i>Appliquer à l'encépagement
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Sélecteur de formes -->
+                            <div class="zone-config">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="fw-semibold small text-muted">Forme :</span>
+                                    <div class="shape-picker">
+                                        <button type="button" class="shape-btn" data-shape="triangle" title="Triangle (3 points)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <circle cx="12" cy="3" r="1.5"/>
+                                                <circle cx="3" cy="21" r="1.5"/>
+                                                <circle cx="21" cy="21" r="1.5"/>
+                                                <path d="M12 5 L3 19 L21 19 L12 5"/>
+                                            </svg>
+                                            <span>3pts</span>
+                                        </button>
+                                        <button type="button" class="shape-btn" data-shape="rectangle" title="Rectangle (4 points)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <circle cx="3" cy="3" r="1.5"/>
+                                                <circle cx="21" cy="3" r="1.5"/>
+                                                <circle cx="21" cy="21" r="1.5"/>
+                                                <circle cx="3" cy="21" r="1.5"/>
+                                                <path d="M3 5 L3 19 L21 19 L21 5 L3 5"/>
+                                            </svg>
+                                            <span>4pts</span>
+                                        </button>
+                                        <button type="button" class="shape-btn" data-shape="pentagon" title="Pentagone (5 points)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <circle cx="12" cy="2" r="1.5"/>
+                                                <circle cx="22" cy="9" r="1.5"/>
+                                                <circle cx="19" cy="21" r="1.5"/>
+                                                <circle cx="5" cy="21" r="1.5"/>
+                                                <circle cx="2" cy="9" r="1.5"/>
+                                                <path d="M12 3.5 L22 9 L19 21 L5 21 L2 9 L12 3.5"/>
+                                            </svg>
+                                            <span>5pts</span>
+                                        </button>
+                                        <button type="button" class="shape-btn" data-shape="hexagon" title="Hexagone (6 points)">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <circle cx="12" cy="2" r="1.5"/>
+                                                <circle cx="21" cy="6" r="1.5"/>
+                                                <circle cx="21" cy="18" r="1.5"/>
+                                                <circle cx="12" cy="22" r="1.5"/>
+                                                <circle cx="3" cy="18" r="1.5"/>
+                                                <circle cx="3" cy="6" r="1.5"/>
+                                                <path d="M12 3.5 L21 6 L21 18 L12 20.5 L3 18 L3 6 L12 3.5"/>
+                                            </svg>
+                                            <span>6pts</span>
+                                        </button>
+                                    </div>
+                                    <div class="vr mx-1" style="height: 30px;"></div>
+                                    <div class="zone-config-item">
+                                        <label>Rangs:</label>
+                                        <input type="number" id="zone-rang-count" class="form-control" value="10" min="1" max="100">
+                                    </div>
+                                    <div class="zone-config-item">
+                                        <label>Cépage:</label>
+                                        <select id="zone-cepage" class="form-select" style="min-width: 140px;">
+                                            <option value="">— Choisir —</option>
+                                            {% for cepage in cepages %}
+                                            <option value="{{ cepage.pk }}" data-couleur="{{ cepage.couleur }}" data-nom="{{ cepage.nom }}">
+                                                {{ cepage.nom }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="zone-config-item">
+                                        <label>Couleur:</label>
+                                        <input type="color" id="zone-color" class="zone-color-picker" value="#7B1E22" title="Couleur de la zone">
+                                    </div>
+                                    <button type="button" class="btn btn-add-zone btn-sm" id="btn-add-zone-manual">
+                                        <i class="bi bi-plus-lg me-1"></i>Ajouter
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Instructions d'utilisation -->
+                            <div class="usage-instructions mb-2">
+                                <div class="alert alert-light border py-2 px-3 mb-0">
+                                    <strong class="d-block mb-2"><i class="bi bi-info-circle me-1"></i>Mode d'emploi</strong>
+                                    <ol class="mb-0 ps-3 small">
+                                        <li><strong>Sélectionner les parcelles cadastrales :</strong> Cliquez sur le <u>numéro</u> d'une parcelle sur la carte pour la sélectionner (surlignée en jaune). Cliquez à nouveau pour la désélectionner. Vous pouvez en sélectionner plusieurs.</li>
+                                        <li><strong>Définir une zone de rangs :</strong> Choisissez une forme (3pts à 6pts), configurez le nombre de rangs et le cépage, puis cliquez sur <strong>Ajouter</strong> ou directement sur la carte.</li>
+                                        <li><strong>Ajuster la zone :</strong> Glissez les points de contrôle pour modifier la forme. Cliquez sur une zone pour la sélectionner et modifier ses propriétés.</li>
+                                        <li><strong>Valider :</strong> Cliquez sur <strong>« Appliquer à l'encépagement »</strong> pour transférer les zones vers l'onglet Encépagement.</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            
+                            <!-- Message dynamique -->
+                            <div class="drawing-instructions" id="drawing-instructions">
+                                <i class="bi bi-hand-index"></i>
+                                <span id="instruction-text">Sélectionnez une forme puis cliquez sur la carte ou sur "Ajouter".</span>
+                            </div>
+                            
+                            <!-- Map Container -->
+                            <div style="position: relative;">
+                                <div id="map"></div>
+                                <div class="map-legend" id="map-legend" style="display: none;">
+                                    <strong class="d-block mb-2">Zones de rangs</strong>
+                                    <div id="legend-content"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="toggleCadastre" checked>
+                                    <label class="form-check-label small" for="toggleCadastre">Afficher le cadastre</label>
+                                </div>
+                                <small class="text-muted" id="selection-info">
+                                    <i class="bi bi-cursor me-1"></i>
+                                    Cliquez sur les numéros de parcelles pour les sélectionner
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Liste des zones -->
+                    <div class="section-card mb-3">
+                        <div class="section-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-layers me-2"></i>Zones définies</h5>
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="btn-clear-all-zones" title="Tout effacer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="zones-list" id="zones-list">
+                            <div class="p-3 text-center text-muted small">
+                                <i class="bi bi-plus-circle d-block mb-2" style="font-size: 1.5rem;"></i>
+                                Cliquez sur une forme ci-dessus pour ajouter une zone
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Panneau d'édition de zone -->
+                    <div class="section-card" id="zone-edit-panel" style="display: none;">
+                        <div class="section-header">
+                            <h5><i class="bi bi-pencil-square me-2"></i>Modifier la zone</h5>
+                        </div>
+                        <div class="section-body">
+                            <div class="mb-3">
+                                <label class="form-label small">Cépage</label>
+                                <select id="edit-zone-cepage" class="form-select form-select-sm">
+                                    <option value="">— Non attribué —</option>
+                                    {% for cepage in cepages %}
+                                    <option value="{{ cepage.pk }}" data-couleur="{{ cepage.couleur }}" data-nom="{{ cepage.nom }}">
+                                        {{ cepage.nom }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Nombre de rangs</label>
+                                <input type="number" id="edit-zone-rangs" class="form-control form-control-sm" min="1" max="100">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Couleur de la zone</label>
+                                <input type="color" id="edit-zone-color" class="form-control form-control-sm form-control-color" value="#7B1E22" title="Couleur de la zone">
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btn-save-zone-edit">
+                                    <i class="bi bi-check me-1"></i>Appliquer
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-cancel-zone-edit">
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Aide -->
+                    <div class="alert alert-light border">
+                        <h6 class="alert-heading"><i class="bi bi-lightbulb me-2 text-warning"></i>Utilisation</h6>
+                        <ul class="mb-0 small">
+                            <li class="mb-1"><strong>Ajouter :</strong> Cliquez sur une forme puis sur la carte</li>
+                            <li class="mb-1"><strong>Ajuster :</strong> Glissez les coins (points bleus)</li>
+                            <li class="mb-1"><strong>Déplacer :</strong> Mode "Déplacer" puis glissez la zone</li>
+                            <li><strong>Modifier :</strong> Cliquez sur une zone dans la liste</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Récapitulatif -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-bar-chart me-2"></i>Récapitulatif</h5>
+                        </div>
+                        <div class="section-body" id="zones-summary">
+                            <p class="text-muted small mb-0">Aucune zone définie.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 3: Encépagement -->
+        <div class="tab-panel" data-panel="encepagement">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="section-card">
+                        <div class="section-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Ajouter un encépagement</h5>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-reset-rangs">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Tout effacer
+                            </button>
+                        </div>
+                        <div class="section-body">
+                            <div class="rangs-builder">
+                                <!-- Formulaire d'ajout rapide -->
+                                <div class="quick-add-form">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Cépage</label>
+                                            <select id="new-cepage" class="form-select">
+                                                <option value="">Choisir un cépage</option>
+                                                {% for cepage in cepages %}
+                                                <option value="{{ cepage.pk }}" data-couleur="{{ cepage.couleur }}" data-nom="{{ cepage.nom }}">
+                                                    {{ cepage.nom }} ({{ cepage.get_couleur_display }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">%</label>
+                                            <input type="number" id="new-pourcentage" class="form-control" placeholder="30" min="1" max="100" step="1">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Rang début</label>
+                                            <input type="number" id="new-rang-debut" class="form-control" placeholder="1" min="1">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Rang fin</label>
+                                            <input type="number" id="new-rang-fin" class="form-control" placeholder="30" min="1">
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <button type="button" class="btn btn-success w-100" id="btn-add-encepagement">
+                                                <i class="bi bi-plus-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mt-1">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Année plantation</label>
+                                            <input type="number" id="new-annee" class="form-control" placeholder="2010" min="1900" max="2100">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Porte-greffe</label>
+                                            <input type="text" id="new-porte-greffe" class="form-control" placeholder="SO4, 3309C...">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Densité (pieds/ha)</label>
+                                            <input type="number" id="new-densite" class="form-control" placeholder="5000" min="1000">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Liste des encépagements -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-pie-chart me-2"></i>Encépagements définis</h5>
+                        </div>
+                        <div class="section-body">
+                            <div class="encepagement-list" id="encepagement-list">
+                                {% if parcelle %}
+                                {% for e in parcelle.encepagements.all %}
+                                <div class="encepagement-item" data-id="{{ e.pk }}">
+                                    <div class="item-header">
+                                        <div class="cepage-badge">
+                                            <span class="cepage-dot {{ e.cepage.couleur }}"></span>
+                                            <span>{{ e.cepage.nom }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-primary">{{ e.pourcentage }}%</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2 btn-remove-enc" data-id="{{ e.pk }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2 small text-muted">
+                                        <div class="col-auto">
+                                            <i class="bi bi-list-ol me-1"></i>
+                                            Rangs {% if e.rang_debut %}{{ e.rang_debut }}-{{ e.rang_fin }}{% else %}—{% endif %}
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            {% if e.annee_plantation %}{{ e.annee_plantation }}{% else %}—{% endif %}
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-tree me-1"></i>
+                                            {% if e.porte_greffe %}{{ e.porte_greffe }}{% else %}—{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-4 text-muted" id="no-encepagement">
+                                    <i class="bi bi-pie-chart d-block fs-1 mb-2 opacity-50"></i>
+                                    <p>Aucun encépagement défini</p>
+                                    <p class="small">Utilisez le formulaire ci-dessus pour ajouter des cépages avec leurs rangs.</p>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <div class="text-center py-4 text-muted" id="no-encepagement">
+                                    <i class="bi bi-pie-chart d-block fs-1 mb-2 opacity-50"></i>
+                                    <p>Aucun encépagement défini</p>
+                                    <p class="small">Utilisez le formulaire ci-dessus pour ajouter des cépages avec leurs rangs.</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Panneau d'édition d'encépagement -->
+                    <div class="section-card mb-3" id="encepagement-edit-panel" style="display: none;">
+                        <div class="section-header">
+                            <h5><i class="bi bi-pencil-square me-2"></i>Modifier l'encépagement</h5>
+                        </div>
+                        <div class="section-body">
+                            <div class="mb-2">
+                                <label class="form-label small">Cépage</label>
+                                <select id="edit-enc-cepage" class="form-select form-select-sm">
+                                    {% for cepage in cepages %}
+                                    <option value="{{ cepage.pk }}" data-couleur="{{ cepage.couleur }}" data-nom="{{ cepage.nom }}">
+                                        {{ cepage.nom }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-4">
+                                    <label class="form-label small">%</label>
+                                    <input type="number" id="edit-enc-pourcentage" class="form-control form-control-sm" min="1" max="100">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Rang début</label>
+                                    <input type="number" id="edit-enc-rang-debut" class="form-control form-control-sm" min="1">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Rang fin</label>
+                                    <input type="number" id="edit-enc-rang-fin" class="form-control form-control-sm" min="1">
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <label class="form-label small">Année</label>
+                                    <input type="number" id="edit-enc-annee" class="form-control form-control-sm" min="1900" max="2100">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Porte-greffe</label>
+                                    <input type="text" id="edit-enc-porte-greffe" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Densité</label>
+                                    <input type="number" id="edit-enc-densite" class="form-control form-control-sm" min="1000">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btn-save-enc-edit">
+                                    <i class="bi bi-check me-1"></i>Appliquer
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-cancel-enc-edit">
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <h6 class="alert-heading"><i class="bi bi-lightbulb me-2"></i>Comment ça marche ?</h6>
+                        <ol class="mb-0 small">
+                            <li class="mb-1">Sélectionnez un cépage</li>
+                            <li class="mb-1">Indiquez le pourcentage de la parcelle</li>
+                            <li class="mb-1">Définissez les numéros de rangs (début → fin)</li>
+                            <li class="mb-1">Optionnel : année, porte-greffe, densité</li>
+                            <li>Cliquez sur <i class="bi bi-plus-lg"></i> pour ajouter</li>
+                            <li>Cliquez sur <i class="bi bi-pencil"></i> pour modifier</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-calculator me-2"></i>Récapitulatif</h5>
+                        </div>
+                        <div class="section-body">
+                            <dl class="mb-0">
+                                <dt class="text-muted small">Total encépagement</dt>
+                                <dd class="h4 mb-3" id="total-pourcentage">0%</dd>
+                                <dt class="text-muted small">Rangs définis</dt>
+                                <dd class="mb-0" id="total-rangs">—</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Actions (sticky) -->
+        <div class="form-footer mt-4">
+            <div>
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger mb-0 py-2">{{ form.non_field_errors }}</div>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% if next %}{{ next }}{% else %}{% url 'production:parcelles_list' %}{% endif %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Annuler
+                </a>
+                <button type="submit" class="btn btn-bordeaux">
+                    <i class="bi bi-check-circle me-1"></i>
+                    {% if parcelle %}Enregistrer{% else %}Créer{% endif %}
+                </button>
+            </div>
+        </div>
+        
+        <!-- Hidden field for encepagements JSON -->
+        <input type="hidden" name="encepagements_json" id="encepagements-json" value="[]">
+        <!-- Hidden field for zones GeoJSON -->
+        <input type="hidden" name="zones_geojson" id="zones-geojson" value="">
+    </form>
+</div>
+
+<!-- MapLibre & Turf -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@2.4.0/dist/maplibre-gl.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+<script>window.mapboxgl = window.maplibregl;</script>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+{% if parcelle and parcelle.geojson %}
+{{ parcelle.geojson|json_script:"existing-geojson" }}
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ============================================
+    // TABS NAVIGATION
+    // ============================================
+    const tabs = document.querySelectorAll('.form-tab');
+    const panels = document.querySelectorAll('.tab-panel');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetPanel = this.dataset.tab;
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            panels.forEach(p => p.classList.remove('active'));
+            
+            this.classList.add('active');
+            document.querySelector(`[data-panel="${targetPanel}"]`).classList.add('active');
+            
+            // Resize map when switching to carte tab
+            if (targetPanel === 'carte' && window.parcellemap) {
+                setTimeout(() => window.parcellemap.resize(), 100);
+            }
+        });
+    });
+    
+    // ============================================
+    // ENCEPAGEMENT BUILDER
+    // ============================================
+    let encepagements = [];
+    const parcelleId = {{ parcelle.pk|default:"null" }};
+    
+    // Load existing encepagements if editing
+    {% if parcelle %}
+    encepagements = [
+        {% for e in parcelle.encepagements.all %}
+        {
+            id: {{ e.pk }},
+            cepage_id: {{ e.cepage.pk }},
+            cepage_nom: "{{ e.cepage.nom }}",
+            cepage_couleur: "{{ e.cepage.couleur }}",
+            pourcentage: {{ e.pourcentage }},
+            rang_debut: {{ e.rang_debut|default:"null" }},
+            rang_fin: {{ e.rang_fin|default:"null" }},
+            annee_plantation: {{ e.annee_plantation|default:"null" }},
+            porte_greffe: "{{ e.porte_greffe|default:'' }}",
+            densite: {{ e.densite_pieds_ha|default:"null" }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    {% endif %}
+    
+    function updateEncepagementUI() {
+        // Update count badge
+        document.getElementById('encepagement-count').textContent = encepagements.length;
+        
+        const listContainer = document.getElementById('encepagement-list');
+        
+        if (encepagements.length === 0) {
+            listContainer.innerHTML = `
+                <div class="text-center py-4 text-muted" id="no-encepagement">
+                    <i class="bi bi-pie-chart d-block fs-1 mb-2 opacity-50"></i>
+                    <p>Aucun encépagement défini</p>
+                    <p class="small">Utilisez le formulaire ci-dessus pour ajouter des cépages.</p>
+                </div>
+            `;
+            document.getElementById('total-pourcentage').textContent = '0%';
+            document.getElementById('total-rangs').textContent = '—';
+        } else {
+            let totalPct = 0;
+            let rangsInfo = [];
+            
+            // Build list
+            let listHtml = '';
+            encepagements.forEach((e, idx) => {
+                totalPct += parseFloat(e.pourcentage) || 0;
+                if (e.rang_debut && e.rang_fin) {
+                    rangsInfo.push(e.rang_debut + '-' + e.rang_fin);
+                }
+                
+                listHtml += `
+                    <div class="encepagement-item" data-idx="${idx}">
+                        <div class="item-header">
+                            <div class="cepage-badge">
+                                <span class="cepage-dot ${e.cepage_couleur || ''}"></span>
+                                <span>${e.cepage_nom}</span>
+                            </div>
+                            <div>
+                                <span class="badge bg-primary">${e.pourcentage}%</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2 btn-edit-enc" data-idx="${idx}" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-enc" data-idx="${idx}" title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row g-2 small text-muted">
+                            <div class="col-auto">
+                                <i class="bi bi-list-ol me-1"></i>
+                                Rangs ${e.rang_debut && e.rang_fin ? e.rang_debut + '-' + e.rang_fin : '—'}
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-calendar me-1"></i>
+                                ${e.annee_plantation || '—'}
+                            </div>
+                            <div class="col-auto">
+                                <i class="bi bi-tree me-1"></i>
+                                ${e.porte_greffe || '—'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = listHtml;
+            
+            // Update totals
+            document.getElementById('total-pourcentage').textContent = totalPct.toFixed(0) + '%';
+            document.getElementById('total-rangs').textContent = rangsInfo.length > 0 ? rangsInfo.join(', ') : '—';
+            
+            // Bind remove buttons
+            document.querySelectorAll('.btn-remove-enc').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.idx);
+                    encepagements.splice(idx, 1);
+                    updateEncepagementUI();
+                });
+            });
+            
+            // Bind edit buttons
+            document.querySelectorAll('.btn-edit-enc').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.idx);
+                    openEncepagementEdit(idx);
+                });
+            });
+        }
+        
+        // Update hidden JSON field
+        document.getElementById('encepagements-json').value = JSON.stringify(encepagements);
+    }
+    
+    // Encepagement edit functions
+    let editingEncIdx = null;
+    
+    function openEncepagementEdit(idx) {
+        const enc = encepagements[idx];
+        if (!enc) return;
+        
+        editingEncIdx = idx;
+        
+        document.getElementById('edit-enc-cepage').value = enc.cepage_id || '';
+        document.getElementById('edit-enc-pourcentage').value = enc.pourcentage || '';
+        document.getElementById('edit-enc-rang-debut').value = enc.rang_debut || '';
+        document.getElementById('edit-enc-rang-fin').value = enc.rang_fin || '';
+        document.getElementById('edit-enc-annee').value = enc.annee_plantation || '';
+        document.getElementById('edit-enc-porte-greffe').value = enc.porte_greffe || '';
+        document.getElementById('edit-enc-densite').value = enc.densite || '';
+        
+        document.getElementById('encepagement-edit-panel').style.display = 'block';
+    }
+    
+    function saveEncepagementEdit() {
+        if (editingEncIdx === null) return;
+        
+        const enc = encepagements[editingEncIdx];
+        if (!enc) return;
+        
+        const cepageSelect = document.getElementById('edit-enc-cepage');
+        const selectedOption = cepageSelect.options[cepageSelect.selectedIndex];
+        
+        enc.cepage_id = parseInt(cepageSelect.value) || null;
+        enc.cepage_nom = selectedOption?.dataset?.nom || '';
+        enc.cepage_couleur = selectedOption?.dataset?.couleur || '';
+        enc.pourcentage = parseFloat(document.getElementById('edit-enc-pourcentage').value) || 0;
+        enc.rang_debut = parseInt(document.getElementById('edit-enc-rang-debut').value) || null;
+        enc.rang_fin = parseInt(document.getElementById('edit-enc-rang-fin').value) || null;
+        enc.annee_plantation = parseInt(document.getElementById('edit-enc-annee').value) || null;
+        enc.porte_greffe = document.getElementById('edit-enc-porte-greffe').value || '';
+        enc.densite = parseInt(document.getElementById('edit-enc-densite').value) || null;
+        
+        editingEncIdx = null;
+        document.getElementById('encepagement-edit-panel').style.display = 'none';
+        updateEncepagementUI();
+    }
+    
+    function cancelEncepagementEdit() {
+        editingEncIdx = null;
+        document.getElementById('encepagement-edit-panel').style.display = 'none';
+    }
+    
+    // Bind encepagement edit panel buttons
+    document.getElementById('btn-save-enc-edit')?.addEventListener('click', saveEncepagementEdit);
+    document.getElementById('btn-cancel-enc-edit')?.addEventListener('click', cancelEncepagementEdit);
+    
+    // Add encepagement button
+    document.getElementById('btn-add-encepagement').addEventListener('click', function() {
+        const cepageSelect = document.getElementById('new-cepage');
+        const selectedOption = cepageSelect.options[cepageSelect.selectedIndex];
+        
+        if (!cepageSelect.value) {
+            alert('Veuillez sélectionner un cépage');
+            return;
+        }
+        
+        const pourcentage = parseFloat(document.getElementById('new-pourcentage').value);
+        if (!pourcentage || pourcentage <= 0 || pourcentage > 100) {
+            alert('Veuillez entrer un pourcentage valide (1-100)');
+            return;
+        }
+        
+        const newEnc = {
+            id: null,
+            cepage_id: parseInt(cepageSelect.value),
+            cepage_nom: selectedOption.dataset.nom,
+            cepage_couleur: selectedOption.dataset.couleur,
+            pourcentage: pourcentage,
+            rang_debut: parseInt(document.getElementById('new-rang-debut').value) || null,
+            rang_fin: parseInt(document.getElementById('new-rang-fin').value) || null,
+            annee_plantation: parseInt(document.getElementById('new-annee').value) || null,
+            porte_greffe: document.getElementById('new-porte-greffe').value || null,
+            densite: parseInt(document.getElementById('new-densite').value) || null
+        };
+        
+        encepagements.push(newEnc);
+        updateEncepagementUI();
+        
+        // Reset form
+        cepageSelect.value = '';
+        document.getElementById('new-pourcentage').value = '';
+        document.getElementById('new-rang-debut').value = '';
+        document.getElementById('new-rang-fin').value = '';
+        document.getElementById('new-annee').value = '';
+        document.getElementById('new-porte-greffe').value = '';
+        document.getElementById('new-densite').value = '';
+    });
+    
+    // Reset button
+    document.getElementById('btn-reset-rangs').addEventListener('click', function() {
+        if (confirm('Réinitialiser tous les encépagements ?')) {
+            encepagements = [];
+            updateEncepagementUI();
+        }
+    });
+    
+    // Initialize UI
+    updateEncepagementUI();
+    
+    // ============================================
+    // MAP (Carte cadastrale)
+    // ============================================
+    const mapEl = document.getElementById('map');
+    if (mapEl) {
+        const styleRaster = {
+            version: 8,
+            glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+            sources: {
+                osm: {
+                    type: 'raster',
+                    tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '© OpenStreetMap'
+                }
+            },
+            layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+        };
+        
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: styleRaster,
+            center: [2.2137, 46.2276],
+            zoom: 5
+        });
+        window.parcellemap = map;
+        
+        map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        
+        const hiddenId = '{{ form.geojson.auto_id }}';
+        const surfaceId = '{{ form.surface.auto_id }}';
+        const communeId = '{{ form.commune.auto_id }}';
+        const nameId = '{{ form.nom.auto_id }}';
+        
+        const $hidden = document.getElementById(hiddenId);
+        const $surface = document.getElementById('surfBadge');
+        const $surfaceInput = document.getElementById(surfaceId);
+        const $communeInput = document.getElementById(communeId);
+        const $nameInput = document.getElementById(nameId);
+        
+        const $insee = document.getElementById('insee');
+        const $section = document.getElementById('section');
+        const $numero = document.getElementById('numero');
+        const $btnSearch = document.getElementById('btnSearchParcel');
+        const $toggleCadastre = document.getElementById('toggleCadastre');
+        const $addrQForm = document.getElementById('addrQForm');
+        const $btnAddrGo = document.getElementById('btnAddrGo');
+        const $addrResultsForm = document.getElementById('addrResultsForm');
+        
+        // Multi-selection: store selected parcels
+        let selectedParcels = [];
+        
+        function getParcelKey(props) {
+            // Unique key based on parcel properties
+            return `${props.id || ''}_${props.numero || ''}_${props.section || ''}`;
+        }
+        
+        function applyParcelGeometry(feature) {
+            if (!feature) return;
+            const gj = (feature.type === 'Feature') ? feature : { type: 'Feature', properties: {}, geometry: feature.geometry || feature };
+            if ($hidden) $hidden.value = JSON.stringify({ type: 'Feature', properties: {}, geometry: gj.geometry });
+            try {
+                const area = turf.area(gj);
+                const ha = area / 10000.0;
+                if ($surface) $surface.textContent = `Calculé: ${ha.toFixed(2)} ha`;
+                if ($surfaceInput && !$surfaceInput.value) $surfaceInput.value = ha.toFixed(2);
+            } catch(e) {}
+            try {
+                const bb = turf.bbox(gj);
+                if (bb) map.fitBounds([[bb[0],bb[1]], [bb[2],bb[3]]], { padding: 40 });
+            } catch(e) {}
+        }
+        
+        function applyMultiParcelGeometry() {
+            // Combine all selected parcels into one geometry
+            if (selectedParcels.length === 0) {
+                if ($hidden) $hidden.value = '';
+                if ($surface) $surface.textContent = '';
+                return;
+            }
+            
+            try {
+                let combined;
+                if (selectedParcels.length === 1) {
+                    combined = selectedParcels[0];
+                } else {
+                    // Combine all polygons into a MultiPolygon or union
+                    combined = selectedParcels[0];
+                    for (let i = 1; i < selectedParcels.length; i++) {
+                        try {
+                            combined = turf.union(combined, selectedParcels[i]);
+                        } catch(e) {
+                            // If union fails, create a FeatureCollection
+                            combined = turf.featureCollection(selectedParcels);
+                            break;
+                        }
+                    }
+                }
+                
+                if ($hidden) {
+                    const gj = { type: 'Feature', properties: {}, geometry: combined.geometry || combined };
+                    $hidden.value = JSON.stringify(gj);
+                }
+                
+                // Calculate total area
+                const totalArea = selectedParcels.reduce((sum, f) => sum + turf.area(f), 0);
+                const ha = totalArea / 10000.0;
+                if ($surface) $surface.textContent = `Calculé: ${ha.toFixed(2)} ha (${selectedParcels.length} parcelle${selectedParcels.length > 1 ? 's' : ''})`;
+                if ($surfaceInput && !$surfaceInput.value) $surfaceInput.value = ha.toFixed(2);
+            } catch(e) {
+                console.error('Error combining parcels:', e);
+            }
+        }
+        
+        function updateParcelDisplay() {
+            try {
+                map.getSource('parcel-selected').setData({ 
+                    type: 'FeatureCollection', 
+                    features: selectedParcels 
+                });
+            } catch(e) {}
+        }
+        
+        function toggleParcelSelection(feature) {
+            const key = getParcelKey(feature.properties || {});
+            const existingIndex = selectedParcels.findIndex(p => getParcelKey(p.properties || {}) === key);
+            
+            if (existingIndex >= 0) {
+                // Deselect: remove from array
+                selectedParcels.splice(existingIndex, 1);
+            } else {
+                // Select: add to array
+                selectedParcels.push(feature);
+                // Fill form fields with the first selected parcel
+                if (selectedParcels.length === 1) {
+                    tryFillParcelFieldsFromProps(feature.properties || {});
+                }
+            }
+            
+            updateParcelDisplay();
+            applyMultiParcelGeometry();
+            updateSelectionInfo();
+        }
+        
+        function updateSelectionInfo() {
+            const $info = document.getElementById('selection-info');
+            if (!$info) return;
+            
+            if (selectedParcels.length === 0) {
+                $info.innerHTML = '<i class="bi bi-cursor me-1"></i>Cliquez sur les numéros de parcelles pour les sélectionner';
+            } else if (selectedParcels.length === 1) {
+                const props = selectedParcels[0].properties || {};
+                const num = props.numero || props.id || '?';
+                $info.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>1 parcelle sélectionnée (n°${num}) — cliquez pour en ajouter d'autres`;
+            } else {
+                $info.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>${selectedParcels.length} parcelles sélectionnées — cliquez pour ajouter/retirer`;
+            }
+        }
+        
+        function tryFillParcelFieldsFromProps(props) {
+            const p = props || {};
+            const pick = (re) => {
+                for (const k of Object.keys(p)) {
+                    if (re.test(k)) { const v = p[k]; if (v !== undefined && v !== null) return v; }
+                }
+                return '';
+            };
+            let insee = p.code_insee || p.INSEE || pick(/insee/i);
+            let section = p.section || p.SECTION || pick(/sect/i);
+            let numero = p.numero || p.NUMERO || pick(/num/i);
+            
+            if ($insee && insee) $insee.value = insee;
+            if ($section && section) $section.value = section.toString().toUpperCase();
+            if ($numero && numero) $numero.value = numero.toString().padStart(4, '0');
+            
+            const communeName = p.commune || p.COMMUNE || pick(/commune/i) || '';
+            if ($communeInput && communeName) $communeInput.value = communeName;
+            
+            if ($nameInput && !$nameInput.value.trim() && section && numero) {
+                $nameInput.value = `${section.toString().toUpperCase()} ${numero}${communeName ? ' - ' + communeName : ''}`;
+            }
+        }
+        
+        async function searchParcel(insee, section, numero) {
+            try {
+                const url = `/api/cadastre/parcel?insee=${encodeURIComponent(insee)}&section=${encodeURIComponent(section)}&numero=${encodeURIComponent(numero)}`;
+                const r = await fetch(url);
+                if (!r.ok) return;
+                const fc = await r.json();
+                const feat = (fc && fc.features && fc.features[0]) || null;
+                if (feat) {
+                    try { map.getSource('parcel-selected').setData({ type: 'FeatureCollection', features: [feat] }); } catch(_) {}
+                    applyParcelGeometry(feat);
+                }
+            } catch(e) { console.error(e); }
+        }
+        
+        async function runGeocodeForm(q) {
+            try {
+                const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);
+                if (!res.ok) return;
+                const gj = await res.json();
+                const feats = gj && gj.features || [];
+                if ($addrResultsForm) $addrResultsForm.innerHTML = '';
+                feats.forEach((f, idx) => {
+                    const label = (f.properties && f.properties.label) || `Résultat ${idx+1}`;
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.className = 'list-group-item list-group-item-action';
+                    a.textContent = label;
+                    a.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        if (Array.isArray(f.bbox)) {
+                            map.fitBounds([[f.bbox[0], f.bbox[1]], [f.bbox[2], f.bbox[3]]], { padding: 20 });
+                        } else if (f.geometry && f.geometry.type === 'Point') {
+                            map.flyTo({ center: f.geometry.coordinates, zoom: 17 });
+                        }
+                        $addrResultsForm.innerHTML = '';
+                    });
+                    $addrResultsForm.appendChild(a);
+                });
+            } catch(e) {}
+        }
+        
+        map.on('load', () => {
+            // Vector cadastre layer
+            try {
+                map.addSource('cadvt', { type: 'vector', url: 'https://openmaptiles.geo.data.gouv.fr/data/cadastre.json' });
+                map.addLayer({ id: 'cadvt-line', type: 'line', source: 'cadvt', 'source-layer': 'parcelles', paint: { 'line-color': '#e11d48', 'line-width': 1 } });
+                map.addLayer({ id: 'cadvt-fill', type: 'fill', source: 'cadvt', 'source-layer': 'parcelles', paint: { 'fill-color': '#000', 'fill-opacity': 0.01 } });
+                map.addLayer({
+                    id: 'cadvt-num', type: 'symbol', source: 'cadvt', 'source-layer': 'parcelles',
+                    layout: { 'text-field': ['coalesce', ['get', 'numero'], ['get', 'id']], 'text-size': 12, 'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] },
+                    paint: { 'text-color': '#111', 'text-halo-color': '#fff', 'text-halo-width': 1.5 }
+                });
+                
+                // Selected parcel highlight
+                map.addSource('parcel-selected', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+                map.addLayer({ id: 'parcel-selected-fill', type: 'fill', source: 'parcel-selected', paint: { 'fill-color': '#ffd54f', 'fill-opacity': 0.35 } });
+                map.addLayer({ id: 'parcel-selected-line', type: 'line', source: 'parcel-selected', paint: { 'line-color': '#ff6f00', 'line-width': 3 } });
+                
+                // Click handler - multi-selection toggle
+                map.on('click', 'cadvt-fill', (e) => {
+                    if (!e.features || !e.features.length) return;
+                    const f = e.features[0];
+                    const feat = { type: 'Feature', properties: f.properties || {}, geometry: f.geometry };
+                    // Toggle selection (click to select, click again to deselect)
+                    toggleParcelSelection(feat);
+                });
+                
+                map.on('mouseenter', 'cadvt-fill', () => map.getCanvas().style.cursor = 'pointer');
+                map.on('mouseleave', 'cadvt-fill', () => map.getCanvas().style.cursor = '');
+            } catch(e) { console.error(e); }
+            
+            // UI handlers
+            if ($btnSearch) {
+                $btnSearch.addEventListener('click', () => {
+                    searchParcel($insee.value.trim(), $section.value.trim().toUpperCase(), $numero.value.trim());
+                });
+            }
+            if ($btnAddrGo) {
+                $btnAddrGo.addEventListener('click', () => {
+                    const q = $addrQForm.value.trim();
+                    if (q.length >= 3) runGeocodeForm(q);
+                });
+            }
+            if ($addrQForm) {
+                let t;
+                $addrQForm.addEventListener('input', () => {
+                    clearTimeout(t);
+                    t = setTimeout(() => {
+                        const q = $addrQForm.value.trim();
+                        if (q.length >= 3) runGeocodeForm(q);
+                        else if ($addrResultsForm) $addrResultsForm.innerHTML = '';
+                    }, 250);
+                });
+            }
+            if ($toggleCadastre) {
+                $toggleCadastre.addEventListener('change', () => {
+                    const vis = $toggleCadastre.checked ? 'visible' : 'none';
+                    try { map.setLayoutProperty('cadvt-line', 'visibility', vis); } catch(e) {}
+                    try { map.setLayoutProperty('cadvt-fill', 'visibility', vis); } catch(e) {}
+                    try { map.setLayoutProperty('cadvt-num', 'visibility', vis); } catch(e) {}
+                });
+            }
+            
+            // Load existing geometry
+            try {
+                const el = document.getElementById('existing-geojson');
+                if (el && el.textContent) {
+                    const existing = JSON.parse(el.textContent);
+                    if (existing && existing.geometry) {
+                        map.getSource('parcel-selected').setData({ type: 'FeatureCollection', features: [existing] });
+                        applyParcelGeometry(existing);
+                    }
+                }
+            } catch(e) {}
+            
+            // ============================================
+            // ZONES DRAWING SYSTEM (Formes géométriques)
+            // ============================================
+            
+            // State
+            let currentMode = 'select'; // 'select', 'move', 'place-shape'
+            let selectedShape = null; // 'rectangle', 'trapeze', 'triangle', 'parallelogram'
+            let zones = []; // [{id, shape, coords, cepage_id, cepage_nom, cepage_couleur, rang_count, color}]
+            let selectedZoneId = null;
+            let editingZoneId = null;
+            let draggingHandle = null; // {zoneId, handleIndex}
+            let dragStartCoord = null;
+            let zoneIdCounter = 0;
+            
+            // Couleurs par type de cépage
+            const cepageColors = {
+                'rouge': '#7B1E22',
+                'blanc': '#E5B14C',
+                'rose': '#e91e63',
+                'default': '#4a90d9'
+            };
+            
+            // Add sources for zones
+            map.addSource('zones-fill', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            map.addLayer({
+                id: 'zones-fill-layer',
+                type: 'fill',
+                source: 'zones-fill',
+                paint: {
+                    'fill-color': ['get', 'color'],
+                    'fill-opacity': ['case', ['get', 'selected'], 0.5, 0.35]
+                }
+            });
+            map.addLayer({
+                id: 'zones-outline-layer',
+                type: 'line',
+                source: 'zones-fill',
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': ['case', ['get', 'selected'], 3, 2]
+                }
+            });
+            
+            // Source for rangs inside zones
+            map.addSource('zones-rangs', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            map.addLayer({
+                id: 'zones-rangs-layer',
+                type: 'line',
+                source: 'zones-rangs',
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': 2,
+                    'line-opacity': 0.7
+                }
+            });
+            
+            // Handles (control points)
+            map.addSource('zone-handles', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: [] }
+            });
+            map.addLayer({
+                id: 'zone-handles-layer',
+                type: 'circle',
+                source: 'zone-handles',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': '#2196f3',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+            
+            // UI Elements
+            const btnModeSelect = document.getElementById('btn-mode-select');
+            const btnModeMove = document.getElementById('btn-mode-move');
+            const btnDeleteZone = document.getElementById('btn-delete-zone');
+            const btnClearAllZones = document.getElementById('btn-clear-all-zones');
+            const btnTransferToEncepagement = document.getElementById('btn-transfer-to-encepagement');
+            const shapeBtns = document.querySelectorAll('.shape-btn');
+            const zoneRangCount = document.getElementById('zone-rang-count');
+            const zoneCepageSelect = document.getElementById('zone-cepage');
+            const drawingInstructions = document.getElementById('drawing-instructions');
+            const instructionText = document.getElementById('instruction-text');
+            const zonesList = document.getElementById('zones-list');
+            const zoneEditPanel = document.getElementById('zone-edit-panel');
+            const editZoneCepage = document.getElementById('edit-zone-cepage');
+            const editZoneRangs = document.getElementById('edit-zone-rangs');
+            const editZoneColor = document.getElementById('edit-zone-color');
+            const btnSaveZoneEdit = document.getElementById('btn-save-zone-edit');
+            const btnCancelZoneEdit = document.getElementById('btn-cancel-zone-edit');
+            const mapLegend = document.getElementById('map-legend');
+            const legendContent = document.getElementById('legend-content');
+            const zonesSummary = document.getElementById('zones-summary');
+            const zoneColorPicker = document.getElementById('zone-color');
+            const btnAddZoneManual = document.getElementById('btn-add-zone-manual');
+            
+            // Shape templates (relative coordinates, will be scaled)
+            const shapeTemplates = {
+                triangle: [[0.5, 0], [1, 0.7], [0, 0.7]],
+                rectangle: [[0, 0], [1, 0], [1, 0.6], [0, 0.6]],
+                pentagon: [[0.5, 0], [1, 0.35], [0.85, 0.8], [0.15, 0.8], [0, 0.35]],
+                hexagon: [[0.5, 0], [1, 0.2], [1, 0.6], [0.5, 0.8], [0, 0.6], [0, 0.2]]
+            };
+            
+            function setMode(mode) {
+                currentMode = mode;
+                btnModeSelect?.classList.toggle('active', mode === 'select');
+                btnModeMove?.classList.toggle('active', mode === 'move');
+                
+                // Reset shape selection if changing mode
+                if (mode !== 'place-shape') {
+                    selectedShape = null;
+                    shapeBtns.forEach(b => b.classList.remove('active'));
+                    drawingInstructions.classList.remove('active');
+                }
+                
+                map.getCanvas().style.cursor = mode === 'place-shape' ? 'crosshair' : '';
+            }
+            
+            function selectShape(shape) {
+                selectedShape = shape;
+                currentMode = 'place-shape';
+                shapeBtns.forEach(b => b.classList.toggle('active', b.dataset.shape === shape));
+                btnModeSelect?.classList.remove('active');
+                btnModeMove?.classList.remove('active');
+                
+                drawingInstructions.classList.add('active');
+                instructionText.textContent = `Cliquez sur la carte pour placer le ${shape}`;
+                map.getCanvas().style.cursor = 'crosshair';
+            }
+            
+            function createZoneAtPoint(lngLat, shape) {
+                const template = shapeTemplates[shape];
+                if (!template) return;
+                
+                // Calculate size based on current zoom
+                const zoom = map.getZoom();
+                const scale = 0.001 * Math.pow(2, 15 - zoom); // Adjust scale based on zoom
+                
+                // Create coordinates from template centered at click point
+                const coords = template.map(([x, y]) => [
+                    lngLat.lng + (x - 0.5) * scale,
+                    lngLat.lat + (y - 0.35) * scale * 0.6
+                ]);
+                coords.push([...coords[0]]); // Close the polygon
+                
+                // Get cépage info
+                const cepageOpt = zoneCepageSelect.options[zoneCepageSelect.selectedIndex];
+                const cepageId = zoneCepageSelect.value ? parseInt(zoneCepageSelect.value) : null;
+                const cepageNom = cepageOpt?.dataset?.nom || null;
+                const cepageCouleur = cepageOpt?.dataset?.couleur || 'default';
+                // Use color picker value, or cépage color, or default
+                const color = zoneColorPicker?.value || cepageColors[cepageCouleur] || cepageColors.default;
+                
+                const zone = {
+                    id: ++zoneIdCounter,
+                    shape: shape,
+                    coords: coords,
+                    cepage_id: cepageId,
+                    cepage_nom: cepageNom,
+                    cepage_couleur: cepageCouleur,
+                    rang_count: parseInt(zoneRangCount.value) || 10,
+                    color: color
+                };
+                
+                zones.push(zone);
+                selectedZoneId = zone.id;
+                
+                updateZonesDisplay();
+                updateZonesList();
+                updateZonesSummary();
+                saveZonesToHidden();
+                setMode('select');
+            }
+            
+            function generateRangsForZone(zone) {
+                // Generate parallel lines inside the zone polygon
+                if (!zone.coords || zone.coords.length < 3) return [];
+                
+                const rangs = [];
+                const polygon = turf.polygon([zone.coords]);
+                const bbox = turf.bbox(polygon);
+                const rangCount = zone.rang_count || 10;
+                
+                // Calculate the main axis (longest side direction)
+                let maxLen = 0;
+                let dir = [1, 0];
+                for (let i = 0; i < zone.coords.length - 1; i++) {
+                    const dx = zone.coords[i+1][0] - zone.coords[i][0];
+                    const dy = zone.coords[i+1][1] - zone.coords[i][1];
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    if (len > maxLen) {
+                        maxLen = len;
+                        dir = [dx/len, dy/len];
+                    }
+                }
+                
+                // Perpendicular direction
+                const perp = [-dir[1], dir[0]];
+                
+                // Find extent in perpendicular direction
+                const centroid = turf.centroid(polygon).geometry.coordinates;
+                const height = (bbox[3] - bbox[1]) * 1.5;
+                const width = (bbox[2] - bbox[0]) * 1.5;
+                const extent = Math.max(height, width);
+                
+                // Generate lines
+                for (let i = 0; i < rangCount; i++) {
+                    const t = (i + 0.5) / rangCount - 0.5;
+                    const offset = t * extent;
+                    
+                    const lineCenter = [
+                        centroid[0] + perp[0] * offset,
+                        centroid[1] + perp[1] * offset
+                    ];
+                    
+                    const lineStart = [
+                        lineCenter[0] - dir[0] * extent,
+                        lineCenter[1] - dir[1] * extent
+                    ];
+                    const lineEnd = [
+                        lineCenter[0] + dir[0] * extent,
+                        lineCenter[1] + dir[1] * extent
+                    ];
+                    
+                    // Clip line to polygon
+                    try {
+                        const line = turf.lineString([lineStart, lineEnd]);
+                        const clipped = turf.lineIntersect(line, polygon);
+                        if (clipped.features.length >= 2) {
+                            rangs.push({
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: clipped.features.map(f => f.geometry.coordinates)
+                                },
+                                properties: { zoneId: zone.id, color: zone.color }
+                            });
+                        }
+                    } catch(e) {}
+                }
+                
+                return rangs;
+            }
+            
+            function updateZonesDisplay() {
+                // Update zone polygons
+                const zoneFeatures = zones.map(z => ({
+                    type: 'Feature',
+                    geometry: { type: 'Polygon', coordinates: [z.coords] },
+                    properties: {
+                        id: z.id,
+                        color: z.color,
+                        selected: z.id === selectedZoneId
+                    }
+                }));
+                
+                map.getSource('zones-fill').setData({
+                    type: 'FeatureCollection',
+                    features: zoneFeatures
+                });
+                
+                // Update rangs inside zones
+                let allRangs = [];
+                zones.forEach(z => {
+                    allRangs = allRangs.concat(generateRangsForZone(z));
+                });
+                
+                map.getSource('zones-rangs').setData({
+                    type: 'FeatureCollection',
+                    features: allRangs
+                });
+                
+                // Update handles for selected zone
+                let handleFeatures = [];
+                if (selectedZoneId) {
+                    const zone = zones.find(z => z.id === selectedZoneId);
+                    if (zone) {
+                        handleFeatures = zone.coords.slice(0, -1).map((coord, i) => ({
+                            type: 'Feature',
+                            geometry: { type: 'Point', coordinates: coord },
+                            properties: { zoneId: zone.id, handleIndex: i }
+                        }));
+                    }
+                }
+                
+                map.getSource('zone-handles').setData({
+                    type: 'FeatureCollection',
+                    features: handleFeatures
+                });
+                
+                // Update legend
+                updateLegend();
+            }
+            
+            function updateLegend() {
+                if (zones.length === 0) {
+                    mapLegend.style.display = 'none';
+                    return;
+                }
+                
+                mapLegend.style.display = 'block';
+                legendContent.innerHTML = zones.map(z => `
+                    <div class="map-legend-item">
+                        <div class="map-legend-color" style="background: ${z.color}"></div>
+                        <span>${z.cepage_nom || 'Zone ' + z.id} (${z.rang_count}r)</span>
+                    </div>
+                `).join('');
+            }
+            
+            function updateZonesList() {
+                if (zones.length === 0) {
+                    zonesList.innerHTML = `
+                        <div class="p-3 text-center text-muted small">
+                            <i class="bi bi-plus-circle d-block mb-2" style="font-size: 1.5rem;"></i>
+                            Cliquez sur une forme ci-dessus pour ajouter une zone
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const shapeNames = {
+                    rectangle: 'Rectangle',
+                    trapeze: 'Trapèze',
+                    triangle: 'Triangle',
+                    parallelogram: 'Parallélogramme'
+                };
+                
+                zonesList.innerHTML = zones.map(z => `
+                    <div class="zone-item ${z.id === selectedZoneId ? 'selected' : ''}" data-zone-id="${z.id}">
+                        <div class="zone-color" style="background: ${z.color}"></div>
+                        <div class="zone-info">
+                            <div class="zone-name">${z.cepage_nom || 'Non attribué'}</div>
+                            <div class="zone-details">${shapeNames[z.shape] || z.shape} • ${z.rang_count} rangs</div>
+                        </div>
+                        <div class="zone-actions">
+                            <button type="button" class="btn btn-outline-primary btn-edit-zone" data-zone-id="${z.id}" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-delete-zone-item" data-zone-id="${z.id}" title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Event listeners for zone items
+                zonesList.querySelectorAll('.zone-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.closest('.zone-actions')) {
+                            selectedZoneId = parseInt(item.dataset.zoneId);
+                            updateZonesDisplay();
+                            updateZonesList();
+                        }
+                    });
+                });
+                
+                zonesList.querySelectorAll('.btn-edit-zone').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editZone(parseInt(btn.dataset.zoneId));
+                    });
+                });
+                
+                zonesList.querySelectorAll('.btn-delete-zone-item').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteZone(parseInt(btn.dataset.zoneId));
+                    });
+                });
+            }
+            
+            function updateZonesSummary() {
+                if (zones.length === 0) {
+                    zonesSummary.innerHTML = '<p class="text-muted small mb-0">Aucune zone définie.</p>';
+                    return;
+                }
+                
+                const totalRangs = zones.reduce((sum, z) => sum + z.rang_count, 0);
+                const cepageGroups = {};
+                
+                zones.forEach(z => {
+                    const key = z.cepage_nom || 'Non attribué';
+                    if (!cepageGroups[key]) {
+                        cepageGroups[key] = { color: z.color, rangs: 0 };
+                    }
+                    cepageGroups[key].rangs += z.rang_count;
+                });
+                
+                let html = `<div class="small text-muted mb-2">${zones.length} zone(s) • ${totalRangs} rangs</div>`;
+                
+                for (const [name, data] of Object.entries(cepageGroups)) {
+                    const pct = ((data.rangs / totalRangs) * 100).toFixed(0);
+                    html += `
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <div style="width: 12px; height: 12px; border-radius: 3px; background: ${data.color}"></div>
+                            <span class="small">${name}: ${data.rangs} rangs (${pct}%)</span>
+                        </div>
+                    `;
+                }
+                
+                zonesSummary.innerHTML = html;
+            }
+            
+            function editZone(zoneId) {
+                const zone = zones.find(z => z.id === zoneId);
+                if (!zone) return;
+                
+                editingZoneId = zoneId;
+                selectedZoneId = zoneId;
+                
+                editZoneCepage.value = zone.cepage_id || '';
+                editZoneRangs.value = zone.rang_count;
+                if (editZoneColor) editZoneColor.value = zone.color || '#7B1E22';
+                zoneEditPanel.style.display = 'block';
+                
+                updateZonesDisplay();
+                updateZonesList();
+            }
+            
+            function saveZoneEdit() {
+                const zone = zones.find(z => z.id === editingZoneId);
+                if (!zone) return;
+                
+                const opt = editZoneCepage.options[editZoneCepage.selectedIndex];
+                zone.cepage_id = editZoneCepage.value ? parseInt(editZoneCepage.value) : null;
+                zone.cepage_nom = opt?.dataset?.nom || null;
+                zone.cepage_couleur = opt?.dataset?.couleur || 'default';
+                // Use custom color if selected, otherwise use cépage color
+                zone.color = (editZoneColor && editZoneColor.value) ? editZoneColor.value : (cepageColors[zone.cepage_couleur] || cepageColors.default);
+                zone.rang_count = parseInt(editZoneRangs.value) || 10;
+                
+                editingZoneId = null;
+                zoneEditPanel.style.display = 'none';
+                
+                updateZonesDisplay();
+                updateZonesList();
+                updateZonesSummary();
+                saveZonesToHidden();
+            }
+            
+            function deleteZone(zoneId) {
+                if (!confirm('Supprimer cette zone ?')) return;
+                zones = zones.filter(z => z.id !== zoneId);
+                if (selectedZoneId === zoneId) selectedZoneId = null;
+                if (editingZoneId === zoneId) {
+                    editingZoneId = null;
+                    zoneEditPanel.style.display = 'none';
+                }
+                updateZonesDisplay();
+                updateZonesList();
+                updateZonesSummary();
+                saveZonesToHidden();
+            }
+            
+            function transferToEncepagement() {
+                if (zones.length === 0) {
+                    alert('Aucune zone définie. Ajoutez des zones sur la carte.');
+                    return;
+                }
+                
+                const zonesWithCepage = zones.filter(z => z.cepage_id);
+                if (zonesWithCepage.length === 0) {
+                    alert('Attribuez d\'abord des cépages aux zones.');
+                    return;
+                }
+                
+                // Save zones to hidden field as GeoJSON FeatureCollection
+                const zonesGeoJSON = {
+                    type: 'FeatureCollection',
+                    features: zones.map(z => ({
+                        type: 'Feature',
+                        geometry: { type: 'Polygon', coordinates: [z.coords] },
+                        properties: {
+                            id: z.id,
+                            shape: z.shape,
+                            cepage_id: z.cepage_id,
+                            cepage_nom: z.cepage_nom,
+                            cepage_couleur: z.cepage_couleur,
+                            rang_count: z.rang_count
+                        }
+                    }))
+                };
+                document.getElementById('zones-geojson').value = JSON.stringify(zonesGeoJSON);
+                
+                // Group by cepage and calculate totals
+                const totalRangs = zones.reduce((sum, z) => sum + z.rang_count, 0);
+                const cepageGroups = {};
+                let rangStart = 1;
+                
+                zones.forEach(z => {
+                    if (!z.cepage_id) return;
+                    const key = z.cepage_id;
+                    if (!cepageGroups[key]) {
+                        cepageGroups[key] = {
+                            cepage_id: z.cepage_id,
+                            cepage_nom: z.cepage_nom,
+                            cepage_couleur: z.cepage_couleur,
+                            rangs: 0,
+                            rang_debut: rangStart,
+                            rang_fin: rangStart
+                        };
+                    }
+                    cepageGroups[key].rangs += z.rang_count;
+                    cepageGroups[key].rang_fin = rangStart + z.rang_count - 1;
+                    rangStart += z.rang_count;
+                });
+                
+                // Create encepagements
+                encepagements = [];
+                for (const [_, data] of Object.entries(cepageGroups)) {
+                    const pct = ((data.rangs / totalRangs) * 100).toFixed(0);
+                    encepagements.push({
+                        id: null,
+                        cepage_id: data.cepage_id,
+                        cepage_nom: data.cepage_nom,
+                        cepage_couleur: data.cepage_couleur,
+                        pourcentage: parseFloat(pct),
+                        rang_debut: data.rang_debut,
+                        rang_fin: data.rang_fin,
+                        annee_plantation: null,
+                        porte_greffe: null,
+                        densite: null
+                    });
+                }
+                
+                updateEncepagementUI();
+                
+                // Visual feedback - highlight button
+                const btn = document.getElementById('btn-transfer-to-encepagement');
+                if (btn) {
+                    btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Zones validées !';
+                    btn.classList.remove('btn-bordeaux');
+                    btn.classList.add('btn-success');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="bi bi-arrow-right me-1"></i>Appliquer à l\'encépagement';
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-bordeaux');
+                    }, 2000);
+                }
+                
+                // Switch to encepagement tab
+                document.querySelector('[data-tab="encepagement"]').click();
+            }
+            
+            // Auto-save zones when they change
+            function saveZonesToHidden() {
+                if (zones.length > 0) {
+                    const zonesGeoJSON = {
+                        type: 'FeatureCollection',
+                        features: zones.map(z => ({
+                            type: 'Feature',
+                            geometry: { type: 'Polygon', coordinates: [z.coords] },
+                            properties: {
+                                id: z.id,
+                                shape: z.shape,
+                                cepage_id: z.cepage_id,
+                                cepage_nom: z.cepage_nom,
+                                cepage_couleur: z.cepage_couleur,
+                                rang_count: z.rang_count
+                            }
+                        }))
+                    };
+                    document.getElementById('zones-geojson').value = JSON.stringify(zonesGeoJSON);
+                } else {
+                    document.getElementById('zones-geojson').value = '';
+                }
+            }
+            
+            // Event handlers
+            btnModeSelect?.addEventListener('click', () => setMode('select'));
+            btnModeMove?.addEventListener('click', () => setMode('move'));
+            
+            btnDeleteZone?.addEventListener('click', () => {
+                if (selectedZoneId) deleteZone(selectedZoneId);
+            });
+            
+            btnClearAllZones?.addEventListener('click', () => {
+                if (zones.length > 0 && confirm('Effacer toutes les zones ?')) {
+                    zones = [];
+                    selectedZoneId = null;
+                    editingZoneId = null;
+                    zoneEditPanel.style.display = 'none';
+                    updateZonesDisplay();
+                    updateZonesList();
+                    updateZonesSummary();
+                }
+            });
+            
+            btnTransferToEncepagement?.addEventListener('click', transferToEncepagement);
+            btnSaveZoneEdit?.addEventListener('click', saveZoneEdit);
+            btnCancelZoneEdit?.addEventListener('click', () => {
+                editingZoneId = null;
+                zoneEditPanel.style.display = 'none';
+            });
+            
+            shapeBtns.forEach(btn => {
+                btn.addEventListener('click', () => selectShape(btn.dataset.shape));
+            });
+            
+            // Bouton "Ajouter" manuel - crée la zone au centre de la carte
+            btnAddZoneManual?.addEventListener('click', () => {
+                // Utiliser la forme sélectionnée ou rectangle par défaut
+                const shape = selectedShape || 'rectangle';
+                const center = map.getCenter();
+                createZoneAtPoint(center, shape);
+            });
+            
+            // Map interactions
+            map.on('click', (e) => {
+                if (currentMode === 'place-shape' && selectedShape) {
+                    createZoneAtPoint(e.lngLat, selectedShape);
+                }
+            });
+            
+            map.on('click', 'zones-fill-layer', (e) => {
+                if (currentMode === 'select') {
+                    e.preventDefault();
+                    const zoneId = e.features[0]?.properties?.id;
+                    if (zoneId) {
+                        selectedZoneId = zoneId;
+                        updateZonesDisplay();
+                        updateZonesList();
+                    }
+                }
+            });
+            
+            // Handle dragging
+            map.on('mousedown', 'zone-handles-layer', (e) => {
+                if (currentMode !== 'select') return;
+                e.preventDefault();
+                
+                const props = e.features[0]?.properties;
+                if (props) {
+                    draggingHandle = { zoneId: props.zoneId, handleIndex: props.handleIndex };
+                    dragStartCoord = [e.lngLat.lng, e.lngLat.lat];
+                    map.getCanvas().style.cursor = 'grabbing';
+                    map.dragPan.disable();
+                }
+            });
+            
+            map.on('mousemove', (e) => {
+                if (draggingHandle) {
+                    const zone = zones.find(z => z.id === draggingHandle.zoneId);
+                    if (zone) {
+                        zone.coords[draggingHandle.handleIndex] = [e.lngLat.lng, e.lngLat.lat];
+                        // Update last point if it's the first point (close polygon)
+                        if (draggingHandle.handleIndex === 0) {
+                            zone.coords[zone.coords.length - 1] = [e.lngLat.lng, e.lngLat.lat];
+                        }
+                        updateZonesDisplay();
+                    }
+                }
+            });
+            
+            map.on('mouseup', () => {
+                if (draggingHandle) {
+                    draggingHandle = null;
+                    map.getCanvas().style.cursor = '';
+                    map.dragPan.enable();
+                    updateZonesSummary();
+                    saveZonesToHidden();
+                }
+            });
+            
+            map.on('mouseenter', 'zone-handles-layer', () => {
+                if (currentMode === 'select') {
+                    map.getCanvas().style.cursor = 'grab';
+                }
+            });
+            
+            map.on('mouseleave', 'zone-handles-layer', () => {
+                if (!draggingHandle) {
+                    map.getCanvas().style.cursor = '';
+                }
+            });
+            
+            map.on('mouseenter', 'zones-fill-layer', () => {
+                if (currentMode === 'select' && !draggingHandle) {
+                    map.getCanvas().style.cursor = 'pointer';
+                }
+            });
+            
+            map.on('mouseleave', 'zones-fill-layer', () => {
+                if (!draggingHandle) {
+                    map.getCanvas().style.cursor = '';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,585 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb_items %}
+                {% if item.url %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ item.url }}" class="text-decoration-none">{{ item.name }}</a>
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="bi bi-box me-2 text-warning"></i>{{ page_title }}
+                    </h1>
+                    <p class="text-muted mb-0">Créer un nouveau lot de production</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'catalogue:products_lots' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Retour à la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Informations du lot
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        <!-- Onglets -->
+                        <ul class="nav nav-tabs" id="lotTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="identite-tab" data-bs-toggle="tab" data-bs-target="#identite" type="button" role="tab">Identité & provenance</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="localisation-tab" data-bs-toggle="tab" data-bs-target="#localisation" type="button" role="tab">Localisation & contenants</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="volumes-tab" data-bs-toggle="tab" data-bs-target="#volumes" type="button" role="tab">Volumes & titre</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="qualite-tab" data-bs-toggle="tab" data-bs-target="#qualite" type="button" role="tab">Qualité & process</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="couts-tab" data-bs-toggle="tab" data-bs-target="#couts" type="button" role="tab">Coûts & valorisation</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="reglement-tab" data-bs-toggle="tab" data-bs-target="#reglement" type="button" role="tab">Commercial & réglementaire</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">Notes & pièces</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content border-start border-end border-bottom p-3" id="lotTabsContent">
+                            <!-- Identité & provenance -->
+                            <div class="tab-pane fade show active" id="identite" role="tabpanel" aria-labelledby="identite-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="code" class="form-label">Code du lot <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="code" name="code" required>
+                                        <div class="form-text">Ex: 2024-R-CP-001</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="id_lot_cuvee_input" class="form-label">Cuvée <span class="text-danger">*</span></label>
+                                        <div class="cbx cbx--sense"
+                                             data-endpoint="{% url 'catalogue:catalogue_api' %}?page_size=200"
+                                             data-mode="text"
+                                             data-items-key="items"
+                                             data-id-field="id"
+                                             data-label-template="{name}">
+                                            <div class="cbx-top">
+                                                <input id="id_lot_cuvee_input"
+                                                       class="form-control"
+                                                       type="text"
+                                                       role="combobox"
+                                                       aria-expanded="false"
+                                                       aria-autocomplete="list"
+                                                       aria-controls="id_lot_cuvee_listbox"
+                                                       autocomplete="off"
+                                                       placeholder="Rechercher une cuvée…">
+                                                <ul id="id_lot_cuvee_listbox" role="listbox" class="cbx-list" hidden></ul>
+                                            </div>
+                                            <div class="cbx-chips" aria-label="Suggestions rapides"></div>
+                                            <div class="cbx-meta">
+                                                <span class="cbx-help form-hint">Chargement…</span>
+                                            </div>
+                                            <select id="cuvee" name="cuvee" hidden required>
+                                                <option value="">— Sélectionner —</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="warehouse_name" class="form-label">Entrepôt</label>
+                                        <input type="text" class="form-control" id="warehouse_name" name="warehouse_name" list="dlWarehouses" placeholder="Saisissez ou choisissez">
+                                        <datalist id="dlWarehouses">
+                                            {% for entrepot in entrepots %}
+                                                <option value="{{ entrepot.name }}">
+                                            {% endfor %}
+                                            {% if warehouse_suggestions %}
+                                                {% for w in warehouse_suggestions %}
+                                                    <option value="{{ w }}">
+                                                {% endfor %}
+                                            {% endif %}
+                                        </datalist>
+                                        <div class="form-text">Saisissable librement, sera créé si absent</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="volume_l" class="form-label">Volume (L) <span class="text-danger">*</span></label>
+                                        <input type="number" step="0.1" min="0" class="form-control" id="volume_l" name="volume_l" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="alcohol_pct" class="form-label">Degré alcool (%)</label>
+                                        <input type="number" step="0.01" min="0" max="20" class="form-control" id="alcohol_pct" name="alcohol_pct">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="status" class="form-label">Statut</label>
+                                        <select class="form-select" id="status" name="status">
+                                            {% for val,label in lot_status_choices %}
+                                                <option value="{{ val }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-center">
+                                        <div class="form-check mt-4">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                            <label class="form-check-label" for="is_active">Lot actif</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Cuvées sources</label>
+                                        <div id="sourcesCuvees" class="vstack gap-2"></div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addSourceCuveeBtn"><i class="bi bi-plus-lg me-1"></i>Ajouter une cuvée source</button>
+                                        <template id="tplSourceCuveeSelect">
+                                            <select class="form-select" name="source_cuvee_id[]">
+                                                <option value="">Cuvée</option>
+                                                {% for cuvee in cuvees %}
+                                                    <option value="{{ cuvee.id }}">{{ cuvee.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </template>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Lots sources (assemblage)</label>
+                                        <div id="sourcesLots" class="vstack gap-2"></div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addSourceLotBtn"><i class="bi bi-plus-lg me-1"></i>Ajouter un lot source</button>
+                                        <template id="tplSourceLotSelect">
+                                            <select class="form-select" name="source_lot_id[]">
+                                                <option value="">Lot</option>
+                                                {% for l in lots %}
+                                                    <option value="{{ l.id }}">{{ l.code }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Localisation & contenants -->
+                            <div class="tab-pane fade" id="localisation" role="tabpanel" aria-labelledby="localisation-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Rangée</label>
+                                        <input type="text" class="form-control" name="emplacement_rangee">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Travée</label>
+                                        <input type="text" class="form-control" name="emplacement_travee">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Niveau</label>
+                                        <input type="text" class="form-control" name="emplacement_niveau">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Temp. cible (°C)</label>
+                                        <input type="number" step="0.1" class="form-control" name="temperature_cible_c">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Contenants</label>
+                                        <div id="containersList" class="vstack gap-2"></div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addContainerBtn"><i class="bi bi-plus-lg me-1"></i>Ajouter un contenant</button>
+                                        <template id="tplContainerTypeSelect">
+                                            <select class="form-select" name="container_type[]">
+                                                <option value="">Type</option>
+                                                {% for val,label in container_type_choices %}
+                                                    <option value="{{ val }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </template>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check mt-4">
+                                            <input class="form-check-input" type="checkbox" name="ouillage_requis" id="ouillage_requis">
+                                            <label class="form-check-label" for="ouillage_requis">Ouillage requis</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Périodicité ouillage (jours)</label>
+                                        <input type="number" min="0" class="form-control" name="ouillage_periodicite_jours">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Dernier contrôle</label>
+                                        <input type="date" class="form-control" name="ouillage_dernier_controle">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Volumes & titre -->
+                            <div class="tab-pane fade" id="volumes" role="tabpanel" aria-labelledby="volumes-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Volume brut (L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="volume_brut_l">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Volume net (L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="volume_net_l">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Titre alcoométrique (%)</label>
+                                        <input type="number" step="0.01" min="0" max="20" class="form-control" name="titre_alcoolique_pct">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Millésime majoritaire</label>
+                                        <input type="number" min="1900" class="form-control" name="millesime_majoritaire_year" list="dlVintages" placeholder="Ex: 2024">
+                                        <datalist id="dlVintages">
+                                            {% for y in suggested_vintages %}
+                                                <option value="{{ y }}">
+                                            {% endfor %}
+                                        </datalist>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">SR (g/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="sr_g_l">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">pH</label>
+                                        <input type="number" step="0.01" min="2.5" max="4.5" class="form-control" name="ph">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">AT (g/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="at_g_l">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">SO₂ libre (mg/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="so2_libre_mg_l">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">SO₂ total (mg/L)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="so2_total_mg_l">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Qualité & process -->
+                            <div class="tab-pane fade" id="qualite" role="tabpanel" aria-labelledby="qualite-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">État microbio</label>
+                                        <select class="form-select" name="etat_microbio">
+                                            <option value="">-</option>
+                                            {% for val,label in etat_microbio_choices %}
+                                                <option value="{{ val }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Clarification (technique)</label>
+                                        <input type="text" class="form-control" name="clarification_technique" placeholder="Collage, Filtration...">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Clarification (détails)</label>
+                                        <input type="text" class="form-control" name="clarification_details">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Élevage (type)</label>
+                                        <input type="text" class="form-control" name="elevage_type" placeholder="Cuve inox, fût, amphore...">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Élevage (durée, mois)</label>
+                                        <input type="number" min="0" class="form-control" name="elevage_duree_mois">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Coûts & valorisation -->
+                            <div class="tab-pane fade" id="couts" role="tabpanel" aria-labelledby="couts-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Coût matières (€)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="cout_matieres_eur">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Coût main d'œuvre (€)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="cout_main_oeuvre_eur">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Coût unitaire (€/L)</label>
+                                        <input type="number" step="0.0001" min="0" class="form-control" name="cout_unitaire_eur_l">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Valorisation</label>
+                                        <select class="form-select" name="valorisation_methode">
+                                            {% for val,label in valorisation_choices %}
+                                                <option value="{{ val }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Commercial & réglementaire -->
+                            <div class="tab-pane fade" id="reglement" role="tabpanel" aria-labelledby="reglement-tab">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Destinations</label>
+                                        <input type="text" class="form-control" name="destinations" placeholder="vrac, mise_bouteille, bib, tirage_effervescent">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">DRM catégorie</label>
+                                        <input type="text" class="form-control" name="drm_categorie">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Certifications</label>
+                                        <input type="text" class="form-control" name="certifications" placeholder="BIO,HVE,Demeter">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Mentions légales</label>
+                                        <textarea class="form-control" rows="2" name="etiquetage_mentions"></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Allergènes</label>
+                                        <textarea class="form-control" rows="2" name="etiquetage_allergenes"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes & pièces jointes -->
+                            <div class="tab-pane fade" id="notes" role="tabpanel" aria-labelledby="notes-tab">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label">Observations</label>
+                                        <textarea class="form-control" rows="3" name="observations"></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Documents</label>
+                                        <div id="docsList" class="vstack gap-2"></div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addDocBtn"><i class="bi bi-plus-lg me-1"></i>Ajouter un document</button>
+                                        <template id="tplDocTypeSelect">
+                                            <select class="form-select" name="doc_type[]">
+                                                {% for val,label in doc_type_choices %}
+                                                    <option value="{{ val }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'catalogue:products_lots' %}" class="btn btn-outline-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Créer le lot</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar d'aide -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Aide
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Code du lot</h6>
+                        <p class="small text-muted">
+                            Identifiant unique pour tracer le lot dans votre production.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Cuvée</h6>
+                        <p class="small text-muted">
+                            La cuvée à laquelle appartient ce lot de production.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Statut</h6>
+                        <p class="small text-muted">
+                            L'étape actuelle dans le processus de production du lot.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Statistiques
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-primary">{{ cuvees|length }}</div>
+                                <small class="text-muted">Cuvées</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 mb-0 text-warning">{{ entrepots|length }}</div>
+                            <small class="text-muted">Entrepôts</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation d'entrée
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Validation du formulaire
+    const form = document.querySelector('form');
+    const codeInput = document.getElementById('code');
+    const cuveeSelect = document.getElementById('cuvee');
+    const volumeInput = document.getElementById('volume_l');
+    
+    form.addEventListener('submit', function(e) {
+        let hasError = false;
+        
+        if (!codeInput.value.trim()) {
+            codeInput.classList.add('is-invalid');
+            hasError = true;
+        }
+        
+        if (!cuveeSelect.value) {
+            cuveeSelect.classList.add('is-invalid');
+            hasError = true;
+        }
+        
+        if (!volumeInput.value || parseFloat(volumeInput.value) <= 0) {
+            volumeInput.classList.add('is-invalid');
+            hasError = true;
+        }
+        
+        if (hasError) {
+            e.preventDefault();
+        }
+    });
+
+    // Suppression des erreurs lors de la saisie
+    [codeInput, cuveeSelect, volumeInput].forEach(input => {
+        input.addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+        });
+    });
+
+    // Gestion dynamique: Contenants
+    const containersList = document.getElementById('containersList');
+    const addContainerBtn = document.getElementById('addContainerBtn');
+    function cloneTpl(id) { const t = document.getElementById(id); return t.content.firstElementChild.cloneNode(true); }
+    function addContainerRow() {
+        const row = document.createElement('div');
+        row.className = 'row g-2 align-items-center';
+        const colType = document.createElement('div'); colType.className = 'col-md-3';
+        const typeSel = cloneTpl('tplContainerTypeSelect'); colType.appendChild(typeSel);
+        const colCap = document.createElement('div'); colCap.className = 'col-md-3';
+        const cap = document.createElement('input'); cap.type = 'number'; cap.step = '0.01'; cap.min = '0'; cap.name = 'container_capacite[]'; cap.placeholder='Capacité (L)'; cap.className = 'form-control'; colCap.appendChild(cap);
+        const colVol = document.createElement('div'); colVol.className = 'col-md-3';
+        const vol = document.createElement('input'); vol.type = 'number'; vol.step = '0.01'; vol.min = '0'; vol.name = 'container_volume[]'; vol.placeholder='Volume (L)'; vol.className = 'form-control'; colVol.appendChild(vol);
+        const colId = document.createElement('div'); colId.className = 'col-md-2';
+        const ident = document.createElement('input'); ident.type = 'text'; ident.name = 'container_identifiant[]'; ident.placeholder='Identifiant'; ident.className = 'form-control'; colId.appendChild(ident);
+        const colBtn = document.createElement('div'); colBtn.className = 'col-md-1';
+        const btn = document.createElement('button'); btn.type='button'; btn.className='btn btn-outline-danger'; btn.innerHTML='<i class="bi bi-x"></i>'; btn.addEventListener('click', ()=>row.remove()); colBtn.appendChild(btn);
+        row.append(colType, colCap, colVol, colId, colBtn);
+        containersList.appendChild(row);
+    }
+    if (addContainerBtn) { addContainerBtn.addEventListener('click', addContainerRow); addContainerRow(); }
+
+    // Gestion dynamique: Sources cuvées
+    const sourcesCuvees = document.getElementById('sourcesCuvees');
+    const addSourceCuveeBtn = document.getElementById('addSourceCuveeBtn');
+    function addSourceCuveeRow() {
+        const row = document.createElement('div'); row.className='row g-2 align-items-center';
+        const colSel = document.createElement('div'); colSel.className='col-md-6'; const sel = cloneTpl('tplSourceCuveeSelect'); colSel.appendChild(sel);
+        const colVol = document.createElement('div'); colVol.className='col-md-3'; const vol = document.createElement('input'); vol.type='number'; vol.step='0.01'; vol.min='0'; vol.name='source_cuvee_volume[]'; vol.placeholder='Volume (L)'; vol.className='form-control'; colVol.appendChild(vol);
+        const colPct = document.createElement('div'); colPct.className='col-md-2'; const pct = document.createElement('input'); pct.type='number'; pct.step='0.01'; pct.min='0'; pct.max='100'; pct.name='source_cuvee_pct[]'; pct.placeholder='%'; pct.className='form-control'; colPct.appendChild(pct);
+        const colBtn = document.createElement('div'); colBtn.className='col-md-1'; const btn = document.createElement('button'); btn.type='button'; btn.className='btn btn-outline-danger'; btn.innerHTML='<i class="bi bi-x"></i>'; btn.addEventListener('click', ()=>row.remove()); colBtn.appendChild(btn);
+        row.append(colSel, colVol, colPct, colBtn);
+        sourcesCuvees.appendChild(row);
+    }
+    if (addSourceCuveeBtn) { addSourceCuveeBtn.addEventListener('click', addSourceCuveeRow); }
+
+    // Gestion dynamique: Sources lots
+    const sourcesLots = document.getElementById('sourcesLots');
+    const addSourceLotBtn = document.getElementById('addSourceLotBtn');
+    function addSourceLotRow() {
+        const row = document.createElement('div'); row.className='row g-2 align-items-center';
+        const colSel = document.createElement('div'); colSel.className='col-md-6'; const sel = cloneTpl('tplSourceLotSelect'); colSel.appendChild(sel);
+        const colVol = document.createElement('div'); colVol.className='col-md-3'; const vol = document.createElement('input'); vol.type='number'; vol.step='0.01'; vol.min='0'; vol.name='source_lot_volume[]'; vol.placeholder='Volume (L)'; vol.className='form-control'; colVol.appendChild(vol);
+        const colPct = document.createElement('div'); colPct.className='col-md-2'; const pct = document.createElement('input'); pct.type='number'; pct.step='0.01'; pct.min='0'; pct.max='100'; pct.name='source_lot_pct[]'; pct.placeholder='%'; pct.className='form-control'; colPct.appendChild(pct);
+        const colBtn = document.createElement('div'); colBtn.className='col-md-1'; const btn = document.createElement('button'); btn.type='button'; btn.className='btn btn-outline-danger'; btn.innerHTML='<i class="bi bi-x"></i>'; btn.addEventListener('click', ()=>row.remove()); colBtn.appendChild(btn);
+        row.append(colSel, colVol, colPct, colBtn);
+        sourcesLots.appendChild(row);
+    }
+    if (addSourceLotBtn) { addSourceLotBtn.addEventListener('click', addSourceLotRow); }
+
+    // Gestion dynamique: Documents
+    const docsList = document.getElementById('docsList');
+    const addDocBtn = document.getElementById('addDocBtn');
+    function addDocRow() {
+        const row = document.createElement('div'); row.className='row g-2 align-items-center';
+        const colFile = document.createElement('div'); colFile.className='col-md-6'; const file = document.createElement('input'); file.type='file'; file.name='doc_file[]'; file.className='form-control'; colFile.appendChild(file);
+        const colType = document.createElement('div'); colType.className='col-md-3'; const typeSel = cloneTpl('tplDocTypeSelect'); colType.appendChild(typeSel);
+        const colDesc = document.createElement('div'); colDesc.className='col-md-2'; const desc = document.createElement('input'); desc.type='text'; desc.name='doc_desc[]'; desc.placeholder='Description'; desc.className='form-control'; colDesc.appendChild(desc);
+        const colBtn = document.createElement('div'); colBtn.className='col-md-1'; const btn = document.createElement('button'); btn.type='button'; btn.className='btn btn-outline-danger'; btn.innerHTML='<i class="bi bi-x"></i>'; btn.addEventListener('click', ()=>row.remove()); colBtn.appendChild(btn);
+        row.append(colFile, colType, colDesc, colBtn);
+        docsList.appendChild(row);
+    }
+    if (addDocBtn) { addDocBtn.addEventListener('click', addDocRow); }
+});
+</script>
+<script src="{% static 'catalogue/cuvees_form.js' %}"></script>
+<style>
+.cbx{position:relative}
+.cbx-list{position:absolute;z-index:10;left:0;right:0;max-height:260px;overflow:auto;margin:.25rem 0;padding:0;list-style:none;border:1px solid #ddd;border-radius:.5rem;background:#fff}
+.cbx-list li{padding:.5rem .75rem;cursor:pointer;display:flex;justify-content:space-between;gap:.5rem}
+.cbx-list li[aria-selected="true"],.cbx-list li:hover{background:#f5f5f5}
+.cbx-badges{display:flex;gap:.25rem;align-items:center}
+.cbx-badge{font-size:.75rem;opacity:.7}
+.cbx-meta{display:flex;gap:.5rem;margin-top:.25rem;align-items:center}
+.cbx-add{font-size:.875rem}
+.cbx-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.chip{border:1px solid #ddd;border-radius:999px;padding:.25rem .6rem;cursor:pointer;font-size:.85rem;background:#fafafa}
+.chip:hover{background:#f1f1f1}
+</style>
+{% endblock %}

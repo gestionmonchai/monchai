@@ -1,0 +1,58 @@
+{% extends 'auth_base.html' %}
+
+{% block title %}Créer un compte - Mon Chai{% endblock %}
+
+{% block auth_title %}Créer un compte{% endblock %}
+
+{% block auth_subtitle %}
+    <p class="subtitle">
+        {% if request.session.pending_invite %}
+            Créez votre compte pour rejoindre <strong>{{ request.session.pending_invite.organization_name }}</strong>
+        {% else %}
+            Rejoignez Mon Chai et gérez votre exploitation
+        {% endif %}
+    </p>
+{% endblock %}
+
+{% block auth_content %}
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <!-- Invitation en session -->
+        {% if request.session.pending_invite %}
+            {% include 'components/banner.html' with type="info" message="Votre compte rejoindra "|add:request.session.pending_invite.organization_name|add:" avec le rôle "|add:request.session.pending_invite.role_display dismissible=False %}
+        {% endif %}
+        
+        <!-- Prénom avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.first_name %}
+        
+        <!-- Nom avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.last_name %}
+        
+        <!-- Email avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.email %}
+        
+        <!-- Mot de passe avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.password1 help_text="8 caractères minimum recommandés" %}
+        
+        <!-- Confirmation mot de passe avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.password2 %}
+        
+        <!-- Erreurs générales -->
+        {% if form.non_field_errors %}
+            {% include 'components/banner.html' with type="error" message=form.non_field_errors.0 dismissible=False %}
+        {% endif %}
+        
+        <!-- Bouton d'inscription avec composant SubmitButton -->
+        {% include 'components/submit_button.html' with text="Créer mon compte" class="btn-success" %}
+    </form>
+{% endblock %}
+
+{% block auth_links %}
+    <p class="mb-0">
+        Déjà un compte ? 
+        <a href="{% url 'auth:login' %}">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter
+        </a>
+    </p>
+{% endblock %}

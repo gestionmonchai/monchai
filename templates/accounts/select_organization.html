@@ -1,0 +1,108 @@
+{% extends 'base_minimal.html' %}
+{% load static %}
+
+{% block title %}Choisir un chai - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+    <div class="container" style="max-width: 600px;">
+        
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <img src="{% static 'images/logo.svg' %}" alt="Mon Chai" height="48" class="mb-3" onerror="this.style.display='none'">
+            <h1 class="h3 mb-1">Bonjour {{ request.user.first_name|default:request.user.email }} !</h1>
+            <p class="text-muted">Sur quel chai souhaitez-vous travailler ?</p>
+        </div>
+        
+        <!-- Invitations en attente (Point 3 - Priorite) -->
+        {% if pending_invitations %}
+        <div class="card border-success mb-4" style="border-width: 2px; border-style: dashed;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle p-2 bg-success text-white">
+                        <i class="bi bi-envelope-open fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0 text-success">Invitation en attente</h5>
+                        <small class="text-muted">Vous avez ete invite a rejoindre un chai</small>
+                    </div>
+                </div>
+                
+                {% for inv in pending_invitations %}
+                <div class="bg-white rounded-3 p-3 mb-2 border">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="fw-bold">{{ inv.organization.name }}</div>
+                            <small class="text-muted">
+                                Role : {{ inv.get_role_display }}
+                                {% if inv.invited_by %}
+                                &bull; Invite par {{ inv.invited_by.get_full_name|default:inv.invited_by.email }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <form method="post" action="{% url 'auth:accept_invitation_quick' inv.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i>Rejoindre
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Liste des chais existants -->
+        {% if memberships %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">
+                    {% if pending_invitations %}Ou continuer sur un chai existant :{% else %}Choisissez votre chai :{% endif %}
+                </h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for m in memberships %}
+                <a href="{% url 'auth:switch_org' m.organization.id %}" 
+                   class="list-group-item list-group-item-action py-3 {% if m.organization.id == last_org_id %}bg-light{% endif %}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded" style="width: 40px; height: 40px; background-color: {{ m.organization.color|default:'#722F37' }}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            {{ m.organization.get_initials }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold">{{ m.organization.name }}</span>
+                                {% if m.organization.is_test %}
+                                <span class="badge bg-warning text-dark">TEST</span>
+                                {% endif %}
+                                {% if m.organization.id == last_org_id %}
+                                <span class="badge bg-secondary">Dernier utilise</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ m.get_role_display }}</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Lien vers creation -->
+        <div class="text-center mt-4">
+            <a href="{% url 'auth:create_organization' %}" class="text-muted small">
+                <i class="bi bi-plus-lg me-1"></i>Creer un nouveau chai...
+            </a>
+        </div>
+        
+        <!-- Lien deconnexion -->
+        <div class="text-center mt-3">
+            <a href="{% url 'auth:logout' %}" class="text-muted small">
+                <i class="bi bi-box-arrow-left me-1"></i>Se deconnecter
+            </a>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

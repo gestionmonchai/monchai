@@ -1,0 +1,41 @@
+<div class="d-none" id="parcelles-table-meta" data-total="{{ total_count }}"></div>
+<table class="table align-middle table-hover">
+  <thead>
+    <tr>
+      <th>Nom</th>
+      <th>Commune</th>
+      <th>Appellation</th>
+      <th class="text-end">Surface (ha)</th>
+      <th class="text-end">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in parcelles %}
+    <tr style="cursor: pointer;" onclick="window.location='/parcelles/{{ p.id }}/'">
+      <td class="fw-medium">{{ p.nom }}</td>
+      <td>{{ p.commune|default:'—' }}</td>
+      <td>{{ p.appellation|default:'—' }}</td>
+      <td class="text-end">{{ p.surface|default:'—' }}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="/parcelles/{{ p.id }}/">Ouvrir</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="text-center text-muted py-5">Aucune parcelle trouvée</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if is_paginated %}
+<nav class="d-flex justify-content-end">
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.previous_page_number }}&{{ querystring }}" hx-include="#parcelles-filter-form" hx-target="#parcelles-table" hx-swap="innerHTML">«</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.next_page_number }}&{{ querystring }}" hx-include="#parcelles-filter-form" hx-target="#parcelles-table" hx-swap="innerHTML">»</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

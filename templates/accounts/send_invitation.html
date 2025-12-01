@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inviter un utilisateur{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Inviter un utilisateur</h1>
+                    <p class="text-muted mb-0">
+                        Ajouter un nouveau membre à l'exploitation {{ organization.name }}
+                    </p>
+                </div>
+                <a href="{% url 'auth:roles_management' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+            
+            <!-- Messages Django -->
+            {% include 'components/django_messages.html' %}
+            
+            <!-- Formulaire d'invitation -->
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-person-plus me-2"></i>
+                                Nouvelle invitation
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+                                
+                                <!-- Email -->
+                                {% include 'components/form_group.html' with field=form.email help_text="L'invitation sera envoyée à cette adresse" %}
+                                
+                                <!-- Rôle -->
+                                {% include 'components/form_group.html' with field=form.role %}
+                                
+                                <!-- Informations sur les rôles -->
+                                <div class="alert alert-light" role="status">
+                                    <h6 class="alert-heading">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        À propos des rôles
+                                    </h6>
+                                    <ul class="mb-0 small">
+                                        <li><strong>Lecture seule :</strong> Peut consulter les données</li>
+                                        <li><strong>Éditeur :</strong> Peut modifier et créer du contenu</li>
+                                        <li><strong>Administrateur :</strong> Peut gérer les utilisateurs</li>
+                                        <li><strong>Propriétaire :</strong> Contrôle total de l'exploitation</li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Boutons -->
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{% url 'auth:roles_management' %}" class="btn btn-outline-secondary">
+                                        Annuler
+                                    </a>
+                                    {% include 'components/submit_button.html' with text="Envoyer l'invitation" class="btn-primary" %}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Informations complémentaires -->
+            <div class="row justify-content-center mt-4">
+                <div class="col-lg-6">
+                    <div class="alert alert-info" role="status">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-envelope me-2"></i>
+                            Comment fonctionne l'invitation ?
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>Un email d'invitation sera envoyé à la personne</li>
+                            <li>Elle aura 72 heures pour accepter l'invitation</li>
+                            <li>Si elle n'a pas de compte, elle pourra en créer un</li>
+                            <li>Une fois acceptée, elle aura accès à votre exploitation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

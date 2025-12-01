@@ -1,0 +1,171 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Lots techniques{% endblock %}
+{% block production_content %}
+
+<div class="row">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="h4 mb-0">Lots techniques</h1>
+      <div class="d-flex align-items-center">
+        <a id="btn-new-lot-tech" class="btn btn-primary" href="/production/lots-techniques/nouveau/">
+          <i class="bi bi-plus"></i> Nouveau lot technique
+        </a>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Recherche et filtres -->
+  <div class="col-12 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-search me-2"></i>Recherche et filtres</h5>
+      </div>
+      <div class="card-body">
+        <form method="get" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label" for="q">Recherche rapide</label>
+            <input type="text" class="form-control" id="q" name="q" placeholder="Code, contenant, campagne..." value="{{ selected.q }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="campagne">Campagne</label>
+            <select class="form-select" id="campagne" name="campagne__exact">
+              <option value="">Toutes</option>
+              {% for c in campagnes %}
+                <option value="{{ c }}" {% if selected.campagne__exact == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="statut">Statut</label>
+            <select class="form-select" id="statut" name="statut__exact">
+              <option value="">Tous</option>
+              {% for key, label in statut_choices %}
+                <option value="{{ key }}" {% if selected.statut__exact == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="vmin">Volume min (L)</label>
+            <input type="number" step="0.01" class="form-control" id="vmin" name="volume_min" value="{{ selected.volume_min }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="vmax">Volume max (L)</label>
+            <input type="number" step="0.01" class="form-control" id="vmax" name="volume_max" value="{{ selected.volume_max }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="sort">Tri</label>
+            <select class="form-select" id="sort" name="sort">
+              <option value="">Récent</option>
+              <option value="code" {% if selected.sort == 'code' %}selected{% endif %}>Code</option>
+              <option value="campagne" {% if selected.sort == 'campagne' %}selected{% endif %}>Campagne</option>
+              <option value="volume_desc" {% if selected.sort == 'volume_desc' %}selected{% endif %}>Volume décroissant</option>
+              <option value="volume_asc" {% if selected.sort == 'volume_asc' %}selected{% endif %}>Volume croissant</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">
+              <i class="bi bi-search"></i> Rechercher
+            </button>
+            <a href="/production/lots-techniques/" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle"></i> Effacer
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tableau des résultats -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-list me-2"></i>Liste des lots techniques</h5>
+        <span class="badge bg-primary">{{ total_count }} lot{{ total_count|pluralize:"s" }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if lots %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Code</th>
+                  <th>Campagne</th>
+                  <th>Contenant</th>
+                  <th>Volume (L)</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in lots %}
+                <tr class="row-click" data-href="/production/lots-techniques/{{ l.id }}/">
+                  <td><strong>{{ l.code }}</strong></td>
+                  <td>{{ l.campagne }}</td>
+                  <td>{{ l.contenant|default:'-' }}</td>
+                  <td><span class="badge bg-light text-dark">{{ l.volume_l }}</span></td>
+                  <td>
+                    {% if l.statut == 'available' %}
+                      <span class="badge bg-light text-dark"><i class="bi bi-check-circle me-1"></i>{{ l.get_statut_display }}</span>
+                    {% elif l.statut == 'draft' %}
+                      <span class="badge bg-light text-dark"><i class="bi bi-pencil me-1"></i>{{ l.get_statut_display }}</span>
+                    {% else %}
+                      <span class="badge bg-light text-dark"><i class="bi bi-x-circle me-1"></i>{{ l.get_statut_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <a href="/production/lots-techniques/{{ l.id }}/" class="btn btn-outline-primary" title="Voir">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if is_paginated %}
+          <div class="p-3">
+            <nav>
+              <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                  <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                  <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
+                {% else %}
+                  <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-box fs-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Aucun lot trouvé</h5>
+            <p class="text-muted">Aucun lot ne correspond aux critères de recherche.</p>
+            <a class="btn btn-primary" href="/production/lots-techniques/nouveau/"><i class="bi bi-plus"></i> Créer un lot</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const autos = document.querySelectorAll('select[name$="__exact"], input[name="q"], input[name="volume_min"], input[name="volume_max"], select[name="sort"]');
+  autos.forEach(el => {
+    el.addEventListener('change', function() { this.form && this.form.submit(); });
+  });
+});
+</script>
+{% endblock %}

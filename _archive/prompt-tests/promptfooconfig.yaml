@@ -1,0 +1,25 @@
+providers:
+  - id: ollama:llama3
+    config:
+      temperature: 0
+prompts:
+  - |
+    Tu es l'assistant Mon Chai. Réponds en français de façon concise.
+    Utilisateur: {{user_input}}
+    Réponse:
+
+tests:
+  - vars:
+      user_input: "Créer une cuvée 'Moutier 2024' depuis la parcelle X"
+    assert:
+      - type: contains
+        value: "cuvée"
+      - type: llm-rubric
+        value: >
+          La réponse doit donner des étapes concrètes dans Mon Chai (navigation, formulaire, validations).
+  - vars:
+      user_input: "Comment éditer la DRM ?"
+    assert:
+      - type: contains
+        value: "DRM"
+  - file: prompt-tests/cases.yaml

@@ -1,0 +1,825 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+.nav-tabs .nav-link {
+    color: #495057;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: #dee2e6;
+    background: #f8f9fa;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom-color: #0d6efd;
+    background: none;
+}
+
+.cuvee-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #dee2e6;
+}
+
+.status-badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+.metric-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.info-item {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #0d6efd;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb_items %}
+                {% if item.url %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ item.url }}" class="text-decoration-none">{{ item.name }}</a>
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Header avec informations principales -->
+    <div class="cuvee-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-wine fs-1 text-primary me-3"></i>
+                    <div>
+                        <h1 class="mb-1">{{ cuvee.name }}</h1>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            {% if cuvee.code %}
+                                <span class="badge bg-secondary">{{ cuvee.code }}</span>
+                            {% endif %}
+                            {% if cuvee.appellation %}
+                                <span class="badge bg-primary">{{ cuvee.appellation.name }}</span>
+                            {% endif %}
+                            {% if cuvee.vintage %}
+                                <span class="badge bg-info text-dark">{{ cuvee.vintage.year }}</span>
+                            {% endif %}
+                            {% if cuvee_detail.type_vin %}
+                                <span class="badge bg-warning text-dark">{{ cuvee_detail.get_type_vin_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if cuvee_detail.statut %}
+                <div class="mb-3">
+                    <span class="status-badge 
+                        {% if cuvee_detail.statut == 'en_cours' %}bg-warning text-dark
+                        {% elif cuvee_detail.statut == 'fini' %}bg-success
+                        {% elif cuvee_detail.statut == 'vendu' %}bg-primary
+                        {% else %}bg-secondary{% endif %}">
+                        {{ cuvee_detail.get_statut_display }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{% url 'catalogue:products_cuvees' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Retour à la liste
+                    </a>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-gear me-1"></i>Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="editCuvee()">
+                                    <i class="bi bi-pencil me-2"></i>Modifier la fiche
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="duplicateCuvee()">
+                                    <i class="bi bi-files me-2"></i>Dupliquer cuvée
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'catalogue:lot_create' %}">
+                                    <i class="bi bi-plus me-2"></i>Créer un lot
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'catalogue:sku_create' %}">
+                                    <i class="bi bi-upc me-2"></i>Créer un produit fini
+                                </a></li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métriques rapides -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value text-primary">{{ stats.total_lots }}</div>
+                <div class="metric-label">Lots</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value text-info">{{ stats.volume_total|floatformat:0 }}</div>
+                <div class="metric-label">Litres Total</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value text-success">{{ stats.total_skus }}</div>
+                <div class="metric-label">SKUs</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value text-warning">
+                    {% if cuvee_detail.volume_total_hl %}{{ cuvee_detail.volume_total_hl|floatformat:1 }}{% else %}0{% endif %}
+                </div>
+                <div class="metric-label">Hectolitres</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation par onglets -->
+    <ul class="nav nav-tabs mb-4" id="cuveeDetailTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="identite-tab" data-bs-toggle="tab" data-bs-target="#identite" type="button" role="tab">
+                <i class="bi bi-card-text me-2"></i>Identité
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="origine-tab" data-bs-toggle="tab" data-bs-target="#origine" type="button" role="tab">
+                <i class="bi bi-geo-alt me-2"></i>Origine & Élaboration
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="analyses-tab" data-bs-toggle="tab" data-bs-target="#analyses" type="button" role="tab">
+                <i class="bi bi-clipboard-data me-2"></i>Analyses & Notes
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="commercialisation-tab" data-bs-toggle="tab" data-bs-target="#commercialisation" type="button" role="tab">
+                <i class="bi bi-shop me-2"></i>Commercialisation
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="production-tab" data-bs-toggle="tab" data-bs-target="#production" type="button" role="tab">
+                <i class="bi bi-boxes me-2"></i>Production
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenu des onglets -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="tab-content" id="cuveeDetailTabContent">
+                
+                <!-- Onglet Identité -->
+                <div class="tab-pane fade show active" id="identite" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-card-text me-2"></i>Informations d'identité</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <div class="info-label">Nom de la cuvée</div>
+                                            <div class="info-value">{{ cuvee.name }}</div>
+                                        </div>
+                                        {% if cuvee.code %}
+                                        <div class="info-item">
+                                            <div class="info-label">Code interne</div>
+                                            <div class="info-value"><code>{{ cuvee.code }}</code></div>
+                                        </div>
+                                        {% endif %}
+                                        {% if cuvee.appellation %}
+                                        <div class="info-item">
+                                            <div class="info-label">Appellation</div>
+                                            <div class="info-value">{{ cuvee.appellation.name }} ({{ cuvee.appellation.get_type_display }})</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if cuvee.vintage %}
+                                        <div class="info-item">
+                                            <div class="info-label">Millésime</div>
+                                            <div class="info-value">{{ cuvee.vintage.year }}</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if cuvee_detail.type_vin %}
+                                        <div class="info-item">
+                                            <div class="info-label">Type de vin</div>
+                                            <div class="info-value">{{ cuvee_detail.get_type_vin_display }}</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if cuvee_detail.numero_interne %}
+                                        <div class="info-item">
+                                            <div class="info-label">Numéro interne</div>
+                                            <div class="info-value"><small class="font-monospace">{{ cuvee_detail.numero_interne }}</small></div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Statut & Certifications</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if cuvee_detail.statut %}
+                                    <div class="mb-3">
+                                        <strong>Statut :</strong><br>
+                                        {% if cuvee_detail.statut == 'en_cours' %}
+                                            <span class="badge bg-warning text-dark">{{ cuvee_detail.get_statut_display }}</span>
+                                        {% elif cuvee_detail.statut == 'fini' %}
+                                            <span class="badge bg-success">{{ cuvee_detail.get_statut_display }}</span>
+                                        {% elif cuvee_detail.statut == 'vendu' %}
+                                            <span class="badge bg-primary">{{ cuvee_detail.get_statut_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ cuvee_detail.get_statut_display }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    {% if certifications_list %}
+                                    <div class="mb-3">
+                                        <strong>Certifications :</strong><br>
+                                        {% for cert in certifications_list %}
+                                            <span class="badge bg-success me-1">{{ cert }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>Cuvée active :</strong><br>
+                                        {% if cuvee.is_active %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Oui</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Non</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Origine & Élaboration -->
+                <div class="tab-pane fade" id="origine" role="tabpanel">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Origine: Parcelles & Cépages</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Parcelles</h6>
+                                    {% with ratios=cuvee_detail.cuveeparcelleratio_set.all %}
+                                    {% if ratios %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Parcelle</th>
+                                                        <th class="text-end">%</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for r in ratios %}
+                                                    <tr>
+                                                        <td>{{ r.parcelle.name }}</td>
+                                                        <td class="text-end">{{ r.pourcentage|floatformat:1 }}%</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted mb-0">Aucune parcelle associée</p>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Cépages</h6>
+                                    {% if cuvee_detail.cepages_ratios.all %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Cépage</th>
+                                                        <th class="text-end">%</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for c in cuvee_detail.cepages_ratios.all %}
+                                                    <tr>
+                                                        <td>{{ c.cepage.name }}</td>
+                                                        <td class="text-end">{{ c.pourcentage|floatformat:1 }}%</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted mb-0">Aucun cépage renseigné</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-basket me-2"></i>Vendanges & Volume</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Volume total vinifié</div>
+                                    <div class="info-value">{% if cuvee_detail.volume_total_hl %}{{ cuvee_detail.volume_total_hl|floatformat:1 }} hL{% else %}-{% endif %}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Méthode de vendange</div>
+                                    <div class="info-value">{% if cuvee_detail.methode_vendange %}{{ cuvee_detail.get_methode_vendange_display }}{% else %}-{% endif %}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Début vendanges</div>
+                                    <div class="info-value">{{ cuvee_detail.date_vendange_debut|date:"d/m/Y"|default:"-" }}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Fin vendanges</div>
+                                    <div class="info-value">{{ cuvee_detail.date_vendange_fin|date:"d/m/Y"|default:"-" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Vinification & Élevage</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Méthode de vinification</div>
+                                    <div class="info-value">{% if cuvee_detail.methode_vinification %}{{ cuvee_detail.get_methode_vinification_display }}{% else %}-{% endif %}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Durée d'élevage</div>
+                                    <div class="info-value">{% if cuvee_detail.duree_elevage_mois %}{{ cuvee_detail.duree_elevage_mois }} mois{% else %}-{% endif %}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Contenant d'élevage</div>
+                                    <div class="info-value">{% if cuvee_detail.contenant_elevage %}{{ cuvee_detail.get_contenant_elevage_display }}{% else %}-{% endif %}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Analyses & Notes -->
+                <div class="tab-pane fade" id="analyses" role="tabpanel">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Caractéristiques analytiques</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                {% if cuvee_detail.degre_alcool_potentiel %}
+                                <div class="info-item">
+                                    <div class="info-label">Alcool potentiel</div>
+                                    <div class="info-value">{{ cuvee_detail.degre_alcool_potentiel|floatformat:2 }} %</div>
+                                </div>
+                                {% endif %}
+                                {% if cuvee_detail.degre_alcool_final %}
+                                <div class="info-item">
+                                    <div class="info-label">Alcool final</div>
+                                    <div class="info-value">{{ cuvee_detail.degre_alcool_final|floatformat:2 }} %</div>
+                                </div>
+                                {% endif %}
+                                {% if cuvee_detail.sucres_residuels %}
+                                <div class="info-item">
+                                    <div class="info-label">Sucres résiduels</div>
+                                    <div class="info-value">{{ cuvee_detail.sucres_residuels|floatformat:1 }} g/L</div>
+                                </div>
+                                {% endif %}
+                                {% if cuvee_detail.ph %}
+                                <div class="info-item">
+                                    <div class="info-label">pH</div>
+                                    <div class="info-value">{{ cuvee_detail.ph }}</div>
+                                </div>
+                                {% endif %}
+                                {% if cuvee_detail.acidite_totale %}
+                                <div class="info-item">
+                                    <div class="info-label">Acidité totale</div>
+                                    <div class="info-value">{{ cuvee_detail.acidite_totale|floatformat:2 }} g/L</div>
+                                </div>
+                                {% endif %}
+                                {% if cuvee_detail.so2_libre %}
+                                <div class="info-item">
+                                    <div class="info-label">SO₂ libre</div>
+                                    <div class="info-value">{{ cuvee_detail.so2_libre|floatformat:1 }} mg/L</div>
+                                </div>
+                                {% endif %}
+                                {% if cuvee_detail.so2_total %}
+                                <div class="info-item">
+                                    <div class="info-label">SO₂ total</div>
+                                    <div class="info-value">{{ cuvee_detail.so2_total|floatformat:1 }} mg/L</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Analyses périodiques</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if cuvee_detail.analyses.all %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Laboratoire</th>
+                                                <th>Résultats</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for analyse in cuvee_detail.analyses.all %}
+                                            <tr>
+                                                <td>{{ analyse.date_analyse|date:"d/m/Y" }}</td>
+                                                <td>{{ analyse.type_analyse }}</td>
+                                                <td>{{ analyse.laboratoire|default:"-" }}</td>
+                                                <td>
+                                                    <pre class="mb-0 small text-muted" style="white-space: pre-wrap;">{{ analyse.resultats }}</pre>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="p-3 text-center text-muted">Aucune analyse enregistrée</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="bi bi-journal-text me-2"></i>Notes</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="info-label mb-1">Notes internes</div>
+                                    <div class="p-3 bg-light border rounded" style="min-height: 120px;">{{ cuvee_detail.notes_internes|default:"-"|linebreaksbr }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-label mb-1">Notes de dégustation</div>
+                                    <div class="p-3 bg-light border rounded" style="min-height: 120px;">{{ cuvee_detail.notes_degustation|default:"-"|linebreaksbr }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Commercialisation -->
+                <div class="tab-pane fade" id="commercialisation" role="tabpanel">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-currency-euro me-2"></i>Données commerciales</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Prix de revient estimé</div>
+                                    <div class="info-value">{% if cuvee_detail.prix_revient_estime %}{{ cuvee_detail.prix_revient_estime|floatformat:2 }} €/L{% else %}-{% endif %}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Certifications</div>
+                                    <div class="info-value">
+                                        {% if certifications_list %}
+                                            {% for cert in certifications_list %}
+                                                <span class="badge bg-success me-1">{{ cert }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="bi bi-image me-2"></i>Étiquette</h6>
+                            {% if user.get_active_membership.can_edit_data %}
+                            <a href="/viticulture/cuvee/{{ cuvee.id }}/change/" class="btn btn-sm btn-outline-secondary"><i class="bi bi-upload me-1"></i>Mettre à jour</a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if cuvee_detail.etiquette_image %}
+                                <img src="{{ cuvee_detail.etiquette_image.url }}" alt="Étiquette cuvée" class="img-fluid rounded border">
+                            {% else %}
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-image fs-1 d-block mb-2"></i>
+                                    <div>Aucune étiquette téléchargée</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if user.get_active_membership.can_edit_data %}
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'catalogue:sku_create' %}" class="btn btn-primary">
+                            <i class="bi bi-magic me-2"></i>Générer un produit fini
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Onglet Production -->
+                <div class="tab-pane fade" id="production" role="tabpanel">
+                    <!-- Lots associés -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-box me-2"></i>Lots associés
+                            </h5>
+                            <span class="badge bg-primary">{{ lots|length }} lot{{ lots|length|pluralize:"s" }}</span>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if lots %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Volume</th>
+                                                <th>Statut</th>
+                                                <th>Entrepôt</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for lot in lots %}
+                                            <tr>
+                                                <td><strong>{{ lot.code }}</strong></td>
+                                                <td>
+                                                    <span class="badge bg-info text-dark">
+                                                        {{ lot.volume_l|floatformat:1 }} L
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {% if lot.status == 'en_cours' %}
+                                                        <span class="badge bg-warning text-dark">{{ lot.get_status_display }}</span>
+                                                    {% elif lot.status == 'elevage' %}
+                                                        <span class="badge bg-info text-dark">{{ lot.get_status_display }}</span>
+                                                    {% elif lot.status == 'stabilise' %}
+                                                        <span class="badge bg-secondary">{{ lot.get_status_display }}</span>
+                                                    {% elif lot.status == 'embouteille' %}
+                                                        <span class="badge bg-success">{{ lot.get_status_display }}</span>
+                                                    {% elif lot.status == 'archive' %}
+                                                        <span class="badge bg-dark">{{ lot.get_status_display }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">{{ lot.get_status_display|default:lot.status }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ lot.warehouse.name|default:"-" }}</td>
+                                                <td>
+                                                    <a href="{% url 'catalogue:lot_detail' lot.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-box fs-1 text-muted mb-3"></i>
+                                    <p class="text-muted">Aucun lot associé à cette cuvée</p>
+                                    <a href="{% url 'catalogue:lot_create' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus"></i> Créer un lot
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- SKUs associés -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-upc me-2"></i>SKUs associés
+                            </h5>
+                            <span class="badge bg-info">{{ skus|length }} SKU{{ skus|length|pluralize:"s" }}</span>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if skus %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Étiquette</th>
+                                                <th>Unité</th>
+                                                <th>Volume</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for sku in skus %}
+                                            <tr>
+                                                <td><strong>{{ sku.label }}</strong></td>
+                                                <td>{{ sku.uom.name|default:"-" }}</td>
+                                                <td>
+                                                    {% if sku.volume_by_uom_to_l %}
+                                                        <span class="badge bg-info text-dark">
+                                                            {{ sku.volume_by_uom_to_l|floatformat:2 }} L
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if sku.is_active %}
+                                                        <span class="badge bg-success">Actif</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactif</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'catalogue:sku_detail' sku.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-upc fs-1 text-muted mb-3"></i>
+                                    <p class="text-muted">Aucun SKU associé à cette cuvée</p>
+                                    <a href="{% url 'catalogue:sku_create' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus"></i> Créer un SKU
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <!-- Sidebar -->
+            <!-- Statistiques -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Statistiques
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-primary">{{ lots|length }}</div>
+                                <small class="text-muted">Lots</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 mb-0 text-info">{{ skus|length }}</div>
+                            <small class="text-muted">SKUs</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métadonnées -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-clock me-2"></i>Métadonnées
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Créée le :</strong><br>
+                        <small class="text-muted">{{ cuvee.created_at|date:"d/m/Y à H:i" }}</small>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Modifiée le :</strong><br>
+                        <small class="text-muted">{{ cuvee.updated_at|date:"d/m/Y à H:i" }}</small>
+                    </div>
+                    <div>
+                        <strong>Version :</strong><br>
+                        <small class="text-muted">{{ cuvee.row_version }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des cartes
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+// Ouvrir la fiche cuvée dans la page de modification front-office
+function editCuvee() {
+    window.location.href = '/viticulture/cuvee/{{ cuvee.id }}/change/';
+}
+
+// Dupliquer la cuvée: redirige vers création avec pré-remplissage (à implémenter côté vue)
+function duplicateCuvee() {
+    if (confirm('Dupliquer cette cuvée pour un nouveau millésime ?')) {
+        const url = "{% url 'catalogue:cuvee_create' %}?duplicate_from={{ cuvee.id }}";
+        window.location.href = url;
+    }
+}
+</script>
+{% endblock %}

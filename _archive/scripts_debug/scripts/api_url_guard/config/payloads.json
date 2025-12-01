@@ -1,0 +1,12 @@
+{
+  "/cuvees*": {
+    "name": "Smoke Cuv\u00e9e",
+    "code": "SMK",
+    "color": "rouge"
+  },
+  "/lots*": {
+    "source": "vendange",
+    "volume_l": 450.0,
+    "degree": 12.8
+  }
+}

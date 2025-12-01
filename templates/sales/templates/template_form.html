@@ -1,0 +1,466 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if mode == 'edit' %}Modifier le template{% else %}Créer un template{% endif %} - Mon Chai
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/lib/codemirror.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/theme/monokai.css" rel="stylesheet">
+<style>
+    .CodeMirror {
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 12px;
+        height: 300px;
+        font-size: 13px;
+    }
+    
+    .variable-chip {
+        display: inline-block;
+        background: linear-gradient(135deg, #d4af37 0%, #c49a2d 100%);
+        color: #722f37;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        margin: 2px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .variable-chip:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
+    
+    .variables-panel {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 231, 206, 0.98));
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .template-preset {
+        padding: 15px;
+        background: white;
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .template-preset:hover {
+        border-color: #d4af37;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 21, 56, 0.15);
+    }
+    
+    .preview-frame {
+        width: 100%;
+        height: 600px;
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3">
+            {% if mode == 'edit' %}
+                <i class="bi bi-pencil-square"></i> Modifier le template
+            {% else %}
+                <i class="bi bi-plus-circle"></i> Créer un template de document
+            {% endif %}
+        </h1>
+        <!-- Données pour JS -->
+    <div id="defaultTemplatesData" data-default-templates='{% if mode == "create" %}{{ default_templates|safe|escapejs }}{% else %}{}{% endif %}' style="display:none;"></div>
+    <div id="docTemplateMeta" data-preview-url="{% if template %}{% url 'sales:template_preview' pk=template.id %}{% endif %}" style="display:none;"></div>
+</div>
+{% if mode == 'edit' %}
+<!-- Modal Généraliser -->
+<div class="modal fade" id="generalizeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Généraliser le modèle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'sales:template_generalize' pk=template.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted small">Crée des copies de ce modèle vers d'autres types de documents. Choisissez les types et si vous souhaitez une variante <em>sans prix</em>.</p>
+
+                    <div class="mb-3">
+                        <label class="form-label">Types de documents cibles</label>
+                        <div class="vstack gap-2">
+                            {% for value, label in doc_types %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="tg_{{ value }}" name="target_types" value="{{ value }}" {% if template.document_type == value %}checked{% endif %}>
+                                <label class="form-check-label" for="tg_{{ value }}">{{ label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="without_prices" name="without_prices">
+                        <label class="form-check-label" for="without_prices">Créer aussi une variante <strong>sans prix</strong></label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Généraliser</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+{% endif %}
+</div>
+
+<form method="post" id="templateForm">
+    {% csrf_token %}
+    
+    <div class="row">
+        <!-- Formulaire principal -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> Informations du template</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="name" class="form-label">Nom du template *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{% if template %}{{ template.name }}{% endif %}" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="document_type" class="form-label">Type de document *</label>
+                            <select class="form-select" id="document_type" name="document_type" required>
+                                {% for value, label in doc_types %}
+                                <option value="{{ value }}" {% if template and template.document_type == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="2">{% if template %}{{ template.description }}{% endif %}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="paper_size" class="form-label">Format papier</label>
+                            <select class="form-select" id="paper_size" name="paper_size">
+                                {% for value, label in paper_sizes %}
+                                <option value="{{ value }}" {% if template and template.paper_size == value %}selected{% elif not template and value == 'A4' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="orientation" class="form-label">Orientation</label>
+                            <select class="form-select" id="orientation" name="orientation">
+                                {% for value, label in orientations %}
+                                <option value="{{ value }}" {% if template and template.orientation == value %}selected{% elif not template and value == 'portrait' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="is_default" name="is_default" 
+                                       {% if template and template.is_default %}checked{% endif %}>
+                                <label class="form-check-label" for="is_default">
+                                    <strong>Template par défaut</strong>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Éditeur HTML -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-code-slash"></i> Contenu HTML</h5>
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#variablesModal">
+                        <i class="bi bi-info-circle"></i> Variables disponibles
+                    </button>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="editorTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="header-tab" data-bs-toggle="tab" data-bs-target="#header" type="button">
+                                <i class="bi bi-file-earmark-text"></i> En-tête
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="body-tab" data-bs-toggle="tab" data-bs-target="#body" type="button">
+                                <i class="bi bi-file-earmark-richtext"></i> Corps
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="footer-tab" data-bs-toggle="tab" data-bs-target="#footer" type="button">
+                                <i class="bi bi-file-earmark-minus"></i> Pied de page
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="css-tab" data-bs-toggle="tab" data-bs-target="#css" type="button">
+                                <i class="bi bi-palette"></i> CSS
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="editorTabsContent">
+                        <div class="tab-pane fade show active" id="header" role="tabpanel">
+                            <textarea id="html_header" name="html_header">{% if template %}{{ template.html_header }}{% endif %}</textarea>
+                        </div>
+                        <div class="tab-pane fade" id="body" role="tabpanel">
+                            <textarea id="html_body" name="html_body">{% if template %}{{ template.html_body }}{% endif %}</textarea>
+                        </div>
+                        <div class="tab-pane fade" id="footer" role="tabpanel">
+                            <textarea id="html_footer" name="html_footer">{% if template %}{{ template.html_footer }}{% endif %}</textarea>
+                        </div>
+                        <div class="tab-pane fade" id="css" role="tabpanel">
+                            <textarea id="custom_css" name="custom_css">{% if template %}{{ template.custom_css }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Boutons d'action -->
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'sales:template_list' %}" class="btn btn-light">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+                <div>
+                    {% if mode == 'edit' %}
+                    <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#generalizeModal">
+                        <i class="bi bi-diagram-3"></i> Généraliser
+                    </button>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary me-2" onclick="previewTemplate()">
+                        <i class="bi bi-eye"></i> Prévisualiser
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> {% if mode == 'edit' %}Mettre à jour{% else %}Créer{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar - Templates prédéfinis -->
+        {% if mode == 'create' %}
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning-charge"></i> Templates prédéfinis</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Cliquez pour charger un template de base</p>
+                    
+                    {% for key, preset in default_templates.items %}
+                    <div class="template-preset mb-3" onclick="loadPreset('{{ key }}')">
+                        <h6 class="mb-1">{{ preset.name }}</h6>
+                        <p class="text-muted small mb-0">{{ preset.description }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Modal Variables -->
+<div class="modal fade" id="variablesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-braces"></i> Variables disponibles</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="variables-panel">
+                    <h6 class="mb-3">Cliquez sur une variable pour l'insérer</h6>
+                    
+                    <div class="mb-4">
+                        <strong>Organisation :</strong><br>
+                        <span class="variable-chip" onclick="insertVariable('organization.name')">{{ '{{ organization.name }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.address')">{{ '{{ organization.address }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.city')">{{ '{{ organization.city }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.email')">{{ '{{ organization.email }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.phone')">{{ '{{ organization.phone }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.vat_number')">{{ '{{ organization.vat_number }}' }}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <strong>Client :</strong><br>
+                        <span class="variable-chip" onclick="insertVariable('customer.legal_name')">{{ '{{ customer.legal_name }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('customer.billing_address')">{{ '{{ customer.billing_address }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('customer.billing_city')">{{ '{{ customer.billing_city }}' }}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <strong>Document :</strong><br>
+                        <span class="variable-chip" onclick="insertVariable('document.number')">{{ '{{ document.number }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('document.date')">{{ '{{ document.date|date_format }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('document.status')">{{ '{{ document.status }}' }}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <strong>Totaux :</strong><br>
+                        <span class="variable-chip" onclick="insertVariable('totals.total_ht')">{{ '{{ totals.total_ht|currency }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('totals.total_tax')">{{ '{{ totals.total_tax|currency }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('totals.total_ttc')">{{ '{{ totals.total_ttc|currency }}' }}</span>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Boucle sur les lignes :</strong>
+                        <pre class="mb-0">{% verbatim %}{% for line in lines %}
+  {{ line.description }}
+  {{ line.qty }}
+  {{ line.unit_price|currency }}
+{% endfor %}{% endverbatim %}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Prévisualisation -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-eye"></i> Prévisualisation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <iframe class="preview-frame" id="previewFrame"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/lib/codemirror.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/mode/htmlmixed/htmlmixed.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/mode/xml/xml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/mode/javascript/javascript.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/mode/css/css.js"></script>
+
+<script>
+// Éditeurs CodeMirror
+let editors = {};
+
+// Données presets & meta
+let presets = {};
+(() => {
+  try {
+    const dataEl = document.getElementById('defaultTemplatesData');
+    if (dataEl) presets = JSON.parse(dataEl.dataset.defaultTemplates || '{}');
+  } catch (e) { presets = {}; }
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les éditeurs
+    ['html_header', 'html_body', 'html_footer'].forEach(id => {
+        editors[id] = CodeMirror.fromTextArea(document.getElementById(id), {
+            mode: 'htmlmixed',
+            theme: 'monokai',
+            lineNumbers: true,
+            lineWrapping: true,
+            indentUnit: 2,
+            tabSize: 2,
+        });
+    });
+    
+    editors['custom_css'] = CodeMirror.fromTextArea(document.getElementById('custom_css'), {
+        mode: 'css',
+        theme: 'monokai',
+        lineNumbers: true,
+        lineWrapping: true,
+    });
+    
+    // Rafraîchir les éditeurs au changement d'onglet
+    document.querySelectorAll('#editorTabs button').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            Object.values(editors).forEach(editor => editor.refresh());
+        });
+    });
+});
+
+// Insérer une variable dans l'éditeur actif
+function insertVariable(varName) {
+    const activeTab = document.querySelector('#editorTabs button.active').getAttribute('data-bs-target');
+    const editorId = activeTab.substring(1);
+    
+    let actualEditorId;
+    if (editorId === 'header') actualEditorId = 'html_header';
+    else if (editorId === 'body') actualEditorId = 'html_body';
+    else if (editorId === 'footer') actualEditorId = 'html_footer';
+    else if (editorId === 'css') actualEditorId = 'custom_css';
+    
+    const editor = editors[actualEditorId];
+    const doc = editor.getDoc();
+    const cursor = doc.getCursor();
+    
+    doc.replaceRange(`{{ ${varName} }}`, cursor);
+    editor.focus();
+}
+
+// Charger un preset (ne fait rien si aucun preset n'est disponible)
+function loadPreset(presetKey) {
+    const preset = presets[presetKey];
+    if (!preset) return;
+    const nameEl = document.getElementById('name');
+    const typeEl = document.getElementById('document_type');
+    if (nameEl) nameEl.value = preset.name || '';
+    if (typeEl) typeEl.value = presetKey;
+    if (editors['html_header']) editors['html_header'].setValue(preset.header || '');
+    if (editors['html_body']) editors['html_body'].setValue(preset.body || '');
+    if (editors['html_footer']) editors['html_footer'].setValue(preset.footer || '');
+    if (editors['custom_css']) editors['custom_css'].setValue(preset.css || '');
+}
+
+// Prévisualiser le template
+function previewTemplate() {
+    const meta = document.getElementById('docTemplateMeta');
+    const previewUrl = meta ? (meta.dataset.previewUrl || '') : '';
+    if (previewUrl) {
+        const iframe = document.getElementById('previewFrame');
+        iframe.src = previewUrl;
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        modal.show();
+    } else {
+        alert('Veuillez d\'abord enregistrer le template pour le prévisualiser.');
+    }
+}
+
+// Synchroniser les éditeurs avec le formulaire avant soumission
+document.getElementById('templateForm').addEventListener('submit', function(e) {
+    Object.keys(editors).forEach(id => {
+        document.getElementById(id).value = editors[id].getValue();
+    });
+});
+</script>
+{% endblock %}

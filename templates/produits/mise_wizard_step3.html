@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Nouvelle mise – Étape 3{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Nouvelle mise – Étape 3: Validation</h1>
+<form method="post" class="card p-3">
+  {% csrf_token %}
+  <input type="hidden" name="step" value="3">
+  <div class="form-check mb-3">
+    {{ form.confirmer }} {{ form.confirmer.label_tag }}
+  </div>
+  <button class="btn btn-success" type="submit">Créer la mise</button>
+  <a class="btn btn-secondary" href="/production/mises/">Annuler</a>
+</form>
+{% endblock %}

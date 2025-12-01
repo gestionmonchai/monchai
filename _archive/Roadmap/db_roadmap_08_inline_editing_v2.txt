@@ -1,0 +1,33 @@
+DB Roadmap 08 — Édition inline v2 (double‑clic) + Optimistic Locking
+====================================================================
+Objectif
+--------
+Autoriser l’édition **directement en liste** (double‑clic) pour les champs autorisés, avec validations serveur, **verrouillage optimiste** (row_version), **undo** et audit.
+
+Livrables (Done)
+----------------
+- Endpoints: `GET/PUT /<entity>/<id>/cell/<field>/`
+- `row_version BIGINT` sur entités éditables ; headers `If-Match`
+- Undo léger (`POST /undo/`) ; audit delta (avant→après, qui/quand)
+- Matrice permissions champ-par-champ ; messages d’erreurs inline
+
+Points clés d’implémentation
+----------------------------
+- Enter = sauvegarde ; ESC = annule ; Tab/Shift+Tab navigation
+- Widgets: texte, nombre, date, select, relation, checkbox
+- Conflit (409) → UI propose “Actualiser” / “Écraser (admin+)”
+- Anti-overposting: whitelist serveurs des champs modifiables
+
+Tests d’acceptation (AC)
+------------------------
+- AC-08-01: Double‑clic “Prix” → Enter sauvegarde, toast “Enregistré”
+- AC-08-02: 409 sur édition concurrente → choix affiché ; actualisation OK
+- AC-08-03: Champ non autorisé → 403 ; UI feedback clair
+- AC-08-4: Undo dans 10s → valeur restaurée (si pas de conflit)
+
+Robustesse
+----------
+- R-08-01: saisie invalide → message sous champ ; aucun 500
+- R-08-02: double submit → une seule écriture ; pas de doublon
+- R-08-03: logs audit ne contiennent pas de données sensibles (mdp, tokens)
+- R-08-04: XSS: valeurs échappées en _read.html

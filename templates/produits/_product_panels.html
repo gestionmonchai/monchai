@@ -1,0 +1,78 @@
+{% comment %} Panels spécifiques selon le type de produit {% endcomment %}
+{% load widget_tweaks %}
+
+{% if ptype == 'vin' or form.product_type.value == 'vin' %}
+<div class="card mb-3">
+  <div class="card-header">Détails vin</div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Contenant</label>
+        {{ form.container|add_class:'form-control' }}
+        {{ form.container.errors }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Volume par unité (L)</label>
+        {{ form.volume_l|add_class:'form-control' }}
+        {{ form.volume_l.errors }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">EAN</label>
+        {{ form.ean|add_class:'form-control' }}
+        {{ form.ean.errors }}
+      </div>
+    </div>
+  </div>
+</div>
+{% elif ptype == 'produit' or form.product_type.value == 'produit' %}
+<div class="card mb-3">
+  <div class="card-header">Détails produit dérivé</div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Famille</label>
+        {{ form.family|add_class:'form-control' }}
+        {{ form.family.errors }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Contenu net</label>
+        {{ form.net_content|add_class:'form-control' }}
+        {{ form.net_content.errors }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">DLUO/DLC</label>
+        {{ form.dluo|add_class:'form-control' }}
+        {{ form.dluo.errors }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Allergènes</label>
+        {{ form.allergens|add_class:'form-control' }}
+        {{ form.allergens.errors }}
+      </div>
+    </div>
+  </div>
+</div>
+{% elif ptype == 'service' or form.product_type.value == 'service' %}
+<div class="card mb-3">
+  <div class="card-header">Détails service <span class="badge bg-secondary ms-2">Non stockable</span></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Catégorie</label>
+        {{ form.service_category|add_class:'form-control' }}
+        {{ form.service_category.errors }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Durée (h/j)</label>
+        {{ form.duration|add_class:'form-control' }}
+        {{ form.duration.errors }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Capacité (pers.)</label>
+        {{ form.capacity|add_class:'form-control' }}
+        {{ form.capacity.errors }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

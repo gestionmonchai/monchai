@@ -1,0 +1,134 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Fiche contenant - Mon Chai{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3 d-flex align-items-center gap-3">
+  <span>Fiche contenant</span>
+  {% if container.type %}<span class="badge text-bg-secondary">{{ container.get_type_display }}</span>{% endif %}
+  {% if container.identifiant %}<span class="badge text-bg-info">{{ container.identifiant }}</span>{% endif %}
+  {% if cap %}<span class="badge text-bg-light">Capacité {{ cap }} L</span>{% endif %}
+</h1>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Informations principales</div>
+      <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <div class="text-center">
+              <div class="progress-circle" style="--pct: {{ pct }}%">
+                <div class="pct">{{ pct|floatformat:0 }}%</div>
+              </div>
+              <div class="small text-muted mt-2">Taux d'occupation</div>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <div class="row g-3">
+              <div class="col-md-6"><strong>Type</strong><div>{{ container.get_type_display }}</div></div>
+              <div class="col-md-6"><strong>Identifiant</strong><div>{{ container.identifiant|default:'—' }}</div></div>
+              <div class="col-md-6"><strong>Capacité (L)</strong><div>{{ cap }}</div></div>
+              <div class="col-md-6"><strong>Occupé (L)</strong><div>{{ occ }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Lot & localisation</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4"><strong>Lot</strong><div>{{ lot.code|default:'—' }}</div></div>
+          <div class="col-md-4"><strong>Cuvée</strong><div>{{ lot.cuvee.nom|default:'—' }}</div></div>
+          <div class="col-md-4"><strong>Entrepôt</strong><div>{{ lot.warehouse.name|default:'—' }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Interventions récentes</div>
+      <div class="card-body">
+        {% if interventions %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Date</th><th>Type</th><th>Notes</th><th class="text-end">Volumes (L)</th></tr></thead>
+              <tbody>
+                {% for it in interventions %}
+                <tr>
+                  <td>{{ it.date }}</td>
+                  <td>{{ it.get_type_display }}</td>
+                  <td>{{ it.notes|default:'—' }}</td>
+                  <td class="text-end">{{ it.volume_in_l|default:'0' }} / {{ it.volume_out_l|default:'0' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Aucune intervention récente.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Mesures récentes</div>
+      <div class="card-body">
+        {% if measures %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Date</th><th>Type</th><th>Valeur</th><th>Notes</th></tr></thead>
+              <tbody>
+                {% for m in measures %}
+                <tr>
+                  <td>{{ m.date }}</td>
+                  <td>{{ m.get_type_display }}</td>
+                  <td>{{ m.value }} {{ m.unit }}</td>
+                  <td>{{ m.notes|default:'—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Aucune mesure récente.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Documents</div>
+      <div class="card-body">
+        {% if documents %}
+          <ul class="list-unstyled mb-0">
+            {% for d in documents %}
+            <li class="mb-1">
+              <span class="badge text-bg-secondary me-2">{{ d.get_type_display }}</span>
+              <span class="me-2">{{ d.description|default:'—' }}</span>
+              <small class="text-muted">{{ d.uploaded_at }}</small>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-muted">Aucun document.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-body d-grid gap-2">
+        <a href="/production/contenants/{{ container.id }}/modifier/" class="btn btn-outline-primary">Modifier</a>
+        <a href="/production/services/entry/" class="btn btn-outline-secondary" hx-get="/production/services/entry/" hx-target="#service-modal" hx-swap="innerHTML">Saisir une prestation</a>
+      </div>
+    </div>
+    <div id="service-modal"></div>
+  </div>
+</div>
+
+<style>
+.progress-circle { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#8b1e3f var(--pct), #f1f5f9 0); display: grid; place-items: center; margin: 0 auto; position: relative; }
+.progress-circle::after { content: ""; width: 110px; height: 110px; border-radius: 50%; background: #fff; position: absolute; }
+.progress-circle .pct { position: relative; font-weight: 700; }
+</style>
+{% endblock %}

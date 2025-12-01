@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Édition en Grille - {{ pricelist.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Grille interactive */
+    .grid-container {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(139, 21, 56, 0.12);
+    }
+
+    .grid-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .grid-table thead th {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(114, 47, 55, 0.95));
+        color: var(--wine-champagne);
+        padding: 1rem;
+        font-weight: 700;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 2px solid var(--wine-gold);
+    }
+
+    .grid-table tbody tr {
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        transition: background 0.2s;
+    }
+
+    .grid-table tbody tr:hover {
+        background: rgba(247, 231, 206, 0.3);
+    }
+
+    .grid-table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+    }
+
+    /* Inputs dans la grille */
+    .grid-input {
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        width: 100%;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .grid-input:focus {
+        border-color: var(--wine-gold);
+        box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+        outline: none;
+    }
+
+    .grid-input.modified {
+        background: rgba(212, 175, 55, 0.1);
+        border-color: var(--wine-gold);
+    }
+
+    .grid-input.saved {
+        background: rgba(90, 124, 89, 0.1);
+        border-color: var(--wine-green);
+    }
+
+    .product-name {
+        font-weight: 700;
+        color: var(--wine-burgundy);
+    }
+
+    .product-code {
+        font-size: 0.875rem;
+        color: var(--wine-oak);
+    }
+
+    /* Boutons sauvegarde */
+    .save-indicator {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: linear-gradient(135deg, var(--wine-gold), #c49a2d);
+        color: var(--wine-burgundy);
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(212, 175, 55, 0.4);
+        font-weight: 700;
+        z-index: 1000;
+        display: none;
+        animation: slideIn 0.3s;
+    }
+
+    .save-indicator.show {
+        display: block;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(100px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Loading state */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(139, 21, 56, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        display: none;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        color: var(--wine-champagne);
+    }
+
+    .loading-spinner i {
+        font-size: 3rem;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Sticky header */
+    .grid-header {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 100;
+        padding: 1rem 0;
+        border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+        margin-bottom: 1rem;
+    }
+
+    /* Tooltip */
+    .help-tooltip {
+        cursor: help;
+        color: var(--wine-gold);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header sticky -->
+    <div class="grid-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-1">
+                    <i class="bi bi-grid-3x3"></i> Édition en Grille
+                </h1>
+                <p class="text-muted mb-0">
+                    {{ pricelist.name }} - Remplissez les prix directement dans le tableau
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'sales:pricelist_detail' pricelist.pk %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Annuler
+                </a>
+                <button id="saveAllBtn" class="btn btn-success" disabled>
+                    <i class="bi bi-check-circle"></i> Tout enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="alert alert-info mb-3">
+        <strong><i class="bi bi-info-circle"></i> Mode d'emploi :</strong>
+        <ul class="mb-0 mt-2">
+            <li><strong>Saisie rapide :</strong> Tapez les prix directement dans les colonnes</li>
+            <li><strong>Sauvegarde auto :</strong> Les prix sont sauvegardés automatiquement quand vous quittez le champ (onBlur)</li>
+            <li><strong>Colonnes :</strong> Prix unitaire | Carton de 6 | Carton de 12</li>
+            <li><strong>Raccourci :</strong> Utilisez Tab pour passer d'un champ à l'autre</li>
+        </ul>
+    </div>
+
+    <!-- Grille -->
+    <div class="grid-container">
+        <table class="grid-table">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">
+                        Produit 
+                        <i class="bi bi-question-circle help-tooltip ms-1" 
+                           title="Liste de tous vos SKUs actifs"></i>
+                    </th>
+                    <th style="width: 20%;">
+                        Prix Unitaire (€)
+                        <i class="bi bi-question-circle help-tooltip ms-1" 
+                           title="Prix pour 1 unité"></i>
+                    </th>
+                    <th style="width: 20%;">
+                        Carton de 6 (€)
+                        <i class="bi bi-question-circle help-tooltip ms-1" 
+                           title="Prix à partir de 6 unités"></i>
+                    </th>
+                    <th style="width: 20%;">
+                        Carton de 12 (€)
+                        <i class="bi bi-question-circle help-tooltip ms-1" 
+                           title="Prix à partir de 12 unités"></i>
+                    </th>
+                    <th style="width: 10%;" class="text-center">
+                        Statut
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in grid_data %}
+                <tr data-sku-id="{{ row.sku.id }}">
+                    <td>
+                        <div class="product-name">{{ row.sku.cuvee.name }}</div>
+                        <div class="product-code">{{ row.sku.code }} - {{ row.sku.unit.code }}</div>
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0"
+                            class="grid-input"
+                            data-sku-id="{{ row.sku.id }}"
+                            data-min-qty="0"
+                            data-item-id="{% if row.item_unit %}{{ row.item_unit.id }}{% endif %}"
+                            value="{% if row.item_unit %}{{ row.item_unit.unit_price }}{% endif %}"
+                            placeholder="Prix unitaire"
+                        >
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0"
+                            class="grid-input"
+                            data-sku-id="{{ row.sku.id }}"
+                            data-min-qty="6"
+                            data-item-id="{% if row.item_carton6 %}{{ row.item_carton6.id }}{% endif %}"
+                            value="{% if row.item_carton6 %}{{ row.item_carton6.unit_price }}{% endif %}"
+                            placeholder="Prix carton 6"
+                        >
+                    </td>
+                    <td>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0"
+                            class="grid-input"
+                            data-sku-id="{{ row.sku.id }}"
+                            data-min-qty="12"
+                            data-item-id="{% if row.item_carton12 %}{{ row.item_carton12.id }}{% endif %}"
+                            value="{% if row.item_carton12 %}{{ row.item_carton12.unit_price }}{% endif %}"
+                            placeholder="Prix carton 12"
+                        >
+                    </td>
+                    <td class="text-center">
+                        <span class="status-icon"></span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Indicateur de sauvegarde -->
+    <div class="save-indicator" id="saveIndicator">
+        <i class="bi bi-check-circle me-2"></i>
+        <span id="saveMessage">Prix sauvegardé</span>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="bi bi-hourglass-split"></i>
+            <h3 class="mt-3">Sauvegarde en cours...</h3>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.grid-input');
+    const saveIndicator = document.getElementById('saveIndicator');
+    const saveMessage = document.getElementById('saveMessage');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const csrfToken = '{{ csrf_token }}';
+    const pricelistId = '{{ pricelist.pk }}';
+    
+    let modifiedInputs = new Set();
+    let saveTimeout;
+
+    // Sauvegarde automatique au blur
+    inputs.forEach(input => {
+        let originalValue = input.value;
+
+        input.addEventListener('focus', function() {
+            originalValue = this.value;
+        });
+
+        input.addEventListener('blur', function() {
+            const newValue = this.value;
+            
+            // Si valeur changée, sauvegarder
+            if (newValue !== originalValue && newValue !== '') {
+                savePriceItem(this);
+            }
+        });
+
+        // Marquer comme modifié pendant la saisie
+        input.addEventListener('input', function() {
+            if (this.value !== originalValue) {
+                this.classList.add('modified');
+                modifiedInputs.add(this);
+            } else {
+                this.classList.remove('modified');
+                modifiedInputs.delete(this);
+            }
+        });
+
+        // Navigation avec Tab/Enter
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur(); // Déclenche la sauvegarde
+                
+                // Passer au champ suivant
+                const nextInput = getNextInput(this);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                }
+            }
+        });
+    });
+
+    // Fonction de sauvegarde
+    function savePriceItem(input) {
+        const skuId = input.dataset.skuId;
+        const minQty = input.dataset.minQty;
+        const unitPrice = parseFloat(input.value);
+        
+        if (isNaN(unitPrice) || unitPrice < 0) {
+            showNotification('Prix invalide', 'danger');
+            input.focus();
+            return;
+        }
+
+        // Afficher l'indicateur de chargement
+        input.disabled = true;
+        const statusIcon = input.closest('tr').querySelector('.status-icon');
+        statusIcon.innerHTML = '<i class="bi bi-hourglass-split text-warning"></i>';
+
+        // Préparer les données
+        const data = {
+            sku_id: skuId,
+            unit_price: unitPrice,
+            min_qty: parseInt(minQty) || null,
+            discount_pct: '0.00'
+        };
+
+        // Envoyer la requête AJAX
+        fetch(`/ventes/api/tarifs/${pricelistId}/items/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Succès
+                input.classList.remove('modified');
+                input.classList.add('saved');
+                input.dataset.itemId = result.item.id;
+                statusIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                
+                // Notification
+                showNotification('Prix sauvegardé', 'success');
+                
+                // Retirer la classe saved après 2 secondes
+                setTimeout(() => {
+                    input.classList.remove('saved');
+                    statusIcon.innerHTML = '';
+                }, 2000);
+            } else {
+                // Erreur
+                showNotification('Erreur : ' + result.error, 'danger');
+                statusIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showNotification('Erreur de connexion', 'danger');
+            statusIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+        })
+        .finally(() => {
+            input.disabled = false;
+        });
+    }
+
+    // Afficher une notification
+    function showNotification(message, type) {
+        saveMessage.textContent = message;
+        saveIndicator.className = 'save-indicator show';
+        
+        if (type === 'danger') {
+            saveIndicator.style.background = 'linear-gradient(135deg, #8B1538, #6b0f28)';
+            saveIndicator.style.color = 'white';
+        } else {
+            saveIndicator.style.background = 'linear-gradient(135deg, #d4af37, #c49a2d)';
+            saveIndicator.style.color = '#722f37';
+        }
+
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveIndicator.classList.remove('show');
+        }, 3000);
+    }
+
+    // Trouver le prochain input
+    function getNextInput(current) {
+        const allInputs = Array.from(inputs);
+        const currentIndex = allInputs.indexOf(current);
+        return allInputs[currentIndex + 1] || null;
+    }
+
+    // Initialiser les tooltips
+    const tooltips = document.querySelectorAll('.help-tooltip');
+    tooltips.forEach(tooltip => {
+        tooltip.addEventListener('mouseenter', function() {
+            const title = this.getAttribute('title');
+            // Utiliser Bootstrap tooltip si disponible
+            if (window.bootstrap && window.bootstrap.Tooltip) {
+                new window.bootstrap.Tooltip(this);
+            }
+        });
+    });
+
+    // Auto-focus sur le premier input
+    if (inputs.length > 0) {
+        inputs[0].focus();
+        inputs[0].select();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+14 — Référentiels : Unités & Entrepôts (starter pack) — Guide pas-à-pas + Robustesse
+====================================================================================
+Objectif: fournir des référentiels minimaux pour tout le reste de l’app : unités de mesure et entrepôts.
+Livrables: CRUD admin+ simple, valeurs par défaut à la création d’organisation, garde d’intégrité.
+
+Portée & Done
+--------------
+- DONE si: (1) des valeurs par défaut existent à la création d’une org, (2) des écrans simples permettent d’ajouter/éditer/supprimer (admin+),
+  (3) les vues métier consomment ces référentiels via FK (ou seront prêtes à le faire), (4) garde empêchant de supprimer un référentiel utilisé.
+
+Étape 1 — Modèles & seeds (60–90 min)
+-------------------------------------
+1.1 UnitOfMeasure (UOM)
+    - fields: code (unique par org, ex: 'BT', 'L', 'HL'), name ('Bouteille', 'Litre'), base_ratio (float) vs unité pivot (ex: 1.0 pour L, 0.75 pour BT si pivot=L)
+    - organization FK, unique(organization, code)
+    - is_default (bool) — ex: L par défaut
+1.2 Warehouse
+    - fields: name (unique par org), is_primary (bool)
+    - organization FK, unique(organization, name), unique(organization, is_primary=True) (contrainte partielle via clean() si DB ne supporte pas)
+1.3 Seeds à la création d’organisation (signal post_save Organization):
+    - UOM: L (ratio 1.0), hL (100.0), BT (0.75) — ajustables plus tard
+    - Warehouse: “Chai principal” (is_primary=True)
+
+Étape 2 — Routes & permissions (30 min)
+----------------------------------------
+- /settings/referentials/uom/ (GET list, GET new/edit, POST create/update, POST delete) — admin+
+- /settings/referentials/warehouses/ (mêmes opérations) — admin+
+
+Étape 3 — Vues & validations (60–90 min)
+----------------------------------------
+3.1 UOM:
+    - code: 2–6 chars, uppercase, unique par org
+    - base_ratio > 0
+    - empêcher suppression si UOM référencée (future FK vers stock/mouvement/produits)
+3.2 Warehouse:
+    - name requis, unique par org
+    - is_primary: si activé → désactiver celui qui l’était ; empêcher suppression du primary si d’autres entités y pointent (stock)
+3.3 Les écrans listent les éléments + fournissent un bouton “Ajouter”, et “Supprimer” avec confirmation.
+
+Étape 4 — Templates (30–45 min)
+--------------------------------
+- Tables simples avec recherche minimal (client-side), tri par nom.
+- Badges “par défaut” / “principal”.
+- Messages de succès/erreur (bannières).
+
+Étape 5 — Integration points (notes)
+------------------------------------
+- UOM pivot = L : helpers `to_liters(value, uom)` et `from_liters(value, uom)`.
+- Warehouse primary: valeur par défaut lors de création de stock/lot plus tard.
+
+Étape 6 — Tests (60 min)
+-------------------------
+- Création org → seeds présents (3 UOM + 1 Warehouse primary).
+- CRUD UOM/WH admin+ OK ; read_only refus d’édition.
+- Unicité par org respectée ; suppression interdite si “utilisé”.
+
+### Tests de robustesse
+-----------------------
+R1. UOM base_ratio = 0 ou négatif → ValidationError, pas de 500.
+R2. UOM code en doublon (même org) → erreur unique propre.
+R3. Suppression d’une UOM marquée “utilisée” (simuler FK) → blocage, message clair.
+R4. Warehouse: deux is_primary=True via double submit → au final un seul primary.
+R5. Renommage WH en doublon → erreur unique propre.
+R6. Accès non admin sur POST → 403/redirect ; pas d’effet.
+R7. Seeds idempotents (création d’org en double signal) → pas de doublons.

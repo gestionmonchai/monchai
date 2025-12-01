@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Devis{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0"><i class="bi bi-receipt-cutoff me-2 text-primary"></i>Devis</h1>
+    <a href="{% url 'ventes:devis_new' %}" class="btn btn-primary">
+      <i class="bi bi-plus"></i> Nouveau devis
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="search-input" type="text" class="form-control" placeholder="Rechercher client, numéro..." value="{{ search|default:'' }}">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <select id="filter-status" class="form-select">
+          <option value="">Tous statuts</option>
+          <option value="draft" {% if filters.status == 'draft' %}selected{% endif %}>Brouillon</option>
+          <option value="sent" {% if filters.status == 'sent' %}selected{% endif %}>Envoyé</option>
+          <option value="accepted" {% if filters.status == 'accepted' %}selected{% endif %}>Accepté</option>
+          <option value="lost" {% if filters.status == 'lost' %}selected{% endif %}>Perdu</option>
+          <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>Expiré</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="sort-by" class="form-select">
+          <option value="-created_at">Plus récents</option>
+          <option value="created_at">Plus anciens</option>
+          <option value="-total_ttc">Montant décroissant</option>
+          <option value="total_ttc">Montant croissant</option>
+          <option value="valid_until">Date validité</option>
+        </select>
+      </div>
+      <div class="col-md-4 text-end">
+        <div class="btn-group" role="group">
+          <button id="toggle-advanced" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-funnel"></i> Filtres
+          </button>
+          <button id="clear-filters" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-circle"></i> Effacer
+          </button>
+          <button id="export-csv" class="btn btn-outline-success btn-sm" onclick="alert('Export à venir')">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Export
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-12">
+        <div id="search-info" class="text-muted small">
+          {% if stats %}
+            <i class="bi bi-info-circle"></i>
+            {% if stats.filtered != stats.total %}
+              {{ stats.filtered }} résultat{% if stats.filtered > 1 %}s{% endif %} sur {{ stats.total }}
+            {% else %}
+              {{ stats.total }} devis au total
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="advanced-filters" class="card-body border-top collapse">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label for="date-from" class="form-label"><i class="bi bi-calendar"></i> Date de création du</label>
+        <input id="date-from" type="date" class="form-control" value="{{ filters.date_from|default:'' }}">
+      </div>
+      <div class="col-md-3">
+        <label for="date-to" class="form-label">au</label>
+        <input id="date-to" type="date" class="form-control" value="{{ filters.date_to|default:'' }}">
+      </div>
+      <div class="col-md-3">
+        <label for="min-amount" class="form-label"><i class="bi bi-currency-euro"></i> Montant min</label>
+        <input id="min-amount" type="number" class="form-control" placeholder="0.00" step="0.01">
+      </div>
+      <div class="col-md-3">
+        <label for="max-amount" class="form-label">Montant max</label>
+        <input id="max-amount" type="number" class="form-control" placeholder="10000.00" step="0.01">
+      </div>
+    </div>
+    <div class="row mt-2">
+      <div class="col-12">
+        <small class="text-muted"><i class="bi bi-lightbulb"></i> Astuce : Combinez plusieurs filtres pour affiner votre recherche</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:12%">Date</th>
+          <th style="width:30%">Client</th>
+          <th style="width:15%">Statut</th>
+          <th style="width:12%" class="text-end">Total TTC</th>
+          <th style="width:12%">Validité</th>
+          <th style="width:19%" class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="results-table">
+        {% include 'ventes/partials/quote_table_rows.html' with quotes=page_obj %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="pagination-container" class="mt-3">
+  {% include 'ventes/partials/quote_pagination.html' with page_obj=page_obj %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const searchInput = document.getElementById('search-input');
+  const statusSelect = document.getElementById('filter-status');
+  const sortSelect = document.getElementById('sort-by');
+  const dateFrom = document.getElementById('date-from');
+  const dateTo = document.getElementById('date-to');
+  const minAmount = document.getElementById('min-amount');
+  const maxAmount = document.getElementById('max-amount');
+  const toggleAdvanced = document.getElementById('toggle-advanced');
+  const advanced = document.getElementById('advanced-filters');
+  const clearBtn = document.getElementById('clear-filters');
+  const resultsTable = document.getElementById('results-table');
+  const pagination = document.getElementById('pagination-container');
+  const info = document.getElementById('search-info');
+
+  let debounce;
+
+  function collect(){
+    const f = {};
+    const s = (v)=> (v||'').trim();
+    if (s(searchInput.value)) f.search = s(searchInput.value);
+    if (s(statusSelect.value)) f.status = s(statusSelect.value);
+    if (s(sortSelect.value)) f.sort = s(sortSelect.value);
+    if (s(dateFrom.value)) f.date_from = s(dateFrom.value);
+    if (s(dateTo.value)) f.date_to = s(dateTo.value);
+    if (s(minAmount.value)) f.min_amount = s(minAmount.value);
+    if (s(maxAmount.value)) f.max_amount = s(maxAmount.value);
+    return f;
+  }
+
+  function buildURL(f, page){
+    const params = new URLSearchParams();
+    Object.keys(f).forEach(k=>{ if (f[k]) params.set(k, f[k]); });
+    if (page && page > 1) params.set('page', page);
+    return `{% url 'ventes:devis_search_ajax' %}?${params.toString()}`;
+  }
+
+  function updateBrowserURL(f, page){
+    const params = new URLSearchParams();
+    Object.keys(f).forEach(k=>{ if (f[k]) params.set(k, f[k]); });
+    if (page && page > 1) params.set('page', page);
+    const baseUrl = `{% url 'ventes:devis_list' %}`;
+    const newURL = `${baseUrl}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newURL);
+  }
+
+  function attachPagination(){
+    const links = pagination.querySelectorAll('a[data-page]');
+    links.forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        performSearch(p);
+      });
+    });
+  }
+
+  function performSearch(page){
+    const f = collect();
+    const url = buildURL(f, page||1);
+    updateBrowserURL(f, page||1);
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+      .then(r=> r.json())
+      .then(data=>{
+        if (!data.success) return;
+        resultsTable.innerHTML = data.table_html;
+        pagination.innerHTML = data.pagination_html;
+        attachPagination();
+        if (data.stats){
+          const total = data.stats.total || 0;
+          const filtered = data.stats.filtered || total;
+          info.textContent = (filtered !== total)
+            ? `${filtered} résultat${filtered>1?'s':''} sur ${total}`
+            : `${total} devis`;
+        }
+      })
+      .catch(()=>{})
+  }
+
+  function debounceSearch(){
+    clearTimeout(debounce);
+    debounce = setTimeout(()=> performSearch(1), 250);
+  }
+
+  searchInput.addEventListener('input', debounceSearch);
+  statusSelect.addEventListener('change', ()=> performSearch(1));
+  sortSelect.addEventListener('change', ()=> performSearch(1));
+  if (dateFrom) dateFrom.addEventListener('change', ()=> performSearch(1));
+  if (dateTo) dateTo.addEventListener('change', ()=> performSearch(1));
+  if (minAmount) minAmount.addEventListener('change', ()=> performSearch(1));
+  if (maxAmount) maxAmount.addEventListener('change', ()=> performSearch(1));
+
+  toggleAdvanced.addEventListener('click', ()=>{
+    advanced.classList.toggle('show');
+    const icon = toggleAdvanced.querySelector('i');
+    if (advanced.classList.contains('show')) {
+      icon.className = 'bi bi-funnel-fill';
+    } else {
+      icon.className = 'bi bi-funnel';
+    }
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    searchInput.value = '';
+    statusSelect.value = '';
+    sortSelect.value = '-created_at';
+    if (dateFrom) dateFrom.value = '';
+    if (dateTo) dateTo.value = '';
+    if (minAmount) minAmount.value = '';
+    if (maxAmount) maxAmount.value = '';
+    performSearch(1);
+  });
+
+  attachPagination();
+})();
+</script>
+{% endblock %}

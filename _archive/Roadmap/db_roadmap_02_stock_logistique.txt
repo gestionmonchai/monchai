@@ -1,0 +1,58 @@
+DB Roadmap 02 — Stocks, Entrepôts & Mouvements (Bouteilles & Vrac)
+==================================================================
+Objectif
+--------
+Modéliser les **stocks** (vrac & bouteilles), les **entrepôts**, et les **mouvements** (entrée, sortie, transfert, inventaire)
+avec **intégrité forte**, audit, et performances de consultation.
+
+Livrables (Done)
+----------------
+- Tables stock cohérentes, **mouvements immuables** (append‑only), **soldes matérialisés** par lot/UOM/entrepôt.
+- **Verrous** logiques empêchant solde négatif ; **RLS** par org.
+- **Indexes** pour listes ordonnées par date et filtres (lot, cuvée, entrepôt).
+
+Schéma
+------
+- warehouse(id, organization_id, name, is_primary, row_version) UNIQUE(organization_id, name)
+
+Stock de vrac (liquide)
+- stock_vrac_balance(id, organization_id, lot_id, warehouse_id, qty_l, updated_at)  // vue matérialisée recommandée
+  * UNIQUE(organization_id, lot_id, warehouse_id)
+- stock_vrac_move(id, organization_id, lot_id, src_warehouse_id NULL, dst_warehouse_id NULL, qty_l, move_type ENUM('entrée','sortie','transfert','ajustement'), ref_type, ref_id, created_at, user_id)
+  * CHECK(qty_l > 0)
+  * Règle: pour transfert, src et dst non NULL et ≠ ; pour entrée/sortie, un seul côté.
+  * Append‑only ; soldes recalculés (job) + triggers pour petite volumétrie.
+
+Stock bouteilles (SKU)
+- sku(id, organization_id, cuvee_id, uom_id, volume_by_uom_to_l, label, code_barres NULL, is_active, row_version)
+  * ex: BT_0_75, MAGNUM_1_5 ; UNIQUE(organization_id, cuvee_id, uom_id)
+- stock_sku_balance(id, organization_id, sku_id, warehouse_id, qty_units, updated_at)
+  * UNIQUE(organization_id, sku_id, warehouse_id)
+- stock_sku_move(id, organization_id, sku_id, src_warehouse_id NULL, dst_warehouse_id NULL, qty_units, move_type ENUM('fabrication','entrée','sortie','transfert','ajustement'), ref_type, ref_id, created_at, user_id)
+  * CHECK(qty_units > 0)
+
+Intégrité & règles
+------------------
+- **Solde non négatif**: déclencher erreur si mouvement ferait passer sous 0 (contrôle transactionnel).
+- **Fabrication** bouteilles : consomme du lot vrac (conversion via UOM) → crée mouvement `fabrication` SKU ; tracer `ref_id` (ordre d’embouteillage).
+- **Inventaire** : mouvement `ajustement` signé (raison).
+
+Index & perfs
+-------------
+- BTree sur (organization_id, lot_id), (organization_id, sku_id), created_at DESC.
+- Vues matérialisées : balances (vrac & SKU) ; refresh partiel après lot/sku move (trigger/NOTIFY + job Celery).
+- Keyset pagination sur moves (created_at,id).
+
+Tests de robustesse
+-------------------
+- Transfert avec qty 0 ou négative → rejet.
+- Transfert src=dst → rejet.
+- Sortie > solde → rejet transactionnel ; aucun mouvement créé.
+- Fabrication bouteille sans lot suffisant → rejet ; aucun mouvement partiel.
+- Course condition (double submit) → unique lock (SELECT FOR UPDATE sur balance) ; outcome correct.
+- Suppression d’un move → interdite (append‑only) ; corriger via `ajustement` inverse.
+
+Dev Book — À documenter
+-----------------------
+- Diagrammes de flux (fabrication, transfert, inventaire).
+- Politique de recalcul (balances MV vs on‑the‑fly), trade‑offs.

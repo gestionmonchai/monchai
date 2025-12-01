@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grilles Tarifaires - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Barre de recherche viticole */
+    .search-bar {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 231, 206, 0.98));
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(139, 21, 56, 0.12);
+    }
+
+    .search-input-wrapper {
+        position: relative;
+    }
+
+    .search-input-wrapper i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--wine-burgundy);
+        font-size: 1.25rem;
+    }
+
+    .search-input {
+        padding-left: 3rem !important;
+        border: 2px solid rgba(212, 175, 55, 0.3) !important;
+        border-radius: 12px !important;
+    }
+
+    .search-input:focus {
+        border-color: var(--wine-gold) !important;
+        box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25) !important;
+    }
+
+    /* Table viticole */
+    .pricelist-table {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(139, 21, 56, 0.12);
+    }
+
+    .pricelist-table thead {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(114, 47, 55, 0.95));
+    }
+
+    .pricelist-table thead th {
+        color: var(--wine-champagne);
+        font-weight: 700;
+        padding: 1rem 1.25rem;
+        border: none;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+    }
+
+    .pricelist-table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    }
+
+    .pricelist-table tbody tr:hover {
+        background: linear-gradient(135deg, rgba(247, 231, 206, 0.3), rgba(232, 213, 187, 0.3));
+        transform: scale(1.01);
+    }
+
+    .pricelist-table tbody td {
+        padding: 1rem 1.25rem;
+        vertical-align: middle;
+        color: var(--wine-burgundy);
+    }
+
+    /* Actions row */
+    .actions-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+        border-radius: 8px;
+    }
+
+    /* Stats header */
+    .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .stats-badge {
+        background: linear-gradient(135deg, var(--wine-gold), #c49a2d);
+        color: var(--wine-burgundy);
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
+
+    /* Filtres */
+    .filters-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 600;
+        color: var(--wine-burgundy);
+    }
+
+    .filter-chip:hover,
+    .filter-chip.active {
+        background: var(--warning-gradient);
+        border-color: var(--wine-gold);
+    }
+
+    /* Loading state */
+    .search-loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--wine-oak);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--wine-gold);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-2">
+                <i class="bi bi-currency-euro"></i> Grilles Tarifaires
+            </h1>
+            <p class="text-muted mb-0">Gérez vos tarifs et prix de vente</p>
+        </div>
+        <a href="{% url 'sales:pricelist_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer une grille
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-header">
+        <div class="stats-badge">
+            <i class="bi bi-table"></i> {{ total_count }} grille{{ total_count|pluralize }}
+        </div>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="search-bar">
+        <form method="get" id="searchForm" class="mb-3">
+            <div class="search-input-wrapper">
+                <i class="bi bi-search"></i>
+                <input 
+                    type="text" 
+                    name="q" 
+                    class="form-control search-input" 
+                    placeholder="Rechercher par nom, devise... (Ctrl+K)"
+                    value="{{ search_query }}"
+                    id="searchInput"
+                    autocomplete="off"
+                >
+            </div>
+        </form>
+
+        <!-- Filtres -->
+        <div class="filters-row">
+            <span class="text-muted"><strong>Filtres rapides :</strong></span>
+            <a href="?is_active=1{% if search_query %}&q={{ search_query }}{% endif %}" 
+               class="filter-chip {% if is_active == '1' %}active{% endif %}">
+                <i class="bi bi-check-circle"></i> Actives
+            </a>
+            <a href="?is_active=0{% if search_query %}&q={{ search_query }}{% endif %}" 
+               class="filter-chip {% if is_active == '0' %}active{% endif %}">
+                <i class="bi bi-x-circle"></i> Inactives
+            </a>
+            <a href="?{% if search_query %}q={{ search_query }}{% endif %}" 
+               class="filter-chip">
+                <i class="bi bi-arrow-clockwise"></i> Tout afficher
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="pricelist-table">
+        <table class="table table-hover mb-0" id="pricelistTable">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Devise</th>
+                    <th>Validité</th>
+                    <th>Statut</th>
+                    <th class="text-center">Nb Prix</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pricelist in pricelists %}
+                <tr>
+                    <td>
+                        <strong>{{ pricelist.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ pricelist.currency }}</span>
+                    </td>
+                    <td>
+                        <small class="text-muted">
+                            Du {{ pricelist.valid_from|date:"d/m/Y" }}
+                            {% if pricelist.valid_to %}
+                                au {{ pricelist.valid_to|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-success">(illimité)</span>
+                            {% endif %}
+                        </small>
+                    </td>
+                    <td>
+                        {% if pricelist.is_active %}
+                            <span class="badge badge-success">
+                                <i class="bi bi-check-circle"></i> Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-x-circle"></i> Inactive
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary">{{ pricelist.items_count }}</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="actions-row justify-content-end">
+                            <a href="{% url 'sales:pricelist_detail' pricelist.pk %}" 
+                               class="btn btn-sm btn-outline-primary"
+                               title="Voir les détails">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'sales:pricelist_grid_edit' pricelist.pk %}" 
+                               class="btn btn-sm btn-warning"
+                               title="Éditer en grille">
+                                <i class="bi bi-grid-3x3"></i>
+                            </a>
+                            <a href="{% url 'sales:pricelist_import' pricelist.pk %}" 
+                               class="btn btn-sm btn-success"
+                               title="Importer des prix">
+                                <i class="bi bi-upload"></i>
+                            </a>
+                            <a href="{% url 'sales:pricelist_edit' pricelist.pk %}" 
+                               class="btn btn-sm btn-secondary"
+                               title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h4>Aucune grille tarifaire</h4>
+                        <p class="text-muted">
+                            {% if search_query %}
+                                Aucun résultat pour "{{ search_query }}"
+                            {% else %}
+                                Créez votre première grille tarifaire pour commencer
+                            {% endif %}
+                        </p>
+                        {% if not search_query %}
+                            <a href="{% url 'sales:pricelist_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Créer une grille
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    const pricelistTable = document.getElementById('pricelistTable');
+    let searchTimeout;
+
+    // Recherche temps réel avec debounce
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        
+        const query = this.value.trim();
+        
+        searchTimeout = setTimeout(function() {
+            // Soumettre le formulaire pour recherche
+            if (query.length >= 2 || query.length === 0) {
+                searchForm.submit();
+            }
+        }, 300); // Debounce 300ms
+    });
+
+    // Raccourci clavier Ctrl+K
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+    });
+
+    // Auto-focus sur recherche si vide
+    if (searchInput.value === '') {
+        searchInput.focus();
+    }
+
+    // Animation de chargement lors de la recherche
+    searchForm.addEventListener('submit', function() {
+        pricelistTable.classList.add('search-loading');
+    });
+});
+</script>
+{% endblock %}

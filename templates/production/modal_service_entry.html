@@ -1,0 +1,75 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Ajouter un service{% endblock %}
+{% block production_content %}
+<div class="container py-3">
+  <h1 class="h4 mb-3">Ajouter un service</h1>
+  <form method="post" action="{% url 'production:service_entry' %}">
+    {% csrf_token %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">Cible</label>
+            <select name="entity_type" id="entity_type" class="form-select" required>
+              <option value="">— Choisir —</option>
+              <option value="lottech" {% if selected.entity_type == 'lottech' %}selected{% endif %}>Lot technique</option>
+              <option value="mise" {% if selected.entity_type == 'mise' %}selected{% endif %}>Mise</option>
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Entité</label>
+            <select name="entity_id" id="entity_id" class="form-select" required>
+              {% if selected.entity_type == 'lottech' %}
+                {% for l in lots %}
+                  <option value="{{ l.id }}" {% if selected.entity_id == l.id|stringformat:'s' %}selected{% endif %}>{{ l.code }} — {{ l.campagne }}</option>
+                {% endfor %}
+              {% elif selected.entity_type == 'mise' %}
+                {% for m in mises %}
+                  <option value="{{ m.id }}" {% if selected.entity_id == m.id|stringformat:'s' %}selected{% endif %}>{{ m.code_of }} — {{ m.date }}</option>
+                {% endfor %}
+              {% else %}
+                <option value="">— Sélectionner un type d'abord —</option>
+              {% endif %}
+            </select>
+            <div class="form-text">Utilisez le type pour filtrer la liste.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Libellé du service</label>
+            <input type="text" maxlength="120" name="service_label" class="form-control" placeholder="Ex: Main d'œuvre chai" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Quantité (h ou u)</label>
+            <input type="number" step="0.25" min="0" name="qty" class="form-control" value="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Montant (€)</label>
+            <input type="number" step="0.01" min="0" name="amount_eur" class="form-control" value="0.00">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Notes</label>
+            <input type="text" name="notes" class="form-control" placeholder="Optionnel">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Enregistrer</button>
+      <a class="btn btn-outline-secondary" href="/production/inventaire/">Annuler</a>
+    </div>
+  </form>
+</div>
+<script>
+(function(){
+  const et = document.getElementById('entity_type');
+  const eid = document.getElementById('entity_id');
+  if (!et || !eid) return;
+  et.addEventListener('change', function(){
+    const t = et.value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('entity_type', t);
+    url.searchParams.delete('entity_id');
+    window.location.href = url.toString();
+  });
+})();
+</script>
+{% endblock %}

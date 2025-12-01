@@ -1,0 +1,48 @@
+{% extends 'auth_base.html' %}
+
+{% block title %}Connexion - Mon Chai{% endblock %}
+
+{% block auth_title %}Connexion{% endblock %}
+
+{% block auth_subtitle %}
+    <p class="subtitle">Connectez-vous à votre espace Mon Chai</p>
+{% endblock %}
+
+{% block auth_content %}
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <!-- Email avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.username %}
+        
+        <!-- Mot de passe avec composant FormGroup -->
+        {% include 'components/form_group.html' with field=form.password %}
+        
+        <!-- Erreurs générales -->
+        {% if form.non_field_errors %}
+            {% include 'components/banner.html' with type="error" message=form.non_field_errors.0 dismissible=False %}
+        {% endif %}
+        
+        <!-- Invitation en session -->
+        {% if request.session.pending_invite %}
+            {% include 'components/banner.html' with type="info" message="Votre compte rejoindra "|add:request.session.pending_invite.organization_name dismissible=False %}
+        {% endif %}
+        
+        <!-- Bouton de connexion avec composant SubmitButton -->
+        {% include 'components/submit_button.html' with text="Se connecter" %}
+    </form>
+{% endblock %}
+
+{% block auth_links %}
+    <p class="mb-2">
+        <a href="{% url 'auth:password_reset' %}">
+            <i class="bi bi-key me-1"></i>Mot de passe oublié ?
+        </a>
+    </p>
+    <p class="mb-0">
+        Pas encore de compte ? 
+        <a href="{% url 'auth:signup' %}">
+            <i class="bi bi-person-plus me-1"></i>Créer un compte
+        </a>
+    </p>
+{% endblock %}

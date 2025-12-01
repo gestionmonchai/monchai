@@ -1,0 +1,147 @@
+Mon-Chai — Roadmap Interfaces (ordre conseillé, granulaire)
+====================================================
+
+NOTE: Découpage par interfaces à livrer, avec petits jalons ("Cuts") où tu peux shipper.
+
+1) Auth & identité
+------------------
+1. /auth/login – Form email+mdp, erreur inline. Done: on se connecte.
+2. /auth/signup – Création compte + nom domaine (exploitation). Done: compte créé.
+3. /auth/forgot – Demande reset; Done: email simulé (console) OK.
+4. /auth/reset – Saisie nouveau mdp (token). Done: login OK après reset.
+5. /auth/logout – Bouton dans header. Done: redirigé vers login.
+6. /auth/session-badge – Badge “connecté en tant que…”. Done: rôle visible.
+7. /auth/first-run – Page “Bienvenue, créer domaine ?”. Done: domaine créé.
+8. /auth/invite – Saisie email, rôle (admin, éditeur, lecture). Done: invité listé.
+
+-- Cut #1 : Auth solide, domaine créé, invitations prêtes. --
+
+2) Onboarding & préférences
+---------------------------
+9. /onboarding/checklist – 4 tâches (infos exploitation, TVA, devise, CGV).
+10. /me/profile – Nom, langue, fuseau, photo. Done: prefs sauvegardées.
+11. /settings/billing – Coordonnées facturation, SIRET, TVA.
+12. /settings/general – Devise, format date/numéro.
+13. /settings/roles – Tableau des membres, rôles, révocation.
+
+-- Cut #2 : Base de configuration terminée. --
+
+3) Référentiels (starter pack)
+------------------------------
+14. /ref/cepages – CRUD simple (nom, code).
+15. /ref/parcelles – CRUD minimal (nom, surface).
+16. /ref/unites – Liste unités (bouteille, hl, L).
+17. /ref/cuvees – CRUD (nom, couleur, AOC/IGP).
+18. /ref/entrepots – CRUD (chai, dépôt, boutique).
+
+-- Cut #3 : Référentiels prêts → on peut créer des produits. --
+
+4) Catalogue & lots
+-------------------
+19. /catalogue – Grille cuvées (carte + recherche).
+20. /catalogue/:id – Fiche cuvée (infos, étiquette).
+21. /lots – Liste lots (millésime, volume, statut).
+22. /lots/new – Création lot (source, volume, degré).
+23. /lots/:id – Détail lot (historique mouvements).
+24. /media/upload – Uploader étiquette/visuels.
+
+-- Cut #4 : Cuvées + lots prêts → on peut gérer le stock. --
+
+5) Stocks & inventaire
+----------------------
+25. /stocks/mouvements – Entrées/sorties manuelles.
+26. /stocks/transferts – Entre entrepôts.
+27. /stocks/inventaire – Vue inventaire par lot/entrepôt.
+28. /stocks/alertes – Seuils bas, badge sur menu.
+
+-- Cut #5 : Stock maîtrisé (mouvements + inventaire). --
+
+6) CRM (clients & segments)
+---------------------------
+29. /clients – Liste + filtres (Particulier/Pro/Caviste/Export/Autre).
+30. /clients/new – Form dynamique par segment (champs adaptés).
+31. /clients/:id – Fiche client (contacts, adresses, activités).
+32. /clients/tags – Étiquettes libres (VIP, gros compte, etc.).
+33. /clients/import – Import CSV minimal (nom, email, tel).
+
+-- Cut #6 : CRM opérationnel basique. --
+
+7) Tarifs & conditions
+----------------------
+34. /tarifs/listes – Listes de prix (par segment).
+35. /tarifs/remises – Remises (par client ou segment).
+36. /tarifs/taxes – Paramétrage TVA (FR, export).
+37. /tarifs/simulateur – Test prix (cuvée/lot + client).
+
+-- Cut #7 : Politique de prix prête pour vendre. --
+
+8) Ventes : devis & commandes
+-----------------------------
+38. /devis/new – Wizard simple (client → lignes → totaux).
+39. /devis/:id – Détail, statut (brouillon/envoyé/accepté).
+40. /commandes/new – From devis ou direct (client existant).
+41. /commandes/:id – Détail, statut (confirmée/prépa).
+42. /commandes/liste – Kanban des commandes par statut.
+
+-- Cut #8 : Tu peux prendre des commandes. --
+
+9) Facturation & paiements
+--------------------------
+43. /factures/emission – Numérotation légale, PDF.
+44. /factures/:id – Détail, avoir partiel/total.
+45. /factures/export – Export CSV / Factur-X (lite).
+46. /paiements/enregistrer – Saisie règlements manuels.
+47. /paiements/releve – Échéances à venir / en retard.
+
+-- Cut #9 : Tu peux facturer et suivre les encaissements. --
+
+10) Logistique & documents
+--------------------------
+48. /expeditions/prepa – Picking list + colisage.
+49. /expeditions/etiquettes – Génération PDF étiquettes (transporteur générique).
+50. /expeditions/suivi – Statuts: prêt / expédié / livré.
+51. /documents/BL – Bons de livraison PDF.
+
+-- Cut #10 : Commande → expédition bouclé. --
+
+11) Conformité (light DRM)
+--------------------------
+52. /registre/mouvements – Vue réglementaire (entrées/sorties).
+53. /registre/export – Export mensuel (CSV réglementaire simplifié).
+54. /registre/alertes – Manquants/écarts à corriger.
+
+-- Cut #11 : Traçabilité minimale prête. --
+
+12) Production avancée (après MVP vente)
+----------------------------------------
+55. /parcellaire – Carte/liste des parcelles (îlots, surfaces).
+56. /interventions – Journal (traitements, taille, etc.).
+57. /vinif/cuves – Cuves + opérations (ouillage, soutirage).
+58. /vendanges/planning – Créneaux, équipes, volumes attendus.
+
+-- Cut #12 : Suivi de production prêt. --
+
+13) Pilotage & UX
+-----------------
+59. /dashboard – KPI: CA, meilleures cuvées, ruptures, impayés.
+60. /search – Recherche globale (clients, commandes, lots).
+61. /help/tours – Coachmarks d’onboarding (pas à pas).
+62. /activity – Journal des actions récentes (par utilisateur).
+
+-- Cut #13 : Pilotage + expérience au propre. --
+
+14) Intégrations & mobile
+-------------------------
+63. /integrations/stripe – Lien de paiement (plus tard, non-bloquant).
+64. /integrations/compta – Pré-mapping Sage/Quadra (CSV).
+65. PWA /mobile/sales – Prise de commande offline-light.
+
+-- Cut #14 : Connecteurs prêts + vente mobile. --
+
+15) Vitrine / résa (optionnel)
+------------------------------
+66. /vitrine – Catalogue public (contrôle visibilité).
+67. /resa – Pré-commandes B2B, quotas par lot.
+68. /offers/backoffice – Fenêtres d’ouverture, allocation.
+
+-- Cut #15 : Canal résa activé si besoin. --

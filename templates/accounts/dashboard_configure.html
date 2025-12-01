@@ -1,0 +1,434 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configuration Dashboard - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+    .widget-card {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+        cursor: move;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .widget-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+    
+    .widget-card.active {
+        border-color: #667eea;
+        background: #f8f9ff;
+    }
+    
+    .widget-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-right: 16px;
+        background: #f8f9fa;
+    }
+    
+    .widget-type-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .widget-type-metric { background: #e3f2fd; color: #1976d2; }
+    .widget-type-chart { background: #f3e5f5; color: #7b1fa2; }
+    .widget-type-list { background: #fff3e0; color: #f57c00; }
+    .widget-type-shortcut { background: #e8f5e9; color: #388e3c; }
+    
+    .drag-handle {
+        cursor: move;
+        color: #adb5bd;
+        font-size: 20px;
+    }
+    
+    .sortable-ghost {
+        opacity: 0.4;
+        background: #f8f9fa;
+    }
+    
+    .config-section {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    
+    .section-header {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .section-header i {
+        color: #667eea;
+    }
+    
+    .widget-preview {
+        min-height: 120px;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        color: #6c757d;
+    }
+    
+    .btn-add-widget {
+        width: 100%;
+        padding: 12px;
+        border: 2px dashed #dee2e6;
+        background: white;
+        color: #667eea;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    
+    .btn-add-widget:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-sliders me-2"></i>
+                Configuration du Dashboard
+            </h1>
+            <p class="text-muted mb-0">Personnalisez votre tableau de bord avec les widgets de votre choix</p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+            <button type="button" class="btn btn-outline-danger me-2" onclick="resetDashboard()">
+                <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveDashboardConfig()">
+                <i class="bi bi-check-lg"></i> Enregistrer
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Widgets actifs (gauche) -->
+        <div class="col-lg-8">
+            <div class="config-section">
+                <div class="section-header">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <span>Widgets Actifs</span>
+                    <span class="badge bg-primary ms-auto" id="active-count">{{ config.active_widgets|length }}</span>
+                </div>
+                
+                <!-- Options d'affichage -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Disposition</label>
+                        <select class="form-select" id="layout-select">
+                            <option value="grid" {% if config.layout == 'grid' %}selected{% endif %}>Grille</option>
+                            <option value="list" {% if config.layout == 'list' %}selected{% endif %}>Liste</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Colonnes (grille)</label>
+                        <select class="form-select" id="columns-select">
+                            <option value="1" {% if config.columns == 1 %}selected{% endif %}>1 colonne</option>
+                            <option value="2" {% if config.columns == 2 %}selected{% endif %}>2 colonnes</option>
+                            <option value="3" {% if config.columns == 3 %}selected{% endif %}>3 colonnes</option>
+                            <option value="4" {% if config.columns == 4 %}selected{% endif %}>4 colonnes</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Liste des widgets actifs (drag & drop) -->
+                <div id="active-widgets-list">
+                    {% for item in active_widgets_data %}
+                    <div class="widget-card active" data-widget-code="{{ item.widget.code }}">
+                        <div class="d-flex align-items-center">
+                            <div class="drag-handle me-3">
+                                <i class="bi bi-grip-vertical"></i>
+                            </div>
+                            <div class="widget-icon">
+                                <i class="{{ item.widget.icon }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <strong>{{ item.widget.name }}</strong>
+                                    <span class="badge widget-type-{{ item.widget.widget_type }} ms-2">
+                                        {{ item.widget.get_widget_type_display }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">{{ item.widget.description }}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeWidget('{{ item.widget.code }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="widget-preview">
+                        <i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p class="mb-0 mt-2">Aucun widget actif</p>
+                        <small>Ajoutez des widgets depuis la bibliothèque →</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bibliothèque de widgets (droite) -->
+        <div class="col-lg-4">
+            <div class="config-section">
+                <div class="section-header">
+                    <i class="bi bi-collection"></i>
+                    <span>Bibliothèque</span>
+                </div>
+                
+                <!-- Filtres par type -->
+                <div class="btn-group w-100 mb-3" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary active" data-filter="all">Tous</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="metric">Métriques</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="shortcut">Raccourcis</button>
+                </div>
+                
+                <!-- Liste des widgets disponibles -->
+                <div id="available-widgets-list">
+                    {% regroup all_widgets by widget_type as widgets_by_type %}
+                    {% for widget_group in widgets_by_type %}
+                    <div class="mb-3">
+                        <small class="text-muted text-uppercase fw-bold">{{ widget_group.grouper|title }}</small>
+                        {% for widget in widget_group.list %}
+                        <div class="widget-card mt-2" data-widget-code="{{ widget.code }}" data-widget-type="{{ widget.widget_type }}">
+                            <div class="d-flex align-items-start">
+                                <div class="widget-icon me-3">
+                                    <i class="{{ widget.icon }}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <strong class="small">{{ widget.name }}</strong>
+                                    </div>
+                                    <small class="text-muted d-block mb-2" style="font-size: 0.75rem;">{{ widget.description }}</small>
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-add-widget" onclick="addWidget('{{ widget.code }}')">
+                                        <i class="bi bi-plus-lg"></i> Ajouter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+// Initialiser le drag & drop
+let sortable = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const activeList = document.getElementById('active-widgets-list');
+    
+    if (activeList && activeList.querySelector('.widget-card.active')) {
+        sortable = new Sortable(activeList, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            onEnd: function() {
+                updateActiveCount();
+            }
+        });
+    }
+    
+    // Filtres bibliothèque
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Update active button
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter widgets
+            document.querySelectorAll('#available-widgets-list .widget-card').forEach(card => {
+                if (filter === 'all' || card.dataset.widgetType === filter) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    updateActiveCount();
+});
+
+function updateActiveCount() {
+    const count = document.querySelectorAll('#active-widgets-list .widget-card.active').length;
+    document.getElementById('active-count').textContent = count;
+}
+
+function addWidget(widgetCode) {
+    fetch("{% url 'auth:api_add_widget' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ widget_code: widgetCode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast('error', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Erreur lors de l\'ajout du widget');
+    });
+}
+
+function removeWidget(widgetCode) {
+    if (!confirm('Voulez-vous vraiment retirer ce widget ?')) return;
+    
+    fetch("{% url 'auth:api_remove_widget' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ widget_code: widgetCode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast('error', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Erreur lors de la suppression du widget');
+    });
+}
+
+function saveDashboardConfig() {
+    const activeWidgets = [];
+    document.querySelectorAll('#active-widgets-list .widget-card.active').forEach(card => {
+        activeWidgets.push(card.dataset.widgetCode);
+    });
+    
+    const layout = document.getElementById('layout-select').value;
+    const columns = parseInt(document.getElementById('columns-select').value);
+    
+    fetch("{% url 'auth:api_save_dashboard_config' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            active_widgets: activeWidgets,
+            layout: layout,
+            columns: columns
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => window.location.href = "{% url 'dashboard' %}", 1000);
+        } else {
+            showToast('error', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Erreur lors de la sauvegarde');
+    });
+}
+
+function resetDashboard() {
+    if (!confirm('Voulez-vous vraiment réinitialiser le dashboard aux paramètres par défaut ?')) return;
+    
+    fetch("{% url 'auth:api_reset_dashboard' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Erreur lors de la réinitialisation');
+    });
+}
+
+function showToast(type, message) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '9999';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,413 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Accueil</a>
+    &rsaquo; <a href="{% url 'stock:dashboard' %}">Stocks</a>
+    &rsaquo; Dashboard
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1><i class="bi bi-boxes"></i> Dashboard Stocks</h1>
+        <div class="dashboard-actions">
+            <a href="{% url 'stock:transferts_list' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-left-right"></i> Transferts
+            </a>
+            <a href="{% url 'stock:transfert_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nouveau transfert
+            </a>
+        </div>
+    </div>
+
+    <!-- Résumé global -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-droplet"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stock_summary.total_volume_l|floatformat:2 }} L</h3>
+                <p>Volume total en stock</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stock_summary.warehouse_summaries|length }}</h3>
+                <p>Entrepôts actifs</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stock_summary.warehouse_summaries|length }}</h3>
+                <p>Lots en stock</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ stock_summary.recent_moves|length }}</h3>
+                <p>Mouvements récents</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stocks par entrepôt -->
+    <div class="dashboard-section">
+        <h2><i class="bi bi-building"></i> Stocks par entrepôt</h2>
+        
+        {% if stock_summary.warehouse_summaries %}
+        <div class="warehouse-grid">
+            {% for warehouse_summary in stock_summary.warehouse_summaries %}
+            <div class="warehouse-card">
+                <div class="warehouse-header">
+                    <h3>{{ warehouse_summary.warehouse.name }}</h3>
+                    <span class="volume-badge">{{ warehouse_summary.total_volume_l|floatformat:2 }} L</span>
+                </div>
+                
+                <div class="warehouse-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Lots:</span>
+                        <span class="stat-value">{{ warehouse_summary.lot_count }}</span>
+                    </div>
+                </div>
+                
+                {% if warehouse_summary.balances %}
+                <div class="lot-list">
+                    {% for balance in warehouse_summary.balances|slice:":5" %}
+                    <div class="lot-item">
+                        <span class="lot-code">{{ balance.lot.code }}</span>
+                        <span class="lot-volume">{{ balance.qty_l|floatformat:2 }} L</span>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if warehouse_summary.balances|length > 5 %}
+                    <div class="lot-item more">
+                        <span class="lot-code">...</span>
+                        <span class="lot-volume">+{{ warehouse_summary.balances|length|add:"-5" }} lots</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p>Aucun stock trouvé</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Mouvements récents -->
+    <div class="dashboard-section">
+        <h2><i class="bi bi-clock-history"></i> Mouvements récents</h2>
+        
+        {% if stock_summary.recent_moves %}
+        <div class="moves-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Lot</th>
+                        <th>Volume</th>
+                        <th>Entrepôt source</th>
+                        <th>Entrepôt destination</th>
+                        <th>Utilisateur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for move in stock_summary.recent_moves|slice:":10" %}
+                    <tr>
+                        <td>{{ move.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <span class="badge badge-{{ move.move_type }}">
+                                {{ move.get_move_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ move.lot.code }}</td>
+                        <td>{{ move.qty_l|floatformat:2 }} L</td>
+                        <td>{{ move.src_warehouse.name|default:"-" }}</td>
+                        <td>{{ move.dst_warehouse.name|default:"-" }}</td>
+                        <td>{{ move.user.get_full_name|default:move.user.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-clock"></i>
+            <p>Aucun mouvement récent</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.dashboard-container {
+    padding: 20px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    color: #333;
+}
+
+.dashboard-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #007bff;
+}
+
+.stat-content h3 {
+    margin: 0 0 5px 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.dashboard-section {
+    margin-bottom: 40px;
+}
+
+.dashboard-section h2 {
+    margin-bottom: 20px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.warehouse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.warehouse-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.warehouse-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.warehouse-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.volume-badge {
+    background: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.warehouse-stats {
+    margin-bottom: 15px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #666;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #333;
+}
+
+.lot-list {
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
+
+.lot-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 14px;
+}
+
+.lot-item.more {
+    color: #666;
+    font-style: italic;
+}
+
+.lot-code {
+    font-weight: 500;
+}
+
+.lot-volume {
+    color: #666;
+}
+
+.moves-table {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-transfert {
+    background: #007bff;
+    color: white;
+}
+
+.badge-entree {
+    background: #28a745;
+    color: white;
+}
+
+.badge-sortie {
+    background: #dc3545;
+    color: white;
+}
+
+.badge-ajustement {
+    background: #ffc107;
+    color: #333;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+</style>
+{% endblock %}

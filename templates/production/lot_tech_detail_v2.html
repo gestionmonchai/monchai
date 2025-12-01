@@ -1,0 +1,328 @@
+{% extends 'production/base_production.html' %}
+{% block title %}{{ lot.code }} - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+/* HEADER */
+.lot-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.lot-header .lot-code { font-size: 1.5rem; font-weight: 700; }
+.lot-header .lot-cuvee { font-size: 1.1rem; opacity: 0.9; }
+.lot-header .lot-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.lot-header .meta-item { background: rgba(255,255,255,0.15); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; }
+.lot-header .meta-item.volume { background: rgba(59,130,246,0.4); font-weight: 600; }
+
+/* LIFECYCLE BAR */
+.lifecycle-bar { display: flex; align-items: center; gap: 0; margin: 1.25rem 0 0; overflow-x: auto; }
+.lifecycle-step { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; font-size: 0.75rem; font-weight: 500; color: rgba(255,255,255,0.4); white-space: nowrap; text-decoration: none; cursor: pointer; transition: all 0.2s; border-radius: 6px; }
+.lifecycle-step:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+.lifecycle-step::after { content: '→'; color: rgba(255,255,255,0.2); margin-left: 0.4rem; }
+.lifecycle-step:last-child::after { display: none; }
+.lifecycle-step.completed { color: #10b981; }
+.lifecycle-step.completed:hover { color: #34d399; }
+.lifecycle-step.active { color: #fbbf24; font-weight: 700; }
+.step-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; background: rgba(255,255,255,0.1); transition: all 0.2s; }
+.lifecycle-step.completed .step-icon { background: #10b981; color: white; }
+.lifecycle-step.active .step-icon { background: #fbbf24; color: #1a1a2e; transform: scale(1.15); box-shadow: 0 0 10px rgba(251,191,36,0.5); }
+/* Cuvee assignment */
+.cuvee-assign { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px dashed #f59e0b; border-radius: 10px; padding: 0.75rem; margin-bottom: 0.75rem; }
+.cuvee-assign .cuvee-label { font-weight: 600; font-size: 0.85rem; color: #92400e; margin-bottom: 0.5rem; }
+.cuvee-current { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border: none; }
+.cuvee-current .cuvee-label { color: #065f46; }
+
+/* MAIN ACTION */
+.main-action-box { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(16,185,129,0.3); }
+.main-action-box .action-label { color: white; font-weight: 600; }
+.main-action-box .action-sublabel { color: rgba(255,255,255,0.8); font-size: 0.85rem; }
+.main-action-box .btn-action { background: white; color: #059669; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 8px; border: none; text-decoration: none; }
+.main-action-box .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+/* LAYOUT */
+.lot-layout { display: grid; grid-template-columns: 1fr 360px; gap: 1.5rem; }
+@media (max-width: 1200px) { .lot-layout { grid-template-columns: 1fr; } }
+
+/* TIMELINE */
+.timeline-section { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb; }
+.timeline-header h2 { font-size: 1rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.timeline { position: relative; padding-left: 1.75rem; }
+.timeline::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #3b82f6, #e5e7eb); }
+.timeline-event { position: relative; padding-bottom: 1.25rem; }
+.timeline-event:last-child { padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -1.5rem; top: 0.2rem; width: 16px; height: 16px; border-radius: 50%; background: white; border: 3px solid #3b82f6; z-index: 1; }
+.timeline-dot.encuvage { border-color: #10b981; background: #10b981; }
+.timeline-dot.transfert { border-color: #f59e0b; background: #f59e0b; }
+.timeline-dot.analyse { border-color: #6366f1; background: #6366f1; }
+.timeline-dot.intervention { border-color: #8b5cf6; background: #8b5cf6; }
+.timeline-dot.perte { border-color: #ef4444; background: #ef4444; }
+.event-card { background: #f8fafc; border-radius: 8px; padding: 0.75rem 1rem; border-left: 4px solid #3b82f6; transition: all 0.2s; }
+.event-card:hover { transform: translateX(3px); box-shadow: 0 3px 10px rgba(0,0,0,0.06); }
+.event-card.encuvage { border-left-color: #10b981; }
+.event-card.transfert { border-left-color: #f59e0b; }
+.event-card.analyse { border-left-color: #6366f1; }
+.event-card.intervention { border-left-color: #8b5cf6; }
+.event-card.perte { border-left-color: #ef4444; }
+.event-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem; }
+.event-type { font-weight: 600; font-size: 0.85rem; }
+.event-date { font-size: 0.75rem; color: #6b7280; }
+.event-content { font-size: 0.85rem; color: #374151; }
+.event-link { display: inline-flex; align-items: center; gap: 0.2rem; color: #3b82f6; font-size: 0.8rem; font-weight: 500; margin-top: 0.4rem; text-decoration: none; }
+.event-link:hover { text-decoration: underline; }
+.add-operation { display: flex; gap: 0.5rem; flex-wrap: wrap; padding: 1rem; background: #f0f9ff; border-radius: 8px; margin-top: 1.25rem; }
+
+/* SIDE PANEL */
+.side-panel { display: flex; flex-direction: column; gap: 0.75rem; }
+.panel-card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.panel-header { padding: 0.6rem 0.85rem; background: #f8fafc; font-weight: 600; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #e5e7eb; }
+.panel-header:hover { background: #f1f5f9; }
+.panel-body { padding: 0.85rem; }
+.panel-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; }
+.panel-row:last-child { border-bottom: none; }
+.panel-row .label { color: #6b7280; }
+.panel-row .value { font-weight: 600; }
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.quick-action-btn { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.6rem; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.75rem; color: #374151; text-decoration: none; transition: all 0.2s; }
+.quick-action-btn:hover { background: #e0f2fe; border-color: #3b82f6; color: #1d4ed8; }
+.quick-action-btn i { font-size: 1.1rem; }
+.family-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: #f8fafc; border-radius: 5px; font-size: 0.8rem; margin-bottom: 0.4rem; }
+.family-item a { color: #3b82f6; font-weight: 600; text-decoration: none; }
+.status-badge { padding: 0.25rem 0.6rem; border-radius: 15px; font-size: 0.75rem; font-weight: 600; }
+.status-badge.mout_encuve, .status-badge.MOUT_ENCUVE { background: #fef3c7; color: #92400e; }
+.status-badge.en_cours { background: #dbeafe; color: #1e40af; }
+.status-badge.elevage { background: #ede9fe; color: #5b21b6; }
+.status-badge.stabilise { background: #d1fae5; color: #065f46; }
+.status-badge.pret_mise { background: #10b981; color: white; }
+</style>
+{% endblock %}
+
+{% block production_content %}
+<!-- HEADER -->
+<div class="lot-header">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+      <div class="lot-code">{{ lot.code }}</div>
+      <div class="lot-cuvee">{% if lot.cuvee %}{{ lot.cuvee.nom }}{% else %}Sans cuvée{% endif %} {% if lot.campagne %}<span class="opacity-75">· {{ lot.campagne }}</span>{% endif %}</div>
+      <div class="lot-meta">
+        <span class="meta-item volume"><i class="bi bi-droplet-fill me-1"></i>{{ volume_net_calc|floatformat:1 }} L</span>
+        <span class="meta-item"><i class="bi bi-box me-1"></i>{{ lot.contenant|default:'—' }}</span>
+        <span class="meta-item status-badge {{ lot.statut }}">{{ lot.get_statut_display }}</span>
+        {% if lot.location_kind == 'OFFSITE' %}<span class="meta-item" style="background:rgba(245,158,11,0.3);"><i class="bi bi-truck me-1"></i>Hors site</span>{% endif %}
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/production/lots-elevage/journal/?lot={{ lot.code }}" class="btn btn-sm btn-outline-light"><i class="bi bi-journal-text"></i></a>
+      <a href="/production/lots-techniques/{{ lot.id }}/mouvements/export/" class="btn btn-sm btn-outline-light"><i class="bi bi-download"></i></a>
+    </div>
+  </div>
+  <!-- Lifecycle - cliquable pour changer de statut -->
+  <div class="lifecycle-bar">
+    {% with s=lot.statut %}
+    <a class="lifecycle-step {% if s == 'MOUT_ENCUVE' or s == 'mout_encuve' %}active{% elif s in 'en_cours,elevage,stabilise,pret_mise,embouteille' %}completed{% endif %}" href="#" onclick="return false;" title="Lot encuvé"><span class="step-icon"><i class="bi bi-cup-hot"></i></span>Encuvage</a>
+    <a class="lifecycle-step {% if s == 'en_cours' %}active{% elif s in 'elevage,stabilise,pret_mise,embouteille' %}completed{% endif %}" href="#" data-action="en_cours" title="Passer en fermentation"><span class="step-icon"><i class="bi bi-activity"></i></span>Fermentation</a>
+    <a class="lifecycle-step {% if s == 'elevage' %}active{% elif s in 'stabilise,pret_mise,embouteille' %}completed{% endif %}" href="#" data-action="elevage" title="Passer en élevage"><span class="step-icon"><i class="bi bi-hourglass-split"></i></span>Élevage</a>
+    <a class="lifecycle-step {% if s == 'stabilise' %}active{% elif s in 'pret_mise,embouteille' %}completed{% endif %}" href="#" data-action="stabilise" title="Marquer stabilisé"><span class="step-icon"><i class="bi bi-check-circle"></i></span>Stabilisé</a>
+    <a class="lifecycle-step {% if s == 'pret_mise' %}active{% elif s == 'embouteille' %}completed{% endif %}" href="/production/lots-techniques/{{ lot.id }}/action/pret_mise/" data-action="pret_mise" title="Marquer prêt mise"><span class="step-icon"><i class="bi bi-star"></i></span>Prêt mise</a>
+    <a class="lifecycle-step {% if s == 'embouteille' %}active{% endif %}" href="/production/mises/nouveau/?step=1" title="Planifier la mise"><span class="step-icon"><i class="bi bi-cup-straw"></i></span>Embouteillé</a>
+    {% endwith %}
+  </div>
+</div>
+
+<!-- MAIN ACTION -->
+<div class="main-action-box" {% if lot.statut == 'pret_mise' %}style="background:linear-gradient(135deg,#6366f1,#4f46e5);"{% endif %}>
+  <div>
+    <div class="action-label"><i class="bi bi-arrow-right-circle me-2"></i>{% if lot.statut == 'pret_mise' %}Prochaine étape{% else %}Action suggérée{% endif %}</div>
+    <div class="action-sublabel">{% if lot.statut == 'pret_mise' %}Planifier la mise en bouteille{% elif lot.statut == 'stabilise' %}Marquer prêt pour la mise{% elif lot.statut == 'elevage' %}Déclarer le lot stabilisé{% else %}Continuer la vinification{% endif %}</div>
+  </div>
+  {% if lot.statut == 'pret_mise' %}
+  <a href="/production/mises/nouveau/?step=1" class="btn-action">Mise <i class="bi bi-arrow-right ms-1"></i></a>
+  {% else %}
+  <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/pret_mise/" class="d-inline">{% csrf_token %}<button type="submit" class="btn-action">Prêt mise <i class="bi bi-check ms-1"></i></button></form>
+  {% endif %}
+</div>
+
+<!-- LAYOUT 2 COLONNES -->
+<div class="lot-layout">
+  <!-- TIMELINE -->
+  <div class="timeline-section">
+    <div class="timeline-header">
+      <h2><i class="bi bi-clock-history text-primary"></i> Parcours de vie</h2>
+      <span class="text-muted small">Chronologie</span>
+    </div>
+    <div class="timeline">
+      {% for mv in mouvements %}
+      <div class="timeline-event">
+        <div class="timeline-dot {% if 'ENCUVAGE' in mv.type %}encuvage{% elif 'TRANSFERT' in mv.type or 'SOUTIRAGE' in mv.type %}transfert{% elif 'PERTE' in mv.type %}perte{% else %}intervention{% endif %}"></div>
+        <div class="event-card {% if 'ENCUVAGE' in mv.type %}encuvage{% elif 'TRANSFERT' in mv.type %}transfert{% elif 'PERTE' in mv.type %}perte{% endif %}">
+          <div class="event-header">
+            <span class="event-type">{% if 'ENCUVAGE' in mv.type %}<i class="bi bi-cup-hot me-1"></i>Encuvage{% elif 'TRANSFERT' in mv.type %}<i class="bi bi-arrow-left-right me-1"></i>Transfert{% elif 'PERTE' in mv.type %}<i class="bi bi-exclamation-triangle me-1"></i>Perte{% else %}{{ mv.type }}{% endif %}</span>
+            <span class="event-date">{{ mv.date|date:'d/m/Y' }}</span>
+          </div>
+          <div class="event-content"><strong>{% if mv.volume_l > 0 %}+{% endif %}{{ mv.volume_l|floatformat:1 }} L</strong></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% for itv in vinif_interventions %}
+      <div class="timeline-event">
+        <div class="timeline-dot intervention"></div>
+        <div class="event-card intervention">
+          <div class="event-header"><span class="event-type"><i class="bi bi-wrench me-1"></i>{{ itv.get_type_display }}</span><span class="event-date">{{ itv.date|date:'d/m/Y' }}</span></div>
+          <div class="event-content">{{ itv.notes|default:'—' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% for m in vinif_measurements %}
+      <div class="timeline-event">
+        <div class="timeline-dot analyse"></div>
+        <div class="event-card analyse">
+          <div class="event-header"><span class="event-type"><i class="bi bi-graph-up me-1"></i>{{ m.get_type_display }}</span><span class="event-date">{{ m.date|date:'d/m/Y' }}</span></div>
+          <div class="event-content"><strong>{{ m.value }} {{ m.unit }}</strong></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if origin %}
+      <div class="timeline-event">
+        <div class="timeline-dot encuvage"></div>
+        <div class="event-card encuvage">
+          <div class="event-header"><span class="event-type"><i class="bi bi-flag me-1"></i>Création</span><span class="event-date">{{ origin.created_at|date:'d/m/Y' }}</span></div>
+          <div class="event-content">{% if origin.vendange %}Vendange {{ origin.vendange.code }}{% if origin.parcelle %} · {{ origin.parcelle.nom }}{% endif %}{% if origin.rendement_l_kg %}<br><small class="text-muted">Rendement: {{ origin.rendement_l_kg }} L/kg</small>{% endif %}<a href="/production/vendanges/{{ origin.vendange.id }}/" class="event-link"><i class="bi bi-box-arrow-up-right"></i> Voir</a>{% else %}Création manuelle{% endif %}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="add-operation">
+      <a href="/production/lots-techniques/{{ lot.id }}/soutirage/" class="btn btn-outline-warning btn-sm"><i class="bi bi-arrow-down me-1"></i>Soutirage</a>
+      <a href="/production/assemblages/nouveau/?step=1&source={{ lot.id }}" class="btn btn-outline-dark btn-sm"><i class="bi bi-diagram-3 me-1"></i>Assembler</a>
+      <a href="/production/lots-techniques/{{ lot.id }}/vinif/measure/add/" class="btn btn-outline-primary btn-sm"><i class="bi bi-graph-up me-1"></i>Mesure</a>
+      <a href="/production/services/entry/?entity_type=lottech&entity_id={{ lot.id }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-plus me-1"></i>Service</a>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel">
+    <!-- Cuvée Assignment -->
+    {% if lot.cuvee %}
+    <div class="cuvee-assign cuvee-current">
+      <div class="cuvee-label"><i class="bi bi-cup me-1"></i>Cuvée assignée</div>
+      <div class="d-flex justify-content-between align-items-center">
+        <strong>{{ lot.cuvee.nom }}</strong>
+        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalChangeCuvee">
+          <i class="bi bi-pencil"></i>
+        </button>
+      </div>
+    </div>
+    {% else %}
+    <div class="cuvee-assign">
+      <div class="cuvee-label"><i class="bi bi-exclamation-triangle me-1"></i>Aucune cuvée</div>
+      <button type="button" class="btn btn-sm btn-warning w-100" data-bs-toggle="modal" data-bs-target="#modalChangeCuvee">
+        <i class="bi bi-plus me-1"></i>Affecter une cuvée
+      </button>
+    </div>
+    {% endif %}
+    
+    <!-- Paramètres clés -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="bi bi-speedometer2 me-2"></i>Paramètres clés</div>
+      <div class="panel-body">
+        <div class="panel-row"><span class="label">Densité</span><span class="value">{{ latest_densite|default:'—' }}</span></div>
+        <div class="panel-row"><span class="label">Titre (%)</span><span class="value">{% if abv_pct %}{{ abv_pct }}{% else %}—{% endif %}</span></div>
+        <div class="panel-row"><span class="label">Vol @20°C (hL)</span><span class="value">{% if lot.volume_hl20 %}{{ lot.volume_hl20 }}{% else %}—{% endif %}</span></div>
+        <div class="panel-row"><span class="label">État technique</span><span class="value">{{ etat_technique|default:'—' }}</span></div>
+      </div>
+    </div>
+    <!-- Contenant -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="bi bi-box me-2"></i>Contenant & Emplacement</div>
+      <div class="panel-body">
+        <div class="panel-row"><span class="label">Contenant</span><span class="value">{{ lot.contenant|default:'—' }}</span></div>
+        {% if lot_containers %}{% for c in lot_containers %}<div class="panel-row"><span class="label">{{ c.get_type_display }}</span><span class="value">{{ c.identifiant }} ({{ c.volume_occupe_l }}L)</span></div>{% endfor %}{% endif %}
+        {% with ld=lot_detail %}<div class="panel-row"><span class="label">Emplacement</span><span class="value">{{ ld.emplacement_rangee|default:'—' }}/{{ ld.emplacement_travee|default:'—' }}/{{ ld.emplacement_niveau|default:'—' }}</span></div>{% endwith %}
+      </div>
+    </div>
+    <!-- Famille -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="bi bi-diagram-2 me-2"></i>Origine & Descendants</div>
+      <div class="panel-body">
+        <div class="small text-muted mb-2">Parents</div>
+        {% for ln in lineage_parents %}<div class="family-item"><i class="bi bi-arrow-up text-muted"></i><a href="/production/lots-techniques/{{ ln.parent_lot.id }}/">{{ ln.parent_lot.code }}</a><small class="text-muted">{{ ln.operation.get_kind_display }}</small></div>{% empty %}<div class="text-muted small">Aucun parent</div>{% endfor %}
+        <div class="small text-muted mb-2 mt-3">Enfants</div>
+        {% for ln in lineage_children %}<div class="family-item"><i class="bi bi-arrow-down text-muted"></i><a href="/production/lots-techniques/{{ ln.child_lot.id }}/">{{ ln.child_lot.code }}</a><small class="text-muted">{{ ln.operation.get_kind_display }}</small></div>{% empty %}<div class="text-muted small">Aucun enfant</div>{% endfor %}
+      </div>
+    </div>
+    <!-- Coûts -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="bi bi-currency-euro me-2"></i>Coûts</div>
+      <div class="panel-body">
+        <div class="panel-row"><span class="label">CMP €/L</span><span class="value">{% if cost_snapshot %}{{ cost_snapshot.cmp_vrac_eur_l }}{% else %}0.00{% endif %}</span></div>
+      </div>
+    </div>
+    <!-- Actions rapides -->
+    <div class="panel-card">
+      <div class="panel-header"><i class="bi bi-lightning-charge me-2"></i>Actions</div>
+      <div class="panel-body">
+        <div class="quick-actions">
+          <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/pret_mise/" class="d-contents">{% csrf_token %}<button type="submit" class="quick-action-btn w-100"><i class="bi bi-check-circle text-success"></i>Prêt mise</button></form>
+          <a href="/production/mises/nouveau/?step=1" class="quick-action-btn"><i class="bi bi-cup-straw text-primary"></i>Mise</a>
+          <a href="/production/lots-techniques/{{ lot.id }}/pressurage/" class="quick-action-btn"><i class="bi bi-funnel"></i>Pressurage</a>
+          <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/perte/" class="d-contents">{% csrf_token %}<input type="hidden" name="volume_l" value="0"><button type="button" class="quick-action-btn w-100" onclick="let v=prompt('Volume perdu (L):');if(v){this.previousElementSibling.value=v;this.form.submit();}"><i class="bi bi-droplet-half text-danger"></i>Perte</button></form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Changement Cuvée -->
+<div class="modal fade" id="modalChangeCuvee" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/production/lots-techniques/{{ lot.id }}/affecter-cuvee/">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-cup me-2"></i>Affecter une cuvée</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Sélectionner une cuvée</label>
+            <select name="cuvee_id" class="form-select" required>
+              <option value="">— Choisir une cuvée —</option>
+              {% for c in cuvees %}
+                <option value="{{ c.id }}" {% if lot.cuvee_id == c.id %}selected{% endif %}>{{ c.nom }}{% if c.code %} ({{ c.code }}){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if lot.cuvee %}
+          <div class="alert alert-info small">
+            <i class="bi bi-info-circle me-1"></i>Cuvée actuelle: <strong>{{ lot.cuvee.nom }}</strong>
+          </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Appliquer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Lifecycle step clicks - pour les étapes avec data-action
+document.querySelectorAll('.lifecycle-step[data-action]').forEach(step => {
+  step.addEventListener('click', function(e) {
+    const action = this.dataset.action;
+    if (action && confirm(`Changer le statut vers "${this.textContent.trim()}" ?`)) {
+      // Pour pret_mise, utiliser le lien href existant
+      if (this.href && this.href.includes('/action/')) {
+        // Créer un formulaire et soumettre
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = this.href;
+        form.innerHTML = '{% csrf_token %}';
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+    e.preventDefault();
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ member.user.get_full_name|default:member.user.email }} - Gestion collaborateur{% endblock %}
+
+{% block extra_css %}
+<style>
+    .member-header {
+        background: linear-gradient(135deg, #5a7c59 0%, #4a6649 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 24px;
+    }
+    .member-header-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: 600;
+        border: 3px solid rgba(255,255,255,0.3);
+    }
+    .member-header-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .settings-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+    .settings-card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .settings-card-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .settings-card-header .icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+    .settings-card-body {
+        padding: 24px;
+    }
+    
+    /* Role selector */
+    .role-option {
+        padding: 16px 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .role-option:hover {
+        border-color: #8B1538;
+        background: rgba(139, 21, 56, 0.02);
+    }
+    .role-option.selected {
+        border-color: #8B1538;
+        background: rgba(139, 21, 56, 0.05);
+    }
+    .role-option input {
+        display: none;
+    }
+    .role-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+    .role-icon.owner { background: #8B1538; color: white; }
+    .role-icon.admin { background: #d4af37; color: #333; }
+    .role-icon.member { background: #e9ecef; color: #495057; }
+    
+    /* Permission toggles */
+    .permission-group {
+        margin-bottom: 24px;
+    }
+    .permission-group-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .permission-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    .permission-item:hover {
+        background: #e9ecef;
+    }
+    .permission-label {
+        font-weight: 500;
+    }
+    .permission-desc {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    /* Form switch custom */
+    .form-switch .form-check-input {
+        width: 48px;
+        height: 24px;
+    }
+    .form-switch .form-check-input:checked {
+        background-color: #5a7c59;
+        border-color: #5a7c59;
+    }
+    
+    /* Danger zone */
+    .danger-zone {
+        border: 2px solid #dc3545;
+        border-radius: 12px;
+        padding: 20px;
+        background: rgba(220, 53, 69, 0.02);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'auth:profile' %}">Mon compte</a></li>
+            <li class="breadcrumb-item active">{{ member.user.get_full_name|default:member.user.email }}</li>
+        </ol>
+    </nav>
+    
+    {% include 'components/django_messages.html' %}
+    
+    <!-- Header collaborateur -->
+    <div class="member-header">
+        <div class="d-flex align-items-center gap-4">
+            <div class="member-header-avatar">
+                {% if member.user.profile.get_avatar_url %}
+                    <img src="{{ member.user.profile.get_avatar_url }}" alt="">
+                {% else %}
+                    {{ member.user.first_name|slice:":1"|upper|default:"?" }}{{ member.user.last_name|slice:":1"|upper }}
+                {% endif %}
+            </div>
+            <div>
+                <h2 class="mb-1">{{ member.user.get_full_name|default:member.user.email }}</h2>
+                <p class="mb-0 opacity-75">{{ member.user.email }}</p>
+                <div class="mt-2">
+                    <span class="badge bg-light text-dark">
+                        Membre depuis {{ member.created_at|date:"F Y" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- Rôle -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <div class="icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-shield"></i>
+                    </div>
+                    <h5>Rôle</h5>
+                </div>
+                <div class="settings-card-body">
+                    <form method="post" id="role-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="change_role">
+                        
+                        <label class="role-option d-flex align-items-center gap-3 {% if member.role == 'admin' %}selected{% endif %}">
+                            <input type="radio" name="new_role" value="admin" {% if member.role == 'admin' %}checked{% endif %}>
+                            <div class="role-icon admin"><i class="bi bi-gear-fill"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Administrateur</div>
+                                <small class="text-muted">Peut gerer l'equipe et les parametres</small>
+                            </div>
+                            {% if member.role == 'admin' %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+                        </label>
+                        
+                        <label class="role-option d-flex align-items-center gap-3 {% if member.role == 'editor' %}selected{% endif %}">
+                            <input type="radio" name="new_role" value="editor" {% if member.role == 'editor' %}checked{% endif %}>
+                            <div class="role-icon editor"><i class="bi bi-pencil-fill"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Editeur</div>
+                                <small class="text-muted">Peut creer et modifier les donnees</small>
+                            </div>
+                            {% if member.role == 'editor' %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+                        </label>
+                        
+                        <label class="role-option d-flex align-items-center gap-3 {% if member.role == 'read_only' %}selected{% endif %}">
+                            <input type="radio" name="new_role" value="read_only" {% if member.role == 'read_only' %}checked{% endif %}>
+                            <div class="role-icon readonly"><i class="bi bi-eye-fill"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Lecture seule</div>
+                                <small class="text-muted">Peut consulter mais pas modifier</small>
+                            </div>
+                            {% if member.role == 'read_only' %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+                        </label>
+                        
+                        <button type="submit" class="btn btn-primary mt-3">
+                            <i class="bi bi-check-lg me-2"></i>Appliquer le rôle
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <!-- Permissions détaillées -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <div class="icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-key"></i>
+                    </div>
+                    <h5>Permissions detaillees</h5>
+                </div>
+                <div class="settings-card-body">
+                    <form method="post" id="permissions-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="permissions">
+                        
+                        <!-- Referentiels -->
+                        <div class="permission-group">
+                            <div class="permission-group-title">
+                                <i class="bi bi-geo-alt text-success"></i>
+                                Referentiels
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Parcelles</div>
+                                    <div class="permission-desc">Vignoble et parcelles</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="parcelles_view" id="parcelles_view" {% if perms.parcelles.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="parcelles_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="parcelles_edit" id="parcelles_edit" {% if perms.parcelles.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="parcelles_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Cuvees</div>
+                                    <div class="permission-desc">Cuvees et appellations</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="cuvees_view" id="cuvees_view" {% if perms.cuvees.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="cuvees_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="cuvees_edit" id="cuvees_edit" {% if perms.cuvees.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="cuvees_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Production -->
+                        <div class="permission-group">
+                            <div class="permission-group-title">
+                                <i class="bi bi-moisture text-primary"></i>
+                                Production
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Vendanges</div>
+                                    <div class="permission-desc">Recoltes et apports</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="vendanges_view" id="vendanges_view" {% if perms.vendanges.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="vendanges_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="vendanges_edit" id="vendanges_edit" {% if perms.vendanges.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="vendanges_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Lots techniques</div>
+                                    <div class="permission-desc">Vinification et assemblages</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="lots_view" id="lots_view" {% if perms.lots.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="lots_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="lots_edit" id="lots_edit" {% if perms.lots.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="lots_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Stocks</div>
+                                    <div class="permission-desc">Inventaire et mouvements</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="stocks_view" id="stocks_view" {% if perms.stocks.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="stocks_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="stocks_edit" id="stocks_edit" {% if perms.stocks.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="stocks_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Commercial -->
+                        <div class="permission-group">
+                            <div class="permission-group-title">
+                                <i class="bi bi-receipt text-warning"></i>
+                                Commercial
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Ventes</div>
+                                    <div class="permission-desc">Commandes et clients</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="ventes_view" id="ventes_view" {% if perms.ventes.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="ventes_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="ventes_edit" id="ventes_edit" {% if perms.ventes.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="ventes_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Factures</div>
+                                    <div class="permission-desc">Facturation</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="factures_view" id="factures_view" {% if perms.factures.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="factures_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="factures_edit" id="factures_edit" {% if perms.factures.edit %}checked{% endif %}>
+                                        <label class="form-check-label small" for="factures_edit">Modifier</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Statistiques -->
+                        <div class="permission-group">
+                            <div class="permission-group-title">
+                                <i class="bi bi-bar-chart text-info"></i>
+                                Statistiques
+                            </div>
+                            <div class="permission-item">
+                                <div>
+                                    <div class="permission-label">Dashboard & KPIs</div>
+                                    <div class="permission-desc">Tableaux de bord</div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="stats_view" id="stats_view" {% if perms.stats.view %}checked{% endif %}>
+                                        <label class="form-check-label small" for="stats_view">Voir</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="stats_export" id="stats_export" {% if perms.stats.export %}checked{% endif %}>
+                                        <label class="form-check-label small" for="stats_export">Exporter</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success mt-3">
+                            <i class="bi bi-check-lg me-2"></i>Enregistrer les permissions
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Zone danger -->
+    <div class="settings-card">
+        <div class="settings-card-header">
+            <div class="icon bg-danger bg-opacity-10 text-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h5 class="text-danger">Zone dangereuse</h5>
+        </div>
+        <div class="settings-card-body">
+            <div class="danger-zone">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">Retirer ce collaborateur</div>
+                        <small class="text-muted">Cette personne n'aura plus accès à l'organisation.</small>
+                    </div>
+                    <form method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir retirer ce collaborateur ?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="remove_member">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-person-x me-2"></i>Retirer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Role option selection visual
+    document.querySelectorAll('.role-option').forEach(option => {
+        option.addEventListener('click', function() {
+            document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            this.querySelector('input').checked = true;
+        });
+    });
+});
+</script>
+{% endblock %}

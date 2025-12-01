@@ -1,0 +1,665 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Mon Chai – De la vigne à la vente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|playfair-display:500,600,700" rel="stylesheet" />
+  <!-- Tailwind CDN (pour test ; à remplacer par ta build Tailwind en prod) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          },
+          colors: {
+            chai: {
+              bg: '#F4EDE4',
+              bgSoft: '#F7F1E9',
+              bgMedium: '#EADFD3',
+              accent: '#7B1E22',
+              accentSoft: '#4E2A41',
+              or: '#E5B14C',
+              vert: '#A3A04A',
+              terre: '#E7D9CF',
+              terracotta: '#C75A3A',
+              brun: '#2A1A1C',
+              ocre: '#4E2A41'
+            }
+          },
+          boxShadow: {
+            soft: '0 18px 45px rgba(0,0,0,0.55)',
+          },
+          borderRadius: {
+            '3xl': '1.5rem',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-chai-bg text-gray-800 font-sans antialiased overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-b from-chai-bgSoft via-chai-bg to-chai-bgMedium">
+    <!-- Top bar -->
+    <header id="main-header" class="border-b border-chai-terre/30 sticky top-0 z-30 backdrop-blur-md transition-all duration-500">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full border border-chai-accent/30 bg-chai-accent flex items-center justify-center">
+            <!-- Logo text placeholder -->
+            <span class="font-serif text-sm tracking-[0.2em] uppercase text-white">MC</span>
+          </div>
+          <div class="leading-tight">
+            <div class="font-serif text-lg tracking-wide text-chai-accent">Mon Chai</div>
+            <div class="text-xs text-chai-vert uppercase tracking-[0.18em]">Logiciel viticole</div>
+          </div>
+        </div>
+        <nav class="hidden md:flex items-center gap-8 text-sm text-gray-700">
+          <a href="#parcours" class="hover:text-chai-accent transition">Parcours</a>
+          <a href="#pricing" class="hover:text-chai-accent transition font-medium">Tarif</a>
+          <a href="#pourquoi" class="hover:text-chai-accent transition">Pourquoi</a>
+          <a href="/auth/login/" class="ml-3 inline-flex items-center rounded-full border border-chai-accent bg-chai-accent px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-white hover:bg-chai-accentSoft transition shadow-sm">
+            Me connecter
+          </a>
+        </nav>
+        <a href="/auth/login/" class="md:hidden inline-flex items-center rounded-full border border-chai-accent bg-chai-accent px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-white hover:bg-chai-accentSoft transition shadow-sm">
+          Me connecter
+        </a>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section id="hero" class="pt-14 pb-20 bg-cover bg-center" data-bg="{% static 'img/fond_test.jpg' %}">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
+            <!-- Texte hero -->
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full border border-chai-vert/30 bg-chai-vert/10 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-chai-vert mb-6">
+                <span class="w-1.5 h-1.5 rounded-full bg-chai-accent"></span>
+                De la vigne à la vente, un seul outil
+              </div>
+              <h1 class="font-serif text-3xl sm:text-4xl lg:text-5xl tracking-tight text-chai-accent">
+                De la vigne à la vente,<br class="hidden sm:block">
+<span class="text-gray-700">tout votre domaine dans un seul outil.</span>
+              </h1>
+              <p class="mt-6 text-base sm:text-lg text-white/90 max-w-xl">
+                Suivez et pilotez vos traitements, vendanges, encuvages, mises et ventes dans un seul espace clair, pensé pour les vignerons.
+              </p>
+
+              <div class="mt-8 flex flex-wrap gap-3">
+                <a href="#pricing" class="inline-flex items-center justify-center rounded-full bg-chai-accent px-5 py-2.5 text-sm font-medium text-white shadow-md hover:bg-chai-accentSoft transition">
+                  Demander une démo
+                </a>
+                <a href="#pricing" class="inline-flex items-center justify-center rounded-full bg-chai-accent px-5 py-2.5 text-sm font-medium text-white shadow-md hover:bg-chai-accentSoft transition">
+                  Voir le parcours en 5 étapes
+                </a>
+              </div>
+            </div>
+
+            <!-- Visuel hero -->
+            <div class="relative overflow-hidden">
+              <div class="absolute inset-0 hidden sm:block -translate-x-10 translate-y-6 blur-3xl opacity-60 bg-gradient-to-br from-chai-accent/40 via-transparent to-white/10 pointer-events-none"></div>
+              <div class="relative rounded-3xl border border-chai-terre/30 bg-gradient-to-br from-white to-chai-bgMedium p-[1px] shadow-lg">
+                <div class="rounded-3xl bg-gradient-to-br from-white to-chai-bgSoft p-6 sm:p-7 flex flex-col gap-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.2em] text-gray-500">Aperçu du chai</p>
+                      <p class="mt-1 font-serif text-lg text-chai-accent">Flux global</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] text-gray-600">
+                      <span class="w-1.5 h-1.5 rounded-full bg-chai-vert"></span> Cohérence OK
+                    </div>
+                  </div>
+
+                  <!-- Ligne de vie 5 étapes -->
+                  <div class="relative mt-2">
+                    <div class="absolute top-1/2 left-4 right-4 h-px bg-gradient-to-r from-chai-terre/20 via-chai-accent/30 to-chai-terre/20 -translate-y-1/2"></div>
+                    <div class="relative flex justify-between">
+                      <!-- Étapes -->
+                      <div class="flex flex-col items-center gap-2 text-xs">
+                        <div class="w-8 h-8 rounded-full border border-chai-terre/40 bg-chai-bgMedium flex items-center justify-center">
+                          <span class="text-[11px] text-gray-700">Vigne</span>
+                        </div>
+                        <span class="text-[10px] text-gray-600">Traitements</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-2 text-xs">
+                        <div class="w-8 h-8 rounded-full border border-chai-terre/40 bg-chai-bgMedium flex items-center justify-center">
+                          <span class="text-[11px] text-gray-700">Vend.</span>
+                        </div>
+                        <span class="text-[10px] text-gray-600">Vendanges</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-2 text-xs">
+                        <div class="w-8 h-8 rounded-full border border-chai-accent bg-chai-accent flex items-center justify-center">
+                          <span class="text-[11px] text-white">Cuves</span>
+                        </div>
+                        <span class="text-[10px] text-gray-600">Encuvage</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-2 text-xs">
+                        <div class="w-8 h-8 rounded-full border border-chai-terre/40 bg-chai-bgMedium flex items-center justify-center">
+                          <span class="text-[11px] text-gray-700">Mise</span>
+                        </div>
+                        <span class="text-[10px] text-gray-600">Bouteilles</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-2 text-xs">
+                        <div class="w-8 h-8 rounded-full border border-chai-terre/40 bg-chai-bgMedium flex items-center justify-center">
+                          <span class="text-[11px] text-gray-700">Ventes</span>
+                        </div>
+                        <span class="text-[10px] text-gray-600">Clients</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Mini tableau -->
+                  <div class="mt-5 rounded-2xl border border-chai-terre/30 bg-white/70 p-4">
+                    <div class="flex items-center justify-between text-[11px] text-gray-700 mb-2">
+                      <span>Lots suivis</span>
+                      <span class="text-gray-600">Aujourd'hui</span>
+                    </div>
+                    <div class="space-y-1.5 text-[11px]">
+                      <div class="flex justify-between">
+                        <span class="text-gray-700">Cuvée Parcellaire 2024</span>
+                        <span class="text-gray-600">Encuvage &bull; OK</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-700">Blanc de presse 2023</span>
+                        <span class="text-gray-600">Mise en cours</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-700">Rouge assemblage 2022</span>
+                        <span class="text-gray-600">Ventes &bull; 68% stock</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p class="text-[11px] text-gray-500 mt-1">
+                    Illustration d’interface. Les écrans réels peuvent évoluer.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARCOURS EN 5 ÉTAPES -->
+      <section id="parcours" class="py-16 border-t border-chai-terre/30 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4">
+          <div class="max-w-2xl">
+            <h2 class="font-serif text-2xl sm:text-3xl text-chai-accent">Un seul fil conducteur, cinq grandes étapes</h2>
+            <p class="mt-4 text-gray-600 text-sm sm:text-base">
+              Mon Chai suit la logique de votre métier&nbsp;: du travail de la vigne à la vente, chaque étape est tracée, reliée et exploitable.
+              Pas de double saisie, pas de tableurs cachés, pas de stress avant les déclarations.
+            </p>
+          </div>
+
+          <div class="mt-10 relative">
+            <!-- Ligne verticale -->
+            <div class="hidden md:block absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-chai-terre/20 via-chai-accent/30 to-chai-terre/20"></div>
+
+            <div class="space-y-10">
+              <!-- Étape 1 -->
+              <div class="relative flex flex-col md:flex-row gap-6 md:gap-10">
+                <div class="mt-1">
+                  <div class="w-10 h-10 rounded-full border border-chai-accent/30 bg-chai-bgSoft flex items-center justify-center">
+                    <span class="text-xs font-medium text-chai-accent">1</span>
+                  </div>
+                </div>
+                <div class="flex-1 rounded-3xl border border-chai-terre/30 bg-white shadow-sm p-5 sm:p-6">
+                  <div class="flex flex-wrap items-baseline justify-between gap-3">
+                    <h3 class="font-serif text-lg text-chai-accent">Vigne • Traitements &amp; suivi parcellaire</h3>
+                    <span class="text-[11px] uppercase tracking-[0.18em] text-chai-vert">Traitements</span>
+                  </div>
+                  <p class="mt-3 text-sm text-gray-600">
+                    Visualisez vos parcelles, planifiez et tracez vos traitements sans vous perdre dans les lignes.
+                  </p>
+                  <dl class="mt-4 grid gap-2 text-xs text-gray-600 sm:grid-cols-3">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Vue parcellaire simple et lisible</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Historique des traitements par parcelle</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Préparation facilitée des obligations réglementaires</span>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <!-- Étape 2 -->
+              <div class="relative flex flex-col md:flex-row gap-6 md:gap-10">
+                <div class="mt-1">
+                  <div class="w-10 h-10 rounded-full border border-chai-accent/30 bg-chai-bgSoft flex items-center justify-center">
+                    <span class="text-xs font-medium text-chai-accent">2</span>
+                  </div>
+                </div>
+                <div class="flex-1 rounded-3xl border border-chai-terre/30 bg-white shadow-sm p-5 sm:p-6">
+                  <div class="flex flex-wrap items-baseline justify-between gap-3">
+                    <h3 class="font-serif text-lg text-chai-accent">Vendanges • Entrées de récolte</h3>
+                    <span class="text-[11px] uppercase tracking-[0.18em] text-chai-vert">Vendanges</span>
+                  </div>
+                  <p class="mt-3 text-sm text-gray-600">
+                    Chaque kilo vendangé est tracé dès son arrivée au chai.
+                  </p>
+                  <dl class="mt-4 grid gap-2 text-xs text-gray-600 sm:grid-cols-3">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Saisie rapide des apports</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Lien direct avec parcelles et cuvées</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Gestion des écarts et ajustements</span>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <!-- Étape 3 -->
+              <div class="relative flex flex-col md:flex-row gap-6 md:gap-10">
+                <div class="mt-1">
+                  <div class="w-10 h-10 rounded-full border border-chai-accent/30 bg-chai-bgSoft flex items-center justify-center">
+                    <span class="text-xs font-medium text-chai-accent">3</span>
+                  </div>
+                </div>
+                <div class="flex-1 rounded-3xl border border-chai-terre/30 bg-white shadow-sm p-5 sm:p-6">
+                  <div class="flex flex-wrap items-baseline justify-between gap-3">
+                    <h3 class="font-serif text-lg text-chai-accent">Encuvage • Suivi des cuves &amp; opérations</h3>
+                    <span class="text-[11px] uppercase tracking-[0.18em] text-chai-vert">Cœur du chai</span>
+                  </div>
+                  <p class="mt-3 text-sm text-gray-600">
+                    De la vendange brute à la cuve, chaque mouvement est tracé.
+                  </p>
+                  <dl class="mt-4 grid gap-2 text-xs text-gray-600 sm:grid-cols-3">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Historique des opérations</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Gestion des volumes et pertes</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Traçabilité prête pour audit</span>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <!-- Étape 4 -->
+              <div class="relative flex flex-col md:flex-row gap-6 md:gap-10">
+                <div class="mt-1">
+                  <div class="w-10 h-10 rounded-full border border-chai-accent/30 bg-chai-bgSoft flex items-center justify-center">
+                    <span class="text-xs font-medium text-chai-accent">4</span>
+                  </div>
+                </div>
+                <div class="flex-1 rounded-3xl border border-chai-terre/30 bg-white shadow-sm p-5 sm:p-6">
+                  <div class="flex flex-wrap items-baseline justify-between gap-3">
+                    <h3 class="font-serif text-lg text-chai-accent">Mises en bouteilles • Lots &amp; étiquettes</h3>
+                    <span class="text-[11px] uppercase tracking-[0.18em] text-chai-vert">Mises</span>
+                  </div>
+                  <p class="mt-3 text-sm text-gray-600">
+                    Des cuves aux bouteilles, vos lots sont clairs et cohérents.
+                  </p>
+                  <dl class="mt-4 grid gap-2 text-xs text-gray-600 sm:grid-cols-3">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Création et suivi des lots</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Gestion des consommables</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Documents légaux prêts</span>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <!-- Étape 5 -->
+              <div class="relative flex flex-col md:flex-row gap-6 md:gap-10">
+                <div class="mt-1">
+                  <div class="w-10 h-10 rounded-full border border-chai-accent/30 bg-chai-bgSoft flex items-center justify-center">
+                    <span class="text-xs font-medium text-chai-accent">5</span>
+                  </div>
+                </div>
+                <div class="flex-1 rounded-3xl border border-chai-terre/30 bg-white shadow-sm p-5 sm:p-6">
+                  <div class="flex flex-wrap items-baseline justify-between gap-3">
+                    <h3 class="font-serif text-lg text-chai-accent">Ventes • Du stock au client</h3>
+                    <span class="text-[11px] uppercase tracking-[0.18em] text-chai-vert">Ventes</span>
+                  </div>
+                  <p class="mt-3 text-sm text-gray-600">
+                    Vendez en direct, aux pros ou en vrac, sans perdre la cohérence avec votre chai.
+                  </p>
+                  <dl class="mt-4 grid gap-2 text-xs text-gray-600 sm:grid-cols-3">
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Ventes directes, pro et vrac</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Stock à jour</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                      <span class="mt-1 h-[3px] w-3 rounded-full bg-chai-accent"></span>
+                      <span>Base pour e-commerce et blockchain</span>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- POURQUOI MON CHAI -->
+      <section id="pourquoi" class="py-16 border-t border-chai-terre/30 bg-chai-bgSoft">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4">
+          <div class="max-w-2xl">
+            <h2 class="font-serif text-2xl sm:text-3xl text-chai-accent">Un outil technique, une interface simple</h2>
+            <p class="mt-4 text-gray-600 text-sm sm:text-base">
+              Mon Chai n’est pas un ERP généraliste rebadgé “vigne”. C’est un outil pensé pour les vignerons qui veulent&nbsp;:
+              garder la main sur leurs données, éviter les usines à gaz, et pouvoir tout retrouver en deux clics, même en pleine vendange.
+            </p>
+          </div>
+
+          <div class="mt-10 grid gap-6 md:grid-cols-3">
+            <article class="rounded-3xl border border-chai-terre/30 bg-white p-6 shadow-sm">
+              <h3 class="font-serif text-lg text-chai-accent mb-3">Clair et sobre</h3>
+              <p class="text-sm text-gray-600">
+                Interface épurée, sans jargon inutile. On va à l’essentiel&nbsp;: vos parcelles, vos cuves, vos lots, vos ventes.
+              </p>
+            </article>
+            <article class="rounded-3xl border border-chai-terre/30 bg-white p-6 shadow-sm">
+              <h3 class="font-serif text-lg text-chai-accent mb-3">Aligné sur le réel du chai</h3>
+              <p class="text-sm text-gray-600">
+                Un encuvage peut être flou, une bouteille peut ne pas être liée à une vendange&nbsp;: le système accepte la réalité,
+                vous garde cohérent, et vous prévient quand une information manque.
+              </p>
+            </article>
+            <article class="rounded-3xl border border-chai-terre/30 bg-white p-6 shadow-sm">
+              <h3 class="font-serif text-lg text-chai-accent mb-3">Pensé pour grandir avec vous</h3>
+              <p class="text-sm text-gray-600">
+                DRM, e-commerce, traçabilité blockchain… Mon Chai s’enrichira étape par étape, sans casser vos habitudes.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section id="pricing" class="py-16 border-t border-chai-terre/30 bg-gradient-to-br from-chai-accent/10 to-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4">
+          <div class="text-center max-w-2xl mx-auto mb-12">
+            <h2 class="font-serif text-2xl sm:text-3xl text-chai-accent">Un tarif simple et transparent</h2>
+            <p class="mt-4 text-gray-600 text-sm sm:text-base">
+              Pas de formules compliquées, pas de pièges. Un seul prix pour tout Mon Chai.
+            </p>
+          </div>
+
+          <div class="max-w-lg mx-auto">
+            <div class="rounded-3xl border-2 border-chai-accent bg-white p-8 sm:p-10 shadow-lg">
+              <div class="text-center mb-8">
+                <div class="flex items-baseline justify-center gap-2 mb-2">
+                  <span class="text-5xl sm:text-6xl font-bold text-chai-accent">29</span>
+                  <span class="text-2xl font-bold text-chai-accent">,99€</span>
+                  <span class="text-gray-700">/mois</span>
+                </div>
+                <p class="text-sm text-gray-600">Abonnement mensuel</p>
+              </div>
+
+              <div class="space-y-3 mb-8">
+                <div class="flex items-start gap-3 text-sm text-gray-700">
+                  <span class="text-chai-or mt-0.5">✓</span>
+                  <span>Toutes les fonctionnalités incluses</span>
+                </div>
+                <div class="flex items-start gap-3 text-sm text-gray-700">
+                  <span class="text-chai-or mt-0.5">✓</span>
+                  <span>Vigne, vendanges, chai, ventes</span>
+                </div>
+                <div class="flex items-start gap-3 text-sm text-gray-700">
+                  <span class="text-chai-or mt-0.5">✓</span>
+                  <span>Traçabilité complète et DRM</span>
+                </div>
+                <div class="flex items-start gap-3 text-sm text-gray-700">
+                  <span class="text-chai-or mt-0.5">✓</span>
+                  <span>Mises à jour régulières</span>
+                </div>
+                <div class="flex items-start gap-3 text-sm text-gray-700">
+                  <span class="text-chai-or mt-0.5">✓</span>
+                  <span>Données hébergées en France</span>
+                </div>
+              </div>
+
+              <a href="/auth/login/" class="block w-full text-center rounded-full bg-chai-or px-6 py-3 text-sm font-bold text-black hover:bg-chai-or/90 transition shadow-soft">
+                Commencer maintenant
+              </a>
+
+              <p class="text-center text-xs text-gray-600 mt-4">
+                30 jours d'essai gratuit • Sans engagement • Résiliable à tout moment
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- APERÇU PRODUIT -->
+      <section id="apercu" class="py-16 border-t border-chai-terre/30 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 class="font-serif text-2xl sm:text-3xl text-chai-accent">Un aperçu de l’intérieur</h2>
+              <p class="mt-3 text-sm sm:text-base text-gray-600">
+                Quelques écrans pour vous situer avant la démo.
+              </p>
+            </div>
+            <p class="text-xs text-gray-500 max-w-xs">
+              Captures placeholders pour la maquette. Tu pourras ensuite remplacer par de vrais screenshots une fois l’interface stabilisée.
+            </p>
+          </div>
+
+          <div class="mt-8 grid gap-6 md:grid-cols-2">
+            <!-- Carte 1 -->
+            <div class="rounded-3xl border border-chai-terre/30 bg-white p-5 shadow-sm">
+              <div class="aspect-video rounded-2xl bg-gradient-to-br from-chai-bgMedium via-chai-bgSoft to-chai-bgMedium border border-chai-terre/30 mb-4 flex items-center justify-center text-xs text-gray-500">
+                Vue parcellaire – placeholder visuel
+              </div>
+              <h3 class="font-serif text-base text-chai-accent">Vue parcellaire</h3>
+              <p class="mt-2 text-sm text-gray-600">
+                Une carte lisible de vos parcelles, traitements et rendements, pour garder une vision globale de la vigne.
+              </p>
+            </div>
+
+            <!-- Carte 2 -->
+            <div class="rounded-3xl border border-chai-terre/30 bg-white p-5 shadow-sm">
+              <div class="aspect-video rounded-2xl bg-gradient-to-br from-chai-bgMedium via-chai-bgSoft to-chai-bgMedium border border-chai-terre/30 mb-4 flex items-center justify-center text-xs text-gray-500">
+                Écran de vendange – placeholder visuel
+              </div>
+              <h3 class="font-serif text-base text-chai-accent">Écran de vendange</h3>
+              <p class="mt-2 text-sm text-gray-600">
+                Saisie claire des apports par parcelle, cépage, date et volume, prête à être reliée aux cuves.
+              </p>
+            </div>
+
+            <!-- Carte 3 -->
+            <div class="rounded-3xl border border-chai-terre/30 bg-white p-5 shadow-sm">
+              <div class="aspect-video rounded-2xl bg-gradient-to-br from-chai-bgMedium via-chai-bgSoft to-chai-bgMedium border border-chai-terre/30 mb-4 flex items-center justify-center text-xs text-gray-500">
+                Suivi de cuve – placeholder visuel
+              </div>
+              <h3 class="font-serif text-base text-chai-accent">Suivi de cuve</h3>
+              <p class="mt-2 text-sm text-gray-600">
+                Historique des opérations, volumes, assemblages et pertes, pour chaque lot en cuve.
+              </p>
+            </div>
+
+            <!-- Carte 4 -->
+            <div class="rounded-3xl border border-chai-terre/30 bg-white p-5 shadow-sm">
+              <div class="aspect-video rounded-2xl bg-gradient-to-br from-chai-bgMedium via-chai-bgSoft to-chai-bgMedium border border-chai-terre/30 mb-4 flex items-center justify-center text-xs text-gray-500">
+                Stock / lots bouteilles – placeholder visuel
+              </div>
+              <h3 class="font-serif text-base text-chai-accent">Stock / lots bouteilles</h3>
+              <p class="mt-2 text-sm text-gray-600">
+                Vision nette de ce qui est en bouteille, en stock ou déjà réservé, relié à vos ventes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA FINAL -->
+      <section id="cta-final" class="py-16 border-t border-chai-terre/30 bg-gradient-to-br from-chai-accent to-chai-accentSoft">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4">
+          <div class="rounded-3xl border-2 border-white/20 bg-white/10 backdrop-blur-sm p-8 sm:p-10 shadow-xl">
+            <div class="max-w-2xl">
+              <h2 class="font-serif text-2xl sm:text-3xl text-white">
+                Envie de tester Mon Chai sur votre domaine&nbsp;?
+              </h2>
+              <p class="mt-4 text-sm sm:text-base text-neutral-200">
+                Discutons de votre façon de travailler et voyons si l’outil peut s’adapter à votre chai.
+              </p>
+            </div>
+            <div class="mt-6 flex flex-wrap items-center gap-4">
+              <a href="#" class="inline-flex items-center justify-center rounded-full bg-chai-accent px-6 py-2.5 text-sm font-medium text-white hover:bg-chai-accentSoft transition">
+                Demander un appel
+              </a>
+              <a href="#" class="text-sm text-neutral-200 underline underline-offset-4 decoration-white/40 hover:decoration-white">
+                Recevoir une présentation par email
+              </a>
+            </div>
+            <p class="mt-4 text-xs text-neutral-400">
+              Pas d’engagement&nbsp;: une conversation pour comprendre votre chai, vos volumes, vos circuits de vente, et voir si Mon Chai a du sens pour vous.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-chai-terre/30 py-6 bg-chai-bgSoft">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 flex flex-wrap items-center justify-between gap-3 text-[11px] text-gray-600">
+        <span>© Mon Chai – De la vigne à la vente.</span>
+        <div class="flex gap-4">
+          <a href="#" class="hover:text-chai-accent">Mentions légales</a>
+          <a href="#" class="hover:text-chai-accent">Politique de confidentialité</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <style>
+    /* Style pour l'étape active (surbrillance rouge bordeaux) */
+    .etape-active .etape-numero {
+      background-color: #7B1E22 !important;
+      border-color: #7B1E22 !important;
+    }
+    .etape-active .etape-numero span {
+      color: white !important;
+    }
+    .etape-active .etape-carte {
+      border-color: #7B1E22 !important;
+      background: linear-gradient(to bottom right, rgba(123, 30, 34, 0.08), #F7F1E9, white) !important;
+      box-shadow: 0 4px 6px -1px rgba(123, 30, 34, 0.3), 0 2px 4px -2px rgba(123, 30, 34, 0.2) !important;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // ========== HERO BACKGROUND VIA DATA ATTR (evite erreurs lint CSS) ==========
+      const hero = document.getElementById('hero');
+      if (hero && hero.dataset.bg) {
+        hero.style.backgroundImage = `url('${hero.dataset.bg}')`;
+      }
+
+      // ========== HEADER PROGRESSIF AU SCROLL ==========
+      const header = document.getElementById('main-header');
+      
+      function updateHeader() {
+        const scrollY = window.scrollY;
+        
+        if (scrollY > 50) {
+          // Header scrollé : fond beige opaque + ombre bordeaux
+          header.style.backgroundColor = 'rgba(244, 237, 228, 0.98)'; // chai-bg beige clair
+          header.style.boxShadow = '0 4px 6px -1px rgba(123, 30, 34, 0.2), 0 2px 4px -2px rgba(123, 30, 34, 0.15)';
+          header.style.borderBottomColor = 'rgba(231, 217, 207, 0.4)';
+        } else {
+          // Header en haut : semi-transparent progressif
+          const opacity = scrollY / 50;
+          header.style.backgroundColor = `rgba(244, 237, 228, ${0.4 + opacity * 0.58})`;
+          header.style.boxShadow = 'none';
+          header.style.borderBottomColor = 'rgba(231, 217, 207, 0.3)';
+        }
+      }
+      
+      // Écouter le scroll
+      window.addEventListener('scroll', updateHeader, { passive: true });
+      updateHeader(); // Init au chargement
+      
+      // ========== ACCORDÉON ÉTAPES ==========
+      const etapes = document.querySelectorAll('#parcours .space-y-10 > div');
+      
+      etapes.forEach((etape, index) => {
+        const numeroDiv = etape.querySelector('.mt-1 > div');
+        const carte = etape.querySelector('.flex-1');
+        const details = carte.querySelector('dl');
+        
+        // Ajouter des classes pour cibler avec CSS
+        numeroDiv.classList.add('etape-numero');
+        carte.classList.add('etape-carte');
+        
+        if (details) {
+          // Masquer les détails au chargement
+          details.style.maxHeight = '0';
+          details.style.overflow = 'hidden';
+          details.style.transition = 'max-height 0.3s ease-out, margin-top 0.3s ease-out';
+          details.style.marginTop = '0';
+          
+          // Ajouter un indicateur visuel
+          const header = carte.querySelector('.flex');
+          const indicator = document.createElement('span');
+          indicator.innerHTML = '▼';
+          indicator.className = 'text-chai-accent ml-2 transition-transform duration-300 inline-block text-xs';
+          indicator.style.transform = 'rotate(-90deg)';
+          header.appendChild(indicator);
+          
+          // Rendre la carte cliquable
+          carte.style.cursor = 'pointer';
+          carte.classList.add('hover:shadow-lg', 'transition-shadow');
+          
+          carte.addEventListener('click', function() {
+            const isOpen = details.style.maxHeight !== '0px' && details.style.maxHeight !== '';
+            const isActive = etape.classList.contains('etape-active');
+            
+            if (isOpen && isActive) {
+              // Fermer ET désactiver
+              details.style.maxHeight = '0';
+              details.style.marginTop = '0';
+              indicator.style.transform = 'rotate(-90deg)';
+              etape.classList.remove('etape-active');
+            } else {
+              // Ouvrir ET activer
+              details.style.maxHeight = details.scrollHeight + 'px';
+              details.style.marginTop = '1rem';
+              indicator.style.transform = 'rotate(0deg)';
+              etape.classList.add('etape-active');
+            }
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

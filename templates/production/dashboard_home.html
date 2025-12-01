@@ -1,0 +1,138 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Vue d'ensemble - Production{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0 fw-bold">Vue d'ensemble</h1>
+  <div class="d-flex gap-2">
+    <a href="/production/vendanges/nouveau/" class="btn btn-sm btn-outline-primary">+ Vendange</a>
+    <a href="/production/lots-techniques/nouveau/" class="btn btn-sm btn-primary">+ Lot technique</a>
+  </div>
+</div>
+
+<!-- KPIs top row -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-bold mb-2">Volume en vrac</div>
+        <div class="d-flex align-items-baseline gap-1">
+          <span class="fs-3 fw-bold text-dark">{{ total_volume_hl|default:0|floatformat:1 }}</span>
+          <span class="text-muted">hL</span>
+        </div>
+        <div class="mt-2 small text-muted">
+          <i class="bi bi-info-circle me-1"></i>Tous statuts confondus
+        </div>
+      </div>
+      <div class="position-absolute top-0 end-0 p-3 opacity-10">
+        <i class="bi bi-droplet fs-1 text-primary"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-bold mb-2">Vendanges actives</div>
+        <div class="fs-3 fw-bold text-dark">{{ vendanges_active_count }}</div>
+        <div class="mt-2 small text-success">
+          <i class="bi bi-check-circle me-1"></i>Campagne en cours
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-bold mb-2">Alertes / Tâches</div>
+        <div class="fs-3 fw-bold text-dark">0</div>
+        <div class="mt-2 small text-muted">
+          Tout est à jour
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card h-100 border-0 shadow-sm bg-primary text-white">
+      <div class="card-body">
+        <div class="text-uppercase small fw-bold mb-2 opacity-75">Accès rapide</div>
+        <div class="d-grid gap-2">
+           <a href="/production/encuvages/" class="btn btn-sm btn-light text-primary fw-bold text-start">
+             <i class="bi bi-arrow-right-circle me-2"></i>Encuvages
+           </a>
+           <a href="/production/mises/" class="btn btn-sm btn-light text-primary fw-bold text-start">
+             <i class="bi bi-box-seam me-2"></i>Mises
+           </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Derniers mouvements -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-activity me-2 text-primary"></i>Derniers mouvements</h6>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for mv in last_moves %}
+        <a href="{% if mv.type == 'ENTREE_INITIALE' and mv.lot.source %}{% url 'production:vendange_detail' mv.lot.source.id %}{% else %}{% url 'production:lot_tech_detail' mv.lot.id %}{% endif %}" class="list-group-item list-group-item-action border-bottom-0 py-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+             <div class="d-flex align-items-center gap-2">
+               <span class="badge bg-light text-dark border">{{ mv.lot.code }}</span>
+               <span class="fw-medium text-dark">{{ mv.get_type_display }}</span>
+             </div>
+             <span class="fw-bold font-monospace text-primary">{{ mv.volume_l|default:0|floatformat:0 }} L</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center small text-muted">
+             <span>
+               <i class="bi bi-clock me-1"></i>{{ mv.date|date:"d/m H:i" }}
+               {% if mv.author %} &middot; {{ mv.author.get_full_name|default:mv.author.username }}{% endif %}
+             </span>
+             {% if mv.meta.dst %}<span>&rarr; vers lot cible</span>{% endif %}
+          </div>
+        </a>
+        {% empty %}
+        <div class="p-4 text-center text-muted">Aucun mouvement récent.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Dernières mises -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2 text-success"></i>Dernières mises</h6>
+        <a href="/production/mises/" class="text-decoration-none small fw-bold">Tout voir</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0 table-hover">
+          <thead class="bg-light text-muted small text-uppercase">
+            <tr>
+              <th class="ps-3 border-0">Code OF</th>
+              <th class="border-0">Date</th>
+              <th class="text-end pe-3 border-0">Lots</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in recent_mises %}
+            <tr style="cursor: pointer;" onclick="window.location='{% url 'production:mise_detail' m.id %}'">
+              <td class="ps-3 fw-medium text-dark">{{ m.code_of }}</td>
+              <td class="text-muted">{{ m.date|date:"d/m/Y" }}</td>
+              <td class="text-end pe-3"><span class="badge bg-secondary rounded-pill">{{ m.lots.count }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center py-4 text-muted">Aucune mise récente.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

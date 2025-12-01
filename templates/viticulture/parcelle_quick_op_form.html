@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="mb-0"><i class="bi bi-clipboard-plus me-2 text-success"></i>{{ meta.label }}</h1>
+  <div>
+    <a href="{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}" class="btn btn-outline-secondary me-2">
+      <i class="bi bi-journal-text"></i>
+      Journal de la parcelle
+    </a>
+    <a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+      Retour à la parcelle
+    </a>
+  </div>
+</div>
+
+<form method="post" novalidate class="card">
+  {% csrf_token %}
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" value="{{ form.date|default:today }}" class="form-control" required>
+      </div>
+
+      {% if code in 'traitement,fertilisation' %}
+      <div class="col-md-4">
+        <label class="form-label">Produit</label>
+        <input type="text" name="produit" value="{{ form.produit|default:'' }}" class="form-control" placeholder="Ex: Soufre WG">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Dose</label>
+        <input type="text" name="dose" value="{{ form.dose|default:'' }}" class="form-control" placeholder="Ex: 6 kg/ha">
+      </div>
+      {% endif %}
+
+      <div class="col-12">
+        <label class="form-label">Résumé (obligatoire)</label>
+        <input type="text" name="resume" value="{{ form.resume|default:'' }}" class="form-control" placeholder="Quelques mots sur l'intervention" required>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Surface couverte (ha)</label>
+        <input type="number" step="0.01" min="0" name="surface_ha" value="{{ form.surface_ha|default:'' }}" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Rangs concernés</label>
+        <input type="text" name="rangs" value="{{ form.rangs|default:'' }}" class="form-control" placeholder="Ex: 1-8">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Coût MO (€)</label>
+        <input type="number" step="0.01" min="0" name="cout_mo_eur" value="{{ form.cout_mo_eur|default:'' }}" class="form-control">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Coût matières (€)</label>
+        <input type="number" step="0.01" min="0" name="cout_matiere_eur" value="{{ form.cout_matiere_eur|default:'' }}" class="form-control">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" rows="4" class="form-control" placeholder="Détails, météo, opérateur, matériel…">{{ form.notes|default:'' }}</textarea>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex justify-content-between">
+    <div class="text-muted small">
+      Parcelle: <strong>{{ parcelle.nom }}</strong>
+    </div>
+    <div>
+      <a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="btn btn-outline-secondary">Annuler</a>
+      <button type="submit" class="btn btn-success ms-2">
+        <i class="bi bi-check2-circle me-1"></i>Enregistrer
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

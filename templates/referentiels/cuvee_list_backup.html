@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Cuvées - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-cup-straw me-2 text-primary"></i>Cuvées
+            </h1>
+            <div>
+                <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Référentiels
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouvelle cuvée
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche temps réel -->
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="position-relative">
+            <input type="text" 
+                   id="quick-search" 
+                   name="search"
+                   value="{{ search|default:'' }}" 
+                   placeholder="Recherche rapide dans toutes les cuvées..." 
+                   class="form-control pe-5"
+                   autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                <i class="bi bi-search text-muted" id="search-icon"></i>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                    <span class="visually-hidden">Recherche...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div id="search-info" class="text-muted small mt-2">
+            {{ page_obj.paginator.count }} cuvée{{ page_obj.paginator.count|pluralize }}
+        </div>
+    </div>
+</div>
+
+<!-- Liste des cuvées -->
+{% if page_obj %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Couleur</th>
+                                    <th>Classification</th>
+                                    <th>Appellation</th>
+                                    <th>Degré</th>
+                                    <th>Cépages</th>
+                                    <th>Créé le</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% include 'referentiels/partials/cuvee_table_rows.html' %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'referentiels:cuvee_detail' cuvee.pk %}" 
+                                               class="text-decoration-none fw-semibold">
+                                                {{ cuvee.nom }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if cuvee.couleur == 'rouge' %}
+                                                <span class="badge bg-danger">{{ cuvee.get_couleur_display }}</span>
+                                            {% elif cuvee.couleur == 'blanc' %}
+                                                <span class="badge bg-light text-dark">{{ cuvee.get_couleur_display }}</span>
+                                            {% elif cuvee.couleur == 'rose' %}
+                                                <span class="badge bg-warning">{{ cuvee.get_couleur_display }}</span>
+                                            {% elif cuvee.couleur == 'effervescent' %}
+                                                <span class="badge bg-info">{{ cuvee.get_couleur_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">{{ cuvee.get_classification_display }}</span>
+                                        </td>
+                                        <td class="text-muted">
+                                            {{ cuvee.appellation|default:"-" }}
+                                        </td>
+                                        <td>
+                                            {% if cuvee.degre_alcool %}
+                                                <strong>{{ cuvee.degre_alcool }}°</strong>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if cuvee.cepages.exists %}
+                                                <small class="text-muted">{{ cuvee.cepages.count }} cépage{{ cuvee.cepages.count|pluralize }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-muted">
+                                            {{ cuvee.created_at|date:"d/m/Y" }}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'referentiels:cuvee_detail' cuvee.pk %}" 
+                                                   class="btn btn-outline-primary" 
+                                                   title="Voir">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if user.get_active_membership.can_edit_data %}
+                                                    <a href="{% url 'referentiels:cuvee_update' cuvee.pk %}" 
+                                                       class="btn btn-outline-secondary" 
+                                                       title="Modifier">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <div class="row mt-3">
+            <div class="col-12">
+                <nav aria-label="Navigation des cuvées">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucune cuvée trouvée</h4>
+                {% if search %}
+                    <p>Aucune cuvée ne correspond à votre recherche "{{ search }}".</p>
+                    <a href="{% url 'referentiels:cuvee_list' %}" class="btn btn-outline-primary">
+                        Voir toutes les cuvées
+                    </a>
+                {% else %}
+                    <p>Vous n'avez pas encore créé de cuvée.</p>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Créer votre première cuvée
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Aide contextuelle -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-light">
+            <h6><i class="bi bi-lightbulb me-2"></i>À propos des cuvées</h6>
+            <p class="mb-0">
+                Les cuvées représentent vos différents vins. Elles serviront de base pour créer 
+                vos lots de production et gérer votre catalogue produits.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

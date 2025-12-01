@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modèle {{ template.name }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h1 class="h3">
+      <span class="badge" style="background: linear-gradient(135deg, #d4af37 0%, #c49a2d 100%); color: #722f37;">
+        {{ template.get_document_type_display }}
+      </span>
+      {{ template.name }}
+    </h1>
+    {% if template.description %}
+    <p class="text-muted">{{ template.description }}</p>
+    {% endif %}
+  </div>
+  <div class="col-md-4 text-md-end">
+    <a href="{% url 'sales:template_preview' pk=template.id %}" target="_blank" class="btn btn-outline-info me-2"><i class="bi bi-eye"></i> Aperçu</a>
+    <a href="{% url 'sales:template_edit' pk=template.id %}" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Modifier</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h5 class="mb-0"><i class="bi bi-gear"></i> Paramètres</h5>
+        {% if template.is_default %}<span class="badge bg-success"><i class="bi bi-star-fill"></i> Défaut</span>{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Format papier</strong>: {{ template.get_paper_size_display }}</div>
+            <div class="mb-2"><strong>Orientation</strong>: {{ template.get_orientation_display }}</div>
+            <div class="mb-2"><strong>Actif</strong>: {% if template.is_active %}Oui{% else %}Non{% endif %}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Marges</strong>: Haut {{ template.margin_top }}mm, Bas {{ template.margin_bottom }}mm</div>
+            <div class="mb-2">Gauche {{ template.margin_left }}mm, Droite {{ template.margin_right }}mm</div>
+            <div class="text-muted small">MAJ: {{ template.updated_at|date:"d/m/Y H:i" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h5 class="mb-0"><i class="bi bi-braces"></i> Aide variables</h5></div>
+      <div class="card-body">
+        <pre class="mb-0" style="white-space: pre-wrap;">{{ var_help }}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header"><h6 class="mb-0"><i class="bi bi-lightning-charge"></i> Actions</h6></div>
+      <div class="card-body d-grid gap-2">
+        <a href="{% url 'sales:template_duplicate' pk=template.id %}" class="btn btn-outline-warning"><i class="bi bi-files"></i> Dupliquer</a>
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#generalizeModal"><i class="bi bi-diagram-3"></i> Généraliser</button>
+        <a href="{% url 'sales:template_delete' pk=template.id %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Supprimer</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h6 class="mb-0"><i class="bi bi-info-circle"></i> Astuces</h6></div>
+      <div class="card-body small text-muted">
+        <ul class="mb-0">
+          <li>Utilisez {{ "{{ lines }}" }} pour boucler sur les lignes du document.</li>
+          <li>Le CSS personnalisé s'applique après les styles par défaut.</li>
+          <li>Prévisualisez pour vérifier la mise en page.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Généraliser -->
+<div class="modal fade" id="generalizeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Généraliser le modèle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'sales:template_generalize' pk=template.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small">Crée des copies vers d'autres types (option variante <em>sans prix</em>).</p>
+          <div class="mb-3">
+            <label class="form-label">Types de documents cibles</label>
+            <div class="vstack gap-2">
+              {% for value, label in doc_types %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="tg_{{ value }}" name="target_types" value="{{ value }}" {% if template.document_type == value %}checked{% endif %}>
+                <label class="form-check-label" for="tg_{{ value }}">{{ label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="without_prices" name="without_prices">
+            <label class="form-check-label" for="without_prices">Créer aussi une variante <strong>sans prix</strong></label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Généraliser</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

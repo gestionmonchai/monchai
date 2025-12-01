@@ -1,0 +1,203 @@
+{% extends 'production/base_production.html' %}
+{% load static %}
+{% block title %}Nouvelle mise — Étape 2{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3">Nouvelle mise — Étape 2: Emballage & Planning</h1>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Formats</span>
+        <div class="btn-group">
+          <button id="btn-add" class="btn btn-sm btn-outline-secondary" type="button">+ Ajouter</button>
+          <button id="btn-preset-75" class="btn btn-sm btn-outline-secondary" type="button">Preset 100% 75cl</button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0" id="tbl-formats">
+            <thead>
+              <tr>
+                <th style="width:160px">Format (mL)</th>
+                <th style="width:160px">Quantité (u)</th>
+                <th style="width:160px">Pertes (%)</th>
+                <th style="width:60px"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">Mode pertes</label>
+            <select id="pertes_mode" class="form-select form-select-sm">
+              <option value="%" selected>% par ligne</option>
+              <option value="L">Litres global</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Pertes globales (L)</label>
+            <input id="pertes_global_l" class="form-control form-control-sm" type="number" step="0.001" min="0" value="0">
+          </div>
+          <div class="col-md-6 text-end">
+            <button id="btn-ajuster-pertes" class="btn btn-outline-secondary btn-sm" type="button">Ajuster pertes pour coller au vrac</button>
+            <button id="btn-arrondir" class="btn btn-outline-secondary btn-sm" type="button">Arrondir quantités (cartons)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">Résumé</div>
+      <div class="card-body">
+        <div class="mb-2"><strong>Besoin brut</strong>: <span id="sum-brut">0.000</span> L</div>
+        <div class="mb-2"><strong>Pertes estimées</strong>: <span id="sum-pertes">0.000</span> L</div>
+        <div class="mb-2"><strong>Besoin net</strong>: <span id="sum-net">0.000</span> L</div>
+        <div class="mb-2"><strong>Vrac sélectionné</strong>: <span id="sum-vrac">0.000</span> L</div>
+        <div class="mb-2"><strong>Delta</strong>: <span id="sum-delta">0.000</span> L
+          <span id="badge-delta" class="badge ms-2 text-bg-secondary">—</span>
+        </div>
+        <div id="suggestions" class="small text-muted"></div>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <a href="?step=1" class="btn btn-outline-secondary">Revenir étape 1</a>
+        <a id="cta-step3" href="?step=3" class="btn btn-primary disabled" aria-disabled="true">Aperçu & Validation (Étape 3)</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="row-tpl">
+  <tr>
+    <td><input class="form-control form-control-sm js-fmt" type="number" min="100" step="50" value="750"></td>
+    <td><input class="form-control form-control-sm js-qty" type="number" min="1" step="1" value="1"></td>
+    <td><input class="form-control form-control-sm js-perc" type="number" min="0" max="100" step="0.01" value="0"></td>
+    <td><button class="btn btn-sm btn-outline-danger js-del" type="button">×</button></td>
+  </tr>
+</template>
+
+<script>
+(function(){
+  function getCookie(name){
+    const m=document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+    return m?m.pop():'';
+  }
+  const csrftoken = getCookie('csrftoken');
+  const tbody = document.querySelector('#tbl-formats tbody');
+  const tpl = document.getElementById('row-tpl');
+  const pertesMode = document.getElementById('pertes_mode');
+  const pertesGlobal = document.getElementById('pertes_global_l');
+  const sumBrut = document.getElementById('sum-brut');
+  const sumPertes = document.getElementById('sum-pertes');
+  const sumNet = document.getElementById('sum-net');
+  const sumVrac = document.getElementById('sum-vrac');
+  const sumDelta = document.getElementById('sum-delta');
+  const badgeDelta = document.getElementById('badge-delta');
+  const sugg = document.getElementById('suggestions');
+  const cta = document.getElementById('cta-step3');
+
+  function addRow(fmt=750, qty=1, perc=0){
+    const node = tpl.content.cloneNode(true);
+    const tr = node.querySelector('tr');
+    tr.querySelector('.js-fmt').value = fmt;
+    tr.querySelector('.js-qty').value = qty;
+    tr.querySelector('.js-perc').value = perc;
+    tr.querySelector('.js-del').addEventListener('click', ()=>{ tr.remove(); recalc(); });
+    ['.js-fmt','.js-qty','.js-perc'].forEach(sel=>{
+      tr.querySelector(sel).addEventListener('input', debounce(recalc, 200));
+    });
+    tbody.appendChild(node);
+  }
+
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms); } }
+
+  async function recalc(){
+    const rows = [...tbody.querySelectorAll('tr')];
+    const fd = new FormData();
+    rows.forEach((tr, i)=>{
+      fd.append(`formats-${i}-format_ml`, tr.querySelector('.js-fmt').value||'0');
+      fd.append(`formats-${i}-quantite_unites`, tr.querySelector('.js-qty').value||'0');
+      fd.append(`formats-${i}-pertes_pct`, tr.querySelector('.js-perc').value||'0');
+    });
+    fd.append('pertes_mode', pertesMode.value||'%');
+    fd.append('pertes_global_l', pertesGlobal.value||'0');
+    const resp = await fetch('{% url "production:mise_calc_step2" %}', {
+      method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: fd, credentials: 'same-origin'
+    });
+    const data = await resp.json();
+    sumBrut.textContent = data.besoin_brut_l || '0.000';
+    sumPertes.textContent = data.pertes_l || '0.000';
+    sumNet.textContent = data.besoin_net_l || '0.000';
+    sumVrac.textContent = data.vrac_selectionne_l || '0.000';
+    sumDelta.textContent = data.delta_l || '0.000';
+    sugg.textContent = (data.suggestions||[]).join(' • ');
+    // CTA & badge logic
+    const delta = parseFloat(data.delta_l||'0');
+    badgeDelta.className = 'badge ms-2 ' + (delta<0? 'text-bg-danger' : (delta<=2? 'text-bg-warning':'text-bg-primary'));
+    badgeDelta.textContent = (delta<0? 'Insuffisant' : (delta<=2? 'Ajustement léger' : 'Surplus'));
+    if(delta >= 0){ cta.classList.remove('disabled'); cta.removeAttribute('aria-disabled'); }
+    else { cta.classList.add('disabled'); cta.setAttribute('aria-disabled','true'); }
+  }
+
+  // Ajuster pertes pour coller au vrac
+  document.getElementById('btn-ajuster-pertes').addEventListener('click', ()=>{
+    // If mode %, keep mode and proportionally adjust last row pertes, else set global L to match delta
+    const net = parseFloat(sumNet.textContent||'0');
+    const vrac = parseFloat(sumVrac.textContent||'0');
+    if(vrac <= 0) return;
+    if(pertesMode.value === 'L'){
+      const brut = parseFloat(sumBrut.textContent||'0');
+      const needPertes = Math.max(0, vrac - brut);
+      pertesGlobal.value = needPertes.toFixed(3);
+      recalc();
+    } else {
+      // adjust last row pertes%
+      const rows = [...tbody.querySelectorAll('tr')];
+      if(rows.length === 0) return;
+      const brut = parseFloat(sumBrut.textContent||'0');
+      const currentPertes = parseFloat(sumPertes.textContent||'0');
+      const missing = Math.max(0, vrac - brut);
+      const addL = Math.max(0, missing - currentPertes);
+      if(addL <= 0){ return; }
+      // convert addL to % for last row only
+      const last = rows[rows.length-1];
+      const fmt = parseFloat(last.querySelector('.js-fmt').value||'0');
+      const qty = parseFloat(last.querySelector('.js-qty').value||'0');
+      const rowL = (fmt*qty)/1000.0;
+      const extraPct = rowL>0 ? (addL/rowL*100.0) : 0;
+      const inp = last.querySelector('.js-perc');
+      const cur = parseFloat(inp.value||'0');
+      inp.value = Math.max(0, cur + extraPct).toFixed(2);
+      recalc();
+    }
+  });
+
+  // Arrondir quantités (cartons de 6)
+  document.getElementById('btn-arrondir').addEventListener('click', ()=>{
+    const rows = [...tbody.querySelectorAll('tr')];
+    rows.forEach(tr=>{
+      const fmt = parseInt(tr.querySelector('.js-fmt').value||'0');
+      if(fmt === 750){
+        const qty = parseInt(tr.querySelector('.js-qty').value||'0');
+        const rounded = Math.max(0, Math.round(qty/6)*6);
+        tr.querySelector('.js-qty').value = rounded;
+      }
+    });
+    recalc();
+  });
+
+  document.getElementById('btn-add').addEventListener('click', ()=>{ addRow(); recalc(); });
+  document.getElementById('btn-preset-75').addEventListener('click', ()=>{ tbody.innerHTML=''; addRow(750, 10000, 0); recalc(); });
+  pertesMode.addEventListener('change', recalc);
+  pertesGlobal.addEventListener('input', debounce(recalc,200));
+
+  // initial
+  addRow();
+  recalc();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,3 @@
+ROADMAP_IMPORT_2 — Mapping des champs & Transformations (junior step-by-step)
+=============================================================================
+[Contenu identique au guide CSV_2 : synonymes par entité, auto-mapping, transforms trim/unaccent/number/date, validation serveur, tests.]

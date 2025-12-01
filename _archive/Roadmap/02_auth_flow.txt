@@ -1,0 +1,72 @@
+Auth (signup email+mdp, login, reset, logout) — Indications de programmation
+============================================================================
+Objectif: établir le flux d’authentification complet côté web, plus endpoints API optionnels
+en SessionAuthentication. Pas de code exhaustif; liste d’actions concrètes à réaliser.
+
+1) Modèle utilisateur & configuration
+-------------------------------------
+- Choisir: User Django natif (username=email) OU CustomUser (USERNAME_FIELD=email).
+- Vérifier: AUTH_USER_MODEL si CustomUser; MIDDLEWARE inclut auth, sessions, messages.
+- Settings:
+  * LOGIN_URL = "/auth/login/"
+  * LOGIN_REDIRECT_URL = "/auth/first-run/"
+  * LOGOUT_REDIRECT_URL = "/auth/login/"
+  * EMAIL_BACKEND = console en dev
+
+2) Routes web (à créer)
+-----------------------
+- GET/POST /auth/login/ : affiche le form, poste email+password → authenticate() → login() → redirect first-run.
+- POST /auth/logout/ ou GET si bouton simple : logout() → redirect login.
+- GET/POST /auth/signup/ : création compte minimal (email, prénom/nom optionnels, mdp) → login() → redirect first-run.
+- GET/POST /auth/password-reset/ : envoi d’un email de reset (console) avec lien signé.
+- GET/POST /auth/reset/<uidb64>/<token>/ : saisie nouveau mdp → success → login.
+
+3) Templates (indications)
+--------------------------
+- login.html : champs email, password; boutons; liens vers reset et signup; erreurs inline.
+- signup.html : email, first_name, last_name (optionnels), password; mention RGPD sommaire.
+- password_reset_request.html : email; confirmation « lien envoyé ».
+- password_reset_confirm.html : new_password + confirmation; message final.
+- header_session_badge.html : « Connecté : {display_name} — rôle: {role} @ {org} » + bouton logout.
+
+4) Vues web (attendus fonctionnels)
+-----------------------------------
+- login_view : POST valide → login() ; sinon renvoyer form avec erreurs. GET pré-rempli si debug.
+- logout_view : appelle logout(); redirige vers LOGIN_URL.
+- signup_view : crée l’utilisateur, set_password, login(); gère un éventuel « pending_invite » en session.
+- password_reset_request_view : utilise PasswordResetForm.save() avec email template texte.
+- password_reset_confirm_view : vérifie token/uid; SetPasswordForm; redirige login.
+
+5) API optionnelle (DRF) pour front dynamique
+---------------------------------------------
+- POST /api/auth/session/ : {email,password} → 200/401 ; crée session.
+- GET  /api/auth/whoami/ : renvoie email, nom, org courante, rôle.
+- POST /api/auth/logout/ : détruit session → 204.
+- Config DRF: SessionAuthentication; CSRF respecté; permissions IsAuthenticated par défaut.
+
+6) Tests minimaux à écrire
+--------------------------
+- Signup → redirection vers first-run guard.
+- Login échec → message « identifiants invalides » affiché.
+- Reset: POST request → email console (ne pas vérifier contenu exact, mais statut/signal).
+- Logout: session détruite → plus de badge de session.
+
+7) Gestion erreurs & sécurité
+-----------------------------
+- CSRF inclus dans tous les formulaires POST.
+- Limiter les messages d’erreur pour ne pas révéler si un email existe.
+- Compter les tentatives (à faire plus tard: throttling/captcha).
+- Cookies sécurisés en prod: SESSION_COOKIE_SECURE, CSRF_COOKIE_SECURE, SameSite=Lax.
+
+8) Points d’intégration
+-----------------------
+- Lien avec « first‑run guard » (onboarding) via LOGIN_REDIRECT_URL = /auth/first-run/.
+- Header nav inclut le badge session et le lien logout.
+- Prévoir hook « post_signup » pour rattacher une invitation (pending_invite en session).
+
+9) Définition du « Done » (auth)
+--------------------------------
+- Compte créé, connexion, déconnexion, reset fonctionnels et testés.
+- Aucun 404 / boucle de redirection sur le flux /auth/*.
+- Badge de session visible après login.
+- Email de reset visible dans la console.

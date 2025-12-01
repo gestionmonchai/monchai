@@ -1,0 +1,461 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Accueil</a>
+    &rsaquo; <a href="{% url 'stock:dashboard' %}">Stocks</a>
+    &rsaquo; Transferts
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="transferts-container">
+    <div class="transferts-header">
+        <h1><i class="bi bi-arrow-left-right"></i> {{ page_title }}</h1>
+        <div class="transferts-actions">
+            <a href="{% url 'stock:dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Retour dashboard
+            </a>
+            <a href="{% url 'stock:transfert_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nouveau transfert
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+        <form method="get" class="filters-form">
+            <div class="filter-group">
+                <label for="lot">Lot:</label>
+                <select name="lot" id="lot" class="form-control">
+                    <option value="">Tous les lots</option>
+                    {% for lot in lots %}
+                    <option value="{{ lot.id }}" {% if selected_lot.id == lot.id %}selected{% endif %}>
+                        {{ lot.code }} - {{ lot.cuvee.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="warehouse">Entrepôt:</label>
+                <select name="warehouse" id="warehouse" class="form-control">
+                    <option value="">Tous les entrepôts</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}" {% if selected_warehouse.id == warehouse.id %}selected{% endif %}>
+                        {{ warehouse.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel"></i> Filtrer
+                </button>
+                <a href="{% url 'stock:transferts_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des transferts -->
+    <div class="transferts-section">
+        {% if transfers %}
+        <div class="transferts-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Lot</th>
+                        <th>Volume</th>
+                        <th>Entrepôt source</th>
+                        <th>Entrepôt destination</th>
+                        <th>Créé par</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transfer in transfers %}
+                    <tr>
+                        <td>
+                            <div class="transfer-date">
+                                {{ transfer.created_at|date:"d/m/Y" }}
+                                <small>{{ transfer.created_at|date:"H:i" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="lot-info">
+                                <strong>{{ transfer.lot.code }}</strong>
+                                {% if transfer.lot.cuvee %}
+                                <small>{{ transfer.lot.cuvee.name }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="volume-badge">{{ transfer.volume_l|floatformat:2 }} L</span>
+                        </td>
+                        <td>
+                            <div class="warehouse-info">
+                                <i class="bi bi-building text-danger"></i>
+                                {{ transfer.from_warehouse.name }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="warehouse-info">
+                                <i class="bi bi-building text-success"></i>
+                                {{ transfer.to_warehouse.name }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                {{ transfer.created_by.get_full_name|default:transfer.created_by.username }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if transfer.notes %}
+                            <span class="notes-preview" title="{{ transfer.notes }}">
+                                {{ transfer.notes|truncatechars:30 }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Résumé -->
+        <div class="transfers-summary">
+            <div class="summary-card">
+                <h4>Résumé</h4>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total transferts:</span>
+                        <span class="stat-value">{{ transfers|length }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Volume total:</span>
+                        <span class="stat-value">
+                            {% widthratio transfers|length 1 1 as total_volume %}
+                            {{ total_volume|default:"0"|floatformat:2 }} L
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-arrow-left-right"></i>
+            <h3>Aucun transfert trouvé</h3>
+            {% if selected_lot or selected_warehouse %}
+            <p>Aucun transfert ne correspond aux filtres sélectionnés.</p>
+            <a href="{% url 'stock:transferts_list' %}" class="btn btn-outline-primary">
+                Voir tous les transferts
+            </a>
+            {% else %}
+            <p>Aucun transfert n'a encore été effectué.</p>
+            <a href="{% url 'stock:transfert_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Créer le premier transfert
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.transferts-container {
+    padding: 20px;
+}
+
+.transferts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.transferts-header h1 {
+    margin: 0;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.transferts-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.btn-outline-primary {
+    background: transparent;
+    color: #007bff;
+    border: 1px solid #007bff;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.filters-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.filters-form {
+    display: flex;
+    gap: 20px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.transferts-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.transferts-table {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 15px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+    position: sticky;
+    top: 0;
+}
+
+.table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.transfer-date {
+    display: flex;
+    flex-direction: column;
+}
+
+.transfer-date small {
+    color: #666;
+    font-size: 12px;
+}
+
+.lot-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.lot-info strong {
+    color: #333;
+}
+
+.lot-info small {
+    color: #666;
+    font-size: 12px;
+}
+
+.volume-badge {
+    background: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.warehouse-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.user-info {
+    font-size: 14px;
+}
+
+.notes-preview {
+    font-size: 13px;
+    color: #666;
+    cursor: help;
+}
+
+.transfers-summary {
+    padding: 20px;
+    border-top: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.summary-card h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.summary-stats {
+    display: flex;
+    gap: 30px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #333;
+    font-size: 16px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.empty-state h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.empty-state p {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .transferts-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .transferts-actions {
+        justify-content: center;
+    }
+    
+    .filters-form {
+        flex-direction: column;
+    }
+    
+    .filter-actions {
+        justify-content: center;
+    }
+    
+    .summary-stats {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            {% for item in breadcrumb_items %}
+                {% if item.url %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ item.url }}" class="text-decoration-none">{{ item.name }}</a>
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="bi bi-upc me-2 text-info"></i>{{ sku.label }}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% if sku.cuvee %}{{ sku.cuvee.name }} • {% endif %}
+                        {% if sku.uom %}{{ sku.uom.name }}{% endif %}
+                        {% if sku.volume_by_uom_to_l %} • {{ sku.volume_by_uom_to_l|floatformat:2 }}L{% endif %}
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'catalogue:products_skus' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Retour à la liste
+                    </a>
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="/admin/stock/sku/{{ sku.id }}/change/" class="btn btn-primary">
+                            <i class="bi bi-pencil me-1"></i>Modifier
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations principales -->
+        <div class="col-lg-8">
+            <!-- Détails du SKU -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Informations générales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Étiquette :</strong><br>
+                            <span class="text-muted">{{ sku.label }}</span>
+                        </div>
+                        {% if sku.cuvee %}
+                        <div class="col-md-6">
+                            <strong>Cuvée :</strong><br>
+                            <a href="{% url 'catalogue:cuvee_detail' sku.cuvee.pk %}" class="text-decoration-none">
+                                <span class="badge bg-primary">{{ sku.cuvee.name }}</span>
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if sku.uom %}
+                        <div class="col-md-6">
+                            <strong>Unité de mesure :</strong><br>
+                            <span class="text-muted">{{ sku.uom.name }} ({{ sku.uom.code }})</span>
+                        </div>
+                        {% endif %}
+                        {% if sku.volume_by_uom_to_l %}
+                        <div class="col-md-6">
+                            <strong>Volume par unité :</strong><br>
+                            <span class="badge bg-info text-dark">
+                                {{ sku.volume_by_uom_to_l|floatformat:2 }} L
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if sku.ean_code %}
+                        <div class="col-md-6">
+                            <strong>Code EAN :</strong><br>
+                            <code>{{ sku.ean_code }}</code>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6">
+                            <strong>Statut :</strong><br>
+                            {% if sku.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Actif
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>Inactif
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-boxes me-2"></i>Stock
+                    </h5>
+                    <span class="badge bg-warning text-dark">Stock en temps réel</span>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border-end">
+                                <div class="h3 mb-0 text-primary">-</div>
+                                <small class="text-muted">Stock actuel</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border-end">
+                                <div class="h3 mb-0 text-warning">-</div>
+                                <small class="text-muted">Stock réservé</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h3 mb-0 text-success">-</div>
+                            <small class="text-muted">Stock disponible</small>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Les données de stock seront disponibles une fois le module de gestion des stocks activé.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des mouvements -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Historique des mouvements
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Aucun mouvement de stock enregistré</p>
+                        <small class="text-muted">Les mouvements apparaîtront ici une fois le module de stock activé.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Statistiques -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Statistiques
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="h4 mb-0 text-info">0</div>
+                                <small class="text-muted">Ventes</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 mb-0 text-success">0</div>
+                            <small class="text-muted">Commandes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations commerciales -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-currency-euro me-2"></i>Informations commerciales
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Prix de vente :</strong><br>
+                        <span class="text-muted">Non défini</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Marge :</strong><br>
+                        <span class="text-muted">Non calculée</span>
+                    </div>
+                    <div>
+                        <strong>Dernière vente :</strong><br>
+                        <span class="text-muted">Aucune vente</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métadonnées -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-clock me-2"></i>Métadonnées
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Créé le :</strong><br>
+                        <small class="text-muted">{{ sku.created_at|date:"d/m/Y à H:i" }}</small>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Modifié le :</strong><br>
+                        <small class="text-muted">{{ sku.updated_at|date:"d/m/Y à H:i" }}</small>
+                    </div>
+                    <div>
+                        <strong>ID :</strong><br>
+                        <small class="text-muted font-monospace">{{ sku.id }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des cartes
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

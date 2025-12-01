@@ -1,0 +1,41 @@
+<table class="table table-sm align-middle">
+  <thead>
+    <tr><th>Date</th><th>Type</th><th>Résumé</th><th>Surface</th><th>Coûts</th><th>Source</th></tr>
+  </thead>
+  <tbody>
+  {% for it in items %}
+    <tr>
+      <td>{{ it.date }}{% if it.date_end %} → {{ it.date_end }}{% endif %}</td>
+      <td><span class="badge bg-outline">{{ it.op_type.label }}</span></td>
+      <td>
+        <div>{{ it.resume }}</div>
+        {% if it.notes %}<div class="text-muted small">{{ it.notes|truncatechars:120 }}</div>{% endif %}
+        {% if it.attachments %}
+          <div class="small mt-1">
+            {% for f in it.attachments %}
+              <a href="{{ f.url }}" target="_blank" class="me-2">📎 {{ f.name }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </td>
+      <td>{% if it.surface_ha %}{{ it.surface_ha }} ha{% else %}—{% endif %}{% if it.rangs %}<div class="small text-muted">Rangs: {{ it.rangs }}</div>{% endif %}</td>
+      <td>
+        {% if it.cout_total_eur %}€ {{ it.cout_total_eur }}{% else %}—{% endif %}
+        {% if it.cout_mo_eur or it.cout_matiere_eur %}
+          <div class="small text-muted">
+            {% if it.cout_mo_eur %}MO: € {{ it.cout_mo_eur }}{% endif %}
+            {% if it.cout_matiere_eur %} • MS: € {{ it.cout_matiere_eur }}{% endif %}
+          </div>
+        {% endif %}
+      </td>
+      <td>
+        {% if it.source %}
+          <a href="{{ it.source.get_absolute_url|default:'#' }}">Ouvrir</a>
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="text-muted">Aucune opération pour ces filtres.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

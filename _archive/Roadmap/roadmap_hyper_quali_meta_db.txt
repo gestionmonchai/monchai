@@ -1,0 +1,135 @@
+Mon-Chai — Roadmap “Meta Base de Données” Hyper Quali (ergonomie & features populaires)
+======================================================================================
+But
+---
+Construire une base de données **ergonomique et puissante** qui combine :
+- **Édition souple** : inline (double‑clic) + **fiche détaillée** (+ undo, brouillons)
+- **Vues riches** : table/grille, kanban, calendrier, timeline, galerie ; **vues sauvegardées** et **vues privées**
+- **Recherche intelligente** : FTS + trigram + synonymes (multi‑langue), facettes, suggestions
+- **Tri/Filtre/Groupes** rapides, colonnes configurables, **formules** et **rollups/relations**
+- **Collaboration** : commentaires, audit/versionnage, **raccourcis clavier**
+- **Sécurité fine** : rôles, **row‑level security (RLS)**, colonnes sensibles masquées
+- **Import/Export** fiables : CSV/XLSX, mapping, upsert idempotent
+
+Phasage
+-------
+P0. Standards & socle technique
+P1. Modèles “meta” + gouvernance (catalogue, dictionnaire, policies)
+P2. Vues & UX (table/kanban/calendar/timeline/galerie) + **vues sauvegardées**
+P3. Édition : inline + fiche (locking optimiste, undo, audit)
+P4. Recherche & facettes (FTS, trigram, synonymes, ranking)
+P5. Tri/Filtre/Groupes + colonnes configurables + **formules/rollups**
+P6. Sécurité & permissions (RBAC + RLS, colonnes sensibles, vues privées)
+P7. Import/Export + limites + anti‑corruption
+P8. Performance & observabilité (indexes, MV, caches, métriques, logs)
+P9. QA robuste + datasets synthétiques + formation
+
+P0 — Standards & socle
+----------------------
+- **PostgreSQL 15+** avec `unaccent`, `pg_trgm`; option `pgvector` (rerank sémantique plus tard)
+- **Django 5.x** (+ DRF) ; **HTMX** pour interactions sans SPA ; Tailwind
+- Charte de nommage, PK UUIDv7, timestamps, `row_version BIGINT` pour locking
+- **Dev Book** : ADR, schémas, conventions de vues, shortcuts
+
+P1 — Modèles “meta” & gouvernance
+---------------------------------
+- `meta_entity`, `meta_attribute` (flags: is_facet, is_sort, is_fulltext, is_formula, is_relation)
+- `meta_relation` (1‑N, N‑N), `meta_enum`
+- `meta_glossary` (termes/synonymes FR/EN), `meta_rule` (règles qualité)
+- Générer docs “catalogue de données” depuis la meta
+
+P2 — Vues & UX (multi‑vues + vues sauvegardées)
+-----------------------------------------------
+- Vues **table**, **kanban**, **calendrier**, **timeline**, **galerie**
+- **Vues sauvegardées** : nom, paramètres (filtres, tri, colonnes, regroupements), visibilité (perso/org), partage lien
+- **Vues privées** par utilisateur (respecte permissions) ; **vues par défaut** par rôle
+- **Colonnes configurables** (+ réordonnables), **group by** multi‑niveaux, **agrégats** en footer
+- **Raccourcis clavier** : navigation, ouvrir fiche, créer ligne, **undo/redo**, rechercher (Ctrl/Cmd+K)
+- **Empty state** & **no‑result suggestions** ; **bulk‑edit** sur sélection
+
+P3 — Édition : inline + fiche
+-----------------------------
+- Inline (double‑clic) + Enter/ESC, Tab/Shift‑Tab ; widgets: texte, nombre, select, date, relation, checkbox
+- Fiche : formulaire complet + **brouillon** (autosave) + diff des champs modifiés
+- **Optimistic locking** via `row_version` (+ ETag If‑Match) ; **409** : proposer actualiser/écraser (admin+)
+- **Undo léger** (toast 5–10s) ; **audit_log** (delta avant→après, qui/quand)
+- **Permissions champ‑par‑champ** (server‑side), champs sensibles en lecture seule selon rôle
+
+P4 — Recherche & facettes
+-------------------------
+- FTS `tsvector` (profil “simple” + `unaccent`) + index GIN ; fallback **trigram**
+- **Synonymes** par entité ; normalisation (lower, unaccent, hyphens, apostrophes)
+- **Ranking** pondéré (match exact > champs clés > récence) ; **suggestions** quand 0 résultat
+- **Facettes** déclarées sur attributs `is_facet` ; top N + “plus…” ; combinaison de filtres stable
+- Endpoint `/api/search` (q, entity, filters[], facets[], sort, page, page_size)
+
+P5 — Tri/Filtre/Groupes + formules/rollups
+------------------------------------------
+- **Tri multi‑colonnes** avec tie‑breaker `id`
+- Filtre builder (eq, neq, in, gt/gte/lt/lte, like/ilike, between, isnull)
+- **Groupes** (1–2 niveaux), agrégats (count, sum, avg, min, max)
+- **Formules** (champ calculé) : fonctions numériques, dates, texte, conditions, **LOOKUP**/**ROLLUP** sur relations
+- **Relations** (1‑N, N‑N) + **rollups** (min, max, sum, count, any) + **liens** cliquables vers fiches liées
+
+P6 — Sécurité & permissions
+---------------------------
+- RBAC (owner/admin/editor/read_only) + **RLS logique** : filtres serveur par utilisateur (organisation, équipe, “assigned_to == me”)
+- **Vues privées** & **vues partagées** ; **masquage** de colonnes sensibles ; audit export
+- Partage interface “lecture seule” (lien signé) optionnel pour cas externes
+
+P7 — Import/Export fiables
+--------------------------
+- **Import CSV/XLSX** : détection encodage/sep, prévisualisation 10 lignes, **mapping** columns, **upsert** idempotent, rapport erreurs téléchargeable
+- **Export CSV/XLSX** paginé, limite 50k lignes, **watermark** (org/date/user), **quotes** sûrs (anti‑=FORMULA())
+
+P8 — Performance & observabilité
+--------------------------------
+- Index review (EXPLAIN), **matérialisées** pour listes lourdes (`REFRESH CONCURRENTLY`), **cache Redis** (facettes/search 30–120s)
+- **Keyset pagination** pour gros jeux ; `statement_timeout` DB ; page_size ≤ 100
+- **Metrics** : p95 latence list/search, hit‑rate cache, taux 0‑result ; **logs** : >1s, erreurs FTS, exports
+
+P9 — QA & datasets
+------------------
+- Jeux synthétiques (≥100k lignes) avec accents/apostrophes/RTLs, quasi‑doublons, dates extrêmes
+- Suites de **tests de robustesse** (concurrence, RLS, imports, formules, facettes, keyset, undo)
+
+Backlog “delight” (post‑MVP)
+----------------------------
+- **User‑specific views** par défaut (filtre “Assigned to me” auto)
+- **Command palette** (Ctrl/Cmd+K) : créer, filtrer, changer de vue, raccourcis
+- **Templates de vues** par métier (Stocks, Parcelles, Cuvées, Clients)
+- **Rerank sémantique** (pgvector) & recherche phonétique (FR) en option
+- **Automations** simples (webhooks) sur changements d’état
+
+Kits d’implémentation (extraits techniques)
+-------------------------------------------
+- **FTS** : colonnes `search_tsv`, triggers de refresh, index GIN ; fallback trigram `gin_trgm_ops`
+- **Formules** : DSL permissif évalué serveur (sandbox) ou expressions SQL contrôlées ; cache par colonne calculée
+- **Rollups/Relations** : contraintes FK par org ; lookups résolus serveur (anti‑overfetch)
+- **Raccourcis clavier** : handlers centralisés (undo/redo, open record, new row, save)
+- **Keyset** : curseur `(sort_key,id)` signé, stable sur insert concurrents
+- **RLS** : clause serveur ajoutée à chaque query (ex: `WHERE organization_id = current_org AND (assigned_to_id = me OR role >= admin)`)
+
+Critères de sortie (MVP+)
+-------------------------
+- p95 < 300 ms (liste tri/filtre indexés) ; < 600 ms (search FTS)
+- 0 crash 500 en test de robustesse ; undo/redo OK ; conflits 409 gérés
+- RLS vérifiée (user ne voit que ce qu’il doit) ; exports journaux/audit OK
+- Dev Book à jour (vues, formules, search, RLS, import/export, shortcuts)
+
+Annexes — Checklists rapides
+----------------------------
+**UX**
+- [ ] Double‑clic inline OK (Enter/ESC, Tab) ; fiche brouillon + diff
+- [ ] Vues table/kanban/calendar/timeline/galerie ; vues sauvegardées ; colonnes configurables
+- [ ] Command palette Ctrl/Cmd+K ; raccourcis undo/redo ; bulk‑edit
+**Search**
+- [ ] FTS+trigram ; synonymes ; 0‑result suggestions ; facettes combinables
+**Sécurité**
+- [ ] RBAC + RLS logique ; colonnes sensibles masquées ; vues privées
+**Données**
+- [ ] Formules/rollups/relations ; imports upsert ; exports watermark
+**Perfs**
+- [ ] Indexes, MV, caches ; keyset ; page_size ≤ 100 ; metrics & logs
+
+Fin de la roadmap hyper quali.

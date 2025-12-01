@@ -1,0 +1,50 @@
+{% load widget_tweaks %}
+{% for cuvee in page_obj %}
+    <tr class="row-click" data-href="{% url 'referentiels:cuvee_detail' cuvee.pk %}">
+        <td>
+            <a href="{% url 'referentiels:cuvee_detail' cuvee.pk %}" 
+               class="text-decoration-none fw-semibold">
+                {{ cuvee.nom }}
+            </a>
+        </td>
+        <td>
+            <span class="badge bg-light text-dark">{{ cuvee.get_couleur_display }}</span>
+        </td>
+        <td>
+            <span class="badge bg-light text-dark">{{ cuvee.get_classification_display }}</span>
+        </td>
+        <td class="text-muted">
+            {% if cuvee.degre_alcool %}
+                {{ cuvee.degre_alcool }}%
+            {% else %}
+                -
+            {% endif %}
+        </td>
+        <td class="text-muted">
+            {{ cuvee.created_at|date:"d/m/Y" }}
+        </td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'referentiels:cuvee_detail' cuvee.pk %}" 
+                   class="btn btn-outline-primary" 
+                   title="Voir">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'referentiels:cuvee_update' cuvee.pk %}" 
+                       class="btn btn-outline-secondary" 
+                       title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center text-muted py-4">
+            <i class="bi bi-search fs-1 mb-2"></i>
+            <div>Aucune cuvée trouvée</div>
+        </td>
+    </tr>
+{% endfor %}

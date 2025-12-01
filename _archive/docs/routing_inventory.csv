@@ -1,0 +1,119 @@
+path_actuel,name_actuel,vue,app,auth_req,sera_remplace_par,problemes_identifies
+/,root,monchai.urls.redirect_to_dashboard,core,False,/dashboard/,Redirection simple
+/admin/,admin:index,django.contrib.admin.sites.index,admin,True,/admin/,Reste technique
+/admin/accounts/user/,admin:accounts_user_changelist,django.contrib.admin.options.changelist_view,accounts,True,/admin/,Reste technique
+/admin/accounts/organization/,admin:accounts_organization_changelist,django.contrib.admin.options.changelist_view,accounts,True,/admin/,Reste technique
+/admin/accounts/membership/,admin:accounts_membership_changelist,django.contrib.admin.options.changelist_view,accounts,True,/admin/,Reste technique
+/admin/viticulture/cuvee/,admin:viticulture_cuvee_changelist,django.contrib.admin.options.changelist_view,viticulture,True,/backoffice/produits/cuvees/,PROBLEME: métier dans admin
+/admin/viticulture/lot/,admin:viticulture_lot_changelist,django.contrib.admin.options.changelist_view,viticulture,True,/backoffice/produits/lots/,PROBLEME: métier dans admin
+/admin/viticulture/grapevariety/,admin:viticulture_grapevariety_changelist,django.contrib.admin.options.changelist_view,viticulture,True,/backoffice/referentiels/cepages/,PROBLEME: métier dans admin
+/admin/viticulture/vineyardplot/,admin:viticulture_vineyardplot_changelist,django.contrib.admin.options.changelist_view,viticulture,True,/backoffice/referentiels/parcelles/,PROBLEME: métier dans admin
+/admin/viticulture/unitofmeasure/,admin:viticulture_unitofmeasure_changelist,django.contrib.admin.options.changelist_view,viticulture,True,/backoffice/referentiels/unites/,PROBLEME: métier dans admin
+/admin/viticulture/warehouse/,admin:viticulture_warehouse_changelist,django.contrib.admin.options.changelist_view,viticulture,True,/backoffice/referentiels/entrepots/,PROBLEME: métier dans admin
+/admin/sales/customer/,admin:sales_customer_changelist,django.contrib.admin.options.changelist_view,sales,True,/clients/,PROBLEME MAJEUR: clients dans admin
+/admin/sales/taxcode/,admin:sales_taxcode_changelist,django.contrib.admin.options.changelist_view,sales,True,/backoffice/ventes/taxes/,PROBLEME: métier dans admin
+/admin/sales/pricelist/,admin:sales_pricelist_changelist,django.contrib.admin.options.changelist_view,sales,True,/backoffice/ventes/tarifs/,PROBLEME: métier dans admin
+/admin/sales/quote/,admin:sales_quote_changelist,django.contrib.admin.options.changelist_view,sales,True,/ventes/devis/,PROBLEME: métier dans admin
+/admin/sales/order/,admin:sales_order_changelist,django.contrib.admin.options.changelist_view,sales,True,/ventes/commandes/,PROBLEME: métier dans admin
+/admin/billing/invoice/,admin:billing_invoice_changelist,django.contrib.admin.options.changelist_view,billing,True,/ventes/factures/,PROBLEME: métier dans admin
+/admin/billing/payment/,admin:billing_payment_changelist,django.contrib.admin.options.changelist_view,billing,True,/ventes/paiements/,PROBLEME: métier dans admin
+/admin/clients/customer/,admin:clients_customer_changelist,django.contrib.admin.options.changelist_view,clients,True,/clients/,DOUBLON avec sales.customer
+/auth/login/,auth:login,apps.accounts.views.login_view,accounts,False,/auth/login/,OK
+/auth/signup/,auth:signup,apps.accounts.views.signup_view,accounts,False,/auth/signup/,OK
+/auth/logout/,auth:logout,apps.accounts.views.logout_view,accounts,True,/auth/logout/,OK
+/auth/password/reset/,auth:password_reset,apps.accounts.views.password_reset_view,accounts,False,/auth/password/reset/,OK
+/auth/password/reset/done/,auth:password_reset_done,apps.accounts.views.password_reset_done_view,accounts,False,/auth/password/reset/done/,OK
+/auth/reset/complete/,auth:password_reset_complete,apps.accounts.views.password_reset_complete_view,accounts,False,/auth/reset/complete/,OK
+/auth/first-run/,auth:first_run,apps.accounts.views.first_run_view,accounts,True,/auth/first-run/,OK
+/auth/first-run/org/,auth:create_organization,apps.accounts.views.create_organization_view,accounts,True,/auth/first-run/org/,OK
+/auth/settings/roles/,auth:roles_management,apps.accounts.views.roles_management_view,accounts,True,/backoffice/utilisateurs/roles/,Déplacer vers backoffice
+/auth/settings/roles/invite/,auth:invite_user,apps.accounts.views.invite_user_view,accounts,True,/backoffice/utilisateurs/inviter/,Déplacer vers backoffice
+/auth/invite/send/,auth:send_invitation,apps.accounts.views.send_invitation_view,accounts,True,/backoffice/utilisateurs/invitations/,Déplacer vers backoffice
+/auth/settings/billing/,auth:billing_settings,apps.accounts.views.billing_settings_view,accounts,True,/backoffice/parametres/facturation/,Déplacer vers backoffice
+/auth/settings/general/,auth:general_settings,apps.accounts.views.general_settings_view,accounts,True,/backoffice/parametres/generaux/,Déplacer vers backoffice
+/auth/me/profile/,auth:profile,apps.accounts.views.profile_view,accounts,True,/auth/me/profile/,OK (personnel)
+/api/auth/session/,api_auth:login,apps.accounts.api_views.login_api,accounts,False,/api/v1/auth/session/,Versionner API
+/api/auth/whoami/,api_auth:whoami,apps.accounts.api_views.whoami_api,accounts,True,/api/v1/auth/whoami/,Versionner API
+/api/auth/logout/,api_auth:logout,apps.accounts.api_views.logout_api,accounts,True,/api/v1/auth/logout/,Versionner API
+/api/auth/csrf/,api_auth:csrf_token,apps.accounts.api_views.csrf_token_api,accounts,False,/api/v1/auth/csrf/,Versionner API
+/onboarding/checklist/,onboarding:checklist,apps.onboarding.views.checklist_view,onboarding,True,/backoffice/onboarding/checklist/,Déplacer vers backoffice
+/ref/,referentiels:home,apps.referentiels.views.home,referentiels,True,/referentiels/,OK
+/ref/cepages/,referentiels:cepage_list,apps.referentiels.views.cepage_list,referentiels,True,/referentiels/cepages/,OK
+/ref/cepages/export/,referentiels:export_cepages,apps.referentiels.views.export_cepages,referentiels,True,/referentiels/cepages/export/,OK
+/ref/cepages/search-ajax/,referentiels:cepage_search_ajax,apps.referentiels.views.cepage_search_ajax,referentiels,True,/referentiels/cepages/search/,Uniformiser nommage
+/ref/cepages/nouveau/,referentiels:cepage_create,apps.referentiels.views.cepage_create,referentiels,True,/referentiels/cepages/nouveau/,OK
+/ref/parcelles/,referentiels:parcelle_list,apps.referentiels.views.parcelle_list,referentiels,True,/referentiels/parcelles/,OK
+/ref/parcelles/export/,referentiels:export_parcelles,apps.referentiels.views.export_parcelles,referentiels,True,/referentiels/parcelles/export/,OK
+/ref/parcelles/search-ajax/,referentiels:parcelle_search_ajax,apps.referentiels.views.parcelle_search_ajax,referentiels,True,/referentiels/parcelles/search/,Uniformiser nommage
+/ref/parcelles/nouvelle/,referentiels:parcelle_create,apps.referentiels.views.parcelle_create,referentiels,True,/referentiels/parcelles/nouvelle/,OK
+/ref/unites/,referentiels:unite_list,apps.referentiels.views.unite_list,referentiels,True,/referentiels/unites/,OK
+/ref/unites/export/,referentiels:export_unites,apps.referentiels.views.export_unites,referentiels,True,/referentiels/unites/export/,OK
+/ref/unites/search-ajax/,referentiels:unite_search_ajax,apps.referentiels.views.unite_search_ajax,referentiels,True,/referentiels/unites/search/,Uniformiser nommage
+/ref/unites/nouvelle/,referentiels:unite_create,apps.referentiels.views.unite_create,referentiels,True,/referentiels/unites/nouvelle/,OK
+/ref/cuvees/,referentiels:cuvee_list,apps.referentiels.views.cuvee_list,referentiels,True,/referentiels/cuvees/,OK
+/ref/cuvees/export/,referentiels:export_cuvees,apps.referentiels.views.export_cuvees,referentiels,True,/referentiels/cuvees/export/,OK
+/ref/cuvees/search-ajax/,referentiels:cuvee_search_ajax,apps.referentiels.views.cuvee_search_ajax,referentiels,True,/referentiels/cuvees/search/,Uniformiser nommage
+/ref/cuvees/nouvelle/,referentiels:cuvee_create,apps.referentiels.views.cuvee_create,referentiels,True,/referentiels/cuvees/nouvelle/,OK
+/ref/entrepots/,referentiels:entrepot_list,apps.referentiels.views.entrepot_list,referentiels,True,/referentiels/entrepots/,OK
+/ref/entrepots/export/,referentiels:export_entrepots,apps.referentiels.views.export_entrepots,referentiels,True,/referentiels/entrepots/export/,OK
+/ref/entrepots/search-ajax/,referentiels:entrepot_search_ajax,apps.referentiels.views.entrepot_search_ajax,referentiels,True,/referentiels/entrepots/search/,Uniformiser nommage
+/ref/entrepots/nouveau/,referentiels:entrepot_create,apps.referentiels.views.entrepot_create,referentiels,True,/referentiels/entrepots/nouveau/,OK
+/ref/import/,referentiels:import_csv,apps.referentiels.views.import_csv,referentiels,True,/referentiels/import/,OK
+/ref/import/preview/,referentiels:import_csv_preview,apps.referentiels.views.import_csv_preview,referentiels,True,/referentiels/import/preview/,OK
+/ref/import/execute/,referentiels:import_csv_execute,apps.referentiels.views.import_csv_execute,referentiels,True,/referentiels/import/execute/,OK
+/ref/import/download-errors/,referentiels:import_csv_download_errors,apps.referentiels.views.import_csv_download_errors,referentiels,True,/referentiels/import/errors/,Simplifier nom
+/ref/api/v2/search/,referentiels:search_api_v2,apps.referentiels.api_v2.search_api_v2,referentiels,True,/api/v1/referentiels/search/,Uniformiser version API
+/ref/api/v2/suggestions/,referentiels:search_suggestions_v2,apps.referentiels.api_v2.search_suggestions_v2,referentiels,True,/api/v1/referentiels/suggestions/,Uniformiser version API
+/ref/api/v2/facets/,referentiels:search_facets_v2,apps.referentiels.api_v2.search_facets_v2,referentiels,True,/api/v1/referentiels/facets/,Uniformiser version API
+/ref/api/v2/<str:entity_type>/<int:entity_id>/cell/<str:field_name>/,referentiels:inline_edit_cell_v2,apps.referentiels.api_v2.inline_edit_cell_v2,referentiels,True,/api/v1/referentiels/<entity_type>/<id>/fields/<field>/,Uniformiser version API
+/ref/api/v2/<str:entity_type>/<int:entity_id>/cell/<str:field_name>/save/,referentiels:inline_edit_save_v2,apps.referentiels.api_v2.inline_edit_save_v2,referentiels,True,/api/v1/referentiels/<entity_type>/<id>/fields/<field>/,Uniformiser version API
+/ref/api/v2/undo/,referentiels:inline_edit_undo_v2,apps.referentiels.api_v2.inline_edit_undo_v2,referentiels,True,/api/v1/referentiels/undo/,Uniformiser version API
+/catalogue/,catalogue:home,apps.catalogue.views_grid.catalogue_grid,catalogue,True,/catalogue/,OK
+/catalogue/search/,catalogue:search_ajax,apps.catalogue.views_grid.catalogue_search_ajax,catalogue,True,/catalogue/search/,OK
+/catalogue/<uuid:pk>/,catalogue:cuvee_detail,apps.catalogue.views.catalogue_cuvee_detail,catalogue,True,/catalogue/cuvees/<uuid>/,Clarifier ressource
+/catalogue/lots/,catalogue:lot_list,apps.catalogue.views.lot_list,catalogue,True,/catalogue/lots/,OK
+/catalogue/lots/nouveau/,catalogue:lot_create,apps.catalogue.views.lot_create,catalogue,True,/catalogue/lots/nouveau/,OK
+/catalogue/lots/<int:pk>/,catalogue:lot_detail,apps.catalogue.views.lot_detail,catalogue,True,/catalogue/lots/<int>/,OK
+/catalogue/lots/<int:pk>/modifier/,catalogue:lot_update,apps.catalogue.views.lot_update,catalogue,True,/catalogue/lots/<int>/modifier/,OK
+/catalogue/lots/<int:pk>/supprimer/,catalogue:lot_delete,apps.catalogue.views.lot_delete,catalogue,True,/catalogue/lots/<int>/supprimer/,OK
+/catalogue/lots/<int:pk>/mouvement/,catalogue:lot_add_mouvement,apps.catalogue.views.lot_add_mouvement,catalogue,True,/catalogue/lots/<int>/mouvements/nouveau/,Clarifier action
+/catalogue/produits/,catalogue:products_dashboard,apps.catalogue.views_unified.products_dashboard,catalogue,True,/catalogue/produits/,OK
+/catalogue/produits/cuvees/,catalogue:products_cuvees,apps.catalogue.views_unified.products_cuvees,catalogue,True,/catalogue/produits/cuvees/,OK
+/catalogue/produits/lots/,catalogue:products_lots,apps.catalogue.views_unified.products_lots,catalogue,True,/catalogue/produits/lots/,OK
+/catalogue/produits/skus/,catalogue:products_skus,apps.catalogue.views_unified.products_skus,catalogue,True,/catalogue/produits/skus/,OK
+/catalogue/produits/referentiels/,catalogue:products_referentiels,apps.catalogue.views_unified.products_referentiels,catalogue,True,/catalogue/produits/referentiels/,OK
+/catalogue/produits/search/,catalogue:products_search_ajax,apps.catalogue.views_unified.products_search_ajax,catalogue,True,/catalogue/produits/search/,OK
+/catalogue/api/catalogue/,catalogue:catalogue_api,apps.catalogue.api_views.catalogue_api,catalogue,True,/api/v1/catalogue/,Uniformiser version API
+/catalogue/api/catalogue/facets/,catalogue:catalogue_facets_api,apps.catalogue.api_views.catalogue_facets_api,catalogue,True,/api/v1/catalogue/facets/,Uniformiser version API
+/catalogue/api/catalogue/<uuid:cuvee_id>/,catalogue:catalogue_detail_api,apps.catalogue.api_views.catalogue_detail_api,catalogue,True,/api/v1/catalogue/cuvees/<uuid>/,Uniformiser version API
+/metadata/monitoring/,metadata:monitoring_dashboard,apps.metadata.dashboard.monitoring_dashboard,metadata,True,/backoffice/monitoring/,Déplacer vers backoffice
+/metadata/feature-flags/,metadata:feature_flags_admin,apps.metadata.dashboard.feature_flags_admin,metadata,True,/backoffice/feature-flags/,Déplacer vers backoffice
+/stocks/transferts/,stock:transferts_list,apps.stock.views.transferts_list,stock,True,/stocks/transferts/,OK
+/stocks/transferts/nouveau/,stock:transfert_create,apps.stock.views.transfert_create,stock,True,/stocks/transferts/nouveau/,OK
+/stocks/inventaire/,stock:inventaire_view,apps.stock.views.inventaire_view,stock,True,/stocks/inventaire/,OK
+/stocks/inventaire/counting/<uuid:warehouse_id>/,stock:inventaire_counting_view,apps.stock.views.inventaire_counting_view,stock,True,/stocks/inventaire/comptage/<uuid>/,Clarifier action
+/stocks/alertes/,stock:alertes_view,apps.stock.views.alertes_view,stock,True,/stocks/alertes/,OK
+/stocks/seuils/,stock:seuils_view,apps.stock.views.seuils_view,stock,True,/stocks/seuils/,OK
+/stocks/api/transferts/,stock:transferts_api,apps.stock.api_views.transferts_api,stock,True,/api/v1/stocks/transferts/,Uniformiser version API
+/stocks/api/transferts/create/,stock:transfert_create_api,apps.stock.api_views.transfert_create_api,stock,True,/api/v1/stocks/transferts/,Uniformiser version API (POST)
+/stocks/api/inventaire/,stock:inventaire_api,apps.stock.api_views.inventaire_api,stock,True,/api/v1/stocks/inventaire/,Uniformiser version API
+/stocks/api/inventaire/counting/<uuid:warehouse_id>/,stock:inventaire_counting_api,apps.stock.api_views.inventaire_counting_api,stock,True,/api/v1/stocks/inventaire/comptage/<uuid>/,Uniformiser version API
+/stocks/api/inventaire/calculate-adjustments/,stock:inventaire_calculate_adjustments_api,apps.stock.api_views.inventaire_calculate_adjustments_api,stock,True,/api/v1/stocks/inventaire/ajustements/calculer/,Uniformiser version API
+/stocks/api/inventaire/apply-adjustments/,stock:inventaire_apply_adjustments_api,apps.stock.api_views.inventaire_apply_adjustments_api,stock,True,/api/v1/stocks/inventaire/ajustements/appliquer/,Uniformiser version API
+/stocks/api/alertes/,stock:alertes_api,apps.stock.api_views.alertes_api,stock,True,/api/v1/stocks/alertes/,Uniformiser version API
+/stocks/api/alertes/acknowledge/,stock:acknowledge_alert_api,apps.stock.api_views.acknowledge_alert_api,stock,True,/api/v1/stocks/alertes/accuser-reception/,Uniformiser version API
+/stocks/api/alertes/badge-count/,stock:alerts_badge_count_api,apps.stock.api_views.alerts_badge_count_api,stock,True,/api/v1/stocks/alertes/compteur/,Uniformiser version API
+/stocks/api/seuils/create/,stock:create_threshold_api,apps.stock.api_views.create_threshold_api,stock,True,/api/v1/stocks/seuils/,Uniformiser version API (POST)
+/stocks/api/seuils/<uuid:threshold_id>/,stock:delete_threshold_api,apps.stock.api_views.delete_threshold_api,stock,True,/api/v1/stocks/seuils/<uuid>/,Uniformiser version API
+/stocks/,stock:dashboard,apps.stock.views.stock_dashboard,stock,True,/stocks/,OK
+/clients/,clients:customers_list,apps.clients.views.customers_list,clients,True,/clients/,OK
+/clients/nouveau/,clients:customer_create,apps.clients.views.customer_create,clients,True,/clients/nouveau/,OK
+/clients/<uuid:customer_id>/,clients:customer_detail,apps.clients.views.customer_detail,clients,True,/clients/<uuid>/,OK
+/clients/<uuid:customer_id>/modifier/,clients:customer_edit,apps.clients.views.customer_edit,clients,True,/clients/<uuid>/modifier/,OK
+/clients/export/,clients:customers_export,apps.clients.views.customers_export,clients,True,/clients/export/,OK
+/clients/api/,clients:customers_api,apps.clients.views.customers_api,clients,True,/api/v1/clients/,Uniformiser version API
+/clients/api/suggestions/,clients:customers_suggestions_api,apps.clients.views.customers_suggestions_api,clients,True,/api/v1/clients/suggestions/,Uniformiser version API
+/clients/api/duplicates/,clients:duplicate_detection_api,apps.clients.views.duplicate_detection_api,clients,True,/api/v1/clients/duplicates/,Uniformiser version API
+/dashboard/,dashboard,apps.accounts.views.dashboard_placeholder,accounts,True,/dashboard/,OK
+/media/<path>,static_media,django.views.static.serve,django,False,/media/<path>,OK (dev uniquement)
+/static/<path>,static_files,django.views.static.serve,django,False,/static/<path>,OK (dev uniquement)

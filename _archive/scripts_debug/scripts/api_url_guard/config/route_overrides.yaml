@@ -1,0 +1,9 @@
+overrides:
+  - path: /cuvees
+    method: POST
+    role: viewer
+    expected_status: [401,403]
+  - path: /cuvees
+    method: POST
+    role: editor
+    expected_status: [200,201,202,400,422]

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Ventes en Vrac{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-droplet-fill"></i> Ventes en Vrac</h1>
+        <a href="{% url 'ventes:vrac_new' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouvelle vente vrac
+        </a>
+    </div>
+    
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> <strong>Vente en vrac :</strong> Vente de vin en volume (litres) sans embouteillage
+    </div>
+    
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-9">
+                <input type="text" name="search" class="form-control" placeholder="Rechercher un client..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-secondary w-100">Filtrer</button>
+            </div>
+        </div>
+    </form>
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Notes</th>
+                    <th>Statut</th>
+                    <th>Total TTC</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for quote in page_obj %}
+                <tr>
+                    <td>{{ quote.customer.legal_name }}</td>
+                    <td>Devis vente vrac</td>
+                    <td><span class="badge bg-info">{{ quote.get_status_display }}</span></td>
+                    <td>{{ quote.total_ttc }} €</td>
+                    <td>{{ quote.created_at|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'ventes:vrac_detail' quote.id %}" class="btn btn-sm btn-outline-primary">Voir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center">Aucune vente en vrac</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if page_obj.has_other_pages %}
+    <nav>
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

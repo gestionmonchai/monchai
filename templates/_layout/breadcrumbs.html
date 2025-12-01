@@ -1,0 +1,15 @@
+{% if breadcrumb_items %}
+<nav aria-label="breadcrumb" class="mb-2">
+  <ol class="breadcrumb">
+    {% for item in breadcrumb_items %}
+      {% if item.name != 'Production' %}
+        {% if item.url %}
+          <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.name }}</a></li>
+        {% else %}
+          <li class="breadcrumb-item active" aria-current="page">{{ item.name }}</li>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

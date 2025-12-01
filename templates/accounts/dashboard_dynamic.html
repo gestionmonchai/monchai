@@ -1,0 +1,453 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Viticole - Mon Chai{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --harvest-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --stock-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --revenue-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --danger-gradient: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+        --info-gradient: linear-gradient(135deg, #667eea 0%, #00f2fe 100%);
+    }
+
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-container {
+        padding: 2rem 0;
+    }
+
+    .dashboard-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--harvest-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+
+    .dashboard-subtitle {
+        color: #6c757d;
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    /* Grille Responsive */
+    .widgets-grid {
+        display: grid;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .widgets-grid.cols-1 { grid-template-columns: 1fr; }
+    .widgets-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .widgets-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .widgets-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+    @media (max-width: 1200px) {
+        .widgets-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+        .widgets-grid.cols-2,
+        .widgets-grid.cols-3,
+        .widgets-grid.cols-4 { grid-template-columns: 1fr; }
+    }
+
+    /* Widget Card */
+    .widget-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .widget-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .widget-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--harvest-gradient);
+    }
+
+    .widget-card.harvest::before { background: var(--harvest-gradient); }
+    .widget-card.stock::before { background: var(--stock-gradient); }
+    .widget-card.revenue::before { background: var(--revenue-gradient); }
+    .widget-card.success::before { background: var(--success-gradient); }
+    .widget-card.warning::before { background: var(--warning-gradient); }
+    .widget-card.danger::before { background: var(--danger-gradient); }
+    .widget-card.info::before { background: var(--info-gradient); }
+
+    /* Widget Metric */
+    .widget-metric .widget-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: white;
+        margin-bottom: 1rem;
+    }
+
+    .widget-metric.harvest .widget-icon { background: var(--harvest-gradient); }
+    .widget-metric.stock .widget-icon { background: var(--stock-gradient); }
+    .widget-metric.revenue .widget-icon { background: var(--revenue-gradient); }
+    .widget-metric.success .widget-icon { background: var(--success-gradient); }
+    .widget-metric.warning .widget-icon { background: var(--warning-gradient); }
+    .widget-metric.danger .widget-icon { background: var(--danger-gradient); }
+    .widget-metric.info .widget-icon { background: var(--info-gradient); }
+
+    .widget-metric .widget-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+
+    .widget-metric .widget-subtitle {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    /* Widget Shortcut */
+    .widget-shortcut {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .widget-shortcut:hover {
+        background: #f8f9fa;
+        transform: translateX(4px);
+    }
+
+    .widget-shortcut .shortcut-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+        margin-right: 1rem;
+        background: var(--info-gradient);
+    }
+
+    .widget-shortcut .shortcut-label {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    /* Widget List */
+    .widget-list .list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .widget-list .list-item:last-child {
+        border-bottom: none;
+    }
+
+    .widget-list .list-item:hover {
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    /* Widget Alert */
+    .widget-alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: start;
+        gap: 0.75rem;
+    }
+
+    .widget-alert.alert-danger { background: #fee; border-left: 4px solid #dc3545; }
+    .widget-alert.alert-warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+    .widget-alert.alert-info { background: #d1ecf1; border-left: 4px solid #0dcaf0; }
+
+    .widget-alert i {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .widget-alert-content {
+        flex: 1;
+    }
+
+    .widget-alert-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .widget-alert-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    /* Quick Actions Bar */
+    .quick-actions-bar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .quick-action-btn {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        text-decoration: none;
+        color: #2c3e50;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .quick-action-btn:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+        transform: translateY(-2px);
+    }
+
+    .quick-action-btn i {
+        font-size: 24px;
+        color: #667eea;
+    }
+
+    /* Notifications Badge */
+    .notification-badge {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .campaign-badge {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        color: white;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="dashboard-title">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Dashboard Viticole
+                </h1>
+                <p class="dashboard-subtitle mb-0">
+                    Vue d'ensemble de votre exploitation - Campagne {{ current_campaign }}
+                </p>
+            </div>
+            {% if user.get_active_membership %}
+            <div class="text-end">
+                <a href="{% url 'auth:dashboard_configure' %}" class="btn btn-outline-light btn-sm mb-2 me-2">
+                    <i class="bi bi-sliders"></i> Personnaliser
+                </a>
+                <div class="campaign-badge">
+                    <i class="bi bi-building"></i>
+                    {{ user.get_active_membership.organization.name }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Widgets Grid (Configuration Utilisateur) -->
+    {% if widgets_data %}
+    <div class="widgets-grid cols-{{ config.columns }}">
+        {% for item in widgets_data %}
+            {% if item.data.type == 'shortcut' %}
+                {# Widget Raccourci #}
+                <a href="{% url item.data.url %}" class="widget-shortcut">
+                    <div class="shortcut-icon">
+                        <i class="{{ item.data.icon }}"></i>
+                    </div>
+                    <span class="shortcut-label">{{ item.data.label }}</span>
+                </a>
+            {% elif item.widget.widget_type == 'metric' %}
+                {# Widget Métrique #}
+                <div class="widget-card widget-metric {{ item.data.color }}">
+                    <div class="widget-icon">
+                        <i class="{{ item.data.icon }}"></i>
+                    </div>
+                    <div class="widget-value">{{ item.data.value }}</div>
+                    <div class="widget-subtitle">{{ item.data.subtitle }}</div>
+                    {% if item.data.url %}
+                    <a href="{% url item.data.url %}" class="stretched-link"></a>
+                    {% endif %}
+                </div>
+            {% elif item.widget.widget_type == 'list' %}
+                {# Widget Liste #}
+                <div class="widget-card">
+                    <h5 class="mb-3">
+                        <i class="{{ item.widget.icon }} me-2"></i>
+                        {{ item.widget.name }}
+                    </h5>
+                    <div class="widget-list">
+                        {% if item.data.items %}
+                            {% for list_item in item.data.items %}
+                            <div class="list-item">
+                                <span>{{ list_item.label }}</span>
+                                <strong>{{ list_item.value }}</strong>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-muted text-center py-3">
+                                <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                                <p class="mb-0 mt-2">Aucune donnée</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% elif item.widget.widget_type == 'alert' %}
+                {# Widget Alerte #}
+                <div class="widget-card">
+                    <h5 class="mb-3">
+                        <i class="{{ item.widget.icon }} me-2"></i>
+                        {{ item.widget.name }}
+                    </h5>
+                    {% if item.data.alerts %}
+                        {% for alert in item.data.alerts %}
+                        <div class="widget-alert alert-{{ alert.severity }}">
+                            <i class="bi bi-{{ alert.icon }}"></i>
+                            <div class="widget-alert-content">
+                                <div class="widget-alert-title">{{ alert.title }}</div>
+                                <div class="widget-alert-text">{{ alert.message }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-success text-center py-3">
+                            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                            <p class="mb-0 mt-2">Tout est OK !</p>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h3>Aucun widget configuré</h3>
+        <p>Personnalisez votre dashboard en ajoutant des widgets</p>
+        <a href="{% url 'auth:dashboard_configure' %}" class="btn btn-primary">
+            <i class="bi bi-sliders"></i> Configurer maintenant
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Notifications en temps réel -->
+    <div id="notifications-container"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh toutes les 5 minutes
+setTimeout(() => location.reload(), 300000);
+
+// Notifications temps réel (simulation)
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('notifications-container');
+    const notification = document.createElement('div');
+    notification.className = `notification-badge alert alert-${type} alert-dismissible fade show`;
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    container.appendChild(notification);
+    
+    setTimeout(() => notification.remove(), 5000);
+}
+
+// Exemple: Afficher notification au chargement
+setTimeout(() => {
+    showNotification('Dashboard chargé avec succès', 'success');
+}, 1000);
+</script>
+{% endblock %}

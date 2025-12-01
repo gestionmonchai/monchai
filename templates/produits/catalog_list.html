@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">{{ page_title }}</h1>
+    <a href="{% url 'produits:product_new' %}" class="btn btn-primary">+ Nouveau produit</a>
+  </div>
+
+
+  <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher…" class="input input-bordered" />
+    <select name="type" class="select select-bordered">
+      <option value="">Type (tous)</option>
+      <option value="wine" {% if type == 'wine' %}selected{% endif %}>Vin</option>
+      <option value="food" {% if type == 'food' %}selected{% endif %}>Alimentaire</option>
+      <option value="merch" {% if type == 'merch' %}selected{% endif %}>Merch</option>
+      <option value="other" {% if type == 'other' %}selected{% endif %}>Autre</option>
+    </select>
+    <button class="btn btn-secondary">Filtrer</button>
+  </form>
+
+  <div class="overflow-x-auto bg-white rounded shadow">
+    <table class="table w-full">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Marque</th>
+          <th>Type</th>
+          <th>Cuvée</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          <tr class="hover">
+            <td>
+              <a class="text-primary" href="{% url 'produits:product_detail' slug=p.slug %}">{{ p.name }}</a>
+            </td>
+            <td>{{ p.brand|default:'—' }}</td>
+            <td>{{ p.type_code }}</td>
+            <td>{{ p.cuvee.name|default:'—' }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-center py-6 text-gray-500">Aucun produit</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include 'referentiels/partials/pagination.html' with page_obj=products %}
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Créer votre exploitation - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-house-add text-primary" style="font-size: 3rem;"></i>
+                    <h2 class="card-title mt-3">Créer votre exploitation</h2>
+                    <p class="text-muted">
+                        Quelques informations pour configurer votre espace de travail
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Nom de l'exploitation -->
+                    <div class="mb-3">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">
+                                {{ form.name.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.name.help_text }}</div>
+                    </div>
+
+                    <!-- SIRET -->
+                    <div class="mb-3">
+                        {{ form.siret.label_tag }}
+                        {{ form.siret }}
+                        {% if form.siret.errors %}
+                            <div class="text-danger small">
+                                {{ form.siret.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.siret.help_text }}</div>
+                    </div>
+
+                    <!-- Numéro de TVA -->
+                    <div class="mb-3">
+                        {{ form.tva_number.label_tag }}
+                        {{ form.tva_number }}
+                        {% if form.tva_number.errors %}
+                            <div class="text-danger small">
+                                {{ form.tva_number.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.tva_number.help_text }}</div>
+                    </div>
+
+                    <!-- Devise -->
+                    <div class="mb-4">
+                        {{ form.currency.label_tag }}
+                        {{ form.currency }}
+                        {% if form.currency.errors %}
+                            <div class="text-danger small">
+                                {{ form.currency.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.currency.help_text }}</div>
+                    </div>
+
+                    <!-- Erreurs générales -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors.0 }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Information -->
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Pas de panique !</strong> Vous pourrez compléter et modifier 
+                        ces paramètres plus tard dans les réglages de votre exploitation.
+                    </div>
+
+                    <!-- Bouton de création -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-check-circle"></i> Créer mon exploitation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+Roadmap 28 — /lots/new (Création de lot — source, volume, degré)
+================================================================
+Rôle & objectif
+---------------
+Créer un **lot de vrac** avec source (cuvée ou assemblage de lots), volume (L) et degré (%) dans un entrepôt. Garantir l’intégrité stock et la traçabilité.
+
+Livrables
+---------
+- Formulaire `/lots/new` :
+  - Cuvée (select obligatoire) **ou** Assemblage (sélection de lots existants + ratios/volumes)
+  - Volume en litres (positif), Degré (% vol), Entrepôt (obligatoire), Statut initial (ex: “disponible”)
+  - Aperçu volume total & cohérence assemblage
+- Backend:
+  - Génération `lot.code` (org + année + incrément)
+  - Écriture **stock_vrac_move** d’entrée (append‑only) avec verrou logique
+  - Validation anti‑cycle pour assemblages
+
+Modèle & intégrité
+------------------
+- `lot(id, org, code UNIQUE, cuvee_id, vintage?, degree_percent, status, created_at, updated_at, row_version)`
+- `stock_vrac_move(id, lot_id, warehouse_id, delta_l, type='in'/'transfer'/'out'/'adjust'/'bottle', created_at)`
+- Solde calculé par agrégation moves (ou table balance rafraîchie)
+
+Validations
+-----------
+- volume_l > 0 ; degree_percent 0–20 (bornes configurables)
+- Entrepôt requis ; cuvée existante/org‑cohérente
+- Assemblage: somme des volumes sources = volume final ; **pas de cycles**
+
+UX
+--
+- Wizard simple: Source → Détails → Confirmer
+- Si assemblage: autocomplete lots + check volumes disponibles
+- Toast succès + lien “Voir le lot”
+
+Sécurité
+--------
+- RBAC: editor+ peut créer ; read_only interdit
+- RLS org ; validation anti‑overposting (champs whitelist)
+- CSRF sur POST ; logs audit (qui/quand/quoi)
+
+Tests d’acceptation
+-------------------
+- AC‑28‑01: Création simple (cuvée A, 900 L, 13%) → lot visible en liste
+- AC‑28‑02: Assemblage (lot1+lot2) → relations créées + mouvements corrects
+- AC‑28‑03: Volume 0/negatif → 400
+- AC‑28‑04: Dépasse volume source en assemblage → rejet
+
+Robustesse (tests)
+------------------
+- R‑28‑01: Double submit → un seul move (verrou + idempotence)
+- R‑28‑02: Crash mi‑parcours → rollback ; pas de lot “fantôme”
+- R‑28‑03: Charge (100 créations concurrentes) → codes uniques, pas de collisions
+
+Plan d’implémentation
+---------------------
+1) Formulaire + validations client côté UI
+2) Endpoint POST `/lots` avec validations serveur + génération code
+3) Mouvements stock_vrac_move append‑only + verrou logique
+4) Tests AC/robustesse + doc `lots_new.md`

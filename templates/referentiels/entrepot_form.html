@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-building me-2 text-info"></i>{{ page_title }}
+            </h1>
+            <div>
+                <a href="{% url 'referentiels:entrepot_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Colonne gauche -->
+                        <div class="col-md-6">
+                            <!-- Nom de l'entrepôt -->
+                            <div class="mb-3">
+                                <label for="{{ form.nom.id_for_label }}" class="form-label">
+                                    {{ form.nom.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nom|add_class:"form-control" }}
+                                {% if form.nom.help_text %}
+                                    <div class="form-text">{{ form.nom.help_text }}</div>
+                                {% endif %}
+                                {% if form.nom.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.nom.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Type d'entrepôt -->
+                            <div class="mb-3">
+                                <label for="{{ form.type_entrepot.id_for_label }}" class="form-label">
+                                    {{ form.type_entrepot.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.type_entrepot|add_class:"form-select" }}
+                                {% if form.type_entrepot.help_text %}
+                                    <div class="form-text">{{ form.type_entrepot.help_text }}</div>
+                                {% endif %}
+                                {% if form.type_entrepot.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.type_entrepot.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Capacité -->
+                            <div class="mb-3">
+                                <label for="{{ form.capacite.id_for_label }}" class="form-label">
+                                    {{ form.capacite.label }}
+                                </label>
+                                {{ form.capacite|add_class:"form-control" }}
+                                {% if form.capacite.help_text %}
+                                    <div class="form-text">{{ form.capacite.help_text }}</div>
+                                {% endif %}
+                                {% if form.capacite.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.capacite.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Colonne droite -->
+                        <div class="col-md-6">
+                            <!-- Température minimale -->
+                            <div class="mb-3">
+                                <label for="{{ form.temperature_min.id_for_label }}" class="form-label">
+                                    {{ form.temperature_min.label }}
+                                </label>
+                                {{ form.temperature_min|add_class:"form-control" }}
+                                {% if form.temperature_min.help_text %}
+                                    <div class="form-text">{{ form.temperature_min.help_text }}</div>
+                                {% endif %}
+                                {% if form.temperature_min.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.temperature_min.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Température maximale -->
+                            <div class="mb-3">
+                                <label for="{{ form.temperature_max.id_for_label }}" class="form-label">
+                                    {{ form.temperature_max.label }}
+                                </label>
+                                {{ form.temperature_max|add_class:"form-control" }}
+                                {% if form.temperature_max.help_text %}
+                                    <div class="form-text">{{ form.temperature_max.help_text }}</div>
+                                {% endif %}
+                                {% if form.temperature_max.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.temperature_max.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adresse -->
+                    <div class="mb-3">
+                        <label for="{{ form.adresse.id_for_label }}" class="form-label">
+                            {{ form.adresse.label }}
+                        </label>
+                        {{ form.adresse|add_class:"form-control" }}
+                        {% if form.adresse.help_text %}
+                            <div class="form-text">{{ form.adresse.help_text }}</div>
+                        {% endif %}
+                        {% if form.adresse.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.adresse.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {{ form.notes.label }}
+                        </label>
+                        {{ form.notes|add_class:"form-control" }}
+                        {% if form.notes.help_text %}
+                            <div class="form-text">{{ form.notes.help_text }}</div>
+                        {% endif %}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Erreurs non-field -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'referentiels:entrepot_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {% if entrepot %}Modifier{% else %}Créer{% endif %} l'entrepôt
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aide contextuelle -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-10 col-lg-8">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-lightbulb me-2"></i>Conseils</h6>
+            <ul class="mb-0">
+                <li><strong>Nom :</strong> Utilisez un nom distinctif pour votre entrepôt</li>
+                <li><strong>Type :</strong> Chai (production), Dépôt (stockage), Boutique (vente), Cave (vieillissement)</li>
+                <li><strong>Capacité :</strong> Nombre maximum de bouteilles stockables (optionnel)</li>
+                <li><strong>Température :</strong> Plage de température de conservation (optionnel)</li>
+                <li><strong>Adresse :</strong> Localisation physique de l'entrepôt</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

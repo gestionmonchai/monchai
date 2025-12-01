@@ -1,0 +1,252 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Référentiels | Mon Chai Administration{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/changelists.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs EXACTEMENT comme admin -->
+<nav aria-label="Fil d'Ariane">
+<div class="breadcrumbs">
+<a href="/admin/">Accueil</a>
+&rsaquo; <a href="/catalogue/produits/">Gestion des produits</a>
+&rsaquo; Référentiels
+</div>
+</nav>
+
+<div class="main" id="main">
+  <main id="content-start" class="content" tabindex="-1">
+    <div id="content" class="">
+      
+      <h1>Référentiels de production</h1>
+      
+      <div id="content-main">
+        
+        <!-- Module changelist EXACTEMENT comme admin -->
+        <div class="module filtered" id="changelist">
+          <div class="changelist-form-container">
+            
+            <!-- Sections référentiels avec style admin exact -->
+            <div class="results">
+              
+              <!-- Section Cépages -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="background: #417690; color: #fff; font-size: 11px; font-weight: bold; margin: 0; padding: 8px 15px; text-transform: uppercase;">
+                  🍇 Cépages
+                </h2>
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable column-name">
+                        <div class="text"><a href="/referentiels/cepages/">Nom</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-couleur">
+                        <div class="text">Couleur</div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-code">
+                        <div class="text">Code</div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-actions">
+                        <div class="text">Actions</div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for cepage in cepages %}
+                    <tr>
+                      <th class="field-name">
+                        <a href="/referentiels/cepages/{{ cepage.id }}/">{{ cepage.nom }}</a>
+                      </th>
+                      <td class="field-couleur">
+                        <span class="badge badge-{{ cepage.couleur|lower }}">{{ cepage.get_couleur_display }}</span>
+                      </td>
+                      <td class="field-code">{{ cepage.code|default:"-" }}</td>
+                      <td class="field-actions">
+                        <a href="/referentiels/cepages/{{ cepage.id }}/modifier/" class="changelink">Modifier</a>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="4">Aucun cépage trouvé. <a href="/referentiels/cepages/nouveau/">Ajouter un cépage</a></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <p class="paginator">
+                  {{ cepages|length }} Cépage{{ cepages|length|pluralize:"s" }}
+                  <a href="/referentiels/cepages/nouveau/" class="addlink" style="margin-left: 15px;">Ajouter cépage</a>
+                </p>
+              </div>
+
+              <!-- Section Parcelles -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="background: #417690; color: #fff; font-size: 11px; font-weight: bold; margin: 0; padding: 8px 15px; text-transform: uppercase;">
+                  🌱 Parcelles
+                </h2>
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable column-nom">
+                        <div class="text"><a href="/referentiels/parcelles/">Nom</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-surface">
+                        <div class="text">Surface (ha)</div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-actions">
+                        <div class="text">Actions</div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for parcelle in parcelles %}
+                    <tr>
+                      <th class="field-nom">
+                        <a href="/referentiels/parcelles/{{ parcelle.id }}/">{{ parcelle.nom }}</a>
+                      </th>
+                      <td class="field-surface">{{ parcelle.surface_ha|floatformat:2 }} ha</td>
+                      <td class="field-actions">
+                        <a href="/referentiels/parcelles/{{ parcelle.id }}/modifier/" class="changelink">Modifier</a>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="3">Aucune parcelle trouvée. <a href="/referentiels/parcelles/nouvelle/">Ajouter une parcelle</a></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <p class="paginator">
+                  {{ parcelles|length }} Parcelle{{ parcelles|length|pluralize:"s" }}
+                  <a href="/referentiels/parcelles/nouvelle/" class="addlink" style="margin-left: 15px;">Ajouter parcelle</a>
+                </p>
+              </div>
+
+              <!-- Section Unités -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="background: #417690; color: #fff; font-size: 11px; font-weight: bold; margin: 0; padding: 8px 15px; text-transform: uppercase;">
+                  📏 Unités de mesure
+                </h2>
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable column-nom">
+                        <div class="text"><a href="/referentiels/unites/">Nom</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-code">
+                        <div class="text">Code</div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-actions">
+                        <div class="text">Actions</div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for unite in unites %}
+                    <tr>
+                      <th class="field-nom">
+                        <a href="/referentiels/unites/{{ unite.id }}/">{{ unite.nom }}</a>
+                      </th>
+                      <td class="field-code">{{ unite.code }}</td>
+                      <td class="field-actions">
+                        <a href="/referentiels/unites/{{ unite.id }}/modifier/" class="changelink">Modifier</a>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="3">Aucune unité trouvée. <a href="/referentiels/unites/nouvelle/">Ajouter une unité</a></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <p class="paginator">
+                  {{ unites|length }} Unité{{ unites|length|pluralize:"s" }}
+                  <a href="/referentiels/unites/nouvelle/" class="addlink" style="margin-left: 15px;">Ajouter unité</a>
+                </p>
+              </div>
+
+              <!-- Section Entrepôts -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="background: #417690; color: #fff; font-size: 11px; font-weight: bold; margin: 0; padding: 8px 15px; text-transform: uppercase;">
+                  🏭 Entrepôts
+                </h2>
+                <table id="result_list">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="sortable column-nom">
+                        <div class="text"><a href="/referentiels/entrepots/">Nom</a></div>
+                        <div class="clear"></div>
+                      </th>
+                      <th scope="col" class="sortable column-actions">
+                        <div class="text">Actions</div>
+                        <div class="clear"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for entrepot in entrepots %}
+                    <tr>
+                      <th class="field-nom">
+                        <a href="/referentiels/entrepots/{{ entrepot.id }}/">{{ entrepot.nom }}</a>
+                      </th>
+                      <td class="field-actions">
+                        <a href="/referentiels/entrepots/{{ entrepot.id }}/modifier/" class="changelink">Modifier</a>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="2">Aucun entrepôt trouvé. <a href="/referentiels/entrepots/nouveau/">Ajouter un entrepôt</a></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <p class="paginator">
+                  {{ entrepots|length }} Entrepôt{{ entrepots|length|pluralize:"s" }}
+                  <a href="/referentiels/entrepots/nouveau/" class="addlink" style="margin-left: 15px;">Ajouter entrepôt</a>
+                </p>
+              </div>
+
+              <!-- Section Import CSV -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="background: #417690; color: #fff; font-size: 11px; font-weight: bold; margin: 0; padding: 8px 15px; text-transform: uppercase;">
+                  📂 Import en masse
+                </h2>
+                <div style="padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6;">
+                  <p>Importez vos référentiels en masse depuis des fichiers CSV.</p>
+                  <a href="/referentiels/import/" class="button default" style="background: #417690; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px;">
+                    Importer des données CSV
+                  </a>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+      <br class="clear">
+    </div>
+  </main>
+</div>
+
+<style>
+.badge-rouge { background: #dc3545; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
+.badge-blanc { background: #f8f9fa; color: #333; padding: 2px 8px; border-radius: 3px; font-size: 11px; border: 1px solid #dee2e6; }
+.badge-rose { background: #e83e8c; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
+</style>
+
+{% endblock %}

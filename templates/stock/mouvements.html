@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Mouvements de stock{% endblock %}
+{% block content %}
+{% include '_layout/breadcrumbs.html' %}
+<h1 class="h4 mb-3">Mouvements de stock</h1>
+<div class="row g-4">
+  <div class="col-12">
+    <h2 class="h6">Vrac (L)</h2>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr><th>Date</th><th>Type</th><th>Lot</th><th>Source</th><th>Destination</th><th>Qté (L)</th></tr>
+        </thead>
+        <tbody>
+        {% for m in vrac_moves %}
+          <tr>
+            <td>{{ m.created_at|date:'Y-m-d H:i' }}</td>
+            <td>{{ m.get_move_type_display }}</td>
+            <td>{{ m.lot.code }}</td>
+            <td>{{ m.src_warehouse.name if m.src_warehouse }}</td>
+            <td>{{ m.dst_warehouse.name if m.dst_warehouse }}</td>
+            <td>{{ m.qty_l }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">Aucun mouvement vrac</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-12">
+    <h2 class="h6">Produits finis (U)</h2>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr><th>Date</th><th>Type</th><th>Produit fini</th><th>Source</th><th>Destination</th><th>Qté (U)</th></tr>
+        </thead>
+        <tbody>
+        {% for m in sku_moves %}
+          <tr>
+            <td>{{ m.created_at|date:'Y-m-d H:i' }}</td>
+            <td>{{ m.get_move_type_display }}</td>
+            <td>{{ m.sku.label }}</td>
+            <td>{{ m.src_warehouse.name if m.src_warehouse }}</td>
+            <td>{{ m.dst_warehouse.name if m.dst_warehouse }}</td>
+            <td>{{ m.qty_units }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">Aucun mouvement produits finis</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

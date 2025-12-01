@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Codes INAO (Douanes){% endblock %}
+{% block content %}
+{% include '_layout/breadcrumbs.html' %}
+<h1 class="h4 mb-3">Codes INAO (Douanes)</h1>
+
+<form method="get" class="card card-body mb-3">
+  <div class="row g-2">
+    <div class="col-md-4">
+      <label class="form-label">Recherche</label>
+      <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="Code INAO, NC, appellation, condition" />
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Appellation</label>
+      <input type="text" name="appellation" value="{{ filters.appellation }}" class="form-control" placeholder="Ex: Côtes du Rhône" />
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Couleur</label>
+      <input type="text" name="color" value="{{ filters.color }}" class="form-control" placeholder="rouge/blanc/rosé" />
+    </div>
+    <div class="col-md-1">
+      <label class="form-label">Format (mL)</label>
+      <input type="number" name="format_ml" value="{{ filters.format_ml }}" class="form-control" min="0" step="1" />
+    </div>
+    <div class="col-md-1">
+      <label class="form-label">ABV (%)</label>
+      <input type="number" name="abv_pct" value="{{ filters.abv_pct }}" class="form-control" min="0" max="20" step="0.1" />
+    </div>
+    <div class="col-md-1 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+    </div>
+  </div>
+  <div class="mt-2">
+    <a href="/drm/inao/" class="btn btn-sm btn-outline-secondary">Effacer</a>
+  </div>
+</form>
+
+{% if limited %}
+<div class="alert alert-warning py-2">Résultats limités. Affinez les filtres pour voir davantage.</div>
+{% endif %}
+
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th scope="col">Code INAO</th>
+        <th scope="col">Code NC</th>
+        <th scope="col">Appellation</th>
+        <th scope="col">Couleur</th>
+        <th scope="col">Emballage (L)</th>
+        <th scope="col">Titre alcoométrique (%)</th>
+        <th scope="col" style="width:40%">Conditions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td><code>{{ r.code_inao }}</code></td>
+        <td><code>{{ r.code_nc }}</code></td>
+        <td>{{ r.appellation_label }}</td>
+        <td>{{ r.color }}</td>
+        <td>
+          {% if r.packaging_min_l or r.packaging_max_l %}
+            {% if r.packaging_min_l %}{{ r.packaging_min_l }}{% endif %}
+            {% if r.packaging_min_l and r.packaging_max_l %}–{% endif %}
+            {% if r.packaging_max_l %}{{ r.packaging_max_l }}{% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if r.abv_min_pct or r.abv_max_pct %}
+            {% if r.abv_min_pct %}{{ r.abv_min_pct }}{% endif %}
+            {% if r.abv_min_pct and r.abv_max_pct %}–{% endif %}
+            {% if r.abv_max_pct %}{{ r.abv_max_pct }}{% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ r.condition_text }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted">Aucun code trouvé.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

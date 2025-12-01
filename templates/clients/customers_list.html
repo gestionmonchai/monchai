@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block title %}Clients - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-people me-2 text-primary"></i>Clients
+            </h1>
+            <div class="d-flex align-items-center">
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'ventes:client_new' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Nouveau client
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche avancée par champs -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filtres de recherche
+            </h6>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+                    <i class="bi bi-chevron-down"></i> Avancé
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="clear-filters">
+                    <i class="bi bi-x-circle"></i> Effacer
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Recherche rapide -->
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <input type="text" 
+                           id="quick-search" 
+                           name="search"
+                           value="{{ filters.search|default:'' }}" 
+                           placeholder="Recherche rapide dans tous les champs..." 
+                           class="form-control pe-5"
+                           autocomplete="off">
+                    <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i class="bi bi-search text-muted" id="search-icon"></i>
+                        <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                            <span class="visually-hidden">Recherche...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div id="search-info" class="text-muted small mt-2">
+                    {{ customers|length }} client{{ customers|length|pluralize }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres avancés (masqués par défaut) -->
+        <div id="advanced-filters" class="collapse">
+            <hr>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="filter-nom" class="form-label">Nom</label>
+                    <input type="text" 
+                           id="filter-nom" 
+                           name="nom"
+                           value="{{ filters.nom|default:'' }}" 
+                           placeholder="Nom du client..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-segment" class="form-label">Segment</label>
+                    <select id="filter-segment" name="segment" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="individual" {% if filters.segment == 'individual' %}selected{% endif %}>Particulier</option>
+                        <option value="business" {% if filters.segment == 'business' %}selected{% endif %}>Professionnel</option>
+                        <option value="wine_shop" {% if filters.segment == 'wine_shop' %}selected{% endif %}>Caviste</option>
+                        <option value="export" {% if filters.segment == 'export' %}selected{% endif %}>Export</option>
+                        <option value="other" {% if filters.segment == 'other' %}selected{% endif %}>Autre</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-pays" class="form-label">Pays</label>
+                    <select id="filter-pays" name="pays" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="FR" {% if filters.pays == 'FR' %}selected{% endif %}>France</option>
+                        <option value="US" {% if filters.pays == 'US' %}selected{% endif %}>États-Unis</option>
+                        <option value="DE" {% if filters.pays == 'DE' %}selected{% endif %}>Allemagne</option>
+                        <option value="GB" {% if filters.pays == 'GB' %}selected{% endif %}>Royaume-Uni</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-email" class="form-label">Email</label>
+                    <input type="text" 
+                           id="filter-email" 
+                           name="email"
+                           value="{{ filters.email|default:'' }}" 
+                           placeholder="Email..." 
+                           class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-sort" class="form-label">Tri</label>
+                    <div class="input-group">
+                        <select id="filter-sort" name="sort" class="form-select">
+                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nom</option>
+                            <option value="segment" {% if sort_by == 'segment' %}selected{% endif %}>Segment</option>
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Création</option>
+                            <option value="updated_at" {% if sort_by == 'updated_at' %}selected{% endif %}>Modification</option>
+                        </select>
+                        <select id="filter-order" name="order" class="form-select" style="max-width: 100px;">
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>↑</option>
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>↓</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Liste des clients -->
+{% if customers %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Segment</th>
+                                    <th>Email</th>
+                                    <th>Pays</th>
+                                    <th>Créé le</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                {% for customer in customers %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-person-circle text-primary me-2"></i>
+                                                <div>
+                                                    <div class="fw-medium">{{ customer.name }}</div>
+                                                    {% if customer.vat_number %}
+                                                        <small class="text-muted">TVA: {{ customer.vat_number }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if customer.segment == 'individual' %}
+                                                <span class="badge bg-success">Particulier</span>
+                                            {% elif customer.segment == 'business' %}
+                                                <span class="badge bg-primary">Professionnel</span>
+                                            {% elif customer.segment == 'wine_shop' %}
+                                                <span class="badge bg-info">Caviste</span>
+                                            {% elif customer.segment == 'export' %}
+                                                <span class="badge bg-warning">Export</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Autre</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if customer.email %}
+                                                {{ customer.email }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if customer.country_code %}
+                                                {{ customer.country_code }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ customer.created_at|date:"d/m/Y" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'ventes:client_detail' customer.id %}" class="btn btn-outline-primary" title="Voir">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if user.get_active_membership.can_edit_data %}
+                                                    <a href="{% url 'ventes:client_edit' customer.id %}" class="btn btn-outline-secondary" title="Modifier">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if next_cursor %}
+        <div class="row mt-3">
+            <div class="col-12" id="pagination-container">
+                <div class="text-center">
+                    <a href="?{{ request.GET.urlencode }}&cursor={{ next_cursor }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-down me-1"></i>Charger plus
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <h4>Aucun client trouvé</h4>
+                <p>Vous n'avez pas encore créé de client.</p>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'ventes:client_new' %}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Créer votre premier client
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments du DOM
+    const quickSearchInput = document.getElementById('quick-search');
+    const filterInputs = {
+        nom: document.getElementById('filter-nom'),
+        segment: document.getElementById('filter-segment'),
+        pays: document.getElementById('filter-pays'),
+        email: document.getElementById('filter-email'),
+        sort: document.getElementById('filter-sort'),
+        order: document.getElementById('filter-order')
+    };
+    
+    const searchInfo = document.getElementById('search-info');
+    const toggleAdvancedBtn = document.getElementById('toggle-advanced-search');
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    const advancedFilters = document.getElementById('advanced-filters');
+    const searchIcon = document.getElementById('search-icon');
+    const searchSpinner = document.getElementById('search-spinner');
+    
+    let searchTimeout;
+    
+    // Configuration
+    const DEBOUNCE_MS = 300;
+    
+    // Collecter tous les filtres actifs
+    function collectFilters() {
+        const filters = {};
+        
+        // Recherche rapide
+        const quickSearch = quickSearchInput.value.trim();
+        if (quickSearch) filters.search = quickSearch;
+        
+        // Filtres avancés
+        Object.keys(filterInputs).forEach(key => {
+            const input = filterInputs[key];
+            if (input && input.value.trim()) {
+                filters[key] = input.value.trim();
+            }
+        });
+        
+        return filters;
+    }
+    
+    // Fonction de recherche (pour l'instant, rechargement de page)
+    function performSearch() {
+        const filters = collectFilters();
+        const params = new URLSearchParams();
+        
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                params.set(key, filters[key]);
+            }
+        });
+        
+        const baseUrl = "{% url 'ventes:clients_list' %}";
+        const newURL = `${baseUrl}${params.toString() ? '?' + params.toString() : ''}`;
+        window.location.href = newURL;
+    }
+    
+    // Gérer l'affichage/masquage des filtres avancés
+    if (toggleAdvancedBtn && advancedFilters) {
+        toggleAdvancedBtn.addEventListener('click', function() {
+            const isCollapsed = advancedFilters.classList.contains('show');
+            const icon = this.querySelector('i');
+            
+            if (isCollapsed) {
+                advancedFilters.classList.remove('show');
+                icon.className = 'bi bi-chevron-down';
+            } else {
+                advancedFilters.classList.add('show');
+                icon.className = 'bi bi-chevron-up';
+            }
+        });
+    }
+    
+    // Effacer tous les filtres
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            window.location.href = "{% url 'ventes:clients_list' %}";
+        });
+    }
+    
+    // Événements de saisie avec debounce
+    function setupInputEvents() {
+        // Recherche rapide
+        if (quickSearchInput) {
+            quickSearchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                
+                if (this.value.trim() === '') {
+                    performSearch();
+                } else {
+                    searchTimeout = setTimeout(() => {
+                        performSearch();
+                    }, DEBOUNCE_MS);
+                }
+            });
+            
+            quickSearchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    performSearch();
+                }
+            });
+        }
+        
+        // Filtres avancés
+        Object.values(filterInputs).forEach(input => {
+            if (input) {
+                const eventType = input.type === 'select-one' ? 'change' : 'input';
+                input.addEventListener(eventType, function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        performSearch();
+                    }, DEBOUNCE_MS);
+                });
+            }
+        });
+    }
+    
+    // Initialisation
+    setupInputEvents();
+    
+    // Focus sur le champ de recherche rapide
+    if (quickSearchInput) {
+        quickSearchInput.focus();
+    }
+    
+    console.log('Recherche clients initialisée');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Monitoring GIGA ROADMAP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-graph-up me-2 text-primary"></i>
+                    Monitoring GIGA ROADMAP
+                </h1>
+                <div class="badge bg-info fs-6">
+                    Derniers {{ period_days }} jours
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métriques principales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ total_searches }}</h5>
+                    <p class="card-text">Recherches totales</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">{{ v2_count }}</h5>
+                    <p class="card-text">Recherches V2</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ zero_result_rate }}%</h5>
+                    <p class="card-text">Taux zéro résultat</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title {% if performance_improvement > 0 %}text-success{% else %}text-danger{% endif %}">
+                        {% if performance_improvement > 0 %}+{% endif %}{{ performance_improvement|floatformat:1 }}%
+                    </h5>
+                    <p class="card-text">Amélioration V2</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparaison V1 vs V2 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Performance (Latence moyenne)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="mb-2">
+                                <span class="badge bg-secondary">V1</span>
+                            </div>
+                            <h4 class="text-muted">{{ v1_avg_latency }}ms</h4>
+                            <small>{{ v1_count }} recherches</small>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="mb-2">
+                                <span class="badge bg-primary">V2</span>
+                            </div>
+                            <h4 class="text-primary">{{ v2_avg_latency }}ms</h4>
+                            <small>{{ v2_count }} recherches</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Taux de succès</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="mb-2">
+                                <span class="badge bg-secondary">V1</span>
+                            </div>
+                            <h4 class="text-muted">{{ v1_success_rate }}%</h4>
+                            <small>Recherches avec résultats</small>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="mb-2">
+                                <span class="badge bg-primary">V2</span>
+                            </div>
+                            <h4 class="text-primary">{{ v2_success_rate }}%</h4>
+                            <small>Recherches avec résultats</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Flags Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Feature Flags Status</h5>
+                    <a href="{% url 'metadata:feature_flags_admin' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-gear"></i> Administrer
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for flag in flags_status %}
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ flag.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ flag.description }}</small>
+                                </div>
+                                <div class="text-end">
+                                    {% if flag.enabled %}
+                                        <span class="badge bg-success">ON</span>
+                                        {% if flag.percentage < 100 %}
+                                            <br><small>{{ flag.percentage }}%</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">OFF</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top entités recherchées -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Top entités recherchées</h5>
+                </div>
+                <div class="card-body">
+                    {% for entity in top_entities %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ entity.entity_type|capfirst }}</span>
+                        <span class="badge bg-light text-dark">{{ entity.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Cache Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="mb-2">
+                                <span class="badge bg-secondary">V1</span>
+                            </div>
+                            <h4 class="text-muted">{{ v1_cache_rate }}%</h4>
+                            <small>Cache hit rate</small>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="mb-2">
+                                <span class="badge bg-primary">V2</span>
+                            </div>
+                            <h4 class="text-primary">{{ v2_cache_rate }}%</h4>
+                            <small>Cache hit rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh toutes les 30 secondes
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

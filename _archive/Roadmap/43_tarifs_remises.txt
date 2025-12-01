@@ -1,0 +1,74 @@
+Roadmap 43 — /tarifs/remises (Règles par client/segment/cuvée — stacking/exclusive/stop) — VERSION DÉTAILLÉE
+===========================================================================================================
+
+🎯 Objectif
+-----------
+Mettre en place un **moteur de remises** flexible avec **priorités**, **paliers quantité**, **périodes**, **portées** (client/segment/global), 
+et des **modes d’empilement** (`stack`, `exclusive`, `stop`). Garantir la lisibilité des calculs (audit).
+
+📦 Modèle (DDL suggéré)
+-----------------------
+`discount_rule` :
+- Colonnes : `scope ENUM('client','segment','global')`, `target_id?` (client_id ou segment), `cuvee_id?`, `family_id?`,
+  `percent?` (0..100), `amount_off?` (>=0), `currency?`, `min_qty INT`, `effective_from`, `effective_to?`, 
+  `priority INT`, `stack_mode ENUM('stack','exclusive','stop')`, `is_active bool`, `notes text`.
+- Index : `(org, scope, target_id, cuvee_id, family_id, effective_from, effective_to, priority)`.
+
+⚖️ Règles d’application
+-----------------------
+- Filtrer les règles éligibles pour `{client, segment, cuvee, qty, date}` et `is_active=true`.
+- Trier par `priority ASC, id ASC` (ordre stable).
+- Appliquer :
+  - `exclusive` : choisir **la meilleure** (max remise) et **stop**.
+  - `stack` : appliquer successivement (pourcentages **multiplicatifs**) puis `amount_off` (dans la devise de la price_list).
+  - `stop` : appliquer puis **stop**.
+- `floor_price` (option) : prix minimal défini au niveau `price_item` ou `cuvee` — couper la remise si on descend sous le plancher, marquer `flag_floor_hit`.
+
+⛏️ Étapes d’implémentation
+--------------------------
+Étape 0 — Base
+- [ ] Migration `discount_rule` + index.
+- [ ] Seeds : 3 règles (global -2% stack / segment Pro -5% stack / client X -12% exclusive).
+
+Étape 1 — CRUD & Listing
+- [ ] GET `/tarifs/remises` (filtres: client, segment, cuvée, effective, active)
+- [ ] POST `/tarifs/remises` (validation: percent XOR amount_off, devise si amount_off).
+- [ ] Disable/enable → soft-toggle `is_active`.
+
+Étape 2 — Sélecteur de règles (service)
+- [ ] `select_applicable_rules(org, client?, segment, cuvee?, qty, date)` :
+      SQL paramétré + UNION selon portée ; renvoie liste ordonnée prête à appliquer.
+
+Étape 3 — Moteur d’application
+- [ ] `apply_discounts(base_price, rules[], currency)` :
+      - Maintenir `price_after_each_step` pour audit.
+      - Pour `percent`: `price = round(price * (1 - p/100), 3)` (HT).
+      - Pour `amount_off`: `price = max(0, price - amount_off)` **dans la devise** de la liste.
+      - Gérer `exclusive` / `stop`.
+      - Couper à `floor_price` si défini → `flag_floor_hit=true`.
+
+Étape 4 — Observabilité & Caches
+- [ ] Cache (très court, 60s) pour `select_applicable_rules` par `(segment, cuvee, qty_bucket, date_bucket)` + invalidations sur CRUD.
+- [ ] Metrics : `discount_rules_applied_total`, `discounts_latency_ms`, `floor_hits_total`.
+- [ ] Logs d’audit : `rule_id, scope, priority, stack_mode, price_after`.
+
+Étape 5 — UI/UX
+- [ ] Table des règles : colonnes Portée, Cible, Produit, Paliers, Période, Priority, Stack, Active.
+- [ ] Inline edit (dbl‑click), duplication de règle, **simulateur local** (voir 45).
+
+🧪 Tests d’acceptation (AC)
+---------------------------
+- AC‑43‑01 : Client X -12% `exclusive` **écrase** -5% segment.
+- AC‑43‑02 : Stack -2% + -3% → résultat multiplicatif `1 - (0.98*0.97) = 4.94%` et pas 5% additif.
+- AC‑43‑03 : `min_qty=12` déclenche correctement au seuil.
+- AC‑43‑04 : Fenêtre temporelle respecte `date` du document.
+
+🛡️ Robustesse
+--------------
+- Devise `amount_off` ≠ devise price_list → 422.
+- Deux règles `exclusive` de priorité identique : choisir la **meilleure** remise puis stop (ordre stable `id`).
+- `percent > 100` → rejet 400 ; `amount_off < 0` → rejet.
+
+📚 Dev Book
+-----------
+- `discounts_engine.md` : pseudo‑code, tableaux d’exemples, schémas de priorités, pièges (double application), conseils.

@@ -1,0 +1,78 @@
+{% extends 'production/base_production.html' %}
+
+{% block title %}Assemblages - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 mb-0 fw-bold">Assemblages</h1>
+        <p class="text-muted small mb-0">Historique des opérations d'assemblage</p>
+    </div>
+    <a href="{% url 'production:assemblage_wizard' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nouvel assemblage
+    </a>
+</div>
+
+<!-- Filtres & Recherche -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-2">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0" 
+                           placeholder="Rechercher (code, lot, notes)..."
+                           hx-get="{% url 'production:assemblages_table' %}"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#assemblages-table-body">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vue BDD -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0 table-hover">
+            <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-3 border-0">Date</th>
+                    <th class="border-0">Code</th>
+                    <th class="border-0">Lot Destination</th>
+                    <th class="border-0">Lots Sources</th>
+                    <th class="border-0 text-end">Volume Total</th>
+                    <th class="border-0">Contenant</th>
+                    <th class="border-0">Commentaire</th>
+                    <th class="border-0"></th>
+                </tr>
+            </thead>
+            <tbody id="assemblages-table-body">
+                {% for asm in assemblages %}
+                <tr onclick="window.location='{% url 'production:assemblage_detail' asm.id %}'" style="cursor: pointer;">
+                    <td class="ps-3 fw-medium text-nowrap">{{ asm.date|date:"d/m/Y" }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ asm.code }}</span></td>
+                    <td class="fw-bold text-primary">{{ asm.lot_dest.code|default:"-" }}</td>
+                    <td class="small text-muted" style="max-width: 300px; white-space: normal;">{{ asm.sources_str }}</td>
+                    <td class="text-end font-monospace">{{ asm.volume_total|floatformat:0 }} L</td>
+                    <td>{{ asm.contenant }}</td>
+                    <td class="small text-muted">{{ asm.notes|truncatechars:50 }}</td>
+                    <td class="text-end pe-3">
+                        <a href="{% url 'production:assemblage_detail' asm.id %}" class="btn btn-sm btn-light border">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-intersect fs-1 d-block mb-2 opacity-50"></i>
+                        Aucun assemblage enregistré.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

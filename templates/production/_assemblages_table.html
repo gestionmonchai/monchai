@@ -1,0 +1,23 @@
+{% for asm in assemblages %}
+<tr onclick="window.location='{% url 'production:assemblage_detail' asm.id %}'" style="cursor: pointer;">
+    <td class="ps-3 fw-medium text-nowrap">{{ asm.date|date:"d/m/Y" }}</td>
+    <td><span class="badge bg-light text-dark border">{{ asm.code }}</span></td>
+    <td class="fw-bold text-primary">{{ asm.lot_dest.code|default:"-" }}</td>
+    <td class="small text-muted" style="max-width: 300px; white-space: normal;">{{ asm.sources_str }}</td>
+    <td class="text-end font-monospace">{{ asm.volume_total|floatformat:0 }} L</td>
+    <td>{{ asm.contenant }}</td>
+    <td class="small text-muted">{{ asm.notes|truncatechars:50 }}</td>
+    <td class="text-end pe-3">
+        <a href="{% url 'production:assemblage_detail' asm.id %}" class="btn btn-sm btn-light border">
+            <i class="bi bi-eye"></i>
+        </a>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="8" class="text-center py-5 text-muted">
+        <i class="bi bi-intersect fs-1 d-block mb-2 opacity-50"></i>
+        Aucun assemblage enregistré.
+    </td>
+</tr>
+{% endfor %}

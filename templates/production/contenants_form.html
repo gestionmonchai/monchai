@@ -1,0 +1,103 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+{% block title %}{% if object %}Modifier contenant{% else %}Nouveau contenant{% endif %} - Mon Chai{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3">{% if object %}Modifier le contenant {{ object.code }}{% else %}Nouveau contenant{% endif %}</h1>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">Identification</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Code</label>
+          {{ form.code|add_class:'form-control' }}
+          {% if form.code.errors %}<div class="invalid-feedback d-block">{{ form.code.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Libellé</label>
+          {{ form.label|add_class:'form-control' }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Type</label>
+          {{ form.type|add_class:'form-select' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">Caractéristiques</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Capacité nominale (L)</label>
+          {{ form.capacite_l|add_class:'form-control' }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Capacité utile (L)</label>
+          {{ form.capacite_utile_l|add_class:'form-control' }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Thermo-régulé</label>
+          {{ form.thermo_regule|add_class:'form-check-input' }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Température cible (°C)</label>
+          {{ form.temperature_cible|add_class:'form-control' }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Localisation</label>
+          {{ form.localisation|add_class:'form-control' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">Sanitaire / Maintenance</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">Cycle nettoyage (jours)</label>
+          {{ form.cycle_nettoyage_j|add_class:'form-control' }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Cycle ouillage (jours)</label>
+          {{ form.cycle_ouillage_j|add_class:'form-control' }}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes sanitaires</label>
+          {{ form.note_sanitaire|add_class:'form-control' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if form.statut %}
+  <div class="card mb-3">
+    <div class="card-header fw-semibold">Statut</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Statut</label>
+          {{ form.statut|add_class:'form-select' }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Actif</label>
+          {{ form.is_active|add_class:'form-check-input' }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" type="submit">Enregistrer</button>
+    <a class="btn btn-secondary" href="/production/contenants/">Annuler</a>
+  </div>
+</form>
+{% endblock %}

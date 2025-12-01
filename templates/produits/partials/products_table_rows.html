@@ -1,0 +1,74 @@
+{% for product in products %}
+    <tr>
+        <td>
+            <div class="d-flex align-items-center">
+                {% if product.label %}
+                    <!-- SKU -->
+                    <i class="bi bi-box-seam text-success me-2"></i>
+                    <div>
+                        <div class="fw-medium">{{ product.label|default:product.cuvee.name }}</div>
+                        <small class="text-muted">{{ product.cuvee.name }}</small>
+                    </div>
+                {% else %}
+                    <!-- Cuvée -->
+                    <i class="bi bi-cup-straw text-primary me-2"></i>
+                    <div>
+                        <div class="fw-medium">{{ product.name }}</div>
+                        {% if product.code %}
+                            <small class="text-muted">{{ product.code }}</small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </td>
+        <td>
+            {% if product.label %}
+                <span class="badge bg-success">SKU</span>
+            {% else %}
+                <span class="badge bg-primary">Cuvée</span>
+            {% endif %}
+        </td>
+        <td>
+            {% if product.appellation %}
+                {{ product.appellation.name }}
+            {% elif product.cuvee.appellation %}
+                {{ product.cuvee.appellation.name }}
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </td>
+        <td>
+            {% if product.vintage %}
+                {{ product.vintage.year }}
+            {% elif product.cuvee.vintage %}
+                {{ product.cuvee.vintage.year }}
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </td>
+        <td>
+            <small class="text-muted">{{ product.created_at|date:"d/m/Y" }}</small>
+        </td>
+        <td>
+            <div class="btn-group btn-group-sm" role="group">
+                <a href="#" class="btn btn-outline-primary" title="Voir">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                    <a href="#" class="btn btn-outline-secondary" title="Modifier">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% empty %}
+    <tr>
+        <td colspan="6" class="text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-info-circle fs-4 mb-2 d-block"></i>
+                Aucun produit trouvé
+            </div>
+        </td>
+    </tr>
+{% endfor %}

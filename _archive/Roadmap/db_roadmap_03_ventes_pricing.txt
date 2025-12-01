@@ -1,0 +1,49 @@
+DB Roadmap 03 — Ventes, Clients & Pricing
+=========================================
+Objectif
+--------
+Structurer la **vente** (CRM simple → devis → commande) avec un **système de prix** flexible (grilles, remises, taxes).
+
+Livrables (Done)
+----------------
+- Tables clients (B2B/B2C), adresses, conditions commerciales, tarifs par segment.
+- Documents de vente : **quote** (devis), **order** (commande), lignes, **taxes**.
+- Règles pour disponibilités stock (réservations SKU), états & intégration facturation.
+
+Schéma (simplifié)
+------------------
+- customer(id, organization_id, type ENUM('pro','part'), legal_name, vat_number NULL, billing_address, shipping_address, payment_terms, currency, is_active, row_version)
+- price_list(id, organization_id, name, currency, valid_from, valid_to NULL, is_active)
+- price_item(id, price_list_id, sku_id, unit_price, min_qty NULL, discount_pct NULL)  // empilage par seuils
+- customer_price_list(customer_id, price_list_id) // m2m
+- quote(id, organization_id, customer_id, currency, status ENUM('draft','sent','accepted','lost','expired'), valid_until, created_at, row_version)
+- quote_line(id, quote_id, sku_id, description, qty, unit_price, discount_pct, tax_code, total_ht, total_ttc)
+- order(id, organization_id, customer_id, currency, status ENUM('draft','confirmed','fulfilled','cancelled'), payment_status ENUM('unpaid','partial','paid','refunded'), created_at, row_version)
+- order_line(id, order_id, sku_id, description, qty, unit_price, discount_pct, tax_code, total_ht, total_ttc)
+- stock_reservation(id, organization_id, order_id, sku_id, warehouse_id, qty_units, created_at)  // réservé tant que commande non annulée
+- tax_code(id, organization_id, code, name, rate_pct, country, is_active)
+
+Règles clés
+-----------
+- Prix résolus : 1) customer.price_list, 2) default org price_list, 3) fallback “non listé” (interdit si politique stricte).
+- Taxes : appliquer `tax_code` (TVA FR/UE) selon client (intra/extra‑UE, particulier vs pro).
+- **Order.confirmed** → crée **stock_sku_move sortiedépot** (réservation puis sortie à l’expédition).
+- Monnaie : stocker prix en monnaie de la commande ; taux de change centralisé (hors scope MVP).
+
+Index & perfs
+-------------
+- Recherche clients (name_norm, vat_number) → trigram + unique sur vat_number si présent.
+- price_item (price_list_id, sku_id, min_qty) index pour résolution rapide.
+- order, quote triés par created_at DESC ; keyset pagination.
+
+Tests de robustesse
+-------------------
+- Client pro sans TVA mais marqué “assujetti” → validation.
+- Prix introuvable → message clair ; interdiction de confirmer.
+- Double réservation stock → consolidation par (order_id, sku_id, warehouse).
+- Annulation commande → libère réservations, aucun stock move si non fulfil.
+- Changement price_list en cours de devis → recalc lignes (garder override manuel).
+
+Dev Book — À documenter
+-----------------------
+- Règles de résolution de prix ; mapping TVA (FR/UE) ; lifecycle quote→order.

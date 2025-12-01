@@ -1,0 +1,229 @@
+{% comment %}
+Composant réutilisable pour boutons Import/Export
+Usage: {% include 'components/import_export_buttons.html' with entity_type='grape_variety' entity_name='Cépages' %}
+{% endcomment %}
+
+{% load static %}
+
+<div class="btn-group me-2" role="group" aria-label="Import/Export">
+    {% if user.get_active_membership.can_manage_roles %}
+        <!-- Bouton Import -->
+        <button type="button" class="btn btn-outline-info" onclick="openImportModal('{{ entity_type }}', '{{ entity_name }}')">
+            <i class="bi bi-upload me-1"></i>Importer
+        </button>
+    {% endif %}
+    
+    {% if user.get_active_membership.can_edit_data %}
+        <!-- Bouton Export -->
+        <button type="button" class="btn btn-outline-success" onclick="openExportModal('{{ entity_type }}', '{{ entity_name }}')">
+            <i class="bi bi-download me-1"></i>Exporter
+        </button>
+    {% endif %}
+</div>
+
+{% comment %}
+JavaScript pour les modals - à inclure une seule fois dans la page parent
+{% endcomment %}
+<script>
+// Variables globales pour les modals
+let currentEntityType = '';
+let currentEntityName = '';
+
+function openImportModal(entityType, entityName) {
+    currentEntityType = entityType;
+    currentEntityName = entityName;
+    
+    // Mettre à jour le titre de la modal
+    document.getElementById('importModalTitle').textContent = `Importer ${entityName}`;
+    
+    // Réinitialiser le formulaire
+    document.getElementById('importForm').reset();
+    document.getElementById('importFileInput').value = '';
+    document.getElementById('importPreview').style.display = 'none';
+    
+    // Ouvrir la modal
+    const importModal = new bootstrap.Modal(document.getElementById('importModal'));
+    importModal.show();
+}
+
+function openExportModal(entityType, entityName) {
+    currentEntityType = entityType;
+    currentEntityName = entityName;
+    
+    // Mettre à jour le titre de la modal
+    document.getElementById('exportModalTitle').textContent = `Exporter ${entityName}`;
+    
+    // Ouvrir la modal
+    const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+    exportModal.show();
+}
+
+function handleImportFile() {
+    const fileInput = document.getElementById('importFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        return;
+    }
+    
+    // Validation du fichier
+    const allowedTypes = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedTypes.includes(fileExtension)) {
+        alert('Format de fichier non supporté. Utilisez CSV, XLSX ou XLS.');
+        fileInput.value = '';
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+        alert('Fichier trop volumineux. Taille maximum: 10MB');
+        fileInput.value = '';
+        return;
+    }
+    
+    // Afficher l'aperçu
+    document.getElementById('importFileName').textContent = file.name;
+    document.getElementById('importFileSize').textContent = formatFileSize(file.size);
+    document.getElementById('importPreview').style.display = 'block';
+}
+
+function startImport() {
+    const fileInput = document.getElementById('importFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    // Créer FormData pour l'upload
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('entity_type', currentEntityType);
+    
+    // Désactiver le bouton et afficher le loading
+    const importBtn = document.getElementById('startImportBtn');
+    const originalText = importBtn.innerHTML;
+    importBtn.disabled = true;
+    importBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Import en cours...';
+    
+    // Appel API d'import
+    fetch(`/imports/${currentEntityType}/upload/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Fermer la modal et afficher le succès
+            bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+            showToast('success', `Import de ${currentEntityName} démarré avec succès!`);
+            
+            // Optionnel: rediriger vers la page de suivi
+            if (data.job_id) {
+                setTimeout(() => {
+                    window.location.href = `/imports/jobs/?job_id=${data.job_id}`;
+                }, 2000);
+            }
+        } else {
+            showToast('error', data.error || 'Erreur lors de l\'import');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur import:', error);
+        showToast('error', 'Erreur technique lors de l\'import');
+    })
+    .finally(() => {
+        // Réactiver le bouton
+        importBtn.disabled = false;
+        importBtn.innerHTML = originalText;
+    });
+}
+
+function startExport() {
+    const format = document.getElementById('exportFormat').value;
+    const encoding = document.getElementById('exportEncoding').value;
+    const separator = document.getElementById('exportSeparator').value;
+    
+    // Mapping des types d'entités pour les URLs d'export
+    const entityUrlMap = {
+        'grape_variety': 'cepages',
+        'parcelle': 'parcelles', 
+        'unite': 'unites',
+        'cuvee': 'cuvees',
+        'entrepot': 'entrepots'
+    };
+    
+    const exportEntity = entityUrlMap[currentEntityType] || currentEntityType;
+    
+    // Construire l'URL d'export
+    const params = new URLSearchParams({
+        format: format,
+        encoding: encoding,
+        separator: separator
+    });
+    
+    const exportUrl = `/referentiels/${exportEntity}/export/?${params.toString()}`;
+    
+    // Télécharger le fichier
+    window.location.href = exportUrl;
+    
+    // Fermer la modal
+    bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+    
+    showToast('success', `Export de ${currentEntityName} démarré!`);
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function showToast(type, message) {
+    // Créer un toast Bootstrap dynamiquement
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    
+    const toastId = 'toast-' + Date.now();
+    const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+    
+    const toastHtml = `
+        <div id="${toastId}" class="toast ${bgClass} text-white" role="alert">
+            <div class="toast-header ${bgClass} text-white">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                <strong class="me-auto">${type === 'success' ? 'Succès' : 'Erreur'}</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Supprimer le toast après fermeture
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+    return container;
+}
+</script>

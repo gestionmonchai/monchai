@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supprimer le modèle {{ template.name }} - Mon Chai{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Confirmer la suppression</h5>
+      </div>
+      <div class="card-body">
+        <p>Vous êtes sur le point de supprimer le modèle <strong>{{ template.name }}</strong> ({{ template.get_document_type_display }}).</p>
+        <p class="text-muted small mb-4">Cette action est irréversible.</p>
+        <form method="post">
+          {% csrf_token %}
+          <a href="{% url 'sales:template_detail' pk=template.id %}" class="btn btn-light">
+            <i class="bi bi-arrow-left"></i> Annuler
+          </a>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Supprimer</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

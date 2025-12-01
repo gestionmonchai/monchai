@@ -1,0 +1,57 @@
+07 — Invitations, Tokens & Emails — Guide mentor
+================================================
+Objectif: former les juniors à implémenter un flux d’invitation solide sans complexité inutile.
+
+A) Stratégie générale
+---------------------
+- L’invitation est un enregistrement (Invitation) + un lien signé.
+- Deux cas d’usage:
+  1) Invité non connecté → redirigé vers signup, payload stocké en session; à la fin, créer Membership.
+  2) Invité déjà connecté → créer immédiatement le Membership et rediriger dashboard.
+- Email en dev: console backend (aucun envoi réel).
+
+B) Contenu minimal de l’invitation
+----------------------------------
+- email (destinataire)
+- org_id (exploitation cible)
+- role (editor par défaut, configurable)
+- exp (expiration, ex: 72h)
+- token (valeur signée côté serveur, jamais prédictible)
+
+C) Génération & validation du token
+-----------------------------------
+- Signing (Django signing) avec un salt spécifique (ex: "accounts.invite").
+- Payload signé = {email, org_id, role, exp}.
+- À l’acceptation:
+  * Vérifier signature et exp.
+  * Si request.user.authenticated → créer/get Membership (org_id, role).
+  * Sinon → stocker payload en session “pending_invite”, rediriger /auth/signup/.
+- Enregistrer accepted_at pour l’invitation pour suivi.
+
+D) Email & templates
+--------------------
+- Sujet: “Invitation à rejoindre Mon-Chai”
+- Corps (texte pur en dev): expliquer qui invite, vers quelle exploitation, et un bouton/lien.
+- N’exposez pas d’infos sensibles; ne listez pas les autres membres.
+
+E) État & gestion
+------------------
+- Page /settings/roles: lister les invitations (email, rôle, date, statut “envoyée”/“acceptée”).
+- Action “Renvoi du lien” possible (en dev: console). Pensez à régénérer un token (nouvelle exp).
+- Interdire une deuxième invitation active identique (email+org) pour éviter le spam involontaire.
+
+F) Sécurité & pièges
+--------------------
+- Ne faites pas confiance au client: rôle doit venir du serveur (valider choix).
+- Protégez l’endpoint d’invitation par role_min=admin.
+- Token expiré → message propre “Lien expiré, demandez une nouvelle invitation”.
+- Loggez les acceptations/refus/erreurs (niveau INFO).
+- Ne divulguez pas si un email a déjà un compte au moment de l’invitation (message neutre côté UI).
+
+G) Checklist QA
+---------------
+- [ ] Invitation envoyée → lien visible en console.
+- [ ] Acceptation connecté → membership créé, redirection dashboard.
+- [ ] Acceptation non connecté → passage par signup, rattachement correct.
+- [ ] Invitation expirée → message explicite, pas de 500.
+- [ ] Pas de doublons membership (unique_together user+org).

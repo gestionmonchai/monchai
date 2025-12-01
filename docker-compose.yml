@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: monchai-pg
+    environment:
+      POSTGRES_USER: monchai
+      POSTGRES_PASSWORD: "Asmfc2004!?!"
+      POSTGRES_DB: monchai
+    ports:
+      - "5436:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monchai"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  pg_data:

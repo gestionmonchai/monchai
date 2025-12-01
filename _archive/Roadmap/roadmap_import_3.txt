@@ -1,0 +1,3 @@
+ROADMAP_IMPORT_3 — Dry‑run : parsing, validations, lookups FK (junior step-by-step)
+===================================================================================
+[Contenu identique au guide CSV_3 : parsing streaming, validations métier, lookups exact→unaccent→trigram, exports erreurs/warnings, perfs, sécurité, tests.]

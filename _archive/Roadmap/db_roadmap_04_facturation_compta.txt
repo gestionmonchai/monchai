@@ -1,0 +1,47 @@
+DB Roadmap 04 — Facturation & Comptabilité (TVA, Écritures, Export)
+===================================================================
+Objectif
+--------
+Modéliser la **facturation** (invoices, avoirs), les **paiements**, et la **pré‑comptabilité** (écritures, journaux, export vers outil comptable).
+
+Livrables (Done)
+----------------
+- Factures (header, lignes, taxes), **avoirs**, paiements, lettrage (reconciliations).
+- Journal des ventes (général), **TVA** calculée par codes, **écritures** agrégées par pièce.
+- Exports (CSV/JSON) paramétrables ; mapping comptes (plan comptable).
+
+Schéma
+------
+- invoice(id, organization_id, customer_id, number, date_issue, due_date, currency, status ENUM('draft','issued','paid','cancelled'), total_ht, total_tva, total_ttc, row_version)
+  * UNIQUE(organization_id, number)
+- invoice_line(id, invoice_id, sku_id NULL, description, qty, unit_price, discount_pct, tax_code, total_ht, total_tva, total_ttc)
+- credit_note(id, organization_id, invoice_id, number, date_issue, reason, totals...)
+- payment(id, organization_id, customer_id, invoice_id NULL, method ENUM('sepa','card','cheque','cash','transfer'), amount, currency, date_received)
+- reconciliation(id, organization_id, payment_id, invoice_id, amount_allocated)
+- account_map(id, organization_id, mapping_type ENUM('product','customer','tax'), key, account_code)  // ex: 707 ventes, 4457 TVA
+- gl_entry(id, organization_id, journal ENUM('VEN','BAN','OD'), date, doc_type ENUM('invoice','payment','credit_note'), doc_id, account_code, debit, credit, label)
+
+Flux & règles
+-------------
+- invoice.issued → gèle les prix & taxes → **gl_entry** lignes (707/445/411) en agrégé (par tax_code).
+- credit_note → écritures inverses ; peut relier un paiement (remboursement).
+- payment → gl_entry banque/caisse ; reconciliation alloue paiement aux factures (multi‑affect possible).
+- Lettrage : somme allocations = total TTC facture → invoice.status = paid.
+- Numérotation séquentielle par série & année (FR).
+
+Index & perfs
+-------------
+- UNIQUE sur numéro ; BTree sur (customer_id, date_issue), (status, date_issue).
+- Agrégations TVA par période : vues matérialisées mensuelles (option).
+
+Tests de robustesse
+-------------------
+- Écart d’arrondi ligne→totaux → arrondi bancaire ; somme cohérente.
+- Annulation invoice “issued” → interdite ; passer par credit_note.
+- Paiement > solde → autorisé ? (paramétrable) ; sinon rejeter.
+- Multi‑devise : interdit au MVP si pas de taux ; sinon taux figés à l’émission.
+- Export compta : caractères spéciaux ; séparateur ; =FORMULA() neutralisé.
+
+Dev Book — À documenter
+-----------------------
+- Journalisation comptable (schémas d’écritures), numérotation, politiques d’arrondi, exemples d’exports.

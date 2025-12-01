@@ -1,0 +1,71 @@
+05 — Design system & Templates (Auth & Identité) — Guide mentor
+===============================================================
+Objectif: cadrer la qualité UI/UX dès le sprint Auth & Identité. On forme des juniors à livrer
+des écrans nets, cohérents et accessibles, sans over-engineering.
+
+A) Principes UX incontournables
+-------------------------------
+1. Clarté > originalité. Les écrans d’auth doivent être prévisibles.
+2. Un seul objectif par écran (login, signup, reset). Pas de distractions.
+3. Feedback immédiat: erreurs inline sous chaque champ, message global si nécessaire.
+4. Pas d’alertes modales pour des erreurs de saisie: inline ou bannière.
+5. Pas de jargon dev. Parlez langage utilisateur ("Adresse e‑mail", "Mot de passe oublié").
+
+B) Grille & typographie
+-----------------------
+- Conteneur auth: largeur 420–480 px max, centré vertical/horizontal.
+- Titre H1 court: “Connexion”, “Créer un compte”.
+- Hiérarchie: H1 > labels > placeholder (optionnel) > help-text (couleur atténuée).
+- Contraste AA minimum (WCAG 2.1). Utilisez un checker si doute.
+
+C) Composants de base (à standardiser)
+--------------------------------------
+1. FormGroup
+   - label (obligatoire), input, help-text (optionnel), error-text (visible si validation échoue).
+   - Ajouter aria-describedby sur l’input quand help-text ou erreur existent.
+2. SubmitButton
+   - état “loading” (spinner simple) après POST.
+   - disabled si form invalide côté client (HTML5 suffice).
+3. Banner
+   - success / error / info. Utilisée pour reset envoyé, invitation envoyée, etc.
+4. SessionBadge (header)
+   - “Connecté : {display_name} — rôle: {role} @ {org}” + action Logout.
+
+D) Règles de validation côté client (HTML5) et côté serveur
+-----------------------------------------------------------
+- HTML5: required, type=email, minlength pour le mot de passe si souhaité (8+).
+- Serveur: messages précis mais neutres. Exemple: “Identifiants invalides” plutôt que “Mot de passe incorrect”.
+- Ne jamais révéler si un email est “inconnu” lors du reset: message générique “Si un compte existe, un lien a été envoyé”.
+
+E) États & transitions
+----------------------
+1. Login
+   - Erreur: conserver l’email saisi, vider le champ mdp.
+   - Succès: rediriger vers /auth/first-run/ (guard).
+2. Signup
+   - Succès: connecté automatiquement, puis guard.
+   - Invite en session: message discret “Votre compte rejoindra {org}”.
+3. Reset
+   - Demande: bannière “Si un compte existe, un lien a été envoyé”.
+   - Confirmation: bannière “Mot de passe mis à jour. Vous pouvez vous connecter.”
+
+F) Accessibilité
+----------------
+- Focus visible (outline) sur les contrôles.
+- Ordre de tabulation logique: email → mdp → submit → liens secondaires.
+- Liens annexes (reset, signup) après le bouton principal (ordre visuel et DOM).
+- Rôles ARIA pour bannières (role="status" pour success, role="alert" pour erreurs).
+
+G) Gestion des erreurs fréquentes (coaching)
+--------------------------------------------
+- “Pourquoi j’ai une page blanche après POST?” → oublier {% csrf_token %} ou mauvaise redirection.
+- “Mon bouton submit ne fait rien” → preventDefault inutile, laissez le form POSTer.
+- “Flash messages non visibles” → intégrer un composant Banner lisant django.contrib.messages.
+
+H) Checklist revue UI avant merge
+---------------------------------
+- [ ] Labels présents, associés aux inputs (for/id).
+- [ ] Messages d’erreur utiles et concis, pas de stacktrace en prod.
+- [ ] Responsif OK < 360px (mobile).
+- [ ] États loading sur boutons d’action.
+- [ ] Contraste AA, tailles de police >= 14px.

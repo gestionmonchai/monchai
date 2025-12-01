@@ -1,0 +1,62 @@
+Roadmap 26 — /catalogue/:id (Fiche cuvée — infos & médias)
+=========================================================
+Rôle & objectif
+---------------
+Fournir une **fiche produit** claire qui centralise les infos d’une cuvée (référentiels, millésime, UOM), montre l’**étiquette**, et relie aux **lots/SKU** associés. Supporte l’édition guidée et l’édition inline (si feature activée).
+
+Livrables
+---------
+- Page `/catalogue/:id` avec sections:
+  1) **Infos générales**: Nom, Code (option), Appellation, Couleur, Millésime, Unité par défaut
+  2) **Médias**: vignette principale + galerie (option) via `/media/upload`
+  3) **Liens**: lots liés (compteurs + lien vers /lots?cuvee=:id), SKUs (si dispo)
+  4) **Historique**: dernières modifications (audit)
+- Modes d’édition:
+  - **Fiche** (formulaire complet) via `/catalogue/:id/edit`
+  - **Inline** (double‑clic) sur champs éligibles, `If‑Match: row_version` (409 si conflit)
+- Breadcrumbs et CTA retour
+
+Contrats UI/API
+---------------
+GET `/api/catalogue/:id` → `{id,name,code?,appellation{...},color?,vintage?,default_uom{...},media{...},stats{lots_count, last_update}, row_version}`
+POST `/catalogue/:id` (form) ou PUT `/api/catalogue/:id` (JSON) avec validations et `If‑Match: row_version`
+
+Validations & modèle
+--------------------
+- `name` requis, `default_uom_id` requis ; `code` optionnel unique/org
+- FK (appellation, vintage, uom) cohérentes avec org
+- row_version BIGINT pour locking optimiste
+
+UX (détails)
+------------
+- Afficher visuel étiquette si présent, sinon placeholder + lien **Ajouter une image**
+- Bouton **Aller aux lots** (filtré par cuvée)
+- Alerte 409 (conflit) → proposer “Actualiser” / “Écraser (admin+)”
+
+Sécurité
+--------
+- RBAC: rôles admin/editor peuvent éditer ; read_only lecture seule
+- Anti‑XSS: afficher valeurs échappées ; validations serveur robustes
+- RLS org ; audit trail de chaque changement (qui/quand/quoi)
+
+Tests d’acceptation
+-------------------
+- AC‑26‑01: Affichage fiche avec tous champs + image si uploadée
+- AC‑26‑02: Édition puis sauvegarde → toast, audit visible
+- AC‑26‑03: Conflit row_version → 409 + UI de résolution
+- AC‑26‑04: Permissions: read_only ne voit pas actions d’édition
+
+Robustesse (tests)
+------------------
+- R‑26‑01: FK d’une autre org en POST → 403/404 sans fuite
+- R‑26‑02: XSS dans Nom → rendu échappé (pas d’exécution)
+- R‑26‑03: Image corrompue → affichage placeholder, logs
+- R‑26‑04: Erreur backend → message clair, pas de 500 silencieux
+
+Plan d’implémentation
+---------------------
+1) Endpoint GET/PUT `/api/catalogue/:id` + validations
+2) Page fiche + formulaire + inline edit (option)
+3) Intégration `/media/upload` pour l’étiquette
+4) Liens lots/SKUs + audit panel
+5) Tests AC/robustesse + doc `catalogue_fiche.md`

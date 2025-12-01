@@ -1,0 +1,46 @@
+CSV_3 — Dry‑run : parsing, validations, lookups FK (junior step-by-step)
+========================================================================
+
+But
+---
+Exécuter **tout** sauf l’écriture: parsing streaming, transformations, validations métier, **résolution FK** (appellation, cépage, UOM), génération des **erreurs/warnings**.
+
+Livrables
+---------
+1) Endpoint `POST /import/:job_id/dry-run` (idempotent, pas d’écriture)
+2) Moteur de **parsing streaming** (chunks de 5–10k lignes max)
+3) Validations par entité **avec messages pédagogiques**
+4) Résolution FK: exact → casefold → unaccent → trigram (seuil 0.6) ; ambigu = erreur
+5) **Exports**: `erreurs.csv`, `warnings.csv` (UTF‑8) prêts à télécharger
+
+Algorithme (par chunk)
+----------------------
+1) Lire N lignes (N=5000) depuis le stockage temporaire
+2) Appliquer **transformations** du mapping pour chaque cellule
+3) Construire un **payload** typed (str/float/int/date/bool)
+4) **Valider**: champs requis, longueurs, types, règles (ex: area_ha>0)
+5) **Résoudre FK** (dans **la même org**):
+   - exact (index normalisé) → si unique OK
+   - sinon casefold/unaccent
+   - sinon trigram (`%` simil > 0.6) → si plusieurs matches → **erreur** (“Ambigu: a,b…”)
+6) Écrire `import_job_row` avec status `ok`/`warning`/`error` + messages
+7) Passer au chunk suivant
+
+Performances & indexes
+----------------------
+- Préparer des **index** sur colonnes de lookup (ex: grape_variety.name_norm, appellation.name_norm, unit_of_measure.code)
+- Caches process (LRU) sur derniers lookups pour éviter N requêtes identiques
+- Temps cible: p95 < 1s pour lancer dry‑run; ~100k lignes en < 2–5 min selon infra
+
+Sécurité
+--------
+- CSV Injection: les **exports** d’erreurs/warnings neutralisent cellules qui commencent par `= + - @ \t`
+- Logs: ne pas stocker de PII inutile ; tronquer messages trop longs (ex: 512 chars)
+- Timeouts: abort si chunk > 60s (configurable), marque job `failed`
+
+Tests
+-----
+- Dry‑run détecte une FK introuvable → ligne **error** avec suggestion
+- Trigram propose “Cote Rotie” pour “Côte Rôtie” si seuil atteint
+- Ambigu ïgnores → **error** avec liste des candidats
+- Types: “1,25” FR → 1.25 numérique via transform number_locale

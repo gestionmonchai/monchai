@@ -1,0 +1,36 @@
+CHECKLIST D’AUDIT — Roadmap Active (implémenté & documenté)
+===========================================================
+Utilisation : coller cette checklist avant chaque élément de roadmap. Si tout est “OK”, marquer **Vérifié** et passer au suivant.
+
+1) Routes & endpoints
+   - [ ] Les URLs attendues existent (chemins, méthodes) et répondent (200/redirect prévu)
+   - [ ] Pas de 404 ni de boucles de redirection
+
+2) Modèles / migrations / données
+   - [ ] Modèles & champs présents ; contraintes (unique, FK) conformes
+   - [ ] Migrations appliquées ; données de base (si nécessaire) initialisées
+
+3) Vues / formulaires / templates
+   - [ ] Vues opérationnelles ; formulaires valident & affichent erreurs inline
+   - [ ] Templates conformes aux conventions UI/UX (accessibilité, messages neutres)
+
+4) Permissions & sécurité
+   - [ ] Décorateurs/guards appliqués (rôles owner/admin/editor/read_only)
+   - [ ] CSRF actif sur POST ; pas de fuite d’info (auth/reset/invites)
+
+5) Tests
+   - [ ] Au moins 1 test pertinent pour le flux principal
+   - [ ] Tests verts en local (ou instructions claires pour les lancer)
+
+6) Dev Book (docs)
+   - [ ] Page `/docs/devbook/{feature_slug}.md` mise à jour (endpoints, modèles, permissions, UX, tests)
+   - [ ] Entrée ajoutée dans `/docs/devbook/changelog.md` (date, portée, PR/commit)
+   - [ ] Si décision non triviale : note dans `/docs/devbook/decision-log.md` (ADR concis)
+
+7) Conformité Roadmap
+   - [ ] Tableau “Attendu vs Implémenté” fourni
+   - [ ] Écarts justifiés + correctifs proposés (sans hors périmètre)
+
+Action :
+- Si 1+ cases non cochées → **implémenter/compléter maintenant** selon le format de sortie standard.
+- Si toutes cochées → **Vérifié** ; passer à l’élément suivant de la Roadmap active.

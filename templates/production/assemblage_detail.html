@@ -1,0 +1,20 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Assemblage - Mon Chai{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3">Assemblage {{ assemblage.code }}</h1>
+<div class="card"><div class="card-body">
+  <div><strong>Date</strong>: {{ assemblage.date }}</div>
+  <div><strong>Campagne</strong>: {{ assemblage.campagne }}</div>
+  <div class="mt-3"><strong>Lignes</strong></div>
+  <table class="table table-sm align-middle">
+    <thead><tr><th>Lot source</th><th>Volume (L)</th></tr></thead>
+    <tbody>
+      {% for l in lignes %}
+      <tr><td><a href="/production/lots-techniques/{{ l.lot_source.id }}/">{{ l.lot_source.code }}</a></td><td>{{ l.volume_l }}</td></tr>
+      {% empty %}
+      <tr><td colspan="2" class="text-muted">Aucune ligne</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}

@@ -1,0 +1,49 @@
+16 — Référentiels : Appellations & Millésimes — Guide pas-à-pas + Robustesse
+============================================================================
+Objectif: structurer deux référentiels transverses: Appellations (AOC/IGP/…) et Millésimes (année).
+
+Portée & Done
+--------------
+- DONE si: CRUD admin+ disponibles, validations dédiées (année 1900…année courante+1), normalisation nom d’appellation, filtres et recherche.
+
+Étape 1 — Modèles (45–60 min)
+-----------------------------
+1.1 Appellation
+    - organization FK
+    - name (required), name_norm (unicité par org), type (enum: 'AOC','IGP','Vin de France','Autre')
+    - region (optionnelle, string courte)
+    - is_active (bool)
+    - unique(organization, name_norm)
+1.2 Vintage
+    - organization FK
+    - year (int) — contrainte: entre 1900 et current_year+1
+    - is_active (bool)
+    - unique(organization, year)
+
+Étape 2 — Routes & permissions (15–20 min)
+-------------------------------------------
+- /settings/referentials/appellations/ — admin+
+- /settings/referentials/vintages/ — admin+
+
+Étape 3 — Vues & validations (45–60 min)
+----------------------------------------
+- Appellation: normaliser name → name_norm ; empêcher doublons ; soft delete si utilisée.
+- Millésime: valider range ; désactiver si utilisé (soft delete) ; empêcher doublons.
+
+Étape 4 — Templates (30 min)
+----------------------------
+- Tables avec filtres: type (pour appellations) ; année (range pour millésimes).
+- Actions: Ajouter/Éditer/Supprimer (soft si lié) ; badge actif/inactif.
+
+Étape 5 — Tests (45–60 min)
+----------------------------
+- Création appellation ; unicité sur name_norm.
+- Création millésime ; refus hors plage ; unicité.
+
+### Tests de robustesse
+-----------------------
+R1. Appellation “Côtes-du-Rhône” vs “cotes du rhone” → même name_norm ; empêcher doublon.
+R2. Vintage 0, 1899, 3000 → rejet propre, message spécifique.
+R3. Suppression d’un millésime/appellation liée → soft delete, pas de 500.
+R4. Recherche avec caractères spéciaux (apostrophes, tirets) → pas d’erreur SQL.
+R5. Non admin POST → 403/redirect ; aucun changement.

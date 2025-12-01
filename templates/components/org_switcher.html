@@ -1,0 +1,144 @@
+{% comment %}
+Composant Org Switcher - UX Multi-chai Points 1, 5, 6, 18
+Affiche le chai actuel avec possibilité de switcher
+{% endcomment %}
+
+{% if current_org %}
+<div class="org-switcher dropdown">
+    <button class="btn org-switcher-btn dropdown-toggle" type="button" id="orgSwitcherDropdown" 
+            data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="org-badge" style="background-color: {{ current_org.color|default:'#722F37' }};">
+            {{ current_org.get_initials }}
+        </span>
+        <span class="org-name d-none d-md-inline">{{ current_org.name }}</span>
+        {% if current_org.is_test %}
+        <span class="badge bg-warning text-dark ms-1 d-none d-lg-inline">TEST</span>
+        {% endif %}
+    </button>
+    
+    <div class="dropdown-menu dropdown-menu-end org-switcher-menu" aria-labelledby="orgSwitcherDropdown">
+        <div class="dropdown-header">
+            <small class="text-muted">Vous travaillez sur :</small>
+            <div class="fw-bold">{{ current_org.name }}</div>
+            {% if membership %}
+            <span class="badge bg-secondary">{{ membership.get_role_display }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="dropdown-divider"></div>
+        
+        {% if user_orgs and user_orgs|length > 1 %}
+        <div class="org-list">
+            {% for m in user_orgs %}
+            <a class="dropdown-item org-item {% if m.organization.id == current_org.id %}active{% endif %}" 
+               href="{% url 'auth:switch_org' m.organization.id %}">
+                <span class="org-badge-sm" style="background-color: {{ m.organization.color|default:'#722F37' }};">
+                    {{ m.organization.get_initials }}
+                </span>
+                <div class="org-item-info">
+                    <div class="org-item-name">{{ m.organization.name }}</div>
+                    <small class="text-muted">{{ m.get_role_display }}</small>
+                </div>
+                {% if m.organization.id == current_org.id %}
+                <i class="bi bi-check-lg text-success ms-auto"></i>
+                {% endif %}
+                {% if m.organization.is_test %}
+                <span class="badge bg-warning text-dark ms-1">TEST</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        <div class="dropdown-divider"></div>
+        {% endif %}
+        
+        <a class="dropdown-item" href="{% url 'auth:my_organizations' %}">
+            <i class="bi bi-building me-2"></i>Mes chais
+        </a>
+        <a class="dropdown-item text-muted small" href="{% url 'auth:create_organization' %}">
+            <i class="bi bi-plus-lg me-2"></i>Creer un nouveau chai...
+        </a>
+    </div>
+</div>
+
+<style>
+.org-switcher-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: inherit;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.org-switcher-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.3);
+}
+.org-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 11px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.org-badge-sm {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 10px;
+    color: white;
+    flex-shrink: 0;
+}
+.org-name {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.org-switcher-menu {
+    min-width: 280px;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+.org-switcher-menu .dropdown-header {
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+}
+.org-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+.org-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+}
+.org-item.active {
+    background: #e8f4ea;
+}
+.org-item-info {
+    flex: 1;
+    min-width: 0;
+}
+.org-item-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+{% endif %}

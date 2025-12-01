@@ -1,0 +1,56 @@
+{% for lot in lots %}
+<tr class="row-click" data-href="{% url 'catalogue:lot_detail' lot.id %}">
+  <td>
+    <strong>{{ lot.code }}</strong>
+    <div class="text-muted small">{{ lot.created_at|date:"d/m/Y" }}</div>
+  </td>
+  <td>
+    {% if lot.cuvee %}
+      <a href="{% url 'catalogue:cuvee_detail' lot.cuvee.pk %}" class="text-decoration-none">
+        <span class="badge bg-light text-dark">{{ lot.cuvee.name }}</span>
+      </a>
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    <span class="badge bg-light text-dark">{{ lot.volume_l|floatformat:1 }} L</span>
+  </td>
+  <td>
+    <span class="badge bg-light text-dark">{{ lot.get_status_display|default:lot.status }}</span>
+  </td>
+  <td>
+    {% if lot.warehouse %}
+      {{ lot.warehouse.name }}
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if lot.alcohol_pct %}
+      <span class="badge bg-light text-dark">{{ lot.alcohol_pct|floatformat:1 }}°</span>
+    {% else %}
+      <span class="text-muted">-</span>
+    {% endif %}
+  </td>
+  <td>
+    <div class="btn-group btn-group-sm" role="group">
+      <a href="{% url 'catalogue:lot_detail' lot.id %}" class="btn btn-outline-primary" title="Voir">
+        <i class="bi bi-eye"></i>
+      </a>
+      {% if user.get_active_membership.can_edit_data %}
+      <a href="/admin/viticulture/lot/{{ lot.id }}/change/" class="btn btn-outline-secondary" title="Modifier (admin)">
+        <i class="bi bi-pencil"></i>
+      </a>
+      {% endif %}
+    </div>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="7" class="text-center py-4">
+    <i class="bi bi-box display-4 text-muted mb-3"></i>
+    <p class="text-muted">Aucun lot trouvé</p>
+  </td>
+</tr>
+{% endfor %}

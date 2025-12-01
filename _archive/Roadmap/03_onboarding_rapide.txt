@@ -1,0 +1,53 @@
+Onboarding rapide (création domaine/exploitation, SIRET, TVA, devise) — Indications de programmation
+====================================================================================================
+Objectif: à la 1ère connexion, si l’utilisateur n’appartient à aucune exploitation (Organization),
+déclencher un parcours minimal pour créer l’exploitation et marquer l’instance comme initialisée.
+
+1) Modèles requis
+-----------------
+- Organization: name, siret (char 14, optionnel), tax_id (TVA intracom), currency (code ISO), created_at, is_initialized.
+- Membership: user FK, organization FK, role (owner/admin/editor/read_only), is_active, unique(user, organization).
+
+2) Garde « first‑run »
+----------------------
+- Route /auth/first-run/ :
+  * Si user possède au moins un Membership actif → redirect /dashboard/ (ou autre page d’accueil).
+  * Sinon → redirect /auth/first-run/org/ (form de création exploitation).
+- Important: ce guard doit être la redirection par défaut après signup/login (LOGIN_REDIRECT_URL).
+
+3) Formulaire création exploitation
+-----------------------------------
+- Route GET/POST /auth/first-run/org/ :
+  * Champs: name (obligatoire), siret (optionnel), tax_id (optionnel), currency (liste courte: EUR, USD, etc.).
+  * À la validation: créer Organization; créer Membership(user=current, role=owner); set is_initialized=True.
+  * Rediriger vers /dashboard/ (même si placeholder).
+- UX: texte bref « Vous pourrez compléter les paramètres plus tard ». Bouton « Créer mon exploitation ».
+
+4) Paramètres par défaut & référentiels initiaux (optionnels mais utiles)
+-------------------------------------------------------------------------
+- Définir currency par défaut « EUR » si non saisi.
+- En tâche post‑save: créer des référentiels de base (unités: bouteille, L, hL; entrepôt ‘Chai principal’).
+- Enregistrer la devise et éventuellement un taux TVA par défaut (ex: 20%) dans des Settings d’organisation (à créer plus tard).
+
+5) Navigation & header
+----------------------
+- Après création réussite: afficher badge « rôle: owner @ {org} ».
+- Lien dans le menu: « Paramètres exploitation » renvoyant vers /settings/billing et /settings/general (écrans futurs).
+
+6) Vérifications d’accès globales
+---------------------------------
+- Créer un décorateur/middleware « require_membership » à appliquer sur les vues métier.
+  * Si pas de Membership → redirect /auth/first-run/ (garantie anti-état invalide).
+- Prévoir à terme un sélecteur d’organisation si un user appartient à plusieurs orgs (hors scope ici).
+
+7) Tests à écrire
+-----------------
+- Après signup → GET /auth/first-run/ renvoie redirect vers /auth/first-run/org/ si aucun Membership.
+- POST /auth/first-run/org/ avec name valide → crée Organization + Membership owner → redirect /dashboard/.
+- Accès à une vue « métier » sans Membership → redirect vers first-run guard.
+
+8) Done (onboarding rapide)
+---------------------------
+- Un·e nouvel·le utilisateur·rice peut créer une exploitation en 1 écran.
+- Un Membership owner est créé automatiquement.
+- Les vues « métier » refusent un utilisateur sans exploitation (guard OK).

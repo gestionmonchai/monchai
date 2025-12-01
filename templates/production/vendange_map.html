@@ -1,0 +1,169 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Carte parcelles & PLU - Mon Chai{% endblock %}
+{% block production_content %}
+<h1 class="h4 mb-3 d-flex align-items-center gap-2">
+  <i class="bi bi-geo-alt text-warning"></i>
+  <span>Carte Parcelles & PLU</span>
+  <span class="ms-auto small text-muted">Clic = sélection • Stylo = dessin libre</span>
+</h1>
+
+<div id="map" style="height:520px; border-radius:8px; border:1px solid #e5e7eb"></div>
+
+<div class="d-flex gap-2 my-2">
+  <input id="map-search" class="form-control" placeholder="Rechercher parcelle…">
+  <button id="btn-pen" class="btn btn-outline-primary" type="button">Stylo (libre)</button>
+  <button id="btn-selection" class="btn btn-outline-secondary" type="button">Sélection</button>
+  <button id="btn-clear" class="btn btn-light" type="button">Effacer</button>
+  <div class="toolbar-note ms-auto">Clic = sélection • Stylo = dessin libre</div>
+</div>
+
+<div id="parcelle-prefill" class="mt-2" hx-swap="outerHTML"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+<script src="https://unpkg.com/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
+<script id="freedraw-lib" defer src="https://unpkg.com/leaflet-freedraw@2.0.1/dist/leaflet-freedraw.web.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+<style>
+  .parcel-label { font: 12px/1.1 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:#111827; text-shadow: 0 0 2px #fff; pointer-events:none; }
+  .leaflet-container { cursor: crosshair; }
+  #btn-pen.active { background:#0d6efd; color:#fff; }
+  .toolbar-note { font-size:12px; color:#6b7280 }
+  @media (max-width: 768px){ #map { height: 420px; } }
+</style>
+
+<script>
+(function(){
+  const map = L.map('map', { preferCanvas: true }).setView([46.8, 2.5], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 20, attribution: '© OpenStreetMap'}).addTo(map);
+
+  // Helpers
+  function debounce(fn, wait){ let t=null; return function(){ const a=arguments, ctx=this; clearTimeout(t); t=setTimeout(()=>fn.apply(ctx,a), wait); }; }
+  function getCookie(name){ const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)'); return v ? v.pop() : ''; }
+
+  function guessSectionNumero(f){
+    const p = (f && f.properties) || {};
+    let section = p.section || p.SECTION || p.sect || '';
+    let numero = p.numero || p.NUMERO || p.num || '';
+    if ((!section || !numero)){
+      const pid = p.id || p.ID || p.idu || p.IDU || '';
+      const s = String(pid||'');
+      if (s && s.length >= 11){ section = section || s.slice(8,10); numero = numero || s.slice(-4); }
+    }
+    try { section = String(section||'').toUpperCase().slice(0,3); } catch(e){}
+    try { numero = String(numero||'').padStart(4,'0'); } catch(e){}
+    return { section, numero };
+  }
+
+  // Layers
+  const labelsLayer = L.layerGroup().addTo(map);
+  const parcellesLayer = L.geoJSON(null, {
+    style: { color:'#666', weight:1, fillOpacity:0.08 },
+    onEachFeature: (f, layer) => {
+      const g = guessSectionNumero(f);
+      const lblText = ((g.section||'') + ' ' + (g.numero||'')).trim();
+      try {
+        const c = layer.getBounds().getCenter();
+        L.marker(c, { icon: L.divIcon({ className:'parcel-label', html: lblText }) }).addTo(labelsLayer);
+      } catch(e){}
+      layer.on('click', () => selectParcelle(f));
+    }
+  }).addTo(map);
+  const pluLayer = L.geoJSON(null, { style:{ color:'#9b59b6', weight:1, fillOpacity:0.05 } }).addTo(map);
+
+  let highlight=null, drawn=null;
+  function clearAll(){ try{ if (highlight){ map.removeLayer(highlight); highlight=null; } }catch(e){}
+                    try{ if (drawn){ map.removeLayer(drawn); drawn=null; } }catch(e){} }
+
+  function prefillHTMX(values){
+    if (!window.htmx){ return; }
+    // ensure CSRF header via cookie
+    const headers = { 'X-CSRFToken': getCookie('csrftoken') };
+    htmx.ajax('POST', "{% url 'production:vendange_parcelle_prefill' %}", { values, target:'#parcelle-prefill', swap:'outerHTML', headers });
+  }
+
+  function computeSurfaceHaFromGeom(geom){
+    try { const feat = { type:'Feature', geometry: geom, properties:{} }; const a = turf.area(feat); if (a>0 && isFinite(a)) return (a/10000).toFixed(4); } catch(e){}
+    return '';
+  }
+
+  function selectParcelle(f){
+    if (drawn){ map.removeLayer(drawn); drawn=null; }
+    try{ if (highlight) map.removeLayer(highlight); }catch(e){}
+    highlight = L.geoJSON(f, { style:{ color:'#0d6efd', weight:2, fillOpacity:0.2 } }).addTo(map);
+    try{ map.fitBounds(highlight.getBounds(), { padding:[20,20] }); }catch(e){}
+    const sh = computeSurfaceHaFromGeom(f.geometry||{});
+    prefillHTMX({ props_json: JSON.stringify(f.properties||{}), geom_wkt: JSON.stringify(f.geometry||{}), surface_ha: sh });
+  }
+
+  function bboxTooLarge(){ const b = map.getBounds(); return (b.getEast()-b.getWest())>0.5 || (b.getNorth()-b.getSouth())>0.5; }
+
+  async function loadLayers(){
+    const q = (document.getElementById('map-search').value||'').trim().toLowerCase();
+    if (bboxTooLarge()){ parcellesLayer.clearLayers(); pluLayer.clearLayers(); return; }
+    const b = map.getBounds(); const bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(',');
+    try{
+      const r = await fetch(`/api/cadastre/wfs?bbox=${bbox}`);
+      if (r.ok){ const gj = await r.json();
+        // Filter client-side by q
+        let feats = gj.features||[];
+        if (q){ feats = feats.filter(f=>{ const p=f.properties||{}; const hay=`${p.numero||''} ${p.section||''} ${p.commune||''}`.toLowerCase(); return hay.indexOf(q)!==-1; }); }
+        labelsLayer.clearLayers();
+        parcellesLayer.clearLayers(); parcellesLayer.addData({ type:'FeatureCollection', features: feats });
+      }
+    }catch(e){}
+    try{ const r2 = await fetch(`/api/plu/zones?bbox=${bbox}`); if(r2.ok){ const gj2=await r2.json(); pluLayer.clearLayers(); pluLayer.addData(gj2);} }catch(e){}
+  }
+  map.on('moveend', debounce(loadLayers, 250));
+  document.getElementById('map-search').addEventListener('input', debounce(loadLayers, 250));
+
+  // Pen (freehand)
+  let penMode=false;
+  function enablePen(){
+    penMode=true; document.getElementById('btn-pen').classList.add('active');
+    if (map.pm && map.pm.enableDraw){
+      // hide default controls
+      map.pm.addControls({ position:'topleft', drawPolygon:false, drawPolyline:false, drawMarker:false, drawCircle:false, drawRectangle:false, editMode:false, dragMode:false, cutPolygon:false, removalMode:false });
+      map.pm.enableDraw('Polygon',{ freehand:true, snappable:false, finishOn:'mouseup' });
+      map.once('pm:create', e=>{
+        try{ if (highlight){ map.removeLayer(highlight); highlight=null; } }catch(e){}
+        if (drawn){ map.removeLayer(drawn); }
+        drawn = e.layer; drawn.addTo(map);
+        const gj = drawn.toGeoJSON();
+        const sh = computeSurfaceHaFromGeom(gj.geometry||{});
+        prefillHTMX({ geom_wkt: JSON.stringify(gj.geometry||{}), surface_ha: sh });
+        if (map.pm.disableDraw) map.pm.disableDraw();
+        penMode=false; document.getElementById('btn-pen').classList.remove('active');
+      });
+    } else if (window.FreeDraw){
+      const freeDraw = new FreeDraw({ mode: FreeDraw.MODES.CREATE });
+      map.addLayer(freeDraw);
+      freeDraw.on('markers', ({ latLngs })=>{
+        if (!latLngs || !latLngs.length) return;
+        const coords = latLngs.map(ll=>[ll.lng, ll.lat]);
+        if (coords.length>2){ const first=coords[0]; const last=coords[coords.length-1]; if(first[0]!==last[0]||first[1]!==last[1]) coords.push(first); }
+        const gj = { type:'Feature', geometry:{ type:'Polygon', coordinates:[coords] }, properties:{} };
+        try{ if (highlight){ map.removeLayer(highlight); highlight=null; } }catch(e){}
+        if (drawn){ map.removeLayer(drawn); }
+        drawn = L.geoJSON(gj, { style:{ color:'#0d6efd', weight:2, fillOpacity:0.2 } }).addTo(map);
+        const sh = computeSurfaceHaFromGeom(gj.geometry||{});
+        prefillHTMX({ geom_wkt: JSON.stringify(gj.geometry||{}), surface_ha: sh });
+        map.removeLayer(freeDraw);
+        penMode=false; document.getElementById('btn-pen').classList.remove('active');
+      });
+    } else {
+      alert('Stylo indisponible (lib manquante)'); penMode=false; document.getElementById('btn-pen').classList.remove('active');
+    }
+  }
+
+  document.getElementById('btn-pen').addEventListener('click', enablePen);
+  document.getElementById('btn-selection').addEventListener('click', ()=>{ if (penMode && map.pm && map.pm.disableDraw){ map.pm.disableDraw(); penMode=false; document.getElementById('btn-pen').classList.remove('active'); } });
+  document.getElementById('btn-clear').addEventListener('click', ()=>{ clearAll(); prefillHTMX({}); });
+
+  // First load
+  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){}; loadLayers(); }, 50);
+})();
+</script>
+{% endblock %}
