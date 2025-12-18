@@ -1,420 +1,582 @@
 {% extends 'production/base_production.html' %}
-{% block title %}Lot technique - Mon Chai{% endblock %}
+{% block title %}Lot {{ lot.code }} - Mon Chai{% endblock %}
+
 {% block production_content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Lot technique {{ lot.code }}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}" class="text-decoration-none">Production</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'production:lots_tech_list' %}" class="text-decoration-none">Lots techniques</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ lot.code }}</li>
+  </ol>
+</nav>
+
+<!-- Header avec badges -->
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <h1 class="h4 mb-0 d-flex align-items-center gap-2 flex-wrap">
+    <span>Lot technique</span>
+    <span class="badge bg-dark">{{ lot.code }}</span>
+    <span class="badge bg-light text-dark">{{ lot.campagne }}</span>
+    <span class="badge {% if lot.statut == 'en_cours' or lot.statut == 'VIN_EN_FA' or lot.statut == 'VIN_EN_FML' %}bg-warning text-dark{% elif lot.statut == 'pret_mise' or lot.statut == 'VIN_PRET_MISE' %}bg-success{% elif lot.statut == 'epuise' %}bg-secondary{% else %}bg-primary{% endif %}">
+      {{ lot.get_statut_display }}
+    </span>
     {% if lot.location_kind == 'OFFSITE' %}
-      <span class="badge text-bg-warning ms-2">Hors site</span>
+      <span class="badge bg-warning text-dark"><i class="bi bi-geo-alt me-1"></i>Hors site</span>
+    {% endif %}
+    {% if lot.cuvee %}
+      <span class="badge bg-info text-dark"><i class="bi bi-cup-straw me-1"></i>{{ lot.cuvee.nom }}</span>
     {% endif %}
   </h1>
   <div class="d-flex gap-2">
-    <a href="/production/services/entry/?entity_type=lottech&entity_id={{ lot.id }}" class="btn btn-outline-primary btn-sm">+ Service</a>
-    <a href="/production/assemblages/nouveau/?step=1&source={{ lot.id }}" class="btn btn-outline-dark btn-sm">Assembler</a>
-    <a href="/production/mises/nouveau/?step=1" class="btn btn-primary btn-sm">Mise</a>
-    <a href="/production/lots-elevage/journal/?lot={{ lot.code }}" class="btn btn-outline-secondary btn-sm">Journal vrac</a>
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/pret_mise/" class="d-inline">{% csrf_token %}
-      <button class="btn btn-outline-success btn-sm">Prêt mise</button>
-    </form>
-    {% if lot.location_kind != 'OFFSITE' %}
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/offsite_send/" class="d-inline ms-2">{% csrf_token %}
-      <input type="hidden" name="tiers" value="">
-      <button class="btn btn-outline-warning btn-sm" title="Envoyer chez un faiseur">Envoyer hors site</button>
-    </form>
-    {% else %}
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/offsite_return_neutral/" class="d-inline ms-2">{% csrf_token %}
-      <button class="btn btn-outline-primary btn-sm" title="Retour sans changement de composition">Retour (neutre)</button>
-    </form>
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/offsite_return_non_neutral/" class="d-inline ms-1">{% csrf_token %}
-      <button class="btn btn-outline-danger btn-sm" title="Retour avec modification (nouveau lot)">Retour (non neutre)</button>
-    </form>
+    {% if lot.statut == 'pret_mise' or lot.statut == 'VIN_PRET_MISE' %}
+    <a href="{% url 'produits:product_new' %}?source_lot={{ lot.pk }}" class="btn btn-success btn-sm">
+      <i class="bi bi-box-seam me-1"></i>Créer produit
+    </a>
     {% endif %}
+    <div class="btn-group">
+      <a href="{% url 'production:lot_tech_affecter_cuvee' pk=lot.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i>Modifier
+      </a>
+      <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'production:lots_elevage_journal' %}?lot={{ lot.code }}"><i class="bi bi-journal-text me-2"></i>Journal vrac</a></li>
+        <li><a class="dropdown-item" href="{% url 'production:lot_mouvements_export' pk=lot.pk %}"><i class="bi bi-download me-2"></i>Exporter mouvements</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{% url 'produits:product_new' %}?source_lot={{ lot.pk }}"><i class="bi bi-box-seam me-2"></i>Créer un produit</a></li>
+      </ul>
+    </div>
   </div>
 </div>
-{% if next_step %}
-<div class="card mb-3">
-  <div class="card-body d-flex justify-content-between align-items-center">
-    <div>
-      <div class="small text-muted">Prochaine étape</div>
-      <div class="fw-semibold">{{ next_step.label }}</div>
-    </div>
-    <a href="{{ next_step.url }}" class="btn btn-primary">Continuer</a>
-  </div>
-</div>
-{% endif %}
 
-<div class="card mb-3"><div class="card-body">
-  <div class="row g-3">
-    <div class="col-md-2"><strong>Campagne</strong><div>{{ lot.campagne }}</div></div>
-    <div class="col-md-3"><strong>Volume net (L)</strong><div>{{ volume_net_calc }}</div></div>
-    <div class="col-md-2"><strong>Vol @20°C (hL)</strong><div>{% if lot.volume_hl20 %}{{ lot.volume_hl20 }}{% else %}-{% endif %}</div></div>
-    <div class="col-md-2"><strong>Contenant</strong><div>{{ lot.contenant|default:'-' }}</div></div>
-    <div class="col-md-2"><strong>Statut</strong><div>{{ lot.get_statut_display }}</div></div>
-    <div class="col-md-3"><strong>Source</strong><div>{% if lot.source %}<a href="/production/vendanges/{{ lot.source.id }}/">Vendange</a>{% else %}-{% endif %}</div></div>
-  </div>
-  <div class="row g-3 mt-1">
-    <div class="col-md-2"><strong>Densité</strong><div>{{ latest_densite|default:'-' }}</div></div>
-    <div class="col-md-2"><strong>Titre (%)</strong><div>{% if abv_pct %}{{ abv_pct }}{% else %}-{% endif %}</div></div>
-    <div class="col-md-4"><strong>Dernier transfert/soutirage</strong><div>{% if last_transfer_soutirage %}{{ last_transfer_soutirage|date:'Y-m-d H:i' }}{% else %}-{% endif %}</div></div>
-    <div class="col-md-4"><strong>État technique</strong><div>{{ etat_technique|default:'-' }}</div></div>
-  </div>
-</div></div>
-
-<ul class="nav nav-tabs mb-3" id="lotTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="origin-tab" data-bs-toggle="tab" data-bs-target="#origin" type="button" role="tab">Origine</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="container-tab" data-bs-toggle="tab" data-bs-target="#container" type="button" role="tab">Contenant & Emplacement</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="movements-tab" data-bs-toggle="tab" data-bs-target="#movements" type="button" role="tab">Mouvements</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="vinif-tab" data-bs-toggle="tab" data-bs-target="#vinif" type="button" role="tab">Paramètres & Analyses</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">Documents</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="costs-tab" data-bs-toggle="tab" data-bs-target="#costs" type="button" role="tab">Coûts</button>
-  </li>
-</ul>
-<div class="tab-content">
-  <div class="tab-pane fade show active" id="origin" role="tabpanel" aria-labelledby="origin-tab">
-    <div class="card"><div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-3"><div class="text-muted small">Encuvage source</div>
-          <div>{% if origin and origin.vendange %}<a href="/production/vendanges/{{ origin.vendange.id }}/">{{ origin.vendange.code }}</a>{% else %}-{% endif %}</div>
-        </div>
-        <div class="col-md-3"><div class="text-muted small">Parcelle</div>
-          <div>{% if origin and origin.parcelle %}{{ origin.parcelle.nom }}{% else %}-{% endif %}</div>
-        </div>
-        <div class="col-md-3"><div class="text-muted small">Créé le</div>
-          <div>{% if origin %}{{ origin.created_at|date:'Y-m-d H:i' }}{% else %}-{% endif %}</div>
-        </div>
-        <div class="col-md-3"><div class="text-muted small">Rendement (L/kg)</div>
-          <div>{% if origin and origin.rendement_l_kg %}{{ origin.rendement_l_kg }}{% else %}-{% endif %}</div>
-        </div>
-      </div>
-      <div class="row g-3 mt-3">
-        <div class="col-md-6">
-          <h6>Parents</h6>
-          <ul class="list-group list-group-flush">
-            {% for ln in lineage_parents %}
-            <li class="list-group-item d-flex justify-content-between">
-              <span>{% if ln.parent_lot %}<a href="/production/lots-techniques/{{ ln.parent_lot.id }}/">{{ ln.parent_lot.code }}</a>{% else %}—{% endif %} <span class="text-muted small">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:'Y-m-d' }})</span></span>
-              {% if ln.ratio %}<span class="badge text-bg-light">{{ ln.ratio|floatformat:2 }}</span>{% endif %}
-            </li>
-            {% empty %}
-            <li class="list-group-item text-muted">Aucun parent</li>
-            {% endfor %}
-          </ul>
-        </div>
-        <div class="col-md-6">
-          <h6>Enfants</h6>
-          <ul class="list-group list-group-flush">
-            {% for ln in lineage_children %}
-            <li class="list-group-item d-flex justify-content-between">
-              <span><a href="/production/lots-techniques/{{ ln.child_lot.id }}/">{{ ln.child_lot.code }}</a> <span class="text-muted small">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:'Y-m-d' }})</span></span>
-              {% if ln.ratio %}<span class="badge text-bg-light">{{ ln.ratio|floatformat:2 }}</span>{% endif %}
-            </li>
-            {% empty %}
-            <li class="list-group-item text-muted">Aucun enfant</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    </div></div>
-  </div>
-
-  <div class="tab-pane fade" id="docs" role="tabpanel" aria-labelledby="docs-tab">
-    <div class="card"><div class="card-body">
-      {% if lot_documents %}
-      <div class="row g-3">
-        {% for d in lot_documents %}
-        <div class="col-md-4">
-          <div class="border rounded p-2 h-100">
-            <div class="small text-muted">{{ d.get_type_display }}</div>
-            <div class="fw-semibold text-truncate">{{ d.description|default:d.document.name }}</div>
-            <div class="text-muted small">{{ d.uploaded_at|date:'Y-m-d H:i' }}</div>
-            <div class="mt-2"><a class="btn btn-sm btn-outline-primary" href="{{ d.document.url }}" target="_blank">Ouvrir</a></div>
+<div class="row g-3">
+  <!-- Colonne principale -->
+  <div class="col-lg-8">
+    
+    <!-- Card: Identité & volumes -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-box-seam me-2"></i>Identité & Volumes</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="text-muted small">Volume net</div>
+            <div class="fs-5 fw-bold text-primary">{{ volume_net_calc|default:lot.volume_l|floatformat:0 }} L</div>
+            <div class="text-muted small">{% widthratio volume_net_calc|default:lot.volume_l 100 1 %} hL</div>
           </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="text-muted">Aucun document attaché.</div>
-      {% endif %}
-    </div></div>
-  </div>
-
-  <div class="tab-pane fade" id="container" role="tabpanel" aria-labelledby="container-tab">
-    <div class="row g-3">
-      <div class="col-lg-6">
-        <div class="card h-100"><div class="card-header">Contenant(s)</div><div class="card-body">
-          {% if lot_containers %}
-          <ul class="list-group list-group-flush">
-            {% for c in lot_containers %}
-              <li class="list-group-item d-flex justify-content-between"><span>{{ c.get_type_display }} {{ c.identifiant }} <span class="text-muted">({{ c.capacite_l }} L)</span></span><span class="badge text-bg-light">{{ c.volume_occupe_l }} L</span></li>
-            {% endfor %}
-          </ul>
-          {% else %}<div class="text-muted">Aucun contenant lié.</div>{% endif %}
-        </div></div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card h-100"><div class="card-header">Emplacement</div><div class="card-body">
-          {% with ld=lot_detail %}
-          <div class="row g-2">
-            <div class="col-md-6"><div class="text-muted small">Allée / Travée / Niveau</div><div>{{ ld.emplacement_rangee|default:'-' }} / {{ ld.emplacement_travee|default:'-' }} / {{ ld.emplacement_niveau|default:'-' }}</div></div>
-            <div class="col-md-6"><div class="text-muted small">Dernier ouillage</div><div>{% if ld and ld.ouillage_dernier_controle %}{{ ld.ouillage_dernier_controle|date:'Y-m-d' }} ({{ param_alerts.ouillage_days }} j){% else %}-{% endif %}</div></div>
+          <div class="col-md-3">
+            <div class="text-muted small">Volume @20°C</div>
+            {% if lot.volume_hl20 %}
+            <div>{{ lot.volume_hl20|floatformat:2 }} hL</div>
+            <div class="text-muted small">{% widthratio lot.volume_hl20 1 100 %} L</div>
+            {% else %}—{% endif %}
           </div>
-          {% endwith %}
-        </div></div>
-      </div>
-    </div>
-  </div>
-  <div class="tab-pane fade" id="movements" role="tabpanel" aria-labelledby="movements-tab">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <div class="text-muted">Historique des mouvements (du plus récent au plus ancien)</div>
-      <a class="btn btn-sm btn-outline-secondary" href="/production/lots-techniques/{{ lot.id }}/mouvements/export/">Exporter CSV</a>
-    </div>
-    <div class="table-responsive">
-      <table class="table table-sm align-middle">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th class="text-end">Volume (L)</th>
-            <th>Méta</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for mv in mouvements %}
-          <tr>
-            <td>{{ mv.date|date:'Y-m-d H:i' }}</td>
-            <td>{{ mv.type }}</td>
-            <td class="text-end">{{ mv.volume_l }}</td>
-            <td><code class="small">{{ mv.meta|default:'{}' }}</code></td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="text-muted">Aucun mouvement</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="tab-pane fade" id="vinif" role="tabpanel" aria-labelledby="vinif-tab">
-    <div class="row g-3">
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Déclarer une mesure</span>
+          <div class="col-md-3">
+            <div class="text-muted small">Contenant</div>
+            <div>{{ lot.contenant|default:"—" }}</div>
           </div>
-          <div class="card-body">
-            <form method="post" action="/production/lots-techniques/{{ lot.id }}/vinif/measure/add/">
-              {% csrf_token %}
-              <div class="row g-2 align-items-end">
-                <div class="col-md-3">
-                  <label class="form-label">Type</label>
-                  <select name="type" class="form-select">
-                    <option value="temperature">Température (°C)</option>
-                    <option value="densite">Densité</option>
-                    <option value="ph">pH</option>
-                    <option value="sucre">Sucres (g/L)</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Valeur</label>
-                  <input type="number" step="0.01" name="value" class="form-control" required>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Date</label>
-                  <input type="datetime-local" name="date" class="form-control">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Notes</label>
-                  <input type="text" name="notes" class="form-control">
-                </div>
-              </div>
-              <div class="mt-3"><button class="btn btn-outline-primary">Ajouter</button></div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-6">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Intervention</span>
-          </div>
-          <div class="card-body">
-            <form method="post" action="/production/lots-techniques/{{ lot.id }}/vinif/intervention/add/">
-              {% csrf_token %}
-              <div class="row g-2 align-items-end">
-                <div class="col-md-4">
-                  <label class="form-label">Type</label>
-                  <select name="type" class="form-select">
-                    <option value="remontage">Remontage</option>
-                    <option value="pigeage">Pigeage</option>
-                    <option value="so2">Ajout SO₂</option>
-                    <option value="soutirage">Soutirage</option>
-                    <option value="batonnage">Bâtonnage</option>
-                    <option value="fml">FML</option>
-                    <option value="filtration">Filtration</option>
-                    <option value="collage">Collage</option>
-                    <option value="ouillage">Ouillage</option>
-                    <option value="correction">Correction autre</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Date</label>
-                  <input type="date" name="date" class="form-control">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Notes</label>
-                  <input type="text" name="notes" class="form-control">
-                </div>
-              </div>
-              <!-- Intrants optionnels -->
-              <div class="row g-2 mt-2 align-items-end">
-                 <div class="col-md-4">
-                   <label class="form-label text-muted small">Intrant (facultatif)</label>
-                   <input type="text" name="produit_intrant" class="form-control form-control-sm" placeholder="ex: SO2">
-                 </div>
-                 <div class="col-md-4">
-                   <label class="form-label text-muted small">Quantité</label>
-                   <input type="number" step="0.001" name="quantite" class="form-control form-control-sm">
-                 </div>
-                 <div class="col-md-4">
-                   <label class="form-label text-muted small">Unité</label>
-                   <input type="text" name="unite" class="form-control form-control-sm" placeholder="g/hL...">
-                 </div>
-              </div>
-
-              <div class="mt-3 d-flex gap-2">
-                <a class="btn btn-outline-secondary" href="/production/lots-techniques/{{ lot.id }}/pressurage/">Écouler / Presser</a>
-                <button class="btn btn-outline-primary">Ajouter</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">Timeline vinification</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <h6>Interventions récentes</h6>
-                <ul class="list-group list-group-flush">
-                  {% for itv in vinif_interventions %}
-                  <li class="list-group-item d-flex justify-content-between">
-                    <span>{{ itv.date }} — {{ itv.get_type_display }} <span class="text-muted">{{ itv.notes }}</span></span>
-                    {% if itv.volume_out_l %}<span class="badge text-bg-light">-{{ itv.volume_out_l }} L</span>{% endif %}
-                  </li>
-                  {% empty %}
-                  <li class="list-group-item text-muted">Aucune intervention</li>
-                  {% endfor %}
-                </ul>
-              </div>
-              <div class="col-md-6">
-                <h6>Mesures récentes</h6>
-                <ul class="list-group list-group-flush">
-                  {% for m in vinif_measurements %}
-                  <li class="list-group-item">{{ m.date|date:'Y-m-d H:i' }} — {{ m.get_type_display }}: <strong>{{ m.value }}</strong> {{ m.unit }}</li>
-                  {% empty %}
-                  <li class="list-group-item text-muted">Aucune mesure</li>
-                  {% endfor %}
-                </ul>
-              </div>
+          <div class="col-md-3">
+            <div class="text-muted small">Source vendange</div>
+            <div>
+              {% if lot.source %}
+                <a href="{% url 'production:vendange_detail' pk=lot.source.pk %}">{{ lot.source.code }}</a>
+              {% else %}—{% endif %}
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="tab-pane fade" id="costs" role="tabpanel" aria-labelledby="costs-tab">
-    <div class="card">
+    <!-- Card: Paramètres analytiques -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-graph-up me-2"></i>Paramètres analytiques</span>
+        {% if param_alerts %}
+          <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Alertes</span>
+        {% endif %}
+      </div>
       <div class="card-body">
-        <div class="mb-2">
-          <strong>CMP €/L</strong>:
-          {% if cost_snapshot %}{{ cost_snapshot.cmp_vrac_eur_l }}{% else %}0.0000{% endif %}
+        <div class="row g-3">
+          <div class="col-md-2">
+            <div class="text-muted small">Densité</div>
+            <div class="fw-semibold">{{ latest_densite|default:"—" }}</div>
+          </div>
+          <div class="col-md-2">
+            <div class="text-muted small">TAV (%)</div>
+            <div class="fw-semibold">{% if abv_pct %}{{ abv_pct }}%{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-md-2">
+            <div class="text-muted small">pH</div>
+            <div class="fw-semibold">{{ latest_ph|default:"—" }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted small">État technique</div>
+            <div>{{ etat_technique|default:"—" }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="text-muted small">Dernier soutirage</div>
+            <div>{% if last_transfer_soutirage %}{{ last_transfer_soutirage|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+          </div>
         </div>
+        
+        <!-- Dernières mesures -->
+        {% if vinif_measurements %}
+        <hr class="my-3">
+        <h6 class="text-muted mb-2">Dernières mesures</h6>
         <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead>
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
               <tr>
                 <th>Date</th>
-                <th>Nature</th>
-                <th class="text-end">Quantité</th>
-                <th class="text-end">Montant (€)</th>
+                <th>Type</th>
+                <th>Valeur</th>
+                <th>Notes</th>
               </tr>
             </thead>
             <tbody>
-              {% for e in cost_entries %}
+              {% for m in vinif_measurements|slice:":5" %}
               <tr>
-                <td>{{ e.date|date:'Y-m-d H:i' }}</td>
-                <td>{{ e.get_nature_display }}</td>
-                <td class="text-end">{{ e.qty }}</td>
-                <td class="text-end">{{ e.amount_eur }}</td>
+                <td>{{ m.date|date:"d/m/Y H:i" }}</td>
+                <td>{{ m.get_type_display }}</td>
+                <td class="fw-semibold">{{ m.value }} {{ m.unit }}</td>
+                <td class="text-muted small">{{ m.notes|default:"—" }}</td>
               </tr>
-              {% empty %}
-              <tr><td colspan="4" class="text-muted">Aucune écriture</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+        {% endif %}
       </div>
     </div>
-  </div>
-</div>
 
-<div class="row g-3 mt-3">
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">Perte</div>
+    <!-- Card: Interventions -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-wrench me-2"></i>Interventions récentes</div>
+      <div class="card-body p-0">
+        {% if vinif_interventions %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Notes</th>
+              <th class="text-end">Volume sortie</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for itv in vinif_interventions|slice:":8" %}
+            <tr>
+              <td>{{ itv.date|date:"d/m/Y" }}</td>
+              <td><span class="badge bg-light text-dark">{{ itv.get_type_display }}</span></td>
+              <td class="text-muted small">{{ itv.notes|default:"—" }}</td>
+              <td class="text-end">{% if itv.volume_out_l %}<span class="text-danger">-{{ itv.volume_out_l }} L</span>{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center text-muted">
+          <i class="bi bi-info-circle me-1"></i>Aucune intervention enregistrée
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Card: Origine & Traçabilité -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-diagram-3 me-2"></i>Origine & Traçabilité</div>
       <div class="card-body">
-        <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/perte/">
-          {% csrf_token %}
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4"><label class="form-label">Volume (L)</label><input type="number" step="0.01" name="volume_l" class="form-control" required></div>
-            <div class="col-md-6"><label class="form-label">Notes</label><input type="text" name="notes" class="form-control"></div>
-            <div class="col-md-2"><button class="btn btn-outline-danger w-100" type="submit">Enregistrer</button></div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <h6 class="text-muted mb-2">Parents (provenance)</h6>
+            {% if lineage_parents %}
+            <ul class="list-group list-group-flush">
+              {% for ln in lineage_parents %}
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span>
+                  {% if ln.parent_lot %}
+                    <a href="{% url 'production:lot_tech_detail' pk=ln.parent_lot.pk %}">{{ ln.parent_lot.code }}</a>
+                  {% else %}—{% endif %}
+                  <span class="text-muted small ms-2">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:"d/m/Y" }})</span>
+                </span>
+                {% if ln.ratio %}<span class="badge bg-light text-dark">{{ ln.ratio|floatformat:0 }}%</span>{% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-muted small">Aucun parent (lot source)</div>
+            {% endif %}
           </div>
+          <div class="col-md-6">
+            <h6 class="text-muted mb-2">Enfants (destination)</h6>
+            {% if lineage_children %}
+            <ul class="list-group list-group-flush">
+              {% for ln in lineage_children %}
+              <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                <span>
+                  <a href="{% url 'production:lot_tech_detail' pk=ln.child_lot.pk %}">{{ ln.child_lot.code }}</a>
+                  <span class="text-muted small ms-2">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:"d/m/Y" }})</span>
+                </span>
+                {% if ln.ratio %}<span class="badge bg-light text-dark">{{ ln.ratio|floatformat:0 }}%</span>{% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-muted small">Aucun enfant</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Mouvements -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-arrow-left-right me-2"></i>Historique mouvements</span>
+        <a href="{% url 'production:lot_mouvements_export' pk=lot.pk %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-download me-1"></i>Exporter
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if mouvements %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th class="text-end">Volume</th>
+              <th>Détails</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mv in mouvements|slice:":10" %}
+            <tr>
+              <td>{{ mv.date|date:"d/m/Y H:i" }}</td>
+              <td>{{ mv.type }}</td>
+              <td class="text-end {% if mv.volume_l < 0 %}text-danger{% else %}text-success{% endif %}">
+                {% if mv.volume_l > 0 %}+{% endif %}{{ mv.volume_l }} L
+              </td>
+              <td class="text-muted small text-truncate" style="max-width: 200px;">{{ mv.meta|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center text-muted">Aucun mouvement</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Colonne latérale -->
+  <div class="col-lg-4">
+    
+    <!-- Prochaine étape -->
+    {% if next_step %}
+    <div class="card mb-3 border-primary">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="small text-muted">Prochaine étape</div>
+          <div class="fw-semibold">{{ next_step.label }}</div>
+        </div>
+        <a href="{{ next_step.url }}" class="btn btn-primary">Continuer</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Changement de statut -->
+    <div class="card mb-3 border-success">
+      <div class="card-header fw-semibold bg-success bg-opacity-10">
+        <i class="bi bi-signpost-2 me-2"></i>Changer le statut
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'production:lot_tech_action' pk=lot.pk action='change_status' %}">
+          {% csrf_token %}
+          <select name="new_status" class="form-select mb-2" onchange="this.form.submit()">
+            <option value="">— Sélectionner le nouveau statut —</option>
+            <optgroup label="Vinification">
+              <option value="MOUT_ENCUVE" {% if lot.statut == 'MOUT_ENCUVE' %}selected{% endif %}>Moût encuvé</option>
+              <option value="MOUT_PRESSE" {% if lot.statut == 'MOUT_PRESSE' %}selected{% endif %}>Moût de presse</option>
+              <option value="MOUT_DEBOURBE" {% if lot.statut == 'MOUT_DEBOURBE' %}selected{% endif %}>Moût débourbé</option>
+              <option value="VIN_EN_FA" {% if lot.statut == 'VIN_EN_FA' %}selected{% endif %}>Vin en FA</option>
+              <option value="VIN_POST_FA" {% if lot.statut == 'VIN_POST_FA' %}selected{% endif %}>Vin post-FA</option>
+              <option value="VIN_EN_FML" {% if lot.statut == 'VIN_EN_FML' %}selected{% endif %}>Vin en FML</option>
+              <option value="VIN_POST_FML" {% if lot.statut == 'VIN_POST_FML' %}selected{% endif %}>Vin post-FML</option>
+            </optgroup>
+            <optgroup label="Élevage & Stabilisation">
+              <option value="VIN_ELEVAGE" {% if lot.statut == 'VIN_ELEVAGE' %}selected{% endif %}>Vin en élevage</option>
+              <option value="VIN_STABILISE" {% if lot.statut == 'VIN_STABILISE' %}selected{% endif %}>Vin stabilisé</option>
+              <option value="VIN_FILTRATION_STERILE" {% if lot.statut == 'VIN_FILTRATION_STERILE' %}selected{% endif %}>Vin filtré stérile</option>
+              <option value="VIN_PRET_MISE" {% if lot.statut == 'VIN_PRET_MISE' %}selected{% endif %}>Vin prêt mise</option>
+            </optgroup>
+            <optgroup label="Conditionnement">
+              <option value="pret_mise" {% if lot.statut == 'pret_mise' %}selected{% endif %}>Prêt mise</option>
+              <option value="conditionne_partiel" {% if lot.statut == 'conditionne_partiel' %}selected{% endif %}>Conditionné partiel</option>
+              <option value="epuise" {% if lot.statut == 'epuise' %}selected{% endif %}>Épuisé</option>
+            </optgroup>
+          </select>
+        </form>
+        <div class="small text-muted">Statut actuel : <strong>{{ lot.get_statut_display }}</strong></div>
+      </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Actions</div>
+      <div class="card-body d-grid gap-2">
+        <a href="{% url 'production:mise_new' %}?lot={{ lot.id }}" class="btn btn-primary">
+          <i class="bi bi-box-seam me-2"></i>Planifier une mise
+        </a>
+        <a href="{% url 'production:assemblage_wizard' %}?source={{ lot.id }}" class="btn btn-outline-primary">
+          <i class="bi bi-layers me-2"></i>Créer un assemblage
+        </a>
+        <a href="{% url 'production:analyse_oeno_new' %}?lot={{ lot.id }}" class="btn btn-outline-secondary">
+          <i class="bi bi-droplet me-2"></i>Nouvelle analyse
+        </a>
+      </div>
+    </div>
+
+    <!-- Affectation cuvée -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Affectation cuvée</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'production:lot_tech_affecter_cuvee' pk=lot.pk %}">
+          {% csrf_token %}
+          <div class="mb-2">
+            <select class="form-select" name="cuvee_id" required>
+              <option value="">— Sélectionner une cuvée —</option>
+              {% for c in cuvees %}
+                <option value="{{ c.id }}" {% if lot.cuvee and lot.cuvee.id == c.id %}selected{% endif %}>{{ c.nom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-outline-primary w-100" type="submit">Affecter</button>
         </form>
       </div>
     </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">Transfert (A → B)</div>
+
+    <!-- Déclarations rapides -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Déclarations rapides</div>
       <div class="card-body">
-        <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/transfert/">
+        <!-- Mesure -->
+        <form method="post" action="{% url 'production:lot_vinif_add_measure' pk=lot.pk %}" class="mb-3">
           {% csrf_token %}
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4"><label class="form-label">Volume (L)</label><input type="number" step="0.01" name="volume_l" class="form-control" required></div>
-            <div class="col-md-6">
-              <label class="form-label">Lot destination</label>
-              <select class="form-select" name="dst_lot_id" required>
-                <option value="">— Choisir —</option>
-                {% for other in other_lots %}
-                <option value="{{ other.id }}">{{ other.code }} ({{ other.campagne }})</option>
-                {% endfor %}
+          <div class="fw-medium mb-2 small">Ajouter une mesure</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <select name="type" class="form-select form-select-sm">
+                <option value="temperature">Température (°C)</option>
+                <option value="densite">Densité</option>
+                <option value="ph">pH</option>
+                <option value="sucre">Sucres (g/L)</option>
+                <option value="tav">TAV (%)</option>
+                <option value="so2_libre">SO₂ libre (mg/L)</option>
+                <option value="so2_total">SO₂ total (mg/L)</option>
+                <option value="acidite_totale">Acidité totale (g/L H₂SO₄)</option>
+                <option value="acidite_volatile">Acidité volatile (g/L H₂SO₄)</option>
               </select>
             </div>
-            <div class="col-md-2"><button class="btn btn-outline-primary w-100" type="submit">Transférer</button></div>
+            <div class="col-6">
+              <input type="number" step="0.01" name="value" class="form-control form-control-sm" placeholder="Valeur" required>
+            </div>
           </div>
+          <div class="mb-2">
+            <input type="datetime-local" name="date" class="form-control form-control-sm" value="{{ 'now'|date:'Y-m-d' }}T{{ 'now'|time:'H:i' }}">
+          </div>
+          <button class="btn btn-outline-primary btn-sm w-100">Ajouter</button>
+        </form>
+        
+        <hr>
+        
+        <!-- Intervention -->
+        <form method="post" action="{% url 'production:lot_vinif_add_intervention' pk=lot.pk %}">
+          {% csrf_token %}
+          <div class="fw-medium mb-2 small">Ajouter une intervention</div>
+          <div class="mb-2">
+            <select name="type" class="form-select form-select-sm" id="intervention-type">
+              <optgroup label="Vinification">
+                <option value="remontage">Remontage</option>
+                <option value="pigeage">Pigeage</option>
+                <option value="delestage">Délestage</option>
+                <option value="debourbage">Débourbage</option>
+                <option value="pressurage">Pressurage</option>
+                <option value="maceration">Macération pelliculaire</option>
+                <option value="ecoulage">Écoulage</option>
+              </optgroup>
+              <optgroup label="Intrants">
+                <option value="so2">Ajout SO₂</option>
+                <option value="levurage">Levurage</option>
+                <option value="enzymage">Enzymage</option>
+                <option value="collage">Collage</option>
+                <option value="acidification">Acidification</option>
+                <option value="chaptalisation">Chaptalisation</option>
+              </optgroup>
+              <optgroup label="Élevage">
+                <option value="soutirage">Soutirage</option>
+                <option value="batonnage">Bâtonnage</option>
+                <option value="ouillage">Ouillage</option>
+              </optgroup>
+              <optgroup label="Finition">
+                <option value="filtration">Filtration</option>
+                <option value="stabilisation">Stabilisation tartrique</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <input type="number" step="0.01" name="quantite" class="form-control form-control-sm" placeholder="Dose/Qté">
+            </div>
+            <div class="col-6">
+              <select name="unite" class="form-select form-select-sm">
+                <option value="">— Unité —</option>
+                <option value="g/hL">g/hL</option>
+                <option value="mg/L">mg/L</option>
+                <option value="mL/hL">mL/hL</option>
+                <option value="kg">kg</option>
+                <option value="L">L</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-2">
+            <input type="text" name="notes" class="form-control form-control-sm" placeholder="Notes (optionnel)">
+          </div>
+          <button class="btn btn-outline-primary btn-sm w-100">Ajouter</button>
         </form>
       </div>
     </div>
-  </div>
-</div>
 
-<div class="mt-3 d-flex gap-2">
-  <a href="/production/mises/nouveau/?step=1" class="btn btn-primary">Planifier une mise</a>
-  <form id="form-pret-mise" method="post" action="/production/lots-techniques/{{ lot.id }}/action/pret_mise/">{% csrf_token %}<button class="btn btn-outline-success">Marquer Prêt mise</button></form>
-  <a href="/production/lots-elevage/journal/?lot={{ lot.code }}" class="btn btn-outline-secondary">Journal vrac</a>
-  <a href="/production/assemblages/nouveau/?step=1&source={{ lot.id }}" class="btn btn-outline-dark">Créer un assemblage</a>
+    <!-- Opérations de volume -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Opérations volume</div>
+      <div class="card-body">
+        <!-- Perte -->
+        <form method="post" action="{% url 'production:lot_tech_action' pk=lot.pk action='perte' %}" class="mb-3">
+          {% csrf_token %}
+          <div class="fw-medium mb-2 small text-danger">Déclarer une perte</div>
+          <div class="input-group input-group-sm">
+            <input type="number" step="0.01" name="volume_l" class="form-control" placeholder="Volume (L)" required>
+            <button class="btn btn-outline-danger">Enregistrer</button>
+          </div>
+        </form>
+
+        <hr>
+
+        <!-- Transfert -->
+        <form method="post" action="{% url 'production:lot_tech_action' pk=lot.pk action='transfert' %}">
+          {% csrf_token %}
+          <div class="fw-medium mb-2 small">Transférer vers un autre lot</div>
+          <div class="mb-2">
+            <input type="number" step="0.01" name="volume_l" class="form-control form-control-sm" placeholder="Volume (L)" required>
+          </div>
+          <div class="mb-2">
+            <select class="form-select form-select-sm" name="dst_lot_id" required>
+              <option value="">— Lot destination —</option>
+              {% for other in other_lots %}
+                <option value="{{ other.id }}">{{ other.code }} ({{ other.campagne }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-outline-primary btn-sm w-100">Transférer</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Localisation -->
+    {% if lot.location_kind != 'OFFSITE' %}
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Localisation</div>
+      <div class="card-body d-grid gap-2">
+        <form method="post" action="{% url 'production:lot_tech_action' pk=lot.pk action='offsite_send' %}">
+          {% csrf_token %}
+          <input type="hidden" name="tiers" value="">
+          <button class="btn btn-outline-warning w-100">
+            <i class="bi bi-send me-2"></i>Envoyer hors site
+          </button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="card mb-3 border-warning">
+      <div class="card-header fw-semibold bg-warning text-dark">
+        <i class="bi bi-geo-alt me-2"></i>Lot hors site
+      </div>
+      <div class="card-body d-grid gap-2">
+        <form method="post" action="{% url 'production:lot_tech_action' pk=lot.pk action='offsite_return_neutral' %}">
+          {% csrf_token %}
+          <button class="btn btn-outline-primary w-100">Retour (neutre)</button>
+        </form>
+        <form method="post" action="{% url 'production:lot_tech_action' pk=lot.pk action='offsite_return_non_neutral' %}">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger w-100">Retour (non neutre)</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Contenant & Emplacement -->
+    {% if lot_containers or lot_detail %}
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Contenant & Emplacement</div>
+      <div class="card-body">
+        {% if lot_containers %}
+        <div class="mb-3">
+          <div class="small text-muted mb-1">Contenants liés</div>
+          {% for c in lot_containers %}
+          <div class="d-flex justify-content-between">
+            <span>{{ c.get_type_display }} {{ c.identifiant }}</span>
+            <span class="badge bg-light text-dark">{{ c.volume_occupe_l }} / {{ c.capacite_l }} L</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% if lot_detail %}
+        <div class="small text-muted mb-1">Emplacement</div>
+        <div>
+          Allée {{ lot_detail.emplacement_rangee|default:"—" }} / 
+          Travée {{ lot_detail.emplacement_travee|default:"—" }} / 
+          Niveau {{ lot_detail.emplacement_niveau|default:"—" }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Documents -->
+    {% if lot_documents %}
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Documents</div>
+      <div class="card-body">
+        {% for d in lot_documents %}
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <div class="small text-muted">{{ d.get_type_display }}</div>
+            <div class="text-truncate" style="max-width: 180px;">{{ d.description|default:d.document.name }}</div>
+          </div>
+          <a class="btn btn-sm btn-outline-primary" href="{{ d.document.url }}" target="_blank">
+            <i class="bi bi-download"></i>
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Coûts -->
+    {% if cost_snapshot %}
+    <div class="card">
+      <div class="card-header fw-semibold">Coût de revient</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Prix de revient €/L</span>
+          <span class="fs-5 fw-bold text-primary">{{ cost_snapshot.cmp_vrac_eur_l|default:"0.00" }} €</span>
+        </div>
+        <div class="text-muted small mt-1">Coût moyen pondéré du vrac</div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
 </div>
 {% endblock %}

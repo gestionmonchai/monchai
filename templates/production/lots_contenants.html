@@ -1,18 +1,18 @@
 {% extends 'production/base_production.html' %}
-{% block title %}Contenants - Mon Chai{% endblock %}
+{% block title %}Cuves & barriques - Mon Chai{% endblock %}
 {% block production_content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Contenants (cuves, fûts, barriques)</h1>
+  <h1 class="h4 mb-0">Cuves & barriques</h1>
   <div class="btn-group">
     <a href="{% url 'production:container_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Nouveau contenant
+      <i class="bi bi-plus-circle me-1"></i>Nouvelle cuve / barrique
     </a>
   </div>
 </div>
 
 
 <div class="row g-3 mb-3">
-  <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Contenants</div><div class="fs-4">{{ kpi.count|default:"—" }}</div></div></div>
+  <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Cuves & barriques</div><div class="fs-4">{{ kpi.count|default:"—" }}</div></div></div>
   <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Capacité totale (hL)</div><div class="fs-4">{% if kpi.total_capacity_l %}{% widthratio kpi.total_capacity_l 100 1 %}{% else %}0{% endif %}</div></div></div>
   <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Occupé total (hL)</div><div class="fs-4">{% if kpi.total_occupied_l %}{% widthratio kpi.total_occupied_l 100 1 %}{% else %}0{% endif %}</div></div></div>
   <div class="col-md-3"><div class="card p-3"><div class="small text-muted">Taux moyen (%)</div><div class="fs-4">{% if kpi.total_capacity_l and kpi.total_capacity_l > 0 %}{% widthratio kpi.total_occupied_l kpi.total_capacity_l 100 %}{% else %}0{% endif %}</div></div></div>
@@ -73,10 +73,10 @@
         <div><strong>Libre</strong>: —</div>
       </div>
     </div>
-    <a href="/production/contenants/{{ c.id }}/" class="stretched-link" aria-label="Ouvrir le contenant"></a>
+    <a href="/production/contenants/{{ c.id }}/" class="stretched-link" aria-label="Ouvrir la fiche"></a>
   </div>
   {% empty %}
-  <div class="text-muted">Aucun contenant trouvé.</div>
+  <div class="text-muted">Aucune cuve ou barrique trouvée.</div>
   {% endfor %}
 </div>
 <div id="container-modal"></div>

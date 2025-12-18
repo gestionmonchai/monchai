@@ -35,7 +35,7 @@ Vue globale des stocks.
 Configuration des données maîtresses.
 - **Cépages** : Liste des variétés de raisins.
 - **Cuvées** : Les "marques" du domaine. Définissent les assemblages types et les tarifs.
-- **Contenants** : Cuves, fûts, amphores.
+- **Cuves & barriques** : Cuves, fûts, amphores, barriques.
 
 ## Aide Démarrage (Onboarding)
 Pour commencer :

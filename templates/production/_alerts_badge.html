@@ -1,0 +1,7 @@
+{% if count %}
+<span class="badge rounded-pill {% if overdue %}bg-danger{% elif urgent %}bg-warning text-dark{% else %}bg-primary{% endif %} {% if size == 'lg' %}fs-6 px-3{% endif %}"
+      title="{% if overdue %}{{ overdue }} en retard{% endif %}{% if urgent %} • {{ urgent }} urgent{{ urgent|pluralize }}{% endif %}"
+      data-bs-toggle="tooltip">
+    {{ count }}
+</span>
+{% endif %}

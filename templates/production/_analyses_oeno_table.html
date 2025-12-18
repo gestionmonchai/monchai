@@ -1,0 +1,225 @@
+{% load static %}
+
+<div class="d-none" id="analyses-table-meta" data-total="{{ total_count }}"></div>
+
+{% if analyses %}
+<div class="card">
+  <!-- Style pour éviter le masquage du dropdown -->
+  <style>
+    .analyses-table-container { overflow: visible !important; position: relative; }
+    .analyses-table-container .dropdown { position: static !important; }
+    .analyses-table-container .dropdown-menu { 
+      z-index: 9999 !important; 
+      position: absolute !important;
+    }
+    .analyses-table-wrapper { 
+      overflow-x: auto; 
+      overflow-y: visible; 
+      min-height: 150px;
+      padding-bottom: 80px; /* Espace pour le dropdown */
+    }
+    /* Forcer le dropdown à être visible */
+    .dropdown-menu.show {
+      z-index: 9999 !important;
+    }
+  </style>
+  <div class="analyses-table-container">
+    <div class="analyses-table-wrapper">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 100px;">Date</th>
+          <th>Lot</th>
+          <th>Cuvée</th>
+          <th>Contenant</th>
+          <th style="width: 120px;">Type</th>
+          <th>Résumé</th>
+          <th style="width: 130px;">Statut</th>
+          <th style="width: 100px;">Alerte</th>
+          <th style="width: 80px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in analyses %}
+        <tr class="{% if a.niveau_alerte == 'alerte' %}table-danger{% elif a.niveau_alerte == 'surveillance' %}table-warning{% endif %}">
+          <td>
+            <span class="text-nowrap">{{ a.date|date:"d/m/Y" }}</span>
+          </td>
+          <td>
+            <a href="{% url 'production:lot_tech_detail' pk=a.lot.pk %}" class="fw-medium text-decoration-none">
+              {{ a.lot.code }}
+            </a>
+          </td>
+          <td>{{ a.cuvee_nom }}</td>
+          <td class="text-muted small">{{ a.contenant_display }}</td>
+          <td>
+            {% if a.type_analyse == 'complete' %}
+              <span class="badge bg-primary">Complète</span>
+            {% elif a.type_analyse == 'so2' %}
+              <span class="badge bg-secondary">SO₂</span>
+            {% elif a.type_analyse == 'pre_mise' %}
+              <span class="badge bg-info text-dark">Pré-mise</span>
+            {% elif a.type_analyse == 'microbiologique' %}
+              <span class="badge bg-warning text-dark">Microbio</span>
+            {% else %}
+              <span class="badge bg-light text-dark">Autre</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">
+            {{ a.resume_resultats }}
+          </td>
+          <td>
+            {% if a.statut == 'planifiee' %}
+              <span class="badge bg-outline-secondary border">Planifiée</span>
+            {% elif a.statut == 'prelevement' %}
+              <span class="badge bg-light text-dark border">Prélèvement</span>
+            {% elif a.statut == 'attente_resultats' %}
+              <span class="badge bg-warning text-dark">En attente</span>
+            {% elif a.statut == 'resultats_saisis' %}
+              <span class="badge bg-info text-dark">Saisis</span>
+            {% elif a.statut == 'validee' %}
+              <span class="badge bg-success">Validée</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.niveau_alerte == 'alerte' %}
+              <span class="badge bg-danger" title="{{ a.get_alerte_type_display|default:'Alerte' }} — {{ a.alerte_description|default:'' }}">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Alerte
+              </span>
+            {% elif a.niveau_alerte == 'surveillance' %}
+              <span class="badge bg-warning text-dark" title="Paramètre proche des limites">
+                <i class="bi bi-eye-fill me-1"></i>Surveiller
+              </span>
+            {% else %}
+              <span class="badge bg-success">
+                <i class="bi bi-check-circle me-1"></i>OK
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                      data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'production:analyse_oeno_edit' pk=a.pk %}">
+                    <i class="bi bi-pencil me-2"></i>Voir / Modifier
+                  </a>
+                </li>
+                <li>
+                  <form method="post" action="{% url 'production:analyse_oeno_duplicate' pk=a.pk %}" 
+                        hx-post="{% url 'production:analyse_oeno_duplicate' pk=a.pk %}"
+                        hx-swap="none">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item">
+                      <i class="bi bi-copy me-2"></i>Dupliquer
+                    </button>
+                  </form>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'production:lot_tech_detail' pk=a.lot.pk %}">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>Aller au lot
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <button type="button" class="dropdown-item text-danger" 
+                          data-bs-toggle="modal" data-bs-target="#deleteModal{{ a.pk }}">
+                    <i class="bi bi-trash me-2"></i>Supprimer
+                  </button>
+                </li>
+              </ul>
+            </div>
+            
+            <!-- Modal de confirmation de suppression -->
+            <div class="modal fade" id="deleteModal{{ a.pk }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h6 class="modal-title">Confirmer la suppression</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-0">Supprimer l'analyse du <strong>{{ a.date|date:"d/m/Y" }}</strong> pour le lot <strong>{{ a.lot.code }}</strong> ?</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <form method="post" action="{% url 'production:analyse_oeno_delete' pk=a.pk %}"
+                          hx-post="{% url 'production:analyse_oeno_delete' pk=a.pk %}"
+                          hx-swap="none">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">{{ total_count }} analyse{{ total_count|pluralize }} trouvée{{ total_count|pluralize }}</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if has_previous %}
+          <li class="page-item">
+            <a class="page-link" 
+               hx-get="{% url 'production:analyses_oeno_table' %}?page={{ previous_page }}" 
+               hx-include="#analyses-filter-form" 
+               hx-target="#analyses-table" 
+               hx-swap="innerHTML">«</a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">Page {{ page }}/{{ total_pages }}</span>
+        </li>
+        {% if has_next %}
+          <li class="page-item">
+            <a class="page-link" 
+               hx-get="{% url 'production:analyses_oeno_table' %}?page={{ next_page }}" 
+               hx-include="#analyses-filter-form" 
+               hx-target="#analyses-table" 
+               hx-swap="innerHTML">»</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% else %}
+  <div class="card-footer">
+    <small class="text-muted">{{ total_count }} analyse{{ total_count|pluralize }} trouvée{{ total_count|pluralize }}</small>
+  </div>
+  {% endif %}
+</div>
+
+{% else %}
+<!-- État vide -->
+<div class="card">
+  <div class="card-body text-center py-5">
+    <div class="mb-3">
+      <i class="bi bi-droplet text-muted" style="font-size: 3rem;"></i>
+    </div>
+    <h5 class="text-muted mb-2">Aucune analyse enregistrée</h5>
+    <p class="text-muted mb-4">
+      Créez votre première analyse pour suivre l'évolution de vos lots en élevage.
+    </p>
+    <div class="d-flex justify-content-center gap-2">
+      <a href="{% url 'production:analyse_oeno_new' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Nouvelle analyse
+      </a>
+      <a href="{% url 'production:lots_elevage_home' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-collection me-1"></i>Voir les lots en élevage
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}

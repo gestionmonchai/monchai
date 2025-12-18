@@ -1,69 +1,95 @@
 {% extends 'production/base_production.html' %}
+{% load humanize %}
 {% block title %}Vue d'ensemble - Production{% endblock %}
 
 {% block production_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h4 mb-0 fw-bold">Vue d'ensemble</h1>
+  <div>
+    <h1 class="h4 mb-0 fw-bold">Vue d'ensemble</h1>
+    <p class="text-muted mb-0 small">Tableau de bord de votre activité viticole</p>
+  </div>
   <div class="d-flex gap-2">
-    <a href="/production/vendanges/nouveau/" class="btn btn-sm btn-outline-primary">+ Vendange</a>
-    <a href="/production/lots-techniques/nouveau/" class="btn btn-sm btn-primary">+ Lot technique</a>
+    <a href="{% url 'production:vendange_new' %}" class="btn btn-sm btn-warning">
+      <i class="bi bi-basket me-1"></i>Vendange
+    </a>
+    <a href="{% url 'production:lot_tech_new' %}" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Lot technique
+    </a>
   </div>
 </div>
 
 <!-- KPIs top row -->
 <div class="row g-3 mb-4">
-  <div class="col-md-3">
+  <!-- Surface parcelles -->
+  <div class="col-6 col-lg-3">
     <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden">
       <div class="card-body">
-        <div class="text-uppercase text-muted small fw-bold mb-2">Volume en vrac</div>
+        <div class="text-uppercase text-muted small fw-bold mb-2">
+          <i class="bi bi-map me-1"></i>Parcelles
+        </div>
         <div class="d-flex align-items-baseline gap-1">
-          <span class="fs-3 fw-bold text-dark">{{ total_volume_hl|default:0|floatformat:1 }}</span>
+          <span class="fs-3 fw-bold text-success">{{ total_surface_ha|default:0|floatformat:2 }}</span>
+          <span class="text-muted">ha</span>
+        </div>
+        <div class="mt-2 small text-muted">
+          {{ parcelles_count|default:0 }} parcelle{{ parcelles_count|pluralize }}
+        </div>
+      </div>
+      <a href="{% url 'production:parcelles_list' %}" class="stretched-link"></a>
+    </div>
+  </div>
+
+  <!-- Volume vrac -->
+  <div class="col-6 col-lg-3">
+    <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-bold mb-2">
+          <i class="bi bi-droplet me-1"></i>Volume en vrac
+        </div>
+        <div class="d-flex align-items-baseline gap-1">
+          <span class="fs-3 fw-bold text-primary">{{ total_volume_hl|default:0|floatformat:1 }}</span>
           <span class="text-muted">hL</span>
         </div>
         <div class="mt-2 small text-muted">
-          <i class="bi bi-info-circle me-1"></i>Tous statuts confondus
+          {{ lots_actifs_count|default:0 }} lot{{ lots_actifs_count|pluralize }} actif{{ lots_actifs_count|pluralize }}
         </div>
       </div>
-      <div class="position-absolute top-0 end-0 p-3 opacity-10">
-        <i class="bi bi-droplet fs-1 text-primary"></i>
-      </div>
+      <a href="{% url 'production:lots_tech_list' %}" class="stretched-link"></a>
     </div>
   </div>
 
-  <div class="col-md-3">
-    <div class="card h-100 border-0 shadow-sm">
+  <!-- Vendanges -->
+  <div class="col-6 col-lg-3">
+    <div class="card h-100 border-0 shadow-sm position-relative overflow-hidden">
       <div class="card-body">
-        <div class="text-uppercase text-muted small fw-bold mb-2">Vendanges actives</div>
-        <div class="fs-3 fw-bold text-dark">{{ vendanges_active_count }}</div>
+        <div class="text-uppercase text-muted small fw-bold mb-2">
+          <i class="bi bi-basket me-1"></i>Vendanges
+        </div>
+        <div class="fs-3 fw-bold text-warning">{{ vendanges_active_count|default:0 }}</div>
         <div class="mt-2 small text-success">
-          <i class="bi bi-check-circle me-1"></i>Campagne en cours
+          <i class="bi bi-calendar-event me-1"></i>Millésime {{ current_campagne|default:"en cours" }}
         </div>
       </div>
+      <a href="{% url 'production:vendanges_list' %}" class="stretched-link"></a>
     </div>
   </div>
 
-  <div class="col-md-3">
-    <div class="card h-100 border-0 shadow-sm">
+  <!-- Actions rapides -->
+  <div class="col-6 col-lg-3">
+    <div class="card h-100 border-0 shadow-sm bg-dark text-white">
       <div class="card-body">
-        <div class="text-uppercase text-muted small fw-bold mb-2">Alertes / Tâches</div>
-        <div class="fs-3 fw-bold text-dark">0</div>
-        <div class="mt-2 small text-muted">
-          Tout est à jour
+        <div class="text-uppercase small fw-bold mb-2 opacity-75">
+          <i class="bi bi-lightning-charge me-1"></i>Actions rapides
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-md-3">
-    <div class="card h-100 border-0 shadow-sm bg-primary text-white">
-      <div class="card-body">
-        <div class="text-uppercase small fw-bold mb-2 opacity-75">Accès rapide</div>
-        <div class="d-grid gap-2">
-           <a href="/production/encuvages/" class="btn btn-sm btn-light text-primary fw-bold text-start">
+        <div class="d-grid gap-1">
+           <a href="{% url 'production:encuvages_list' %}" class="btn btn-sm btn-light text-dark fw-bold text-start">
              <i class="bi bi-arrow-right-circle me-2"></i>Encuvages
            </a>
-           <a href="/production/mises/" class="btn btn-sm btn-light text-primary fw-bold text-start">
-             <i class="bi bi-box-seam me-2"></i>Mises
+           <a href="{% url 'production:lot_tech_new' %}" class="btn btn-sm btn-outline-light fw-bold text-start">
+             <i class="bi bi-plus-circle me-2"></i>Nouveau lot
+           </a>
+           <a href="{% url 'production:analyses_oeno_list' %}" class="btn btn-sm btn-outline-light fw-bold text-start">
+             <i class="bi bi-droplet me-2"></i>Analyses
            </a>
         </div>
       </div>
@@ -108,7 +134,7 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
         <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2 text-success"></i>Dernières mises</h6>
-        <a href="/production/mises/" class="text-decoration-none small fw-bold">Tout voir</a>
+        <a href="{% url 'production:mises_list' %}" class="text-decoration-none small fw-bold">Tout voir</a>
       </div>
       <div class="table-responsive">
         <table class="table align-middle mb-0 table-hover">

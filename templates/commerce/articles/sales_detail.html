@@ -1,0 +1,121 @@
+{% extends 'commerce/base_commerce.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid py-4 px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'ventes:article_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="h3 mb-0">{{ article.name }}</h1>
+                <div class="text-muted small">
+                    <span class="badge bg-primary me-2">VENTE</span>
+                    SKU: {{ article.sku|default:"-" }}
+                </div>
+            </div>
+        </div>
+        <div>
+            <!-- Actions -->
+            <a href="#" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-2"></i>Modifier
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Info -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">Informations Vente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="small text-muted">Prix de vente</label>
+                            <div class="fs-5">{{ article.price_ht }} € HT</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted">TVA</label>
+                            <div class="fs-5">{{ article.vat_rate }} %</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted">Unité de vente</label>
+                            <div class="fs-5">{{ article.unit }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted">Catégorie</label>
+                            <div class="fs-5">{{ article.category.name|default:"Non catégorisé" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if article.description %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Description commerciale</h6>
+                    <p class="mb-0">{{ article.description|linebreaks }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar / Cross-Linking -->
+        <div class="col-lg-4">
+            <!-- Cross Link Box -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Liaison Achat</h6>
+                    
+                    {% if article.is_buyable %}
+                        <div class="alert alert-success d-flex align-items-center border-0 bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle-fill me-3 fs-4"></i>
+                            <div>
+                                <strong>Issu d'un article acheté</strong>
+                                <div class="small">Cet article est géré en achat.</div>
+                            </div>
+                        </div>
+                        <a href="{% url 'achats:article_detail' article.pk %}" class="btn btn-success w-100 text-white">
+                            Voir la fiche Achat <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                    {% else %}
+                        <div class="alert alert-secondary d-flex align-items-center border-0">
+                            <i class="bi bi-info-circle me-3 fs-4 text-muted"></i>
+                            <div>
+                                <strong>Produit en propre</strong>
+                                <div class="small text-muted">Non acheté (Production interne).</div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <a href="{% url 'achats:article_activation' article.pk %}" class="btn btn-outline-success">
+                                <i class="bi bi-plus-lg me-2"></i>Créer la version achat
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Stock Info -->
+            {% if article.is_stock_managed %}
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">État du stock</h6>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span>Disponible</span>
+                        <span class="fw-bold fs-5">0 {{ article.unit }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

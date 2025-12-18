@@ -1,9 +1,8 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends 'commerce/base_commerce.html' %}
 
-{% block title %}Gestion Clients{% endblock %}
+{% block title %}Clients - {{ organization.name }}{% endblock %}
 
-{% block extra_css %}
+{% block commerce_content %}
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 /* Custom colors for wine theme */
@@ -23,7 +22,7 @@
             <h1 class="text-3xl font-bold text-gray-900">Clients</h1>
             <p class="text-gray-600 mt-1">Gestion de votre portefeuille clients</p>
         </div>
-        <a href="{% url 'ventes:client_new' %}" 
+        <a href="{% url 'clients:customer_create' %}" 
            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -312,7 +311,7 @@
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">
-                                                <a href="{% url 'ventes:client_detail' customer.id %}" class="hover:text-blue-600">
+                                                <a href="{% url 'clients:customer_detail' customer.id %}" class="hover:text-blue-600">
                                                     {{ customer.name }}
                                                 </a>
                                             </div>
@@ -376,9 +375,9 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex space-x-2">
-                                        <a href="{% url 'ventes:client_detail' customer.id %}" 
+                                        <a href="{% url 'clients:customer_detail' customer.id %}" 
                                            class="text-blue-600 hover:text-blue-900">Voir</a>
-                                        <a href="{% url 'ventes:client_edit' customer.id %}" 
+                                        <a href="{% url 'clients:customer_edit' customer.id %}" 
                                            class="text-indigo-600 hover:text-indigo-900">Modifier</a>
                                     </div>
                                 </td>
@@ -405,7 +404,7 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Aucun client</h3>
                 <p class="mt-1 text-sm text-gray-500">Commencez par créer votre premier client.</p>
                 <div class="mt-6">
-                    <a href="{% url 'ventes:client_new' %}" 
+                    <a href="{% url 'clients:customer_create' %}" 
                        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                         <svg class="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
@@ -647,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <div class="ml-4">
                                 <div class="text-sm font-medium text-gray-900">
-                                    <a href="{% url 'ventes:clients_list' %}${customer.id}/" class="hover:text-blue-600">
+                                    <a href="{% url 'clients:customers_list' %}${customer.id}/" class="hover:text-blue-600">
                                         ${customer.name}
                                     </a>
                                 </div>
@@ -683,8 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex space-x-2">
-                            <a href="{% url 'ventes:clients_list' %}${customer.id}/" class="text-blue-600 hover:text-blue-900">Voir</a>
-                            <a href="{% url 'ventes:clients_list' %}${customer.id}/modifier/" class="text-indigo-600 hover:text-indigo-900">Modifier</a>
+                            <a href="{% url 'clients:customers_list' %}${customer.id}/" class="text-blue-600 hover:text-blue-900">Voir</a>
+                            <a href="{% url 'clients:customers_list' %}${customer.id}/modifier/" class="text-indigo-600 hover:text-indigo-900">Modifier</a>
                         </div>
                     </td>
                 </tr>
@@ -737,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
         searchResults.classList.add('hidden');
         
         // Recharger la page pour afficher tous les clients
-        window.location.href = "{% url 'ventes:clients_list' %}";
+        window.location.href = "{% url 'clients:customers_list' %}";
     });
     
     // Gestion du sélecteur de colonnes

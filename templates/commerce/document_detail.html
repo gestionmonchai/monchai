@@ -1,0 +1,473 @@
+{% extends "commerce/base_commerce.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ document.get_type_display }} {{ document.number }}{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid px-0">
+    <!-- Header / Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url namespace|add:':dashboard' %}" class="btn btn-link text-muted p-0">
+                <i class="bi bi-arrow-left fs-4"></i>
+            </a>
+            <div>
+                <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+                    {{ document.get_type_display }} {{ document.number }}
+                    {% if document.status == 'draft' %}
+                    <span class="badge bg-secondary fs-6 align-middle">Brouillon</span>
+                    {% elif document.status == 'sent' %}
+                    <span class="badge bg-info text-dark fs-6 align-middle">Envoyé</span>
+                    {% elif document.status == 'validated' %}
+                    <span class="badge bg-primary fs-6 align-middle">Validé</span>
+                    {% elif document.status == 'executed' %}
+                    <span class="badge bg-dark fs-6 align-middle">{% if document.side == 'sale' %}Livré{% else %}Réceptionné{% endif %}</span>
+                    {% elif document.status == 'issued' %}
+                    <span class="badge bg-warning text-dark fs-6 align-middle">Émis</span>
+                    {% elif document.status == 'paid' %}
+                    <span class="badge bg-success fs-6 align-middle">Payé</span>
+                    {% elif document.status == 'cancelled' %}
+                    <span class="badge bg-danger fs-6 align-middle">Annulé</span>
+                    {% endif %}
+                </h1>
+                <div class="text-muted small mt-1">
+                    Créé le {{ document.created_at|date:"d/m/Y" }} par {{ document.created_by.get_full_name|default:document.created_by.username }}
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            {% if document.status == 'draft' %}
+            <a href="{% url namespace|add:':document_update' document.id %}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-2"></i>Modifier
+            </a>
+            <a href="{% url namespace|add:':document_delete' document.id %}" class="btn btn-outline-danger">
+                <i class="bi bi-trash"></i>
+            </a>
+            {% endif %}
+            
+            <button class="btn btn-outline-secondary">
+                <i class="bi bi-printer me-2"></i>PDF
+            </button>
+            
+            <!-- Workflow Actions -->
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                Actions
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                {% if document.type == 'quote' and document.status == 'draft' %}
+                <li><button class="dropdown-item" onclick="alert('TODO: Marquer envoyé')">Marquer comme envoyé</button></li>
+                {% endif %}
+                
+                {% if document.type == 'quote' and document.status == 'sent' %}
+                <li>
+                    <form action="{% url namespace|add:':document_transform' document.id 'order' %}" method="post">
+                        {% csrf_token %}
+                        <button class="dropdown-item"><i class="bi bi-check-circle me-2"></i>Convertir en Commande</button>
+                    </form>
+                </li>
+                {% endif %}
+                
+                {% if document.type == 'order' and document.status == 'validated' %}
+                <li>
+                    <form action="{% url namespace|add:':document_transform' document.id 'delivery' %}" method="post">
+                        {% csrf_token %}
+                        <button class="dropdown-item"><i class="bi bi-truck me-2"></i>Générer {% if document.side == 'sale' %}Bon de Livraison{% else %}Bon de Réception{% endif %}</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="{% url namespace|add:':document_transform' document.id 'invoice' %}" method="post">
+                        {% csrf_token %}
+                        <button class="dropdown-item"><i class="bi bi-receipt me-2"></i>Générer Facture</button>
+                    </form>
+                </li>
+                {% endif %}
+                
+                {% if document.type == 'invoice' and document.status == 'issued' %}
+                <li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#paymentModal"><i class="bi bi-credit-card me-2"></i>Enregistrer un paiement</button></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form action="{% url namespace|add:':document_transform' document.id 'credit_note' %}" method="post">
+                        {% csrf_token %}
+                        <button class="dropdown-item text-danger"><i class="bi bi-arrow-counterclockwise me-2"></i>Créer un Avoir</button>
+                    </form>
+                </li>
+                {% endif %}
+                
+                {% if document.status == 'draft' %}
+                 <li><hr class="dropdown-divider"></li>
+                 <li>
+                    <form action="{% url namespace|add:':document_validate' document.id %}" method="post">
+                        {% csrf_token %}
+                        <button class="dropdown-item text-success"><i class="bi bi-check2-all me-2"></i>Valider directement</button>
+                    </form>
+                 </li>
+                {% endif %}
+                
+                {% if document.type == 'delivery' and document.status != 'executed' %}
+                 <li><hr class="dropdown-divider"></li>
+                 <li>
+                    <form action="{% url namespace|add:':document_execute' document.id %}" method="post">
+                        {% csrf_token %}
+                        <button class="dropdown-item text-success"><i class="bi bi-box-seam me-2"></i>Valider mouvement stock</button>
+                    </form>
+                 </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Informations -->
+        <div class="col-md-4 order-md-2">
+            <!-- Card Client -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="card-title mb-0 fw-bold">{% if document.side == 'sale' %}Client{% else %}Fournisseur{% endif %}</h6>
+                </div>
+                <div class="card-body">
+                    <h5 class="mb-1">{{ document.client.name }}</h5>
+                    <p class="text-muted mb-3">{{ document.client.get_segment_display }}</p>
+                    
+                    <ul class="list-unstyled small mb-0">
+                        {% if document.client.email %}
+                        <li class="mb-2"><i class="bi bi-envelope me-2 text-muted"></i>{{ document.client.email }}</li>
+                        {% endif %}
+                        {% if document.client.phone %}
+                        <li class="mb-2"><i class="bi bi-telephone me-2 text-muted"></i>{{ document.client.phone }}</li>
+                        {% endif %}
+                        {% if document.client.vat_number %}
+                        <li class="mb-2"><i class="bi bi-building me-2 text-muted"></i>{{ document.client.vat_number }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card Détails -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="card-title mb-0 fw-bold">Détails</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0 small">
+                        <dt class="col-sm-5 text-muted">Date d'émission</dt>
+                        <dd class="col-sm-7">{{ document.date_issue|date:"d/m/Y" }}</dd>
+
+                        {% if document.date_due %}
+                        <dt class="col-sm-5 text-muted">Échéance</dt>
+                        <dd class="col-sm-7 {% if document.is_overdue %}text-danger{% endif %}">{{ document.date_due|date:"d/m/Y" }}</dd>
+                        {% endif %}
+
+                        <dt class="col-sm-5 text-muted">Référence</dt>
+                        <dd class="col-sm-7">{{ document.reference|default:"-" }}</dd>
+
+                        <dt class="col-sm-5 text-muted">{% if document.side == 'sale' %}Mode de vente{% else %}Type d'achat{% endif %}</dt>
+                        <dd class="col-sm-7">{{ document.get_sale_mode_display }}</dd>
+                        
+                        {% if document.delivery_date_expected %}
+                        <dt class="col-sm-5 text-muted">Livraison prévue</dt>
+                        <dd class="col-sm-7">{{ document.delivery_date_expected|date:"d/m/Y" }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            
+            {% if document.parent %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body bg-light">
+                    <small class="text-muted d-block mb-1">Document parent</small>
+                    <a href="{% url namespace|add:':document_detail' document.parent.id %}" class="fw-bold text-decoration-none">
+                        <i class="bi bi-link-45deg me-1"></i>{{ document.parent.get_type_display }} {{ document.parent.number }}
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Lignes & Contenu -->
+        <div class="col-md-8 order-md-1">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold">Lignes</h6>
+                    {% if document.status == 'draft' %}
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addLineModal">
+                        <i class="bi bi-plus-lg me-1"></i>Ajouter une ligne
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Description</th>
+                                <th class="text-end" style="width: 100px;">Qté</th>
+                                <th class="text-end" style="width: 120px;">Prix Unit.</th>
+                                <th class="text-end" style="width: 80px;">Remise</th>
+                                <th class="text-end" style="width: 80px;">TVA</th>
+                                <th class="text-end pe-4" style="width: 120px;">Total HT</th>
+                                {% if document.status == 'draft' %}
+                                <th style="width: 50px;"></th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for line in lines %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-medium">{{ line.description }}</div>
+                                    {% if line.sku %}
+                                    <small class="text-muted">{{ line.sku.product.name }}</small>
+                                    {% endif %}
+                                    {% if line.lot_number %}
+                                    <div class="badge bg-light text-dark border mt-1">Lot: {{ line.lot_number }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ line.quantity|floatformat:0 }}</td>
+                                <td class="text-end">{{ line.unit_price|floatformat:2 }} €</td>
+                                <td class="text-end">
+                                    {% if line.discount_pct > 0 %}
+                                    <span class="text-danger">-{{ line.discount_pct|floatformat:0 }}%</span>
+                                    {% else %}-{% endif %}
+                                </td>
+                                <td class="text-end">{{ line.tax_rate|floatformat:0 }}%</td>
+                                <td class="text-end pe-4 fw-medium">{{ line.amount_ht|floatformat:2 }} €</td>
+                                {% if document.status == 'draft' %}
+                                <td class="text-end">
+                                    <form action="{% url namespace|add:':line_delete' line.id %}" method="post" onsubmit="return confirm('Supprimer cette ligne ?');">
+                                        {% csrf_token %}
+                                        <button class="btn btn-link text-danger p-0 btn-sm"><i class="bi bi-x-lg"></i></button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    Aucune ligne. Ajoutez des articles.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-light">
+                            <tr>
+                                <td colspan="5" class="text-end pt-3 text-muted">Total HT</td>
+                                <td class="text-end pe-4 pt-3 fw-bold">{{ document.total_ht|floatformat:2 }} €</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" class="text-end border-0 text-muted">TVA</td>
+                                <td class="text-end pe-4 border-0">{{ document.total_tax|floatformat:2 }} €</td>
+                                <td></td>
+                            </tr>
+                            <tr class="fs-5">
+                                <td colspan="5" class="text-end border-0 fw-bold">Total TTC</td>
+                                <td class="text-end pe-4 border-0 fw-bold text-primary">{{ document.total_ttc|floatformat:2 }} €</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            {% if document.notes %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-2">Notes</h6>
+                    <p class="mb-0 text-muted">{{ document.notes|linebreaksbr }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Paiements (Pour Factures) -->
+            {% if document.type == 'invoice' %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold">Paiements</h6>
+                    <span class="badge {% if document.is_paid %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                        Reste dû : {{ document.amount_due|floatformat:2 }} €
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td class="ps-4">{{ payment.date|date:"d/m/Y" }}</td>
+                                <td>{{ payment.get_method_display }}</td>
+                                <td class="text-muted small">{{ payment.reference }}</td>
+                                <td class="text-end pe-4 fw-medium text-success">- {{ payment.amount|floatformat:2 }} €</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3 text-muted">Aucun paiement enregistré</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajout Ligne -->
+<div class="modal fade" id="addLineModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{% url namespace|add:':line_add' document.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter une ligne</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Article (SKU)</label>
+                            {% render_field line_form.sku class="form-select" %}
+                            <div id="stock-info" class="form-text text-info" style="display:none;">
+                                <i class="bi bi-box-seam me-1"></i>Stock disponible : <span id="stock-val"></span> <span id="stock-unit"></span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            {% render_field line_form.description class="form-control" %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Quantité</label>
+                            {% render_field line_form.quantity class="form-control" %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Prix Unitaire HT</label>
+                            {% render_field line_form.unit_price class="form-control" %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">TVA %</label>
+                            {% render_field line_form.tax_rate class="form-control" %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Remise %</label>
+                            {% render_field line_form.discount_pct class="form-control" %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Numéro de lot (opt.)</label>
+                            {% render_field line_form.lot_number class="form-control" %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Script pour auto-remplissage prix -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const skuSelect = document.getElementById('id_sku');
+        const descInput = document.getElementById('id_description');
+        const priceInput = document.getElementById('id_unit_price');
+        const taxInput = document.getElementById('id_tax_rate');
+        
+        const stockInfoDiv = document.getElementById('stock-info');
+        const stockValSpan = document.getElementById('stock-val');
+        const stockUnitSpan = document.getElementById('stock-unit');
+        
+        // Récupération du side depuis le template Django (variable globale ou data attribute body)
+        // Astuce: on regarde l'URL ou un data attribute. Ici on va l'injecter proprement.
+        const docSide = "{{ document.side }}"; 
+        // Construction de l'URL API de base en utilisant le namespace courant
+        const apiBaseUrl = "{% url namespace|add:':api_sku_details' '00000000-0000-0000-0000-000000000000' %}";
+
+        if (skuSelect) {
+            skuSelect.addEventListener('change', function() {
+                const skuId = this.value;
+                if (skuId) {
+                    // Remplacement du placeholder par le vrai ID
+                    const url = apiBaseUrl.replace('00000000-0000-0000-0000-000000000000', skuId) + `?side=${docSide}`;
+                    
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (descInput && !descInput.value) descInput.value = data.description;
+                            
+                            // Prix : on écrase seulement si vide ou si c'est la valeur par défaut précédente
+                            // Pour simplifier, on écrase toujours si le champ est vide ou si l'user vient de changer le SKU
+                            if (priceInput) priceInput.value = data.unit_price;
+                            
+                            if (taxInput) taxInput.value = data.tax_rate;
+                            
+                            // Affichage Stock
+                            if (stockInfoDiv && data.stock_qty !== undefined) {
+                                stockValSpan.textContent = data.stock_qty;
+                                stockUnitSpan.textContent = data.unit_name;
+                                stockInfoDiv.style.display = 'block';
+                                
+                                // Alerte stock bas pour vente
+                                if (docSide === 'sale' && data.stock_qty <= 0) {
+                                    stockInfoDiv.className = 'form-text text-danger fw-bold';
+                                    stockValSpan.textContent = data.stock_qty + " (Rupture)";
+                                } else {
+                                    stockInfoDiv.className = 'form-text text-info';
+                                }
+                            }
+                        })
+                        .catch(err => console.error("Erreur fetch SKU", err));
+                } else {
+                    if (stockInfoDiv) stockInfoDiv.style.display = 'none';
+                }
+            });
+        }
+    });
+</script>
+
+<!-- Modal Paiement -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{% url namespace|add:':payment_add' document.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Enregistrer un paiement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        {% render_field payment_form.date class="form-control" type="date" %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Montant</label>
+                        <div class="input-group">
+                            {% render_field payment_form.amount class="form-control" value=document.amount_due step="0.01" %}
+                            <span class="input-group-text">€</span>
+                        </div>
+                        <div class="form-text">Reste dû : {{ document.amount_due|floatformat:2 }} €</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Moyen de paiement</label>
+                        {% render_field payment_form.method class="form-select" %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Référence</label>
+                        {% render_field payment_form.reference class="form-control" placeholder="N° chèque, virement..." %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        {% render_field payment_form.notes class="form-control" rows="2" %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Encaisser</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

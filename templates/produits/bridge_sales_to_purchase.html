@@ -1,0 +1,65 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h1 class="h4 mb-0"><i class="bi bi-cart-plus me-2 text-primary"></i>Configurer l'approvisionnement</h1>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted mb-4">
+                    Vous configurez l'achat pour l'article de vente <strong>{{ product.name }}</strong>.
+                </p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.purchase_unit.id_for_label }}" class="form-label">Unité d'achat <span class="text-danger">*</span></label>
+                        {{ form.purchase_unit|add_class:"form-select" }}
+                        {{ form.purchase_unit.errors }}
+                        <div class="form-text">Unité utilisée pour passer commande aux fournisseurs.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.main_supplier.id_for_label }}" class="form-label">Fournisseur principal (Facultatif)</label>
+                        {{ form.main_supplier|add_class:"form-select" }}
+                        {{ form.main_supplier.errors }}
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                <div class="form-check">
+                                    {{ form.stockable|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.stockable.id_for_label }}">
+                                        <strong>Gérer en stock ?</strong>
+                                        <div class="text-muted small">Cochez pour suivre les stocks entrants.</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'produits:sales_success' product.slug %}" class="btn btn-outline-secondary">Retour</a>
+                        <button type="submit" class="btn btn-warning text-white px-4">
+                            Activer l'achat <i class="bi bi-check-lg ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

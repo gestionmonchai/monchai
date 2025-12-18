@@ -21,7 +21,7 @@ Optional: {% include '_layout/local_nav.html' with section='production' %}
         <li class="nav-item"><a class="nav-link {% if '/production/parcelles/' in p %}active{% endif %}" href="{% url 'production:parcelles_list' %}">Parcelles</a></li>
         <li class="nav-item"><a class="nav-link {% if '/production/vendanges/' in p %}active{% endif %}" href="{% url 'production:vendanges_list' %}">Vendanges & Encuvage</a></li>
         <li class="nav-item"><a class="nav-link {% if '/production/lots-elevage/' in p or '/production/lots-techniques/' in p %}active{% endif %}" href="{% url 'production:lots_elevage_home' %}">Lots & Élevage</a></li>
-        <li class="nav-item"><a class="nav-link {% if '/production/contenants/' in p %}active{% endif %}" href="{% url 'production:contenants_list' %}">Contenants</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/production/contenants/' in p %}active{% endif %}" href="{% url 'production:contenants_list' %}">Cuves & barriques</a></li>
         <li class="nav-item"><a class="nav-link {% if '/production/mises/' in p %}active{% endif %}" href="{% url 'production:mises_list' %}">Mises en bouteilles (OF)</a></li>
         <li class="nav-item"><a class="nav-link {% if '/production/inventaire/' in p %}active{% endif %}" href="{% url 'production:inventaire' %}">Inventaire</a></li>
       </ul>
@@ -52,8 +52,8 @@ Optional: {% include '_layout/local_nav.html' with section='production' %}
       </ul>
     {% elif section == 'clients' %}
       <ul class="nav nav-pills mb-2">
-        <li class="nav-item"><a class="nav-link {% if p == '/ventes/clients/' or p == '/clients/' %}active{% endif %}" href="{% url 'ventes:clients_list' %}">Clients</a></li>
-        <li class="nav-item"><a class="nav-link {% if '/clients/tarifs/' in p %}active{% endif %}" href="{% url 'sales:pricelist_list' %}">Tarifs & listes de prix</a></li>
+        <li class="nav-item"><a class="nav-link {% if p == '/ventes/clients/' or p == '/clients/' %}active{% endif %}" href="{% url 'clients:customers_list' %}">Clients</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/clients/tarifs/' in p %}active{% endif %}" href="{% url 'ventes:pricelist_list' %}">Tarifs & listes de prix</a></li>
         <li class="nav-item"><a class="nav-link {% if '/ventes/conditions/' in p or '/clients/conditions/' in p %}active{% endif %}" href="{% url 'ventes:conditions_list' %}">Conditions</a></li>
       </ul>
     {% endif %}

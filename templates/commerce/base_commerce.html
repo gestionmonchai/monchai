@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{# 1. ON VIDE LE MENU HORIZONTAL PARASITE #}
+{% block local_nav %}{% endblock %}
+
+{# 2. STYLE CSS POUR LA TRANSITION #}
+{% block extra_css %}
+<style>
+    /* ===========================================
+       LAYOUT COMMERCE - DESKTOP OPTIMISÉ
+       =========================================== */
+    
+    .transition-all {
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    @media (min-width: 992px) {
+        #commerce-layout {
+            padding-top: 0.5rem;
+        }
+        #commSidebar {
+            width: 240px;
+            flex: 0 0 240px;
+            padding-top: 0;
+        }
+        #commContent {
+            width: calc(100% - 240px);
+            flex: 0 0 calc(100% - 240px);
+            padding-top: 0;
+        }
+        #commSidebar, #commContent {
+            margin-top: 0 !important;
+        }
+        #commSidebar .card {
+            margin-bottom: 0.5rem;
+        }
+        #commSidebar .card-header {
+            padding: 0.5rem 0.75rem;
+        }
+        #commSidebar .list-group-item {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
+    }
+    
+    /* Sidebar Collapsed */
+    .sidebar-collapsed #commSidebar {
+        width: 70px !important;
+        flex: 0 0 70px !important;
+    }
+    .sidebar-collapsed #commContent {
+        width: calc(100% - 70px) !important;
+        flex: 0 0 calc(100% - 70px) !important;
+    }
+
+    .sidebar-label {
+        display: inline-block;
+        opacity: 1;
+        transform: translateX(0);
+        transition: opacity 0.2s ease-in-out, transform 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .sidebar-collapsed .sidebar-label {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        transform: translateX(10px);
+    }
+
+    /* Section headers */
+    .sidebar-section-header {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: auto;
+        opacity: 1;
+    }
+    .sidebar-collapsed .sidebar-section-header {
+        height: 0;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 0;
+        border: none;
+    }
+
+    /* Icons centered when collapsed */
+    .sidebar-collapsed .list-group-item {
+        text-align: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .sidebar-collapsed .list-group-item i {
+        margin-right: 0 !important;
+        font-size: 1.2rem;
+    }
+    
+    /* Chevron rotation */
+    .bi-chevron-left {
+        transition: transform 0.4s ease;
+    }
+    .sidebar-collapsed .bi-chevron-left {
+        transform: rotate(180deg);
+    }
+    
+    /* Mobile styles */
+    @media (max-width: 991.98px) {
+        #commSidebar {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 1;
+            margin-bottom: 0.75rem;
+        }
+        #commContent {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 2;
+        }
+        #commerce-layout > .row {
+            flex-direction: column;
+        }
+        #commSidebar .list-group {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        #commSidebar .list-group.show {
+            max-height: 800px;
+        }
+    }
+</style>
+{% endblock %}
+
+{# 3. LAYOUT PRINCIPAL #}
+{% block content %}
+<div class="container-fluid px-2 px-lg-3" id="commerce-layout">
+    <div class="row g-0 g-lg-2">
+        <!-- Sidebar -->
+        <div class="transition-all" id="commSidebar">
+            <div class="pe-lg-2">
+                {% if '/achats/' in request.path %}
+                    {% include '_layout/sidebar_achats.html' %}
+                {% elif '/ventes/' in request.path %}
+                    {% include '_layout/sidebar_ventes.html' %}
+                {% else %}
+                    {# Fallback pour pages partagées ou legacy #}
+                    {% include '_layout/sidebar_commerce.html' %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="transition-all" id="commContent">
+            {% block commerce_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnDesktop = document.getElementById('btnToggleSidebarDesktop');
+    const btnMobile = document.getElementById('btnToggleSidebarMobile');
+    const layout = document.getElementById('commerce-layout');
+    const sidebar = document.getElementById('commSidebar');
+    
+    const STORAGE_KEY = 'monchai_comm_sidebar_collapsed';
+
+    function isMobile() {
+        return window.innerWidth < 992;
+    }
+
+    // === DESKTOP ===
+    function setSidebarCollapsed(isCollapsed) {
+        if (!layout) return;
+        if (isCollapsed) {
+            layout.classList.add('sidebar-collapsed');
+        } else {
+            layout.classList.remove('sidebar-collapsed');
+        }
+        const chevron = document.getElementById('desktopChevron');
+        if (chevron) {
+            chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    if (!isMobile()) {
+        const saved = localStorage.getItem(STORAGE_KEY) === 'true';
+        setSidebarCollapsed(saved);
+    }
+
+    if (btnDesktop) {
+        btnDesktop.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isCollapsed = layout.classList.contains('sidebar-collapsed');
+            setSidebarCollapsed(!isCollapsed);
+            localStorage.setItem(STORAGE_KEY, !isCollapsed);
+        });
+    }
+
+    // === MOBILE ===
+    function toggleMobileMenu() {
+        const listGroup = sidebar ? sidebar.querySelector('.list-group') : null;
+        const chevron = document.getElementById('mobileMenuChevron');
+        if (!listGroup) return;
+        
+        const isShown = listGroup.classList.contains('show');
+        if (isShown) {
+            listGroup.classList.remove('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-up');
+                chevron.classList.add('bi-chevron-down');
+            }
+        } else {
+            listGroup.classList.add('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-down');
+                chevron.classList.add('bi-chevron-up');
+            }
+        }
+    }
+
+    if (btnMobile) {
+        btnMobile.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleMobileMenu();
+        });
+    }
+});
+</script>
+{% endblock %}

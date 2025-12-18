@@ -1,0 +1,87 @@
+{% extends "commerce/base_commerce.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">{{ page_title }}</h1>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Échéance</th>
+                    <th>Document</th>
+                    <th>Tiers</th>
+                    <th class="text-end">Total TTC</th>
+                    <th class="text-end">Déjà réglé</th>
+                    <th class="text-end pe-4">Reste dû</th>
+                    <th class="text-center">Statut</th>
+                    <th class="text-end pe-4">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr class="{% if doc.is_overdue %}bg-danger-subtle{% endif %}">
+                    <td class="ps-4 fw-medium {% if doc.is_overdue %}text-danger{% endif %}">
+                        {{ doc.date_due|date:"d/m/Y"|default:"-" }}
+                    </td>
+                    <td>
+                        <a href="{% url namespace|add:':document_detail' doc.id %}" class="text-decoration-none fw-bold text-dark">
+                            {{ doc.number }}
+                        </a>
+                    </td>
+                    <td>{{ doc.client.name }}</td>
+                    <td class="text-end">{{ doc.total_ttc|floatformat:2 }} €</td>
+                    <td class="text-end text-success">{{ doc.amount_paid|floatformat:2 }} €</td>
+                    <td class="text-end pe-4 fw-bold text-danger">{{ doc.amount_due|floatformat:2 }} €</td>
+                    <td class="text-center">
+                        {% if doc.is_overdue %}
+                        <span class="badge bg-danger">En retard</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">À venir</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <a href="{% url namespace|add:':document_detail' doc.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-credit-card"></i> Payer
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="bi bi-check-circle fs-1 d-block mb-3 text-success"></i>
+                        Aucune échéance en attente. Tout est à jour !
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="card-footer bg-white py-3">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link border-0" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link border-0" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

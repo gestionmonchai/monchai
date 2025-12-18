@@ -1,158 +1,286 @@
 {% extends 'production/base_production.html' %}
 {% load static %}
-{% block title %}Nouvelle mise — Étape 1{% endblock %}
+{% block title %}Nouvelle mise{% endblock %}
+
 {% block production_content %}
-<h1 class="h4 mb-3">Nouvelle mise — Étape 1: Sources vrac</h1>
-
-<form id="filters" class="row g-2 align-items-end mb-3" method="get" action="">
-  <input type="hidden" name="step" value="1">
-  <div class="col-md-3">
-    <label class="form-label">Cuvée</label>
-    <select class="form-select" name="cuvee">
-      <option value="">Toutes</option>
-      {% for c in cuvees %}
-        <option value="{{ c.id }}" {% if selected.cuvee == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-2">
-    <label class="form-label">Campagne</label>
-    <input class="form-control" name="campagne" value="{{ selected.campagne }}" placeholder="2024-2025">
-  </div>
-  <div class="col-md-2">
-    <label class="form-label">Statut</label>
-    <select class="form-select" name="statut">
-      <option value="">Tous</option>
-      <option value="pret_mise" {% if selected.statut == 'pret_mise' %}selected{% endif %}>Prêt mise</option>
-      <option value="en_cours" {% if selected.statut == 'en_cours' %}selected{% endif %}>En cours</option>
-      <option value="stabilise" {% if selected.statut == 'stabilise' %}selected{% endif %}>Stabilisé</option>
-    </select>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">Recherche</label>
-    <input class="form-control" name="q" value="{{ selected.q }}" placeholder="lot, cuve, cuvée…">
-  </div>
-  <div class="col-md-2 text-end">
-    <button class="btn btn-outline-secondary">Filtrer</button>
-  </div>
-</form>
-
-<div class="table-responsive">
-  <table class="table table-sm align-middle">
-    <thead>
-      <tr>
-        <th>Lot</th>
-        <th>Cuvée</th>
-        <th>Campagne</th>
-        <th>Statut</th>
-        <th class="text-end">Volume dispo (L)</th>
-        <th class="text-end">Débit (L)</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for lot in lots %}
-      <tr data-lot-id="{{ lot.id }}">
-        <td>{{ lot.code }}</td>
-        <td>{{ lot.cuvee.nom|default:'—' }}</td>
-        <td>{{ lot.campagne }}</td>
-        <td>
-          <span class="badge {% if lot.statut == 'pret_mise' %}text-bg-success{% else %}text-bg-warning{% endif %}">{{ lot.get_statut_display }}</span>
-        </td>
-        <td class="text-end"><span class="js-dispo">{{ lot.vol_dispo }}</span></td>
-        <td class="text-end" style="width: 180px;">
-          <input type="number" step="0.001" min="0" class="form-control form-control-sm js-volume" placeholder="0.000">
-        </td>
-        <td>
-          {% if lot.statut != 'pret_mise' %}
-            <span class="text-warning" title="Lot non prêt mise — justification requise à l'étape 3">⚠︎</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" class="text-muted">Aucun lot</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="card mt-3">
-  <div class="card-body d-flex justify-content-between align-items-center">
-    <div class="d-flex flex-wrap gap-3">
-      <div><strong>Total vrac sélectionné</strong>: <span id="kpi-total">0.000</span> L</div>
-      <div><strong>Lots sélectionnés</strong>: <span id="kpi-lots">0</span></div>
+    <!-- Header simple -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1"><i class="bi bi-box-seam me-2 text-primary"></i>Nouvelle mise en bouteille</h1>
+            <p class="text-muted mb-0">Sélectionnez les lots techniques à mettre en bouteille</p>
+        </div>
+        <a href="{% url 'production:mises_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Annuler
+        </a>
     </div>
-    <div>
-      <a id="cta-step2" class="btn btn-primary disabled" href="?step=2" aria-disabled="true">Étape 2</a>
+
+    <!-- Barre de recherche -->
+    <div class="card mb-4">
+        <div class="card-body py-3">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" id="search-input" class="form-control" placeholder="Rechercher par code, cuvée ou contenant..." autofocus>
+                    </div>
+                </div>
+                <div class="col-lg-2">
+                    <select id="filter-statut" class="form-select form-select-lg">
+                        <option value="">Tous statuts</option>
+                        <option value="pret_mise" selected>Prêt mise</option>
+                        <option value="stabilise">Stabilisé</option>
+                        <option value="en_cours">En cours</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <select id="filter-cuvee" class="form-select form-select-lg">
+                        <option value="">Toutes cuvées</option>
+                        {% for c in cuvees %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 text-end">
+                    <span class="text-muted" id="count-display">{{ lots|length }} lots</span>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
+
+    <div class="row">
+        <!-- Table des lots -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="lots-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;"></th>
+                                <th>Lot</th>
+                                <th>Cuvée</th>
+                                <th>Contenant</th>
+                                <th>Statut</th>
+                                <th class="text-end">Disponible</th>
+                                <th class="text-end" style="width: 150px;">Volume à prélever</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lot in lots %}
+                            <tr class="lot-row" 
+                                data-id="{{ lot.id }}"
+                                data-code="{{ lot.code|lower }}"
+                                data-cuvee="{{ lot.cuvee.nom|default:''|lower }}"
+                                data-cuvee-id="{{ lot.cuvee_id|default:'' }}"
+                                data-contenant="{{ lot.contenant|default:''|lower }}"
+                                data-statut="{{ lot.statut }}"
+                                data-volume="{{ lot.vol_dispo }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input lot-check" disabled>
+                                </td>
+                                <td>
+                                    <strong>{{ lot.code }}</strong>
+                                    <div class="small text-muted">{{ lot.campagne }}</div>
+                                </td>
+                                <td>{{ lot.cuvee.nom|default:'—' }}</td>
+                                <td>{{ lot.contenant|default:'—' }}</td>
+                                <td>
+                                    <span class="badge {% if lot.statut == 'pret_mise' %}bg-success{% elif lot.statut == 'stabilise' %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                        {{ lot.get_statut_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <strong>{{ lot.vol_dispo|floatformat:0 }}</strong> L
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-end volume-input" 
+                                           min="0" max="{{ lot.vol_dispo }}" step="1" placeholder="0">
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Aucun lot technique disponible
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panneau résumé -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 1rem;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Récapitulatif</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Lots sélectionnés</span>
+                        <strong id="summary-lots">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Volume total</span>
+                        <strong><span id="summary-volume">0</span> L</strong>
+                    </div>
+                    
+                    <div id="selected-lots-list" class="mt-3 mb-3" style="max-height: 250px; overflow-y: auto;">
+                        <p class="text-muted small text-center mb-0">Saisissez un volume pour ajouter un lot</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" id="btn-continue" class="btn btn-primary btn-lg" disabled>
+                            Continuer <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                        <button type="button" id="btn-reset" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-circle me-1"></i>Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
-(function(){
-  function getCookie(name){
-    const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-    return match ? match.pop() : '';
-  }
-  const csrftoken = getCookie('csrftoken');
-  // Auto-submit filters
-  const form = document.getElementById('filters');
-  const selCuvee = form.querySelector('select[name="cuvee"]');
-  const selStatut = form.querySelector('select[name="statut"]');
-  const inpCampagne = form.querySelector('input[name="campagne"]');
-  const inpQ = form.querySelector('input[name="q"]');
-  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms); } }
-  selCuvee && selCuvee.addEventListener('change', ()=> form.submit());
-  selStatut && selStatut.addEventListener('change', ()=> form.submit());
-  inpCampagne && inpCampagne.addEventListener('input', debounce(()=> form.submit(), 300));
-  inpQ && inpQ.addEventListener('input', debounce(()=> form.submit(), 300));
-  const rows = document.querySelectorAll('tr[data-lot-id]');
-  const kpiTotal = document.getElementById('kpi-total');
-  const kpiLots = document.getElementById('kpi-lots');
-  const cta = document.getElementById('cta-step2');
-  const selectedLots = new Map();
-
-  async function postUpdate(lotId, volume){
-    const fd = new FormData();
-    fd.append('lot_id', lotId);
-    fd.append('container_id', 'LOT');
-    fd.append('volume_l', volume || '0');
-    const resp = await fetch('{% url "production:mise_calc_step1" %}', {
-      method: 'POST',
-      headers: { 'X-CSRFToken': csrftoken },
-      body: fd,
-      credentials: 'same-origin'
-    });
-    const data = await resp.json();
-    if(data.errors && data.errors.length){
-      alert(data.errors.join('\n'));
-      return;
+document.addEventListener('DOMContentLoaded', function() {
+    // State
+    const selection = new Map();
+    
+    // DOM
+    const searchInput = document.getElementById('search-input');
+    const filterStatut = document.getElementById('filter-statut');
+    const filterCuvee = document.getElementById('filter-cuvee');
+    const countDisplay = document.getElementById('count-display');
+    const summaryLots = document.getElementById('summary-lots');
+    const summaryVolume = document.getElementById('summary-volume');
+    const selectedList = document.getElementById('selected-lots-list');
+    const btnContinue = document.getElementById('btn-continue');
+    const btnReset = document.getElementById('btn-reset');
+    const rows = document.querySelectorAll('.lot-row');
+    
+    // Filtrage
+    function applyFilters() {
+        const q = (searchInput.value || '').toLowerCase().trim();
+        const statut = filterStatut.value;
+        const cuveeId = filterCuvee.value;
+        let count = 0;
+        
+        rows.forEach(row => {
+            const code = row.dataset.code || '';
+            const cuvee = row.dataset.cuvee || '';
+            const contenant = row.dataset.contenant || '';
+            const rowStatut = row.dataset.statut || '';
+            const rowCuveeId = row.dataset.cuveeId || '';
+            
+            const matchQ = !q || code.includes(q) || cuvee.includes(q) || contenant.includes(q);
+            const matchStatut = !statut || rowStatut === statut;
+            const matchCuvee = !cuveeId || rowCuveeId === cuveeId;
+            
+            if (matchQ && matchStatut && matchCuvee) {
+                row.style.display = '';
+                count++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        countDisplay.textContent = count + ' lot' + (count !== 1 ? 's' : '');
     }
-    // Update KPIs
-    kpiTotal.textContent = data.global_debit_sum_l || '0.000';
-    // Maintain selected lots count
-    if(parseFloat(volume) > 0){ selectedLots.set(lotId, true); } else { selectedLots.delete(lotId); }
-    kpiLots.textContent = selectedLots.size;
-    // Enable/disable CTA
-    const tot = parseFloat(kpiTotal.textContent || '0');
-    if(tot > 0){
-      cta.classList.remove('disabled');
-      cta.removeAttribute('aria-disabled');
-    } else {
-      cta.classList.add('disabled');
-      cta.setAttribute('aria-disabled','true');
+    
+    // Mise à jour du résumé
+    function updateSummary() {
+        let totalVol = 0;
+        let html = '';
+        
+        selection.forEach((data, id) => {
+            totalVol += data.volume;
+            html += `<div class="d-flex justify-content-between align-items-center py-1 small border-bottom">
+                <span>${data.code}</span>
+                <span class="fw-bold">${data.volume} L</span>
+            </div>`;
+        });
+        
+        summaryLots.textContent = selection.size;
+        summaryVolume.textContent = totalVol.toLocaleString('fr-FR');
+        
+        if (selection.size > 0) {
+            selectedList.innerHTML = html;
+            btnContinue.disabled = false;
+        } else {
+            selectedList.innerHTML = '<p class="text-muted small text-center mb-0">Saisissez un volume pour ajouter un lot</p>';
+            btnContinue.disabled = true;
+        }
     }
-  }
-
-  rows.forEach(row=>{
-    const lotId = row.getAttribute('data-lot-id');
-    const input = row.querySelector('.js-volume');
-    input.addEventListener('input', (e)=>{
-      const v = e.target.value || '0';
-      // debounce light
-      clearTimeout(input._t); input._t = setTimeout(()=>postUpdate(lotId, v), 250);
+    
+    // Gestion volume
+    function handleVolumeChange(row) {
+        const input = row.querySelector('.volume-input');
+        const checkbox = row.querySelector('.lot-check');
+        const id = row.dataset.id;
+        const code = row.querySelector('strong').textContent;
+        const maxVol = parseFloat(row.dataset.volume) || 0;
+        let vol = parseFloat(input.value) || 0;
+        
+        if (vol > maxVol) {
+            vol = maxVol;
+            input.value = vol;
+        }
+        
+        if (vol > 0) {
+            selection.set(id, { code, volume: vol });
+            checkbox.checked = true;
+            row.classList.add('table-primary');
+        } else {
+            selection.delete(id);
+            checkbox.checked = false;
+            row.classList.remove('table-primary');
+        }
+        
+        updateSummary();
+    }
+    
+    // Events
+    let debounceTimer;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(applyFilters, 150);
     });
-  });
-})();
+    filterStatut.addEventListener('change', applyFilters);
+    filterCuvee.addEventListener('change', applyFilters);
+    
+    rows.forEach(row => {
+        const input = row.querySelector('.volume-input');
+        if (input) {
+            input.addEventListener('input', () => handleVolumeChange(row));
+            input.addEventListener('change', () => handleVolumeChange(row));
+        }
+    });
+    
+    btnReset.addEventListener('click', function() {
+        rows.forEach(row => {
+            const input = row.querySelector('.volume-input');
+            const checkbox = row.querySelector('.lot-check');
+            if (input) input.value = '';
+            if (checkbox) checkbox.checked = false;
+            row.classList.remove('table-primary');
+        });
+        selection.clear();
+        updateSummary();
+    });
+    
+    btnContinue.addEventListener('click', function() {
+        const sources = [];
+        selection.forEach((data, id) => {
+            sources.push({ lot_id: id, volume_l: data.volume });
+        });
+        localStorage.setItem('mise_sources', JSON.stringify(sources));
+        window.location.href = '?step=2';
+    });
+    
+    // Init
+    applyFilters();
+});
 </script>
 {% endblock %}

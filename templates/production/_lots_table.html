@@ -1,3 +1,4 @@
+{% load production_tags %}
 <table class="table align-middle">
   <thead>
     <tr>
@@ -5,7 +6,7 @@
       <th>Cuvée</th>
       <th>Mill.</th>
       <th>Statut</th>
-      <th class="text-end">Volume (L)</th>
+      <th class="text-end">Volume</th>
       <th>Contenant</th>
       <th class="text-end">Actions</th>
     </tr>
@@ -13,7 +14,7 @@
   <tbody>
   {% for lot in object_list %}
     <tr>
-      <td><a href="/production/lots-techniques/{{ lot.id }}/">{{ lot.code }}</a></td>
+      <td><a href="{% url 'production:lot_tech_detail' lot.id %}">{{ lot.code }}</a></td>
       <td>{% if lot.cuvee %}{{ lot.cuvee.nom }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
       <td>{{ lot.campagne }}</td>
       <td>
@@ -21,12 +22,12 @@
           {{ lot.get_statut_display }}
         </span>
       </td>
-      <td class="text-end">{{ lot.volume_l|floatformat:0 }}</td>
+      <td class="text-end">{{ lot.volume_l|floatformat:0 }}&nbsp;L <small class="text-muted">({{ lot.volume_l|liters_to_hl|floatformat:2 }}&nbsp;hL)</small></td>
       <td>{{ lot.contenant|default:"—" }}</td>
       <td class="text-end">
-          <a class="btn btn-sm btn-outline-secondary" href="/production/lots-techniques/{{ lot.id }}/">Ouvrir</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'production:lot_tech_detail' lot.id %}"><i class="bi bi-eye me-1"></i>Voir</a>
           {% if lot.statut == 'en_cours' or lot.statut == 'stabilise' %}
-            <a class="btn btn-sm btn-outline-secondary" href="/production/lots-techniques/{{ lot.id }}/soutirage/">Soutirage</a>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'production:lot_tech_soutirage' lot.id %}"><i class="bi bi-arrow-down-up me-1"></i>Soutirage</a>
           {% endif %}
           {% if lot.statut == 'stabilise' %}
           <button class="btn btn-sm btn-outline-success"

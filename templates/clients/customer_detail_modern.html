@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "commerce/base_commerce.html" %}
 {% load static %}
 
 {% block title %}{{ customer.name }}{% endblock %}
@@ -15,7 +15,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block commerce_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header commun -->
     {% include 'clients/_customer_header.html' with current_tab=current_tab|default:'identite' %}

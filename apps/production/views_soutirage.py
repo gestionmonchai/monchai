@@ -162,6 +162,12 @@ class SoutirageCreateView(View):
             
             # Mouvement de perte si > 0
             if perte > 0:
+                # Validation: vérifier que le volume disponible est suffisant
+                vol_dispo = lot_src.volume_l or Decimal('0')
+                if perte > vol_dispo:
+                    messages.error(request, f"Perte ({perte} L) supérieure au volume disponible ({vol_dispo} L)")
+                    return redirect('production:soutirages_list')
+                
                 MouvementLot.objects.create(
                     lot=lot_src,
                     type='PERTE', # ou SOUTIRAGE avec perte ?
@@ -174,7 +180,7 @@ class SoutirageCreateView(View):
                     move_vrac(lottech=lot_src, delta_l=-perte, reason='PERTE_SOUTIRAGE', user=request.user)
                 except: pass
                 
-                lot_src.volume_l = (lot_src.volume_l or Decimal('0')) - perte
+                lot_src.volume_l = max(Decimal('0'), vol_dispo - perte)
             
             # Mise à jour du contenant
             lot_src.contenant = cont_arr

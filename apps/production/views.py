@@ -9,7 +9,7 @@ from django.views import View
 from django.utils import timezone
 from django.views.generic import ListView, DetailView, TemplateView, UpdateView
 from django.db import transaction
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.core.paginator import Paginator
 from decimal import Decimal
 import uuid as _uuid
@@ -42,8 +42,11 @@ from apps.referentiels.models import Parcelle
 from .forms import VendangeForm, VendangeLigneFormSet, AssemblageForm, AssemblageLigneFormSet, LotTechniqueForm, LotContainerForm, LotInterventionForm, LotMeasurementForm
 from .service_vendange import affecter_cuvee
 from .service_vinif import init_from_vendange, _recalc_lottech_snapshot
-from apps.chai.services import lots as lot_services
+# from apps.chai.services import lots as lot_services  # REMOVED: app supprimée, fonctions à réimplémenter
+lot_services = None  # Stub temporaire
 from apps.viticulture.services_journal import log_parcelle_op
+from apps.viticulture.models_parcelle_journal import ParcelleJournalEntry, ParcelleOperationType
+from apps.viticulture.models_ops import ParcelleOperation
 from apps.referentiels.models import Cuvee
 from apps.viticulture.models import Lot as VitiLot, Warehouse
 from apps.viticulture.models_extended import LotIntervention, LotMeasurement, LotContainer, LotDetail, LotDocument
@@ -602,7 +605,37 @@ class LotTechniqueCreateView(PermissionMixin, View):
                 'parcelle': getattr(getattr(v, 'parcelle', None), 'nom', ''),
                 'kg_restant': kg_rest,
                 'cuvee': getattr(getattr(v, 'cuvee', None), 'name', ''),
+                'cuvee_id': str(getattr(v, 'cuvee_id', '') or ''),
             })
+        
+        # Récupérer les contenants disponibles (cuves et barriques)
+        from .models_containers import Contenant
+        contenants_qs = Contenant.objects.filter(statut__in=['disponible', 'occupe']).order_by('code')
+        if org:
+            contenants_qs = contenants_qs.filter(organization=org)
+        contenants = []
+        for c in contenants_qs:
+            cap_utile = c.capacite_utile_l or c.capacite_l
+            libre = c.free_capacity_l()
+            contenants.append({
+                'id': str(c.id),
+                'code': c.code,
+                'label': c.label or '',
+                'type': c.get_type_display(),
+                'type_code': c.type,
+                'capacite_l': float(c.capacite_l),
+                'libre_l': float(libre),
+                'statut': c.statut,
+                'is_cuve': c.is_cuve,
+                'localisation': c.localisation or '',
+            })
+        
+        # Récupérer les cuvées pour affectation
+        cuvees_qs = Cuvee.objects.all().order_by('nom')
+        if org:
+            cuvees_qs = cuvees_qs.filter(organization=org)
+        cuvees = list(cuvees_qs.values('id', 'nom', 'couleur'))
+        
         return render(request, self.template_name, {
             'page_title': 'Nouveau lot technique',
             'breadcrumb_items': [
@@ -611,12 +644,34 @@ class LotTechniqueCreateView(PermissionMixin, View):
                 {'name': 'Nouveau', 'url': None},
             ],
             'vendanges': vendanges,
+            'contenants': contenants,
+            'cuvees': cuvees,
         })
 
     @transaction.atomic
     def post(self, request):
         # Wizard submit: créer un lot à partir d'une vendange et le débiter
         vendange_id = (request.POST.get('vendange_id') or '').strip()
+        
+        # Charger la vendange si ID présent
+        vendange = None
+        if vendange_id:
+            try:
+                vendange = VendangeReception.objects.get(pk=vendange_id)
+            except VendangeReception.DoesNotExist:
+                pass
+
+        # Gestion affectation cuvée à la volée
+        cuvee_id = (request.POST.get('cuvee_id') or '').strip()
+        if cuvee_id and vendange:
+            try:
+                if not vendange.cuvee_id or str(vendange.cuvee_id) != cuvee_id:
+                    c = Cuvee.objects.get(pk=cuvee_id)
+                    vendange.cuvee = c
+                    vendange.save(update_fields=['cuvee'])
+            except Exception:
+                pass
+
         contenant = (request.POST.get('contenant') or '').strip()
         rendement_base = request.POST.get('rendement_base') or '0.75'
         effic_pct = request.POST.get('effic_pct') or '100'
@@ -632,7 +687,7 @@ class LotTechniqueCreateView(PermissionMixin, View):
         if not vendange_id:
             errors.append("Sélectionnez une vendange à débiter")
         if not contenant:
-            errors.append("Le contenant est requis")
+            errors.append("Sélectionnez une cuve ou barrique de destination")
         # Parse mesure
         from decimal import Decimal as _D
         vol_mes = None
@@ -679,13 +734,25 @@ class LotTechniqueCreateView(PermissionMixin, View):
                 messages.error(request, e)
             return self.get(request)
 
+        # Gestion affectation cuvée à la volée
+        if cuvee_id:
+            try:
+                if str(v.cuvee_id) != cuvee_id:
+                    c = Cuvee.objects.get(pk=cuvee_id)
+                    # Vérif organisation si besoin (déjà implicite souvent via select query, mais bon)
+                    # On met à jour la vendange
+                    v.cuvee = c
+                    v.save(update_fields=['cuvee'])
+            except Exception:
+                pass  # On laisse couler, init_from_vendange lèvera l'erreur si toujours pas de cuvée
+
         # Appeler le service d'encuvage qui débite la vendange et crée le lot
         try:
             new_lot_id = init_from_vendange(
                 vendange_id=vendange_id,
                 rendement_base_l_par_kg=rendement_base,
                 effic_pct=effic_pct,
-                contenant=contenant,
+                contenant_id=contenant if contenant else None,  # UUID du contenant sélectionné
                 volume_mesure_l=volume_mesure_l,
                 user=request.user,
                 poids_debite_kg=str(kg_debite) if kg_debite is not None else None,
@@ -930,8 +997,8 @@ class PressurageWizardView(View):
                     LotLineage.objects.create(operation=op_obj, parent_lot=lot, child_lot=presse, ratio=ratio)
             except Exception:
                 pass
-        # Décrémenter source
-        lot.volume_l = (lot.volume_l or Decimal('0')) - (vg + vp)
+        # Décrémenter source (avec protection contre négatif)
+        lot.volume_l = max(Decimal('0'), (lot.volume_l or Decimal('0')) - (vg + vp))
         if lot.volume_l <= 0:
             lot.statut = 'epuise'
         lot.save(update_fields=['volume_l', 'statut'])
@@ -1469,7 +1536,7 @@ class AnalysesTableView(ListView):
 @method_decorator(login_required, name='dispatch')
 class LotTechniqueDetailView(DetailView):
     model = LotTechnique
-    template_name = 'production/lot_tech_detail_v2.html'
+    template_name = 'production/lot_tech_detail.html'
     context_object_name = 'lot'
 
     def get_queryset(self):
@@ -1651,6 +1718,7 @@ class LotTechniqueDetailView(DetailView):
             ctx['abv_pct'] = abv
             ctx['temp_mean'] = temp_mean
             ctx['ph_last'] = ph_last
+            ctx['latest_ph'] = ph_last  # alias pour le template
             etat = None
             try:
                 ivs = ctx.get('vinif_interventions') or []
@@ -2588,8 +2656,9 @@ class EncuvageWizardView(View):
     def get(self, request, pk):
         org = getattr(request, 'current_org', None)
         vendange = get_object_or_404(VendangeReception.objects.filter(organization=org), pk=pk)
+        # Cuvée optionnelle - juste un avertissement informatif
         if not vendange.cuvee_id:
-            messages.warning(request, "Affectez d'abord une cuvée à cette vendange")
+            messages.info(request, "Vous pouvez affecter une cuvée maintenant ou plus tard")
         # Contenants suggérés (historique lots techniques de l'organisation)
         containers = []
         contenants = []
@@ -2671,7 +2740,19 @@ class EncuvageWizardView(View):
     @transaction.atomic
     def post(self, request, pk):
         org = getattr(request, 'current_org', None)
-        vendange = get_object_or_404(VendangeReception.objects.filter(organization=org), pk=pk)
+        vendange = get_object_or_404(VendangeReception.objects.filter(organization=org).select_for_update(), pk=pk)
+        
+        # Récupérer et affecter la cuvée si fournie
+        cuvee_id = request.POST.get('cuvee_id') or None
+        if cuvee_id:
+            try:
+                from apps.referentiels.models import Cuvee as RefCuvee
+                cuvee = RefCuvee.objects.get(pk=cuvee_id, organization=org)
+                vendange.cuvee = cuvee
+                vendange.save(update_fields=['cuvee'])
+            except Exception:
+                pass  # Ignorer si cuvée invalide
+        
         contenant = (request.POST.get('contenant') or '').strip()
         rendement_base = request.POST.get('rendement_base') or '0.75'
         effic_pct = request.POST.get('effic_pct') or '100'
@@ -2685,8 +2766,9 @@ class EncuvageWizardView(View):
         part_pct_raw = request.POST.get('part_pct') or ''
         # Validations basiques (sans formulaire dédié)
         errors = []
-        if not vendange.cuvee_id:
-            errors.append("La vendange doit être affectée à une cuvée")
+        # Cuvée optionnelle - le lot peut être créé sans cuvée
+        # if not vendange.cuvee_id:
+        #     errors.append("La vendange doit être affectée à une cuvée")
         if not contenant:
             errors.append("Le contenant est requis")
         try:
@@ -2726,8 +2808,12 @@ class EncuvageWizardView(View):
                 else:
                     try:
                         totkg = Decimal(str(getattr(vendange, 'poids_kg', '0') or '0'))
-                        if totkg and kg_debite > totkg:
-                            errors.append("Les kg débités dépassent le poids de la vendange")
+                        cumul = Decimal(str(getattr(vendange, 'kg_debites_cumules', '0') or '0'))
+                        kg_restant = totkg - cumul
+                        if kg_restant <= 0:
+                            errors.append(f"Tous les raisins ont déjà été encuvés ({cumul} kg sur {totkg} kg)")
+                        elif kg_debite > kg_restant:
+                            errors.append(f"Les kg débités ({kg_debite} kg) dépassent le restant disponible ({kg_restant} kg sur {totkg} kg)")
                     except Exception:
                         pass
         except Exception:
@@ -2763,18 +2849,9 @@ class EncuvageWizardView(View):
                     vol_hl20 = (Decimal(str(volume_mesure_l)) / Decimal('100')).quantize(Decimal('0.001'))
                 except Exception:
                     vol_hl20 = None
-            lot, _op = lot_services.create_from_encuvage(
-                harvest=vendange,
-                container=contenant,
-                volume_hl20=vol_hl20,
-                poids_debite_kg=kg_debite,
-                mode_encuvage=mode_encuvage,
-                lot_type=lot_type,
-                temperature_c=(Decimal(str(temperature_c)) if temperature_c else None),
-                notes=notes,
-                user=request.user,
-            )
-            messages.success(request, 'Lot technique initial créé')
+            # TODO: Réimplémenter create_from_encuvage (anciennement dans apps.chai.services.lots)
+            messages.error(request, 'Fonction encuvage temporairement désactivée (refactoring en cours)')
+            return self.get(request, pk)
             try:
                 url = reverse('production:lot_tech_detail', kwargs={'pk': lot.id})
             except Exception:
@@ -3009,8 +3086,8 @@ class LotTechniqueActionView(View):
         elif action == 'offsite_send':
             tiers = (request.POST.get('tiers') or '').strip() or None
             try:
-                _lot, _op = lot_services.send_offsite(lot=lot, third_party=tiers, meta={'notes': (request.POST.get('notes') or '').strip()}, user=request.user)
-                messages.success(request, f"Lot {lot.code} envoyé hors site")
+                # TODO: Réimplémenter send_offsite
+                messages.error(request, 'Fonction envoi hors site temporairement désactivée')
             except Exception as e:
                 messages.error(request, f"Erreur envoi hors site: {e}")
             try:
@@ -3020,8 +3097,8 @@ class LotTechniqueActionView(View):
             return redirect(url)
         elif action == 'offsite_return_neutral':
             try:
-                _lot, _op = lot_services.return_offsite_neutral(lot=lot, meta={'notes': (request.POST.get('notes') or '').strip()}, user=request.user)
-                messages.success(request, f"Retour hors site (neutre) enregistré pour {lot.code}")
+                # TODO: Réimplémenter return_offsite_neutral
+                messages.error(request, 'Fonction retour hors site temporairement désactivée')
             except Exception as e:
                 messages.error(request, f"Erreur retour hors site: {e}")
             try:
@@ -3031,8 +3108,9 @@ class LotTechniqueActionView(View):
             return redirect(url)
         elif action == 'offsite_return_non_neutral':
             try:
-                child, _op = lot_services.return_offsite_non_neutral(lot=lot, meta={'notes': (request.POST.get('notes') or '').strip()}, user=request.user)
-                messages.success(request, f"Retour hors site (non neutre) → nouveau lot {child.code}")
+                # TODO: Réimplémenter return_offsite_non_neutral
+                child = None
+                messages.error(request, 'Fonction retour hors site (non neutre) temporairement désactivée')
             except Exception as e:
                 messages.error(request, f"Erreur retour (non neutre): {e}")
                 child = None
@@ -3122,6 +3200,22 @@ class LotTechniqueActionView(View):
             except Exception:
                 url = f"/production/lots-techniques/{lot.id}/"
             return redirect(url)
+        elif action == 'change_status':
+            new_status = (request.POST.get('new_status') or '').strip()
+            # Liste des statuts valides
+            valid_statuses = [s[0] for s in LotTechnique.STATUT_CHOICES]
+            if new_status and new_status in valid_statuses:
+                old_status = lot.statut
+                lot.statut = new_status
+                lot.save(update_fields=['statut'])
+                messages.success(request, f"Statut changé : {lot.get_statut_display()}")
+            elif new_status:
+                messages.error(request, f"Statut invalide: {new_status}")
+            try:
+                url = reverse('production:lot_tech_detail', kwargs={'pk': lot.id})
+            except Exception:
+                url = f"/production/lots-techniques/{lot.id}/"
+            return redirect(url)
         else:
             messages.error(request, 'Action inconnue')
             try:
@@ -3188,10 +3282,33 @@ class ProductionHomeView(TemplateView):
         qs_lots = LotTechnique.objects.filter(cuvee__organization=org, statut__in=active_statuses)
         total_vol = qs_lots.aggregate(s=Sum('volume_l'))['s'] or Decimal('0')
         ctx['total_volume_hl'] = total_vol / Decimal('100')
+        ctx['lots_actifs_count'] = qs_lots.count()
+
+        # KPI: Parcelles (surface totale)
+        from apps.referentiels.models import Parcelle
+        parcelles_agg = Parcelle.objects.filter(organization=org).aggregate(
+            total=Sum('surface'),
+            count=Count('id')
+        )
+        ctx['total_surface_ha'] = parcelles_agg['total'] or Decimal('0')
+        ctx['parcelles_count'] = parcelles_agg['count'] or 0
 
         # KPI: Vendanges en cours (statut != close)
         qs_vendanges = VendangeReception.objects.filter(organization=org).exclude(statut='close')
         ctx['vendanges_active_count'] = qs_vendanges.count()
+        
+        # Campagne viticole = millésime de la dernière vendange ou lot, pas l'année civile
+        last_vendange = VendangeReception.objects.filter(organization=org).order_by('-date').first()
+        if last_vendange and last_vendange.campagne:
+            ctx['current_campagne'] = last_vendange.campagne
+        else:
+            # Fallback: dernier lot technique
+            last_lot = LotTechnique.objects.filter(cuvee__organization=org).order_by('-created_at').first()
+            if last_lot and last_lot.campagne:
+                ctx['current_campagne'] = last_lot.campagne
+            else:
+                from datetime import datetime
+                ctx['current_campagne'] = str(datetime.now().year)
         
         # KPI: Mises prévues (non réalisées ou récentes)
         # On regarde les mises créées récemment
@@ -3349,4 +3466,278 @@ class EncuvageListView(ListView):
                     vendanges_todo.append(v)
             ctx['vendanges_todo'] = vendanges_todo
             
+        return ctx
+
+
+@method_decorator(login_required, name='dispatch')
+class JournalCulturalView(TemplateView):
+    """
+    Vue du journal cultural global - affiche toutes les interventions de toutes les parcelles.
+    Charge les données de ParcelleJournalEntry et ParcelleOperation.
+    """
+    template_name = 'production/journal_cultural.html'
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Journal cultural'
+        ctx['breadcrumb_items'] = [
+            {'name': 'Production', 'url': '/production/'},
+            {'name': 'Journal cultural', 'url': None},
+        ]
+        
+        org = getattr(self.request, 'current_org', None)
+        if not org:
+            ctx['interventions'] = []
+            ctx['traitements'] = []
+            ctx['parcelles'] = []
+            ctx['op_types'] = []
+            return ctx
+        
+        # Filtres depuis les paramètres GET
+        parcelle_id = self.request.GET.get('parcelle', '')
+        op_type = self.request.GET.get('type', '')
+        tab = self.request.GET.get('tab', 'interventions')
+        
+        # Charger les parcelles pour le filtre
+        parcelles = Parcelle.objects.filter(organization=org).order_by('nom')
+        ctx['parcelles'] = parcelles
+        ctx['selected_parcelle'] = parcelle_id
+        ctx['selected_type'] = op_type
+        ctx['active_tab'] = tab
+        
+        # Charger les types d'opérations
+        op_types = ParcelleOperationType.objects.all().order_by('order', 'label')
+        ctx['op_types'] = op_types
+        
+        # Récupérer les entrées du journal (nouveau modèle)
+        journal_qs = ParcelleJournalEntry.objects.filter(
+            organization=org
+        ).select_related('parcelle', 'op_type').order_by('-date', '-created_at')
+        
+        # Récupérer aussi les anciennes opérations (ParcelleOperation)
+        ops_qs = ParcelleOperation.objects.filter(
+            organization=org
+        ).select_related('parcelle').order_by('-date', '-created_at')
+        
+        # Appliquer les filtres
+        if parcelle_id:
+            journal_qs = journal_qs.filter(parcelle_id=parcelle_id)
+            ops_qs = ops_qs.filter(parcelle_id=parcelle_id)
+        
+        if op_type:
+            journal_qs = journal_qs.filter(op_type__code=op_type)
+            ops_qs = ops_qs.filter(operation_type=op_type)
+        
+        # Combiner les deux sources en une liste unifiée avec URL directe
+        interventions = []
+        
+        # Ajouter les entrées du journal avec lien direct vers l'événement source
+        for entry in journal_qs.select_related('source_ct')[:200]:
+            # Déterminer l'URL directe vers l'événement source
+            direct_url = f"/viticulture/journal/{entry.id}/"  # par défaut (int pk)
+            if entry.source_ct_id and entry.source_id:
+                model_name = entry.source_ct.model
+                if model_name == 'vendangereception':
+                    direct_url = f"/production/vendanges/{entry.source_id}/"  # int pk
+                elif model_name == 'lottechnique':
+                    direct_url = f"/production/lots-techniques/{entry.source_id}/"  # int pk
+            
+            interventions.append({
+                'id': str(entry.id),
+                'date': entry.date,
+                'created_at': entry.created_at,
+                'type': entry.op_type.code,
+                'type_label': entry.op_type.label,
+                'parcelle': entry.parcelle,
+                'parcelle_id': entry.parcelle_id,
+                'parcelle_nom': entry.parcelle.nom if entry.parcelle else '—',
+                'resume': entry.resume,
+                'notes': entry.notes,
+                'surface_ha': entry.surface_ha,
+                'cout_total': entry.cout_total_eur,
+                'source': 'journal',
+                'url': direct_url,
+            })
+        
+        # Ajouter les anciennes opérations (éviter les doublons si même date/parcelle/type)
+        existing_keys = set((i['date'], i['parcelle'].id if i['parcelle'] else None, i['type']) for i in interventions)
+        
+        for op in ops_qs[:200]:
+            key = (op.date, op.parcelle_id, op.operation_type)
+            if key not in existing_keys:
+                interventions.append({
+                    'id': str(op.id),
+                    'date': op.date,
+                    'created_at': op.created_at,
+                    'type': op.operation_type,
+                    'type_label': op.get_operation_type_display(),
+                    'parcelle': op.parcelle,
+                    'parcelle_id': op.parcelle_id,
+                    'parcelle_nom': op.parcelle.nom if op.parcelle else '—',
+                    'resume': op.label,
+                    'notes': op.notes,
+                    'surface_ha': None,
+                    'cout_total': op.cout_eur,
+                    'source': 'ops',
+                    'url': f"/viticulture/parcelles/{op.parcelle_id}/journal/",
+                })
+        
+        # Trier par date décroissante
+        interventions.sort(key=lambda x: (x['date'], x['id']), reverse=True)
+        
+        # Séparer les traitements phyto (hérite de l'URL)
+        traitements = [i for i in interventions if i['type'] == 'traitement']
+        
+        # Compteurs pour les badges
+        ctx['interventions'] = interventions
+        ctx['interventions_count'] = len(interventions)
+        ctx['traitements'] = traitements
+        ctx['traitements_count'] = len(traitements)
+        
+        return ctx
+
+
+@method_decorator(login_required, name='dispatch')
+class JournalCulturalTableView(TemplateView):
+    """
+    Vue HTMX pour la table du journal cultural avec filtres avancés.
+    """
+    template_name = 'production/_journal_cultural_table.html'
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        
+        org = getattr(self.request, 'current_org', None)
+        if not org:
+            ctx['interventions'] = []
+            ctx['interventions_count'] = 0
+            return ctx
+        
+        # Filtres depuis les paramètres GET
+        q = self.request.GET.get('q', '').strip()
+        parcelle_id = self.request.GET.get('parcelle', '')
+        op_type = self.request.GET.get('type', '')
+        date_from = self.request.GET.get('date_from', '')
+        date_to = self.request.GET.get('date_to', '')
+        sort = self.request.GET.get('sort', 'date_desc')
+        
+        # Récupérer les entrées du journal (nouveau modèle)
+        journal_qs = ParcelleJournalEntry.objects.filter(
+            organization=org
+        ).select_related('parcelle', 'op_type').order_by('-date', '-created_at')
+        
+        # Récupérer aussi les anciennes opérations (ParcelleOperation)
+        ops_qs = ParcelleOperation.objects.filter(
+            organization=org
+        ).select_related('parcelle').order_by('-date', '-created_at')
+        
+        # Appliquer les filtres
+        if parcelle_id:
+            journal_qs = journal_qs.filter(parcelle_id=parcelle_id)
+            ops_qs = ops_qs.filter(parcelle_id=parcelle_id)
+        
+        if op_type:
+            journal_qs = journal_qs.filter(op_type__code=op_type)
+            ops_qs = ops_qs.filter(operation_type=op_type)
+        
+        if date_from:
+            try:
+                from datetime import datetime
+                df = datetime.strptime(date_from, '%Y-%m-%d').date()
+                journal_qs = journal_qs.filter(date__gte=df)
+                ops_qs = ops_qs.filter(date__gte=df)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                from datetime import datetime
+                dt = datetime.strptime(date_to, '%Y-%m-%d').date()
+                journal_qs = journal_qs.filter(date__lte=dt)
+                ops_qs = ops_qs.filter(date__lte=dt)
+            except ValueError:
+                pass
+        
+        # Recherche textuelle
+        if q:
+            from django.db.models import Q
+            journal_qs = journal_qs.filter(
+                Q(parcelle__nom__icontains=q) |
+                Q(op_type__label__icontains=q) |
+                Q(resume__icontains=q) |
+                Q(notes__icontains=q)
+            )
+            ops_qs = ops_qs.filter(
+                Q(parcelle__nom__icontains=q) |
+                Q(label__icontains=q) |
+                Q(notes__icontains=q)
+            )
+        
+        # Combiner les deux sources en une liste unifiée avec URL directe
+        interventions = []
+        
+        # Ajouter les entrées du journal avec lien direct vers l'événement source
+        for entry in journal_qs.select_related('source_ct')[:200]:
+            # Déterminer l'URL directe vers l'événement source
+            direct_url = f"/viticulture/journal/{entry.id}/"  # par défaut (int pk)
+            if entry.source_ct_id and entry.source_id:
+                model_name = entry.source_ct.model
+                if model_name == 'vendangereception':
+                    direct_url = f"/production/vendanges/{entry.source_id}/"  # int pk
+                elif model_name == 'lottechnique':
+                    direct_url = f"/production/lots-techniques/{entry.source_id}/"  # int pk
+            
+            interventions.append({
+                'id': str(entry.id),
+                'date': entry.date,
+                'created_at': entry.created_at,
+                'type': entry.op_type.code,
+                'type_label': entry.op_type.label,
+                'parcelle': entry.parcelle,
+                'parcelle_id': entry.parcelle_id,
+                'parcelle_nom': entry.parcelle.nom if entry.parcelle else '—',
+                'resume': entry.resume,
+                'notes': entry.notes,
+                'surface_ha': entry.surface_ha,
+                'cout_total': entry.cout_total_eur,
+                'source': 'journal',
+                'url': direct_url,
+            })
+        
+        # Ajouter les anciennes opérations (éviter les doublons si même date/parcelle/type)
+        existing_keys = set((i['date'], i['parcelle'].id if i['parcelle'] else None, i['type']) for i in interventions)
+        
+        for op in ops_qs[:200]:
+            key = (op.date, op.parcelle_id, op.operation_type)
+            if key not in existing_keys:
+                interventions.append({
+                    'id': str(op.id),
+                    'date': op.date,
+                    'created_at': op.created_at,
+                    'type': op.operation_type,
+                    'type_label': op.get_operation_type_display(),
+                    'parcelle': op.parcelle,
+                    'parcelle_id': op.parcelle_id,
+                    'parcelle_nom': op.parcelle.nom if op.parcelle else '—',
+                    'resume': op.label,
+                    'notes': op.notes,
+                    'surface_ha': None,
+                    'cout_total': op.cout_eur,
+                    'source': 'ops',
+                    'url': f"/viticulture/parcelles/{op.parcelle_id}/journal/",
+                })
+        
+        # Tri
+        if sort == 'date_asc':
+            interventions.sort(key=lambda x: (x['date'], x['id']))
+        elif sort == 'parcelle':
+            interventions.sort(key=lambda x: (x['parcelle_nom'], x['date']), reverse=True)
+        elif sort == 'type':
+            interventions.sort(key=lambda x: (x['type_label'], x['date']), reverse=True)
+        else:  # date_desc (default)
+            interventions.sort(key=lambda x: (x['date'], x['id']), reverse=True)
+        
+        ctx['interventions'] = interventions
+        ctx['interventions_count'] = len(interventions)
+        
         return ctx

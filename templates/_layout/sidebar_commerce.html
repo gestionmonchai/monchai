@@ -1,0 +1,23 @@
+{% load static %}
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-header border-0 py-2 bg-secondary text-white">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-shop"></i>
+            <span class="fw-semibold">Commerce</span>
+        </div>
+    </div>
+    
+    <div class="list-group list-group-flush">
+        <div class="list-group-item bg-light text-muted small">
+            Veuillez sélectionner un contexte :
+        </div>
+        
+        <a href="{% url 'ventes:dashboard' %}" class="list-group-item list-group-item-action text-primary">
+            <i class="bi bi-graph-up-arrow me-2"></i>Aller aux Ventes
+        </a>
+        
+        <a href="{% url 'achats:dashboard' %}" class="list-group-item list-group-item-action text-success">
+            <i class="bi bi-cart-check me-2"></i>Aller aux Achats
+        </a>
+    </div>
+</div>

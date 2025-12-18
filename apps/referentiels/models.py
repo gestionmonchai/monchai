@@ -16,6 +16,59 @@ from apps.accounts.models import Organization
 from apps.core.tenancy import TenantManager
 
 
+def normalize_cepage_name(name):
+    """Normalise un nom de cépage pour recherche tolérante"""
+    if not name:
+        return ""
+    # Supprimer accents et convertir en minuscules
+    normalized = unicodedata.normalize('NFD', name.lower())
+    normalized = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+    # Supprimer espaces multiples et caractères spéciaux
+    normalized = ' '.join(normalized.split())
+    return normalized
+
+
+class CepageReference(models.Model):
+    """
+    Référentiel officiel des cépages (non lié à une organisation)
+    Données préchargées avec tous les cépages français et internationaux
+    """
+    COULEUR_CHOICES = [
+        ('rouge', 'Rouge'),
+        ('blanc', 'Blanc'),
+        ('rose', 'Rosé'),
+        ('gris', 'Gris'),
+        ('autre', 'Autre'),
+    ]
+    
+    nom = models.CharField(max_length=100, verbose_name="Nom du cépage", unique=True)
+    name_norm = models.CharField(max_length=100, db_index=True, unique=True, verbose_name="Nom normalisé")
+    synonymes = models.JSONField(default=list, blank=True, verbose_name="Synonymes")
+    couleur = models.CharField(max_length=10, choices=COULEUR_CHOICES, default='rouge', verbose_name="Couleur")
+    
+    # Régions viticoles où ce cépage est cultivé
+    regions = models.JSONField(
+        default=list, 
+        blank=True, 
+        verbose_name="Régions viticoles",
+        help_text="Liste des régions: bordeaux, bourgogne, alsace, champagne, loire, rhone, provence, languedoc, sud_ouest, jura, savoie, corse, beaujolais"
+    )
+    pays = models.CharField(max_length=50, default='France', verbose_name="Pays d'origine")
+    description = models.TextField(blank=True, verbose_name="Description")
+    
+    class Meta:
+        verbose_name = "Cépage (Référentiel)"
+        verbose_name_plural = "Cépages (Référentiel)"
+        ordering = ['nom']
+    
+    def __str__(self):
+        return f"{self.nom} ({self.get_couleur_display()})"
+    
+    def save(self, *args, **kwargs):
+        self.name_norm = normalize_cepage_name(self.nom)
+        super().save(*args, **kwargs)
+
+
 class Cepage(models.Model):
     """
     Référentiel des cépages
@@ -28,16 +81,33 @@ class Cepage(models.Model):
     row_version = models.PositiveIntegerField(default=1, verbose_name="Version")
     code = models.CharField(max_length=10, blank=True, verbose_name="Code (optionnel)")
     couleur = models.CharField(
-        max_length=10,
+        max_length=20,
         choices=[
             ('rouge', 'Rouge'),
             ('blanc', 'Blanc'),
             ('rose', 'Rosé'),
+            ('gris', 'Gris'),
+            ('autre', 'Autre'),
         ],
         default='rouge',
         verbose_name="Couleur"
     )
+    couleur_libre = models.CharField(
+        max_length=50, blank=True,
+        verbose_name="Couleur (saisie libre)",
+        help_text="Utilisé si couleur = 'Autre'"
+    )
     notes = models.TextField(blank=True, verbose_name="Notes")
+    
+    # Lien vers le référentiel officiel (optionnel)
+    reference = models.ForeignKey(
+        CepageReference, 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True,
+        related_name='instances',
+        verbose_name="Cépage de référence"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     objects = TenantManager()
@@ -45,9 +115,17 @@ class Cepage(models.Model):
     class Meta:
         verbose_name = "Cépage"
         verbose_name_plural = "Cépages"
-        unique_together = [['organization', 'name_norm'], ['organization', 'code']]
         indexes = [models.Index(fields=['organization', 'name_norm'])]
         ordering = ['nom']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'name_norm'], name='unique_cepage_name_per_org'),
+            # Unicité du code seulement si non vide
+            models.UniqueConstraint(
+                fields=['organization', 'code'],
+                name='unique_cepage_code_per_org',
+                condition=models.Q(code__gt='')
+            ),
+        ]
 
     def __str__(self):
         return f"{self.nom} ({self.get_couleur_display()})"

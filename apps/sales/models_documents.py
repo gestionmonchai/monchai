@@ -133,6 +133,26 @@ class DocumentTemplate(models.Model):
         help_text="Styles CSS personnalisés"
     )
     
+    # Configuration en blocs (nouveau builder visuel)
+    blocks_config = models.JSONField(
+        blank=True,
+        null=True,
+        default=None,
+        help_text="Configuration JSON des blocs du builder visuel"
+    )
+    
+    # Mode d'édition
+    EDITOR_MODES = [
+        ('blocks', 'Éditeur visuel (blocs)'),
+        ('html', 'Éditeur HTML (avancé)'),
+    ]
+    editor_mode = models.CharField(
+        max_length=10,
+        choices=EDITOR_MODES,
+        default='blocks',
+        help_text="Mode d'édition du template"
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -284,7 +304,7 @@ class DocumentPreset(models.Model):
     # Polices
     font_family = models.CharField(
         max_length=200,
-        default='Georgia, serif',
+        default='Inter, sans-serif',
         help_text="Police principale"
     )
     font_size_base = models.IntegerField(

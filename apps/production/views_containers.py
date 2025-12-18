@@ -53,18 +53,38 @@ class ContenantListView(ListView):
             occ = qs.aggregate(s=Sum('volume_occupe_l'))['s'] or Decimal('0')
         except Exception:
             occ = Decimal('0')
+        # Calcul du % d'occupation
+        if cap_utile and cap_utile > 0:
+            occupation_pct = round(float(occ / cap_utile * 100), 1)
+        else:
+            occupation_pct = 0
+        # Comptage cuves occupées vs libres
+        try:
+            cuves_occupees = qs.filter(volume_occupe_l__gt=0).count()
+        except Exception:
+            cuves_occupees = 0
+        # Volume libre
+        libre = cap_utile - occ if cap_utile else Decimal('0')
+        # Conversion L vers HL pour affichage
+        cap_utile_hl = cap_utile / 100 if cap_utile else Decimal('0')
+        occ_hl = occ / 100 if occ else Decimal('0')
+        libre_hl = libre / 100 if libre else Decimal('0')
         ctx.update({
             'kpi': {
                 'count': total,
-                'cap_utile': cap_utile,
-                'occ': occ,
+                'cap_utile': cap_utile_hl,
+                'occ': occ_hl,
+                'libre': libre_hl,
+                'occupation_pct': occupation_pct,
+                'cuves_occupees': cuves_occupees,
+                'cuves_libres': total - cuves_occupees,
             },
             'types': Contenant.TYPE_CHOICES,
             'statuts': Contenant.STATUT_CHOICES,
-            'page_title': 'Contenants',
+            'page_title': 'Cuves & barriques',
             'breadcrumb_items': [
                 {'name': 'Production', 'url': '/production/'},
-                {'name': 'Contenants', 'url': None},
+                {'name': 'Cuves & barriques', 'url': None},
             ],
         })
         return ctx
@@ -127,10 +147,10 @@ class ContenantDetailView(DetailView):
             'next_nettoyage': next_nettoyage,
             'next_ouillage': next_ouillage,
             'lots': lots,
-            'page_title': 'Fiche contenant',
+            'page_title': 'Fiche cuve / barrique',
             'breadcrumb_items': [
                 {'name': 'Production', 'url': '/production/'},
-                {'name': 'Contenants', 'url': '/production/contenants/'},
+                {'name': 'Cuves & barriques', 'url': '/production/contenants/'},
                 {'name': c.code, 'url': None},
             ],
         })
@@ -142,8 +162,16 @@ class ContenantCreateView(CreateView):
     template_name = "production/contenants_form.html"
     model = Contenant
     fields = [
-        "code","label","type","capacite_l","capacite_utile_l","localisation",
-        "temperature_cible","thermo_regule","cycle_nettoyage_j","cycle_ouillage_j","note_sanitaire"
+        # Bloc Essentiel
+        "code", "label", "type", "capacite_l", "capacite_utile_l", "localisation",
+        # Spécifiques cuves
+        "thermo_regule", "type_thermoregulation", "temperature_min", "temperature_max",
+        "temperature_cible", "forme",
+        # Spécifiques barriques/foudres
+        "origine_bois", "grain_bois", "type_chauffe", "tonnelier",
+        "statut_barrique", "annee_mise_service",
+        # Sanitaire & maintenance
+        "cycle_nettoyage_j", "cycle_ouillage_j", "note_sanitaire"
     ]
 
     def form_valid(self, form):
@@ -161,9 +189,18 @@ class ContenantUpdateView(UpdateView):
     template_name = "production/contenants_form.html"
     model = Contenant
     fields = [
-        "label","type","capacite_l","capacite_utile_l","localisation",
-        "temperature_cible","thermo_regule","cycle_nettoyage_j","cycle_ouillage_j","note_sanitaire",
-        "statut","is_active"
+        # Bloc Essentiel
+        "label", "type", "capacite_l", "capacite_utile_l", "localisation",
+        # Spécifiques cuves
+        "thermo_regule", "type_thermoregulation", "temperature_min", "temperature_max",
+        "temperature_cible", "forme",
+        # Spécifiques barriques/foudres
+        "origine_bois", "grain_bois", "type_chauffe", "tonnelier",
+        "statut_barrique", "annee_mise_service",
+        # Sanitaire & maintenance
+        "cycle_nettoyage_j", "cycle_ouillage_j", "note_sanitaire",
+        # Statut opérationnel
+        "statut", "is_active"
     ]
 
     def get_queryset(self):

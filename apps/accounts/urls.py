@@ -57,7 +57,7 @@ urlpatterns = [
 
     # API Raccourcis
     path('api/shortcuts/add/', views_shortcuts.add_shortcut, name='api_shortcut_add'),
-    path('api/shortcuts/delete/<uuid:shortcut_id>/', views_shortcuts.delete_shortcut, name='api_shortcut_delete'),
+    path('api/shortcuts/delete/<int:shortcut_id>/', views_shortcuts.delete_shortcut, name='api_shortcut_delete'),
     
     # Gestion multi-chai (UX Points 1-18)
     path('organizations/', views_orgs.my_organizations, name='my_organizations'),

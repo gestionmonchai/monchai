@@ -35,6 +35,13 @@
                        title="Modifier">
                         <i class="bi bi-pencil"></i>
                     </a>
+                    <button type="button" 
+                            class="btn btn-outline-danger btn-delete-cepage" 
+                            data-id="{{ cepage.pk }}"
+                            data-nom="{{ cepage.nom }}"
+                            title="Supprimer">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 {% endif %}
             </div>
         </td>

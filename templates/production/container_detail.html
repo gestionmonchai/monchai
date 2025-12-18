@@ -1,8 +1,8 @@
 {% extends 'production/base_production.html' %}
-{% block title %}Fiche contenant - Mon Chai{% endblock %}
+{% block title %}Fiche cuve / barrique - Mon Chai{% endblock %}
 {% block production_content %}
 <h1 class="h4 mb-3 d-flex align-items-center gap-3">
-  <span>Fiche contenant</span>
+  <span>Fiche cuve / barrique</span>
   {% if container.type %}<span class="badge text-bg-secondary">{{ container.get_type_display }}</span>{% endif %}
   {% if container.identifiant %}<span class="badge text-bg-info">{{ container.identifiant }}</span>{% endif %}
   {% if cap %}<span class="badge text-bg-light">Capacité {{ cap }} L</span>{% endif %}

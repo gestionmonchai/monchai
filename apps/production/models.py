@@ -19,9 +19,21 @@ try:
 except Exception:
     Contenant = None
 
+# Register Analyse model from separate module
+try:
+    from .models_analyses import Analyse  # noqa: F401
+except Exception:
+    Analyse = None
+
+# Register Alert model from separate module
+try:
+    from .models_alerts import Alert  # noqa: F401
+except Exception:
+    Alert = None
+
 
 class Parcelle(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     nom = models.CharField(max_length=200)
     cepage = models.CharField(max_length=120, blank=True)
     surface_ha = models.DecimalField(max_digits=6, decimal_places=2, default=0)
@@ -34,7 +46,7 @@ class Parcelle(models.Model):
 
 
 class VendangeReception(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     nom = models.CharField(max_length=200, blank=True)
     date = models.DateField(default=timezone.now)
     # Code lisible de type VND-YYYY-###
@@ -154,7 +166,7 @@ class VendangeReception(models.Model):
 
 class VendangeLigne(models.Model):
     """Ligne de détail par cépage pour une vendange."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     vendange = models.ForeignKey(VendangeReception, on_delete=models.CASCADE, related_name='lignes')
     cepage = models.ForeignKey('referentiels.Cepage', on_delete=models.PROTECT, related_name='vendange_lignes')
     quantite_kg = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantité (kg)")
@@ -208,7 +220,7 @@ class LotTechnique(models.Model):
         ("DEGORGEMENT", "Dégorgement/Dosage"),
     )
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     code = models.CharField(max_length=32, unique=True)
     nom = models.CharField(max_length=200, blank=True)
     campagne = models.CharField(max_length=9)
@@ -309,7 +321,7 @@ class LotTechnique(models.Model):
 
 
 class Assemblage(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     code = models.CharField(max_length=32, unique=True)
     nom = models.CharField(max_length=200, blank=True)
     date = models.DateField(default=timezone.now)
@@ -330,7 +342,7 @@ class Assemblage(models.Model):
 
 
 class AssemblageLigne(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     assemblage = models.ForeignKey(Assemblage, on_delete=models.CASCADE, related_name="lignes")
     lot_source = models.ForeignKey(LotTechnique, on_delete=models.PROTECT, related_name="utilisations_assemblage")
     volume_l = models.DecimalField(max_digits=12, decimal_places=2)
@@ -360,7 +372,7 @@ class MouvementLot(models.Model):
         ("MISE_OUT", "Mise (sortie)"),
     )
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     lot = models.ForeignKey(LotTechnique, on_delete=models.CASCADE, related_name="mouvements")
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     date = models.DateTimeField(default=timezone.now)
@@ -463,7 +475,7 @@ class Operation(models.Model):
         ('autre', 'Autre'),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     kind = models.CharField(max_length=32, choices=KIND_CHOICES)
     date = models.DateTimeField(default=timezone.now)
@@ -480,7 +492,7 @@ class Operation(models.Model):
 
 
 class LotLineage(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     operation = models.ForeignKey(Operation, on_delete=models.CASCADE, related_name='lineages')
     parent_lot = models.ForeignKey(LotTechnique, null=True, blank=True, on_delete=models.SET_NULL, related_name='children_links')
     child_lot = models.ForeignKey(LotTechnique, on_delete=models.CASCADE, related_name='parent_links')
@@ -531,11 +543,11 @@ class CostEntry(models.Model):
         ("overhead", "Frais généraux"),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     date = models.DateTimeField(default=timezone.now)
     entity_type = models.CharField(max_length=20, choices=ENTITY_CHOICES)
-    entity_id = models.UUIDField(help_text="UUID de l'entité de référence")
+    entity_id = models.BigIntegerField(help_text="ID de l'entité de référence")
     nature = models.CharField(max_length=20, choices=NATURE_CHOICES)
     qty = models.DecimalField(max_digits=14, decimal_places=4, help_text="Quantité (L ou unité MS)")
     amount_eur = models.DecimalField(max_digits=14, decimal_places=4, help_text="Montant en EUR")
@@ -559,10 +571,10 @@ class CostSnapshot(models.Model):
     Pour tirage: cout_unitaire_eur_u (+ détails pack/MO).
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     entity_type = models.CharField(max_length=20, choices=CostEntry.ENTITY_CHOICES)
-    entity_id = models.UUIDField()
+    entity_id = models.BigIntegerField()
     cmp_vrac_eur_l = models.DecimalField(max_digits=14, decimal_places=4, default=0)
     cmp_pack_eur_u = models.DecimalField(max_digits=14, decimal_places=4, default=0)
     mo_eur_u = models.DecimalField(max_digits=14, decimal_places=4, default=0)

@@ -1,1184 +1,683 @@
-{% extends 'base.html' %}
+{% extends 'commerce/base_commerce.html' %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Mon Chai{% endblock %}
 
 {% block extra_css %}
-<script src="https://cdn.tailwindcss.com"></script>
+    {{ block.super }}
 <style>
-:root {
-    --wine-red: #722F37;
-    --wine-gold: #D4AF37;
-    --wine-cream: #F5F5DC;
+/* Shopify-like Style Adapté */
+body {
+    background-color: #f1f2f4;
 }
-.duplicate-alert {
-    border-left: 4px solid #dc3545;
-    background-color: #f8d7da;
-    padding: 1rem;
-    margin-bottom: 1rem;
+
+.form-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.form-section h5 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.form-control, .form-select {
+    border-color: #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.text-help {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+/* Tabs Navigation */
+.nav-tabs-custom {
+    border-bottom: none;
+    margin-bottom: 20px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px; /* Pour la scrollbar éventuelle */
+}
+
+.nav-tabs-custom .nav-link {
+    border: 1px solid transparent;
+    border-radius: 20px;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 8px 16px;
+    white-space: nowrap;
+    transition: all 0.2s;
+    background: transparent;
+}
+
+.nav-tabs-custom .nav-link:hover {
+    color: #1e293b;
+    background: #e2e8f0;
+}
+
+.nav-tabs-custom .nav-link.active {
+    background: #1e293b;
+    color: white;
+}
+
+/* Page Header */
+.page-header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+/* Sidebar Elements */
+.checkbox-card {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.checkbox-card:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+.checkbox-card input[type="checkbox"] {
+    width: 1.2em;
+    height: 1.2em;
+    margin-right: 12px;
     border-radius: 4px;
+    border-color: #cbd5e1;
+}
+.checkbox-card label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    flex-grow: 1;
+}
+
+/* Tags */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.tag-checkbox {
+    display: none;
+}
+.tag-label {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+.tag-checkbox:checked + .tag-label {
+    background: #e0e7ff;
+    color: #4f46e5;
+    border-color: #c7d2fe;
+}
+
+/* Doublons */
+.duplicate-alert {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
 }
 .duplicate-item {
     background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-.risk-high { border-left: 4px solid #dc3545; }
-.risk-medium { border-left: 4px solid #ffc107; }
-.risk-low { border-left: 4px solid #28a745; }
-.loading-spinner {
-    display: none;
-    text-align: center;
-    padding: 1rem;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 3px solid #ef4444;
+    font-size: 13px;
+    margin-top: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-/* Responsive improvements */
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
-}
-
-/* Mobile form improvements */
-@media (max-width: 640px) {
-    .tab-button {
-        min-width: max-content;
-    }
-    
-    .bg-white {
-        margin-left: -1rem;
-        margin-right: -1rem;
-        border-radius: 0;
-    }
-    
-    .bg-white.shadow {
-        box-shadow: none;
-        border-top: 1px solid #e5e7eb;
-        border-bottom: 1px solid #e5e7eb;
-    }
-}
-
-/* Focus improvements for accessibility */
-.tab-button:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-}
-
-input:focus, select:focus, textarea:focus {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
 }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-    <!-- Header pour création -->
-    <div class="mb-8">
-        <nav class="flex mb-3 sm:mb-4" aria-label="Breadcrumb">
-            <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                <li class="inline-flex items-center">
-                    <a href="{% url 'ventes:clients_list' %}" class="text-sm sm:text-base text-gray-700 hover:text-blue-600 transition-colors">
-                        Clients
-                    </a>
-                </li>
-                <li>
-                    <div class="flex items-center">
-                        <svg class="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span class="ml-1 text-sm sm:text-base text-gray-500 md:ml-2">{{ page_title }}</span>
-                    </div>
-                </li>
-            </ol>
-        </nav>
-        
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
-            <div class="min-w-0 flex-1">
-                <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 break-words">{{ page_title }}</h1>
-                <p class="text-sm sm:text-base text-gray-600 mt-1">Créer un nouveau client</p>
-            </div>
-            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                <a href="{% url 'ventes:clients_list' %}" 
-                   class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium text-center transition-colors">
-                    Retour à la liste
-                </a>
-            </div>
-        </div>
-
-        <!-- Navigation par onglets responsive -->
-        <div class="border-b border-gray-200 mb-6">
-            <nav class="-mb-px flex overflow-x-auto scrollbar-hide space-x-4 sm:space-x-8" aria-label="Tabs">
-                <button type="button" data-tab="identite" 
-                       class="tab-button border-b-2 border-blue-500 text-blue-600 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
-                    <span class="hidden sm:inline">Identité & Coordonnées</span>
-                    <span class="sm:hidden">Identité</span>
-                </button>
-                <button type="button" data-tab="commercial" 
-                       class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
-                    <span class="hidden sm:inline">Commercial & Fiscalité</span>
-                    <span class="sm:hidden">Commercial</span>
-                </button>
-                <button type="button" data-tab="logistique" 
-                       class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
-                    <span class="hidden sm:inline">Adresses & Logistique</span>
-                    <span class="sm:hidden">Logistique</span>
-                </button>
-                <button type="button" data-tab="performance" 
-                       class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
-                    <span class="hidden sm:inline">Historique & Performance</span>
-                    <span class="sm:hidden">Performance</span>
-                </button>
-                <button type="button" data-tab="conformite" 
-                       class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
-                    <span class="hidden sm:inline">Documents & Conformité</span>
-                    <span class="sm:hidden">Conformité</span>
-                </button>
-            </nav>
-        </div>
-    </div>
-
-    <!-- Alertes de doublons -->
-    <div id="duplicateAlert" class="duplicate-alert" style="display: none;">
-        <h6><i class="bi bi-exclamation-triangle me-2"></i>Doublons potentiels détectés</h6>
-        <div id="duplicateList"></div>
-    </div>
-
-    <!-- Formulaire avec onglets -->
+{% block commerce_content %}
+<div class="container-fluid py-4">
+    
     <form method="post" novalidate id="customerForm">
         {% csrf_token %}
         
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-            <!-- Contenu principal -->
-            <div class="lg:col-span-2 space-y-6">
-                
-                <!-- Onglet Identité & Coordonnées -->
-                <div id="tab-identite" class="tab-content">
-                    <div class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Informations de base</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="sm:col-span-2">
-                                <label for="name" class="block text-sm font-medium text-gray-700">
-                                    Nom du client <span class="text-red-500">*</span>
-                                </label>
-                                <input type="text" id="name" name="name" required maxlength="120"
-                                       value="{% if customer %}{{ customer.name }}{% endif %}"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <p class="mt-1 text-sm text-gray-500">Nom complet du client (2-120 caractères)</p>
-                            </div>
-                            
-                            <div>
-                                <label for="segment" class="block text-sm font-medium text-gray-700">
-                                    Segment <span class="text-red-500">*</span>
-                                </label>
-                                <select id="segment" name="segment" required
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    {% for value, label in segment_choices %}
-                                    <option value="{{ value }}" {% if customer and customer.segment == value %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="title" class="block text-sm font-medium text-gray-700">Civilité</label>
-                                <select id="title" name="title" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="M">Monsieur</option>
-                                    <option value="Mme">Madame</option>
-                                    <option value="Mlle">Mademoiselle</option>
-                                    <option value="Dr">Docteur</option>
-                                    <option value="Pr">Professeur</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="first_name" class="block text-sm font-medium text-gray-700">Prénom</label>
-                                <input type="text" id="first_name" name="first_name" maxlength="50"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="last_name" class="block text-sm font-medium text-gray-700">Nom de famille</label>
-                                <input type="text" id="last_name" name="last_name" maxlength="50"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email principal</label>
-                                <input type="email" id="email" name="email" maxlength="254"
-                                       value="{% if customer %}{{ customer.email }}{% endif %}"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="email_secondary" class="block text-sm font-medium text-gray-700">Email secondaire</label>
-                                <input type="email" id="email_secondary" name="email_secondary" maxlength="254"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="phone" class="block text-sm font-medium text-gray-700">Téléphone principal</label>
-                                <input type="tel" id="phone" name="phone" maxlength="20" placeholder="+33123456789"
-                                       value="{% if customer %}{{ customer.phone }}{% endif %}"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="phone_mobile" class="block text-sm font-medium text-gray-700">Téléphone mobile</label>
-                                <input type="tel" id="phone_mobile" name="phone_mobile" maxlength="20" placeholder="+33612345678"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="website" class="block text-sm font-medium text-gray-700">Site web</label>
-                                <input type="url" id="website" name="website" maxlength="200" placeholder="https://www.exemple.com"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="language" class="block text-sm font-medium text-gray-700">Langue préférée</label>
-                                <select id="language" name="language" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="fr">Français</option>
-                                    <option value="en">English</option>
-                                    <option value="de">Deutsch</option>
-                                    <option value="it">Italiano</option>
-                                    <option value="es">Español</option>
-                                </select>
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
-                                <textarea id="notes" name="notes" rows="3" maxlength="500"
-                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                          placeholder="Notes sur le client..."></textarea>
-                                <p class="mt-1 text-sm text-gray-500">Maximum 500 caractères</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Onglet Commercial & Fiscalité -->
-                <div id="tab-commercial" class="tab-content hidden">
-                    <div class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Informations légales et fiscales</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label for="vat_number" class="block text-sm font-medium text-gray-700">Numéro de TVA</label>
-                                <input type="text" id="vat_number" name="vat_number" maxlength="15" placeholder="FR12345678901"
-                                       value="{% if customer %}{{ customer.vat_number }}{% endif %}"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <p class="mt-1 text-sm text-gray-500">Numéro de TVA intracommunautaire</p>
-                            </div>
-                            
-                            <div>
-                                <label for="siret" class="block text-sm font-medium text-gray-700">SIRET</label>
-                                <input type="text" id="siret" name="siret" maxlength="14" placeholder="12345678901234"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <p class="mt-1 text-sm text-gray-500">Numéro SIRET (France uniquement)</p>
-                            </div>
-                            
-                            <div>
-                                <label for="country_code" class="block text-sm font-medium text-gray-700">Pays</label>
-                                <select id="country_code" name="country_code" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="FR" {% if customer and customer.country_code == 'FR' %}selected{% endif %}>France</option>
-                                    <option value="DE" {% if customer and customer.country_code == 'DE' %}selected{% endif %}>Allemagne</option>
-                                    <option value="IT" {% if customer and customer.country_code == 'IT' %}selected{% endif %}>Italie</option>
-                                    <option value="ES" {% if customer and customer.country_code == 'ES' %}selected{% endif %}>Espagne</option>
-                                    <option value="BE" {% if customer and customer.country_code == 'BE' %}selected{% endif %}>Belgique</option>
-                                    <option value="CH" {% if customer and customer.country_code == 'CH' %}selected{% endif %}>Suisse</option>
-                                    <option value="US" {% if customer and customer.country_code == 'US' %}selected{% endif %}>États-Unis</option>
-                                    <option value="CA" {% if customer and customer.country_code == 'CA' %}selected{% endif %}>Canada</option>
-                                    <option value="GB" {% if customer and customer.country_code == 'GB' %}selected{% endif %}>Royaume-Uni</option>
-                                    <option value="NL" {% if customer and customer.country_code == 'NL' %}selected{% endif %}>Pays-Bas</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="currency" class="block text-sm font-medium text-gray-700">Devise</label>
-                                <select id="currency" name="currency" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="EUR">EUR - Euro</option>
-                                    <option value="USD">USD - Dollar américain</option>
-                                    <option value="GBP">GBP - Livre sterling</option>
-                                    <option value="CHF">CHF - Franc suisse</option>
-                                    <option value="CAD">CAD - Dollar canadien</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="payment_terms" class="block text-sm font-medium text-gray-700">Conditions de paiement</label>
-                                <select id="payment_terms" name="payment_terms" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="immediate">Paiement immédiat</option>
-                                    <option value="15_days">15 jours</option>
-                                    <option value="30_days">30 jours</option>
-                                    <option value="45_days">45 jours</option>
-                                    <option value="60_days">60 jours</option>
-                                    <option value="90_days">90 jours</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="credit_limit" class="block text-sm font-medium text-gray-700">Limite de crédit</label>
-                                <input type="number" id="credit_limit" name="credit_limit" min="0" step="0.01" placeholder="0.00"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <p class="mt-1 text-sm text-gray-500">Limite de crédit autorisée</p>
-                            </div>
-                            
-                            <div>
-                                <label for="discount_rate" class="block text-sm font-medium text-gray-700">Taux de remise (%)</label>
-                                <input type="number" id="discount_rate" name="discount_rate" min="0" max="100" step="0.01" placeholder="0.00"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <p class="mt-1 text-sm text-gray-500">Remise commerciale habituelle</p>
-                            </div>
-                            
-                            <div>
-                                <label for="tax_exempt" class="block text-sm font-medium text-gray-700">Exonération TVA</label>
-                                <select id="tax_exempt" name="tax_exempt" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="false">Non</option>
-                                    <option value="true">Oui</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="account_code" class="block text-sm font-medium text-gray-700">Code comptable</label>
-                                <input type="text" id="account_code" name="account_code" maxlength="20" placeholder="411000"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <p class="mt-1 text-sm text-gray-500">Code compte client</p>
-                            </div>
-                            
-                            <div>
-                                <label for="sales_rep" class="block text-sm font-medium text-gray-700">Commercial responsable</label>
-                                <input type="text" id="sales_rep" name="sales_rep" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="billing_notes" class="block text-sm font-medium text-gray-700">Notes de facturation</label>
-                                <textarea id="billing_notes" name="billing_notes" rows="3" maxlength="500"
-                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                          placeholder="Instructions spéciales pour la facturation..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Onglet Adresses & Logistique -->
-                <div id="tab-logistique" class="tab-content hidden">
-                    <div class="bg-white shadow rounded-lg p-6 mb-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Adresse de facturation</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="sm:col-span-2">
-                                <label for="billing_company" class="block text-sm font-medium text-gray-700">Société</label>
-                                <input type="text" id="billing_company" name="billing_company" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="billing_address1" class="block text-sm font-medium text-gray-700">Adresse ligne 1</label>
-                                <input type="text" id="billing_address1" name="billing_address1" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="billing_address2" class="block text-sm font-medium text-gray-700">Adresse ligne 2</label>
-                                <input type="text" id="billing_address2" name="billing_address2" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="billing_postal_code" class="block text-sm font-medium text-gray-700">Code postal</label>
-                                <input type="text" id="billing_postal_code" name="billing_postal_code" maxlength="10"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="billing_city" class="block text-sm font-medium text-gray-700">Ville</label>
-                                <input type="text" id="billing_city" name="billing_city" maxlength="50"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="billing_state" class="block text-sm font-medium text-gray-700">État/Région</label>
-                                <input type="text" id="billing_state" name="billing_state" maxlength="50"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="billing_country" class="block text-sm font-medium text-gray-700">Pays</label>
-                                <select id="billing_country" name="billing_country" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="FR">France</option>
-                                    <option value="DE">Allemagne</option>
-                                    <option value="IT">Italie</option>
-                                    <option value="ES">Espagne</option>
-                                    <option value="BE">Belgique</option>
-                                    <option value="CH">Suisse</option>
-                                    <option value="US">États-Unis</option>
-                                    <option value="CA">Canada</option>
-                                    <option value="GB">Royaume-Uni</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white shadow rounded-lg p-6 mb-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-lg font-medium text-gray-900">Adresse de livraison</h3>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="same_as_billing" name="same_as_billing" 
-                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <span class="ml-2 text-sm text-gray-700">Identique à l'adresse de facturation</span>
-                            </label>
-                        </div>
-                        
-                        <div id="shipping-address" class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="sm:col-span-2">
-                                <label for="shipping_company" class="block text-sm font-medium text-gray-700">Société</label>
-                                <input type="text" id="shipping_company" name="shipping_company" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="shipping_address1" class="block text-sm font-medium text-gray-700">Adresse ligne 1</label>
-                                <input type="text" id="shipping_address1" name="shipping_address1" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="shipping_address2" class="block text-sm font-medium text-gray-700">Adresse ligne 2</label>
-                                <input type="text" id="shipping_address2" name="shipping_address2" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="shipping_postal_code" class="block text-sm font-medium text-gray-700">Code postal</label>
-                                <input type="text" id="shipping_postal_code" name="shipping_postal_code" maxlength="10"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="shipping_city" class="block text-sm font-medium text-gray-700">Ville</label>
-                                <input type="text" id="shipping_city" name="shipping_city" maxlength="50"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="shipping_state" class="block text-sm font-medium text-gray-700">État/Région</label>
-                                <input type="text" id="shipping_state" name="shipping_state" maxlength="50"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="shipping_country" class="block text-sm font-medium text-gray-700">Pays</label>
-                                <select id="shipping_country" name="shipping_country" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="FR">France</option>
-                                    <option value="DE">Allemagne</option>
-                                    <option value="IT">Italie</option>
-                                    <option value="ES">Espagne</option>
-                                    <option value="BE">Belgique</option>
-                                    <option value="CH">Suisse</option>
-                                    <option value="US">États-Unis</option>
-                                    <option value="CA">Canada</option>
-                                    <option value="GB">Royaume-Uni</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Préférences logistiques</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label for="preferred_carrier" class="block text-sm font-medium text-gray-700">Transporteur préféré</label>
-                                <select id="preferred_carrier" name="preferred_carrier" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="chronopost">Chronopost</option>
-                                    <option value="colissimo">Colissimo</option>
-                                    <option value="ups">UPS</option>
-                                    <option value="fedex">FedEx</option>
-                                    <option value="dhl">DHL</option>
-                                    <option value="tnt">TNT</option>
-                                    <option value="geodis">Geodis</option>
-                                    <option value="other">Autre</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="delivery_instructions" class="block text-sm font-medium text-gray-700">Instructions de livraison</label>
-                                <input type="text" id="delivery_instructions" name="delivery_instructions" maxlength="200"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="Code d'accès, étage, etc.">
-                            </div>
-                            
-                            <div>
-                                <label for="delivery_time_preference" class="block text-sm font-medium text-gray-700">Préférence horaire</label>
-                                <select id="delivery_time_preference" name="delivery_time_preference" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="morning">Matin (8h-12h)</option>
-                                    <option value="afternoon">Après-midi (14h-18h)</option>
-                                    <option value="evening">Soirée (18h-20h)</option>
-                                    <option value="flexible">Flexible</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="packaging_preference" class="block text-sm font-medium text-gray-700">Préférence emballage</label>
-                                <select id="packaging_preference" name="packaging_preference" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="standard">Standard</option>
-                                    <option value="eco">Écologique</option>
-                                    <option value="premium">Premium</option>
-                                    <option value="gift">Cadeau</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Onglet Historique & Performance -->
-                <div id="tab-performance" class="tab-content hidden">
-                    <div class="bg-white shadow rounded-lg p-6 mb-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Préférences commerciales</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label for="customer_since" class="block text-sm font-medium text-gray-700">Client depuis</label>
-                                <input type="date" id="customer_since" name="customer_since"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="customer_category" class="block text-sm font-medium text-gray-700">Catégorie client</label>
-                                <select id="customer_category" name="customer_category" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="bronze">Bronze</option>
-                                    <option value="silver">Argent</option>
-                                    <option value="gold">Or</option>
-                                    <option value="platinum">Platine</option>
-                                    <option value="vip">VIP</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="preferred_contact_method" class="block text-sm font-medium text-gray-700">Méthode de contact préférée</label>
-                                <select id="preferred_contact_method" name="preferred_contact_method" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="email">Email</option>
-                                    <option value="phone">Téléphone</option>
-                                    <option value="sms">SMS</option>
-                                    <option value="mail">Courrier</option>
-                                    <option value="none">Aucune</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="marketing_consent" class="block text-sm font-medium text-gray-700">Consentement marketing</label>
-                                <select id="marketing_consent" name="marketing_consent" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="true">Oui</option>
-                                    <option value="false">Non</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="wine_preferences" class="block text-sm font-medium text-gray-700">Préférences viticoles</label>
-                                <input type="text" id="wine_preferences" name="wine_preferences" maxlength="200"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="Rouge, Blanc, Rosé, Champagne...">
-                            </div>
-                            
-                            <div>
-                                <label for="price_range" class="block text-sm font-medium text-gray-700">Gamme de prix</label>
-                                <select id="price_range" name="price_range" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="budget">Budget (< 15€)</option>
-                                    <option value="standard">Standard (15-30€)</option>
-                                    <option value="premium">Premium (30-50€)</option>
-                                    <option value="luxury">Luxe (> 50€)</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="order_frequency" class="block text-sm font-medium text-gray-700">Fréquence de commande</label>
-                                <select id="order_frequency" name="order_frequency" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="weekly">Hebdomadaire</option>
-                                    <option value="monthly">Mensuelle</option>
-                                    <option value="quarterly">Trimestrielle</option>
-                                    <option value="yearly">Annuelle</option>
-                                    <option value="occasional">Occasionnelle</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="seasonal_preferences" class="block text-sm font-medium text-gray-700">Préférences saisonnières</label>
-                                <input type="text" id="seasonal_preferences" name="seasonal_preferences" maxlength="200"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="Fêtes, été, hiver...">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="special_requests" class="block text-sm font-medium text-gray-700">Demandes spéciales</label>
-                                <textarea id="special_requests" name="special_requests" rows="3" maxlength="500"
-                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                          placeholder="Allergies, préférences particulières, demandes spéciales..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Objectifs et suivi</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label for="annual_target" class="block text-sm font-medium text-gray-700">Objectif annuel (€)</label>
-                                <input type="number" id="annual_target" name="annual_target" min="0" step="0.01" placeholder="0.00"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="last_contact_date" class="block text-sm font-medium text-gray-700">Dernier contact</label>
-                                <input type="date" id="last_contact_date" name="last_contact_date"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="next_contact_date" class="block text-sm font-medium text-gray-700">Prochain contact</label>
-                                <input type="date" id="next_contact_date" name="next_contact_date"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="priority_level" class="block text-sm font-medium text-gray-700">Niveau de priorité</label>
-                                <select id="priority_level" name="priority_level" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="low">Faible</option>
-                                    <option value="medium" selected>Moyenne</option>
-                                    <option value="high">Élevée</option>
-                                    <option value="critical">Critique</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Onglet Documents & Conformité -->
-                <div id="tab-conformite" class="tab-content hidden">
-                    <div class="bg-white shadow rounded-lg p-6 mb-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Conformité réglementaire</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label for="gdpr_consent" class="block text-sm font-medium text-gray-700">Consentement RGPD</label>
-                                <select id="gdpr_consent" name="gdpr_consent" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="true">Accordé</option>
-                                    <option value="false">Refusé</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="gdpr_consent_date" class="block text-sm font-medium text-gray-700">Date du consentement</label>
-                                <input type="date" id="gdpr_consent_date" name="gdpr_consent_date"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="data_retention_period" class="block text-sm font-medium text-gray-700">Période de rétention</label>
-                                <select id="data_retention_period" name="data_retention_period" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="3_years">3 ans</option>
-                                    <option value="5_years">5 ans</option>
-                                    <option value="7_years">7 ans</option>
-                                    <option value="10_years">10 ans</option>
-                                    <option value="indefinite">Indéfinie</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="kyc_status" class="block text-sm font-medium text-gray-700">Statut KYC</label>
-                                <select id="kyc_status" name="kyc_status" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="pending">En attente</option>
-                                    <option value="verified">Vérifié</option>
-                                    <option value="rejected">Rejeté</option>
-                                    <option value="not_required">Non requis</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="aml_risk_level" class="block text-sm font-medium text-gray-700">Niveau de risque AML</label>
-                                <select id="aml_risk_level" name="aml_risk_level" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="low">Faible</option>
-                                    <option value="medium">Moyen</option>
-                                    <option value="high">Élevé</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="sanctions_check" class="block text-sm font-medium text-gray-700">Vérification sanctions</label>
-                                <select id="sanctions_check" name="sanctions_check" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="passed">Validée</option>
-                                    <option value="failed">Échouée</option>
-                                    <option value="pending">En cours</option>
-                                    <option value="not_checked">Non vérifiée</option>
-                                </select>
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="compliance_notes" class="block text-sm font-medium text-gray-700">Notes de conformité</label>
-                                <textarea id="compliance_notes" name="compliance_notes" rows="3" maxlength="500"
-                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                          placeholder="Notes sur la conformité réglementaire..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white shadow rounded-lg p-6 mb-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Documents requis</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="doc_id_card" name="required_documents" value="id_card"
-                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <span class="ml-2 text-sm text-gray-700">Pièce d'identité</span>
-                                </label>
-                            </div>
-                            
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="doc_proof_address" name="required_documents" value="proof_address"
-                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <span class="ml-2 text-sm text-gray-700">Justificatif de domicile</span>
-                                </label>
-                            </div>
-                            
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="doc_business_license" name="required_documents" value="business_license"
-                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <span class="ml-2 text-sm text-gray-700">Licence commerciale</span>
-                                </label>
-                            </div>
-                            
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="doc_tax_certificate" name="required_documents" value="tax_certificate"
-                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <span class="ml-2 text-sm text-gray-700">Certificat fiscal</span>
-                                </label>
-                            </div>
-                            
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="doc_bank_details" name="required_documents" value="bank_details"
-                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <span class="ml-2 text-sm text-gray-700">RIB/Coordonnées bancaires</span>
-                                </label>
-                            </div>
-                            
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="doc_insurance" name="required_documents" value="insurance"
-                                           class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <span class="ml-2 text-sm text-gray-700">Assurance responsabilité</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-6">Informations légales</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div>
-                                <label for="legal_form" class="block text-sm font-medium text-gray-700">Forme juridique</label>
-                                <select id="legal_form" name="legal_form" 
-                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">-- Sélectionner --</option>
-                                    <option value="individual">Particulier</option>
-                                    <option value="sarl">SARL</option>
-                                    <option value="sas">SAS</option>
-                                    <option value="sa">SA</option>
-                                    <option value="eurl">EURL</option>
-                                    <option value="sasu">SASU</option>
-                                    <option value="ei">Entreprise individuelle</option>
-                                    <option value="auto_entrepreneur">Auto-entrepreneur</option>
-                                    <option value="association">Association</option>
-                                    <option value="other">Autre</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label for="registration_number" class="block text-sm font-medium text-gray-700">Numéro d'immatriculation</label>
-                                <input type="text" id="registration_number" name="registration_number" maxlength="20"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="RCS, SIREN...">
-                            </div>
-                            
-                            <div>
-                                <label for="registration_date" class="block text-sm font-medium text-gray-700">Date d'immatriculation</label>
-                                <input type="date" id="registration_date" name="registration_date"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="share_capital" class="block text-sm font-medium text-gray-700">Capital social (€)</label>
-                                <input type="number" id="share_capital" name="share_capital" min="0" step="0.01" placeholder="0.00"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="legal_representative" class="block text-sm font-medium text-gray-700">Représentant légal</label>
-                                <input type="text" id="legal_representative" name="legal_representative" maxlength="100"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div>
-                                <label for="activity_code" class="block text-sm font-medium text-gray-700">Code d'activité (NAF/APE)</label>
-                                <input type="text" id="activity_code" name="activity_code" maxlength="10" placeholder="47.25Z"
-                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            
-                            <div class="sm:col-span-2">
-                                <label for="legal_notes" class="block text-sm font-medium text-gray-700">Notes légales</label>
-                                <textarea id="legal_notes" name="legal_notes" rows="3" maxlength="500"
-                                          class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                          placeholder="Informations légales complémentaires..."></textarea>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Header Actions -->
+        <div class="page-header">
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'clients:customers_list' %}" class="btn btn-outline-secondary btn-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="page-title">{{ page_title }}</h1>
+                    <p class="text-muted small mb-0">{% if is_edit %}Modifier les informations client{% else %}Ajouter un nouveau client{% endif %}</p>
                 </div>
             </div>
-
-            <!-- Sidebar -->
-            <div class="lg:col-span-1">
-                <!-- Statut -->
-                <div class="bg-white shadow rounded-lg p-6 mb-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Statut</h3>
-                    <div class="flex items-center">
-                        <input type="checkbox" id="is_active" name="is_active" 
-                               {% if not customer or customer.is_active %}checked{% endif %}
-                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                        <label for="is_active" class="ml-2 text-sm text-gray-700">Client actif</label>
-                    </div>
-                    <p class="mt-2 text-sm text-gray-500">Les clients inactifs sont masqués par défaut</p>
-                </div>
-
-                <!-- Tags -->
-                <div class="bg-white shadow rounded-lg p-6 mb-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Tags</h3>
-                    {% for tag in available_tags %}
-                    <div class="flex items-center mb-2">
-                        <input type="checkbox" id="tag_{{ tag.id }}" name="tags" value="{{ tag.id }}"
-                               {% if tag.id in selected_tags %}checked{% endif %}
-                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                        <label for="tag_{{ tag.id }}" class="ml-2">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {{ tag.name }}
-                            </span>
-                        </label>
-                    </div>
-                    {% empty %}
-                    <p class="text-gray-500 text-sm">Aucun tag disponible</p>
-                    {% endfor %}
-                </div>
-
-                <!-- Vérification doublons -->
-                <div class="bg-white shadow rounded-lg p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
-                        <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Vérification
-                    </h3>
-                    <div class="loading-spinner" id="loadingSpinner">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                        <div class="mt-2 text-sm text-gray-600">Vérification des doublons...</div>
-                    </div>
-                    <div id="duplicateStatus">
-                        <div class="text-gray-500 text-sm">
-                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            La vérification se lance automatiquement
-                        </div>
-                    </div>
-                </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'clients:customers_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary px-4">
+                    {% if is_edit %}Enregistrer les modifications{% else %}Créer le client{% endif %}
+                </button>
             </div>
         </div>
 
-        <!-- Actions responsive -->
-        <div class="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-between space-y-3 sm:space-y-0 sm:space-x-4">
-            <a href="{% url 'ventes:clients_list' %}" 
-               class="w-full sm:w-auto bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 sm:py-2 rounded-md text-sm font-medium text-center transition-colors">
-                Annuler
-            </a>
-            <button type="submit" id="submitBtn"
-                    class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:py-2 rounded-md text-sm font-medium transition-colors">
-                {% if is_edit %}Modifier{% else %}Créer{% endif %} le client
-            </button>
+        <!-- Alerte Doublons -->
+        <div id="duplicateAlert" class="duplicate-alert" style="display: none;">
+            <div class="d-flex align-items-center text-danger mb-2">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Doublons potentiels détectés</strong>
+            </div>
+            <p class="small text-muted mb-2">Un ou plusieurs clients similaires existent déjà :</p>
+            <div id="duplicateList"></div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Colonne Principale (Gauche) -->
+            <div class="col-lg-8">
+                
+                <!-- Navigation Onglets -->
+                <ul class="nav nav-tabs-custom" id="formTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="identite-tab" data-bs-toggle="tab" data-bs-target="#identite" type="button" role="tab">
+                            Identité
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="commercial-tab" data-bs-toggle="tab" data-bs-target="#commercial" type="button" role="tab">
+                            Commercial
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="logistique-tab" data-bs-toggle="tab" data-bs-target="#logistique" type="button" role="tab">
+                            Logistique
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab">
+                            Performance
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="conformite-tab" data-bs-toggle="tab" data-bs-target="#conformite" type="button" role="tab">
+                            Conformité
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="formTabsContent">
+                    
+                    <!-- 1. Identité -->
+                    <div class="tab-pane fade show active" id="identite" role="tabpanel">
+                        <div class="form-section">
+                            <h5>Informations de base</h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="name" class="form-label">Nom du client <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-lg" id="name" name="name" 
+                                           value="{{ customer.name|default:'' }}" required placeholder="Ex: Jean Dupont ou SARL Vins & Co">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="segment" class="form-label">Segment <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="segment" name="segment" required>
+                                        <option value="">-- Sélectionner --</option>
+                                        {% for value, label in segment_choices %}
+                                        <option value="{{ value }}" {% if customer.segment == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="title" class="form-label">Civilité</label>
+                                    <select class="form-select" id="title" name="title">
+                                        <option value="">-- Sélectionner --</option>
+                                        <option value="M">Monsieur</option>
+                                        <option value="Mme">Madame</option>
+                                        <option value="Dr">Docteur</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email principal</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text text-muted"><i class="bi bi-envelope"></i></span>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ customer.email|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="phone" class="form-label">Téléphone</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text text-muted"><i class="bi bi-telephone"></i></span>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ customer.phone|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="website" class="form-label">Site web</label>
+                                    <input type="url" class="form-control" id="website" name="website" placeholder="https://">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="language" class="form-label">Langue</label>
+                                    <select class="form-select" id="language" name="language">
+                                        <option value="fr">Français</option>
+                                        <option value="en">English</option>
+                                        <option value="de">Deutsch</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label for="notes" class="form-label">Notes internes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Informations importantes..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Commercial -->
+                    <div class="tab-pane fade" id="commercial" role="tabpanel">
+                        <div class="form-section">
+                            <h5>Informations légales & Fiscales</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="vat_number" class="form-label">Numéro de TVA</label>
+                                    <input type="text" class="form-control" id="vat_number" name="vat_number" 
+                                           value="{{ customer.vat_number|default:'' }}" placeholder="FR...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="siret" class="form-label">SIRET</label>
+                                    <input type="text" class="form-control" id="siret" name="siret">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="currency" class="form-label">Devise</label>
+                                    <select class="form-select" id="currency" name="currency">
+                                        <option value="EUR">Euro (€)</option>
+                                        <option value="USD">Dollar ($)</option>
+                                        <option value="GBP">Livre (£)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="payment_terms" class="form-label">Conditions de paiement</label>
+                                    <select class="form-select" id="payment_terms" name="payment_terms">
+                                        <option value="immediate">Immédiat</option>
+                                        <option value="30_days">30 jours</option>
+                                        <option value="45_days">45 jours</option>
+                                        <option value="60_days">60 jours</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="discount_rate" class="form-label">Remise standard (%)</label>
+                                    <input type="number" class="form-control" id="discount_rate" name="discount_rate" step="0.1" min="0" max="100">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="credit_limit" class="form-label">Limite de crédit (€)</label>
+                                    <input type="number" class="form-control" id="credit_limit" name="credit_limit" step="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Logistique -->
+                    <div class="tab-pane fade" id="logistique" role="tabpanel">
+                        <div class="form-section">
+                            <h5>Adresse de facturation</h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="billing_address1" class="form-label">Adresse</label>
+                                    <input type="text" class="form-control" id="billing_address1" name="billing_address1" placeholder="Rue, voie...">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="billing_postal_code" class="form-label">Code postal</label>
+                                    <input type="text" class="form-control" id="billing_postal_code" name="billing_postal_code">
+                                </div>
+                                <div class="col-md-8">
+                                    <label for="billing_city" class="form-label">Ville</label>
+                                    <input type="text" class="form-control" id="billing_city" name="billing_city">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="billing_country" class="form-label">Pays</label>
+                                    <select class="form-select" id="billing_country" name="billing_country">
+                                        <option value="FR" selected>France</option>
+                                        <option value="BE">Belgique</option>
+                                        <option value="CH">Suisse</option>
+                                        <option value="DE">Allemagne</option>
+                                        <option value="GB">Royaume-Uni</option>
+                                        <option value="US">États-Unis</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Adresse de livraison</h5>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="same_as_billing" name="same_as_billing">
+                                    <label class="form-check-label small" for="same_as_billing">Identique à facturation</label>
+                                </div>
+                            </div>
+                            <div id="shipping_fields" class="row g-3">
+                                <div class="col-12">
+                                    <label for="shipping_address1" class="form-label">Adresse</label>
+                                    <input type="text" class="form-control" id="shipping_address1" name="shipping_address1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="shipping_postal_code" class="form-label">Code postal</label>
+                                    <input type="text" class="form-control" id="shipping_postal_code" name="shipping_postal_code">
+                                </div>
+                                <div class="col-md-8">
+                                    <label for="shipping_city" class="form-label">Ville</label>
+                                    <input type="text" class="form-control" id="shipping_city" name="shipping_city">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="shipping_country" class="form-label">Pays</label>
+                                    <select class="form-select" id="shipping_country" name="shipping_country">
+                                        <option value="FR" selected>France</option>
+                                        <option value="BE">Belgique</option>
+                                        <option value="CH">Suisse</option>
+                                        <option value="DE">Allemagne</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Performance -->
+                    <div class="tab-pane fade" id="performance" role="tabpanel">
+                        <div class="form-section">
+                            <h5>Préférences & Suivi</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="customer_category" class="form-label">Catégorie VIP</label>
+                                    <select class="form-select" id="customer_category" name="customer_category">
+                                        <option value="standard">Standard</option>
+                                        <option value="silver">Silver</option>
+                                        <option value="gold">Gold</option>
+                                        <option value="platinum">Platinum</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="wine_preferences" class="form-label">Préférences vin</label>
+                                    <input type="text" class="form-control" id="wine_preferences" name="wine_preferences" placeholder="Rouge, Blanc, Bio...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="contact_method" class="form-label">Contact préféré</label>
+                                    <select class="form-select" id="contact_method" name="preferred_contact_method">
+                                        <option value="email">Email</option>
+                                        <option value="phone">Téléphone</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Conformité -->
+                    <div class="tab-pane fade" id="conformite" role="tabpanel">
+                        <div class="form-section">
+                            <h5>RGPD & Documents</h5>
+                            <div class="mb-3 form-check">
+                                <input class="form-check-input" type="checkbox" id="gdpr_consent" name="gdpr_consent" value="true">
+                                <label class="form-check-label" for="gdpr_consent">Consentement RGPD obtenu</label>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input class="form-check-input" type="checkbox" id="marketing_consent" name="marketing_consent" value="true">
+                                <label class="form-check-label" for="marketing_consent">Accepte le marketing / Newsletter</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Colonne Latérale (Droite) -->
+            <div class="col-lg-4">
+                
+                <!-- Status -->
+                <div class="form-section pt-3">
+                    <h5 class="mb-3">Statut</h5>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if not customer or customer.is_active %}checked{% endif %}>
+                        <label class="form-check-label fw-medium" for="is_active">Client actif</label>
+                    </div>
+                    <div class="text-help">Désactivez pour archiver ce client.</div>
+                </div>
+
+                <!-- Tags -->
+                <div class="form-section pt-3">
+                    <h5 class="mb-3">Tags</h5>
+                    <div class="tags-container">
+                        {% for tag in available_tags %}
+                        <div>
+                            <input type="checkbox" class="tag-checkbox" id="tag_{{ tag.id }}" name="tags" value="{{ tag.id }}"
+                                   {% if tag.id in selected_tags %}checked{% endif %}>
+                            <label for="tag_{{ tag.id }}" class="tag-label">{{ tag.name }}</label>
+                        </div>
+                        {% empty %}
+                        <div class="text-muted small">Aucun tag disponible.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Vérification -->
+                <div class="form-section pt-3 border-start border-4 border-info bg-light">
+                    <h5 class="mb-2 text-info"><i class="bi bi-shield-check me-2"></i>Contrôle</h5>
+                    <div id="loadingSpinner" class="d-none align-items-center gap-2 text-muted mb-2">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        <small>Vérification en cours...</small>
+                    </div>
+                    <div id="duplicateStatus" class="small text-muted">
+                        Saisissez les informations pour vérifier les doublons.
+                    </div>
+                </div>
+
+            </div>
         </div>
     </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+    {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gestion des onglets
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
     
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const targetTab = this.getAttribute('data-tab');
+    // --- Gestion adresse livraison ---
+    const sameAsBilling = document.getElementById('same_as_billing');
+    const shippingFields = document.getElementById('shipping_fields');
+    const shippingInputs = shippingFields.querySelectorAll('input, select');
+
+    function toggleShipping() {
+        if (sameAsBilling.checked) {
+            shippingFields.style.opacity = '0.5';
+            shippingFields.style.pointerEvents = 'none';
+            // Copie des valeurs
+            const mapping = {
+                'billing_address1': 'shipping_address1',
+                'billing_postal_code': 'shipping_postal_code',
+                'billing_city': 'shipping_city',
+                'billing_country': 'shipping_country'
+            };
             
-            // Désactiver tous les onglets
-            tabButtons.forEach(btn => {
-                btn.classList.remove('border-blue-500', 'text-blue-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
+            for (const [bill, ship] of Object.entries(mapping)) {
+                const b = document.getElementById(bill);
+                const s = document.getElementById(ship);
+                if (b && s) s.value = b.value;
+            }
+        } else {
+            shippingFields.style.opacity = '1';
+            shippingFields.style.pointerEvents = 'auto';
+        }
+    }
+
+    if(sameAsBilling) {
+        sameAsBilling.addEventListener('change', toggleShipping);
+        
+        // Synchro en temps réel si coché
+        const billingInputs = document.querySelectorAll('[id^="billing_"]');
+        billingInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                if (sameAsBilling.checked) toggleShipping();
             });
-            
-            // Masquer tous les contenus
-            tabContents.forEach(content => {
-                content.classList.add('hidden');
-            });
-            
-            // Activer l'onglet cliqué
-            this.classList.remove('border-transparent', 'text-gray-500');
-            this.classList.add('border-blue-500', 'text-blue-600');
-            
-            // Afficher le contenu correspondant
-            document.getElementById('tab-' + targetTab).classList.remove('hidden');
         });
+    }
+
+    // --- Détection Doublons ---
+    const inputsToCheck = ['name', 'email', 'phone', 'vat_number'];
+    const statusDiv = document.getElementById('duplicateStatus');
+    const alertDiv = document.getElementById('duplicateAlert');
+    const listDiv = document.getElementById('duplicateList');
+    const spinner = document.getElementById('loadingSpinner');
+    let timer = null;
+
+    inputsToCheck.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.addEventListener('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(checkDuplicates, 800);
+            });
+        }
     });
 
-    // Gestion de la copie d'adresse de facturation vers livraison
-    const sameAsBillingCheckbox = document.getElementById('same_as_billing');
-    
-    if (sameAsBillingCheckbox) {
-        sameAsBillingCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                // Copier les valeurs de facturation vers livraison
-                copyBillingToShipping();
-                // Désactiver les champs de livraison
-                toggleShippingFields(true);
-            } else {
-                // Réactiver les champs de livraison
-                toggleShippingFields(false);
-            }
-        });
-    }
-    
-    function copyBillingToShipping() {
-        const billingFields = {
-            'billing_company': 'shipping_company',
-            'billing_address1': 'shipping_address1', 
-            'billing_address2': 'shipping_address2',
-            'billing_postal_code': 'shipping_postal_code',
-            'billing_city': 'shipping_city',
-            'billing_state': 'shipping_state',
-            'billing_country': 'shipping_country'
-        };
-        
-        for (const [billingField, shippingField] of Object.entries(billingFields)) {
-            const billingElement = document.getElementById(billingField);
-            const shippingElement = document.getElementById(shippingField);
-            
-            if (billingElement && shippingElement) {
-                shippingElement.value = billingElement.value;
-            }
-        }
-    }
-    
-    function toggleShippingFields(disabled) {
-        const shippingFields = [
-            'shipping_company', 'shipping_address1', 'shipping_address2',
-            'shipping_postal_code', 'shipping_city', 'shipping_state', 'shipping_country'
-        ];
-        
-        shippingFields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.disabled = disabled;
-                if (disabled) {
-                    field.classList.add('bg-gray-100', 'text-gray-500');
-                } else {
-                    field.classList.remove('bg-gray-100', 'text-gray-500');
-                }
-            }
-        });
-    }
-
-    // Logique de détection des doublons (identique à l'original)
-    const form = document.getElementById('customerForm');
-    const nameField = document.getElementById('name');
-    const emailField = document.getElementById('email');
-    const phoneField = document.getElementById('phone');
-    const vatField = document.getElementById('vat_number');
-    const duplicateAlert = document.getElementById('duplicateAlert');
-    const duplicateList = document.getElementById('duplicateList');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const duplicateStatus = document.getElementById('duplicateStatus');
-    
-    let duplicateCheckTimeout;
-    let lastCheckData = {};
-    
     function checkDuplicates() {
-        const currentData = {
-            name: nameField.value.trim(),
-            email: emailField.value.trim(),
-            phone: phoneField.value.trim(),
-            vat_number: vatField.value.trim()
+        const data = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            vat_number: document.getElementById('vat_number').value,
+            {% if customer %}exclude_id: "{{ customer.id }}"{% endif %}
         };
-        {% if is_edit %}
-        currentData.exclude_id = '{{ customer.id }}';
-        {% endif %}
-        
-        if (JSON.stringify(currentData) === JSON.stringify(lastCheckData)) {
+
+        // On ne vérifie que s'il y a un minimum de données
+        if (!data.name && !data.email && !data.phone && !data.vat_number) {
+            if(statusDiv) statusDiv.innerHTML = '<span class="text-muted">Saisissez les informations pour vérifier les doublons.</span>';
+            if(alertDiv) alertDiv.style.display = 'none';
             return;
         }
-        
-        if (!currentData.name && !currentData.email && !currentData.phone && !currentData.vat_number) {
-            duplicateAlert.style.display = 'none';
-            duplicateStatus.innerHTML = '<div class="text-gray-500 text-sm">Remplissez au moins un champ pour la vérification</div>';
-            return;
-        }
-        
-        lastCheckData = currentData;
-        loadingSpinner.style.display = 'block';
-        duplicateStatus.style.display = 'none';
-        duplicateAlert.style.display = 'none';
-        
-        fetch('/clients/api/duplicates/', {
+
+        if(spinner) spinner.classList.remove('d-none');
+        if(statusDiv) statusDiv.textContent = 'Vérification...';
+
+        fetch('{% url "clients:duplicate_detection_api" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify(currentData)
+            body: JSON.stringify(data)
         })
-        .then(response => response.json())
-        .then(data => {
-            loadingSpinner.style.display = 'none';
-            duplicateStatus.style.display = 'block';
+        .then(r => r.json())
+        .then(resp => {
+            if(spinner) spinner.classList.add('d-none');
             
-            if (data.error) {
-                duplicateStatus.innerHTML = `<div class="text-red-500 text-sm">${data.error}</div>`;
+            if (resp.error) {
+                console.error(resp.error);
+                return;
+            }
+
+            if (resp.duplicates && resp.duplicates.length > 0) {
+                // Afficher alerte
+                if(alertDiv) alertDiv.style.display = 'block';
+                if(listDiv) {
+                    listDiv.innerHTML = resp.duplicates.map(d => `
+                        <div class="duplicate-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>${d.name}</strong> 
+                                    <span class="badge bg-light text-dark border ms-2">${Math.round(d.score * 100)}%</span>
+                                </div>
+                                <a href="/ventes/clients/${d.id}/" target="_blank" class="btn btn-sm btn-outline-danger py-0" style="font-size: 0.7rem;">Voir</a>
+                            </div>
+                            <small class="text-muted d-block mt-1">${d.reason}</small>
+                        </div>
+                    `).join('');
+                }
+                
+                let riskMsg = "Doublons potentiels détectés";
+                if (resp.has_high_risk) riskMsg = "Risque élevé de doublon";
+                if(statusDiv) statusDiv.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle me-1"></i>${riskMsg} (${resp.duplicates.length})</span>`;
+            } else {
+                if(alertDiv) alertDiv.style.display = 'none';
+                if(statusDiv) statusDiv.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Aucun doublon détecté.</span>';
+            }
+        })
+        .catch(err => {
+            if(spinner) spinner.classList.add('d-none');
+            console.error(err);
+            if(statusDiv) statusDiv.innerHTML = '<span class="text-muted">Erreur lors de la vérification.</span>';
+        });
+    }
+
+    // Validation du formulaire
+    const form = document.getElementById('customerForm');
+    const nameField = document.getElementById('name');
+    
+    if (form && nameField) {
+        form.addEventListener('submit', function(e) {
+            if (!nameField.value.trim()) {
+                e.preventDefault();
+                alert('Le nom du client est obligatoire.');
+                nameField.focus();
                 return;
             }
             
-            if (data.duplicates && data.duplicates.length > 0) {
-                let html = '';
-                data.duplicates.forEach(duplicate => {
-                    const riskClass = duplicate.score >= 0.8 ? 'risk-high' : 
-                                     duplicate.score >= 0.5 ? 'risk-medium' : 'risk-low';
-                    
-                    html += `
-                        <div class="duplicate-item ${riskClass}">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>${duplicate.name}</strong>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ml-2">${duplicate.segment_display}</span>
-                                    <div class="text-sm text-gray-600 mt-1">
-                                        ${duplicate.email ? `📧 ${duplicate.email}` : ''}
-                                        ${duplicate.phone ? `📞 ${duplicate.phone}` : ''}
-                                        ${duplicate.vat_number ? `🏢 ${duplicate.vat_number}` : ''}
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">${Math.round(duplicate.score * 100)}%</div>
-                                    <div class="text-sm text-gray-500">${duplicate.reason}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                duplicateList.innerHTML = html;
-                duplicateAlert.style.display = 'block';
-                
-                if (data.has_high_risk) {
-                    duplicateStatus.innerHTML = '<div class="text-red-500 text-sm">Risque élevé de doublon</div>';
-                } else if (data.has_medium_risk) {
-                    duplicateStatus.innerHTML = '<div class="text-yellow-600 text-sm">Risque modéré de doublon</div>';
-                } else {
-                    duplicateStatus.innerHTML = '<div class="text-blue-600 text-sm">Doublons possibles détectés</div>';
-                }
-            } else {
-                duplicateAlert.style.display = 'none';
-                duplicateStatus.innerHTML = '<div class="text-green-600 text-sm">Aucun doublon détecté</div>';
+            if (nameField.value.trim().length < 2) {
+                e.preventDefault();
+                alert('Le nom doit faire au moins 2 caractères.');
+                nameField.focus();
+                return;
             }
-        })
-        .catch(error => {
-            loadingSpinner.style.display = 'none';
-            duplicateStatus.style.display = 'block';
-            duplicateStatus.innerHTML = '<div class="text-gray-500 text-sm">Vérification indisponible</div>';
-            console.error('Erreur vérification doublons:', error);
         });
     }
-    
-    function debouncedCheck() {
-        clearTimeout(duplicateCheckTimeout);
-        duplicateCheckTimeout = setTimeout(checkDuplicates, 800);
-    }
-    
-    [nameField, emailField, phoneField, vatField].forEach(field => {
-        if (field) {
-            field.addEventListener('input', debouncedCheck);
-            field.addEventListener('blur', checkDuplicates);
-        }
-    });
-    
+
+    // Vérification initiale en mode édition
     {% if is_edit %}
     setTimeout(checkDuplicates, 500);
     {% endif %}
-    
-    form.addEventListener('submit', function(e) {
-        if (!nameField.value.trim()) {
-            e.preventDefault();
-            alert('Le nom du client est obligatoire.');
-            nameField.focus();
-            return;
-        }
-        
-        if (nameField.value.trim().length < 2) {
-            e.preventDefault();
-            alert('Le nom doit faire au moins 2 caractères.');
-            nameField.focus();
-            return;
-        }
-    });
 });
 </script>
 {% endblock %}

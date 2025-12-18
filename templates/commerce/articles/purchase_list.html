@@ -1,0 +1,65 @@
+{% extends 'commerce/base_commerce.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid py-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ page_title }}</h1>
+            <p class="text-muted mb-0">Catalogue fournisseurs</p>
+        </div>
+        <a href="{% url 'achats:article_create' %}" class="btn btn-success text-white">
+            <i class="bi bi-plus-lg me-2"></i>Nouveau produit
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Article</th>
+                        <th>Type</th>
+                        <th>Catégorie</th>
+                        <th>Prix Achat (HT)</th>
+                        <th>TVA</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr class="row-click" data-href="{% url 'achats:article_detail' article.pk %}">
+                        <td class="ps-4">
+                            <div class="fw-bold text-success">{{ article.name }}</div>
+                            <small class="text-muted">{{ article.sku|default:"-" }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                {{ article.get_article_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ article.category.name|default:"-" }}</td>
+                        <td>{{ article.purchase_price }} €</td>
+                        <td>{{ article.vat_rate }} %</td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'achats:article_detail' article.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-cart-x display-4 d-block mb-3 opacity-25"></i>
+                            <p class="mb-3">Aucun article d'achat trouvé.</p>
+                            <a href="{% url 'achats:article_create' %}" class="btn btn-success btn-sm text-white">Créer mon premier article</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

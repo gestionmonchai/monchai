@@ -1,3 +1,4 @@
+{% load production_tags %}
 <div class="d-none" id="lots-table-meta" data-total="{{ total_count }}"></div>
 <table class="table align-middle table-hover">
   <thead>
@@ -6,22 +7,22 @@
       <th>Campagne</th>
       <th>Cuvée</th>
       <th>Contenant</th>
-      <th class="text-end">Volume (L)</th>
+      <th class="text-end">Volume</th>
       <th>Statut</th>
       <th class="text-end">Actions</th>
     </tr>
   </thead>
   <tbody>
   {% for lot in lots %}
-    <tr style="cursor: pointer;" onclick="window.location='/production/lots-techniques/{{ lot.id }}/'">
+    <tr style="cursor: pointer;" onclick="window.location='{% url 'production:lot_tech_detail' lot.id %}'">
       <td class="fw-medium text-nowrap">{{ lot.code }}</td>
       <td><span class="badge bg-light text-dark border">{{ lot.campagne }}</span></td>
       <td>{% if lot.cuvee %}{{ lot.cuvee.nom }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
       <td>{{ lot.contenant|default:'—' }}</td>
-      <td class="text-end font-monospace">{{ lot.volume_l|floatformat:2 }}</td>
+      <td class="text-end font-monospace">{{ lot.volume_l|floatformat:0 }}&nbsp;L <small class="text-muted">({{ lot.volume_l|liters_to_hl|floatformat:2 }}&nbsp;hL)</small></td>
       <td><span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25">{{ lot.get_statut_display }}</span></td>
       <td class="text-end">
-        <a class="btn btn-sm btn-outline-primary" href="/production/lots-techniques/{{ lot.id }}/">Ouvrir</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'production:lot_tech_detail' lot.id %}"><i class="bi bi-eye me-1"></i>Voir</a>
       </td>
     </tr>
   {% empty %}

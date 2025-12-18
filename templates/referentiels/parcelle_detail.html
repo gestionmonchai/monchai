@@ -214,6 +214,105 @@
         color: #6c757d;
     }
     
+    /* Timeline Moderne */
+    .timeline-section {
+        background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+    }
+    .modern-timeline {
+        padding: 1.5rem;
+    }
+    .tl-event {
+        display: flex;
+        gap: 1rem;
+        transition: transform 0.2s ease;
+    }
+    .tl-event:hover {
+        transform: translateX(4px);
+    }
+    .tl-marker {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 40px;
+        flex-shrink: 0;
+    }
+    .tl-dot {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        position: relative;
+        z-index: 2;
+    }
+    .tl-line {
+        width: 3px;
+        flex: 1;
+        min-height: 30px;
+        background: linear-gradient(to bottom, #dee2e6, #e9ecef);
+        margin: 4px 0;
+    }
+    .tl-content {
+        flex: 1;
+        padding-bottom: 1.5rem;
+    }
+    .tl-date {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+    .tl-card {
+        background: white;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 3px solid #dee2e6;
+    }
+    .tl-vendange .tl-card {
+        border-left-color: #ffc107;
+        background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+    }
+    .tl-title {
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    .tl-desc {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    /* Vendange cards */
+    .vendange-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 0.75rem;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+    }
+    .vendange-card:hover {
+        border-color: #ffc107;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+        transform: translateY(-2px);
+    }
+    .vendange-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    
     /* Operations Grid */
     .ops-grid {
         display: grid;
@@ -402,8 +501,8 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-value">{% if rendement_moyen %}{{ rendement_moyen }} kg/ha{% else %}—{% endif %}</div>
-                    <div class="stat-label">Rendement moyen</div>
+                    <div class="stat-value">{% if rendement_moyen %}{{ rendement_moyen|floatformat:0 }} kg/ha{% else %}—{% endif %}</div>
+                    <div class="stat-label">Rendement moyen{% if not rendement_moyen %} <small class="text-muted">(aucune vendange)</small>{% endif %}</div>
                 </div>
                 <div class="stat-icon rendement"><i class="bi bi-graph-up"></i></div>
             </div>
@@ -424,15 +523,22 @@
         <a href="{% url 'production:parcelles_list' %}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-list-ul me-1"></i>Toutes les parcelles
         </a>
-        {% if user.get_active_membership.can_manage_roles %}
-        <form method="post" action="{% url 'referentiels:parcelle_delete' parcelle.pk %}" class="d-inline ms-auto"
-              onsubmit="return confirm('Supprimer définitivement cette parcelle et ses encépagements ?')">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-trash me-1"></i>Supprimer
-            </button>
-        </form>
-        {% endif %}
+        <div class="ms-auto d-flex gap-2">
+            {% if user.get_active_membership.can_edit_data %}
+            <a href="{% url 'referentiels:parcelle_update' pk=parcelle.pk %}" class="btn btn-bordeaux btn-sm">
+                <i class="bi bi-pencil-square me-1"></i>Modifier la parcelle
+            </a>
+            {% endif %}
+            {% if user.get_active_membership.can_manage_roles %}
+            <form method="post" action="{% url 'referentiels:parcelle_delete' parcelle.pk %}" class="d-inline"
+                  onsubmit="return confirm('Supprimer définitivement cette parcelle et ses encépagements ?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash me-1"></i>Supprimer
+                </button>
+            </form>
+            {% endif %}
+        </div>
     </div>
     
     <!-- Two Column Layout -->
@@ -444,7 +550,7 @@
                     <h5><i class="bi bi-pie-chart me-2"></i>Encépagement</h5>
                     {% if user.get_active_membership.can_edit_data %}
                     <a href="{% url 'referentiels:encepagement_add' parcelle_pk=parcelle.pk %}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-plus"></i> Ajouter
+                        <i class="bi bi-pencil"></i> Gérer
                     </a>
                     {% endif %}
                 </div>
@@ -525,7 +631,7 @@
                         <p class="mb-2">Aucun encépagement défini</p>
                         {% if user.get_active_membership.can_edit_data %}
                         <a href="{% url 'referentiels:encepagement_add' parcelle_pk=parcelle.pk %}" class="btn btn-sm btn-outline-bordeaux">
-                            Définir l'encépagement
+                            <i class="bi bi-plus-circle me-1"></i>Définir l'encépagement
                         </a>
                         {% endif %}
                     </div>
@@ -546,16 +652,25 @@
                 <div class="section-body">
                     {% if vendanges %}
                     {% for v in vendanges %}
-                    <div class="timeline-item">
-                        <div class="timeline-date">{{ v.date_reception|date:"d/m/Y" }}</div>
-                        <div class="timeline-content">
-                            <div class="title">{{ v.poids_kg }} kg</div>
-                            <div class="detail">
-                                {% if v.cuvee %}{{ v.cuvee.nom }}{% endif %}
-                                {% if v.degre_potentiel %}· {{ v.degre_potentiel }}°{% endif %}
+                    <a href="{% url 'production:vendange_detail' pk=v.pk %}" class="vendange-card d-block text-decoration-none mb-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="vendange-icon bg-warning text-dark">
+                                <i class="bi bi-basket-fill"></i>
                             </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong class="text-dark">{{ v.poids_total|floatformat:0|default:"—" }} kg</strong>
+                                    <span class="badge bg-light text-muted">{{ v.date|date:"d/m/Y" }}</span>
+                                </div>
+                                <div class="text-muted small">
+                                    {{ v.get_type_recolte_display }}
+                                    {% if v.cuvee %}· {{ v.cuvee.nom }}{% endif %}
+                                    {% if v.degre_potentiel %}· {{ v.degre_potentiel }}°{% endif %}
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted"></i>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
                     {% else %}
                     <div class="empty-state">
@@ -579,21 +694,22 @@
                     <div class="journal-list p-3">
                         {% for op in operations %}
                         <div class="journal-item">
-                            <div class="journal-icon {{ op.type_operation|default:'autre' }}">
-                                {% if op.type_operation == 'traitement' %}<i class="bi bi-droplet"></i>
-                                {% elif op.type_operation == 'taille' %}<i class="bi bi-scissors"></i>
-                                {% elif op.type_operation == 'travail_sol' %}<i class="bi bi-tools"></i>
-                                {% elif op.type_operation == 'palissage' %}<i class="bi bi-diagram-3"></i>
-                                {% elif op.type_operation == 'effeuillage' %}<i class="bi bi-leaf"></i>
-                                {% elif op.type_operation == 'fertilisation' %}<i class="bi bi-droplet-half"></i>
+                            <div class="journal-icon {{ op.type|default:'autre' }}">
+                                {% if op.type == 'traitement' %}<i class="bi bi-droplet"></i>
+                                {% elif op.type == 'taille' %}<i class="bi bi-scissors"></i>
+                                {% elif op.type == 'travail_sol' %}<i class="bi bi-tools"></i>
+                                {% elif op.type == 'palissage' %}<i class="bi bi-diagram-3"></i>
+                                {% elif op.type == 'effeuillage' %}<i class="bi bi-leaf"></i>
+                                {% elif op.type == 'fertilisation' %}<i class="bi bi-droplet-half"></i>
                                 {% else %}<i class="bi bi-calendar-event"></i>{% endif %}
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-start">
-                                    <strong>{{ op.get_type_operation_display|default:op.type_operation }}</strong>
-                                    <small class="text-muted">{{ op.date_operation|date:"d/m/Y" }}</small>
+                                    <strong>{{ op.type_label }}</strong>
+                                    <small class="text-muted">{{ op.date|date:"d/m/Y" }}</small>
                                 </div>
-                                {% if op.notes %}<div class="text-muted small">{{ op.notes|truncatewords:20 }}</div>{% endif %}
+                                {% if op.resume %}<div class="text-muted small">{{ op.resume|truncatewords:20 }}</div>
+                                {% elif op.notes %}<div class="text-muted small">{{ op.notes|truncatewords:20 }}</div>{% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -610,6 +726,42 @@
                         <a href="{% url 'viticulture:parcelle_quick_op' pk=parcelle.pk code='autre' %}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-plus me-1"></i>Première opération
                         </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Timeline Moderne -->
+            <div class="section-card timeline-section">
+                <div class="section-header">
+                    <h5><i class="bi bi-clock-history me-2"></i>Historique</h5>
+                </div>
+                <div class="section-body p-0">
+                    {% if timeline %}
+                    <div class="modern-timeline">
+                        {% for item in timeline %}
+                        <div class="tl-event {% if item.type == 'vendange' %}tl-vendange{% endif %}" {% if item.url %}onclick="window.location='{{ item.url }}'" style="cursor: pointer;"{% endif %}>
+                            <div class="tl-marker">
+                                <div class="tl-dot bg-{{ item.color }}">
+                                    <i class="bi {{ item.icon }}"></i>
+                                </div>
+                                {% if not forloop.last %}<div class="tl-line"></div>{% endif %}
+                            </div>
+                            <div class="tl-content">
+                                <div class="tl-date">{{ item.date|date:"d M Y" }}</div>
+                                <div class="tl-card">
+                                    <div class="tl-title">{{ item.title }}</div>
+                                    {% if item.description %}<div class="tl-desc">{{ item.description|truncatewords:12 }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-clock-history d-block fs-1 mb-2 text-muted"></i>
+                        <p class="mb-0 text-muted">Aucun événement dans l'historique</p>
+                        <small class="text-muted">Les opérations et vendanges apparaîtront ici</small>
                     </div>
                     {% endif %}
                 </div>

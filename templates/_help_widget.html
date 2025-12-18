@@ -1,5 +1,5 @@
 <style>
-#help-widget { position: fixed; bottom: 16px; right: 16px; z-index: 1050; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+#help-widget { position: fixed; bottom: 16px; right: 16px; z-index: 1070; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 #help-toggle { width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,.15); flex-shrink: 0; }
 #help-panel { 
     width: clamp(320px, 90vw, 420px); 
@@ -61,7 +61,27 @@
       <strong><i class="bi bi-robot me-2"></i>Assistant Mon Chai</strong>
       <button type="button" class="btn-close" aria-label="Fermer" id="help-close"></button>
     </div>
-    <div class="card-body">
+    <div class="card-body position-relative">
+      <!-- Privacy Warning Overlay -->
+      <div id="help-privacy-overlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white d-flex flex-column justify-content-center align-items-center p-4 text-center" style="z-index: 1080;">
+        <i class="bi bi-shield-lock-fill text-primary mb-3" style="font-size: 3rem;"></i>
+        <h5 class="mb-3">Confidentialité & Sécurité</h5>
+        <p class="text-muted small mb-4">
+          À des fins d'amélioration du système d'aide, les conversations pourront être analysées par la maintenance.
+          <br><br>
+          <strong>Veuillez ne divulguer aucun élément personnel ou sensible dans vos échanges.</strong>
+        </p>
+        <div class="form-check mb-4">
+          <input class="form-check-input" type="checkbox" id="help-privacy-check">
+          <label class="form-check-label small user-select-none" for="help-privacy-check">
+            J'ai compris
+          </label>
+        </div>
+        <button id="help-privacy-btn" class="btn btn-primary w-100" disabled>
+          Accéder à l'assistant
+        </button>
+      </div>
+
       <!-- Guides rapides -->
       <div class="mb-3 d-flex justify-content-between align-items-center">
         <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Guides rapides</small>
@@ -77,12 +97,17 @@
         </div>
       </div>
 
-      <div class="input-group mt-auto">
-        <input type="text" id="help-input" class="form-control shadow-none" placeholder="Posez votre question..." autocomplete="off">
-        <button id="help-send" class="btn btn-primary">
-          <i class="bi bi-send-fill" id="btn-icon-send"></i>
-          <span id="help-sending" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
-        </button>
+      <div class="mt-auto pt-2">
+        <div class="input-group">
+          <input type="text" id="help-input" class="form-control shadow-none" placeholder="Posez votre question..." autocomplete="off">
+          <button id="help-send" class="btn btn-primary">
+            <i class="bi bi-send-fill" id="btn-icon-send"></i>
+            <span id="help-sending" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="text-muted mt-1" style="font-size: 0.65rem; text-align: center;">
+          <i class="bi bi-shield-lock"></i> Ne partagez pas de données personnelles. Les conversations pourront être analysées à des fins d'amélioration.
+        </div>
       </div>
     </div>
   </div>
@@ -101,6 +126,13 @@
   const guideInsertBtn = document.getElementById('help-guide-insert');
   const guideCopyBtn = document.getElementById('help-guide-copy');
   const sendingEl = document.getElementById('help-sending');
+  
+  const privacyOverlay = document.getElementById('help-privacy-overlay');
+  const privacyCheck = document.getElementById('help-privacy-check');
+  const privacyBtn = document.getElementById('help-privacy-btn');
+  // Clé liée à la session Django pour forcer ré-affichage à chaque nouvelle connexion
+  const PRIVACY_KEY = 'monchai_help_privacy_session_{{ request.session.session_key|default:"v3" }}'; 
+
   let currentAbort = null;
   let sending = false;
   let debounceTimer = null;
@@ -143,6 +175,42 @@
 
   function isAllowedPath(pathname){
     return ALLOWLIST.some(p => pathname.startsWith(p));
+  }
+
+  function checkWarning(){
+    const accepted = sessionStorage.getItem(PRIVACY_KEY) === '1';
+    
+    if (!accepted) {
+        if (privacyOverlay) {
+            privacyOverlay.classList.remove('d-none');
+            privacyOverlay.classList.add('d-flex');
+        }
+    } else {
+        if (privacyOverlay) {
+            privacyOverlay.classList.remove('d-flex');
+            privacyOverlay.classList.add('d-none');
+        }
+        // Focus automatique sur le champ de saisie seulement si accepté
+        setTimeout(() => {
+            if (input && panel.classList.contains('show')) input.focus();
+        }, 50);
+    }
+  }
+  
+  // Privacy logic
+  if (privacyCheck && privacyBtn) {
+    // Reset state on load just in case
+    privacyCheck.checked = false;
+    privacyBtn.disabled = true;
+
+    privacyCheck.addEventListener('change', function() {
+        privacyBtn.disabled = !this.checked;
+    });
+
+    privacyBtn.addEventListener('click', function() {
+        sessionStorage.setItem(PRIVACY_KEY, '1');
+        checkWarning();
+    });
   }
 
   function pagePolicy({ pathname, question }){
@@ -313,8 +381,13 @@
     currentAbort = null;
   }
 
-  toggle.addEventListener('click', ()=>{ panel.classList.toggle('show'); });
+  toggle.addEventListener('click', ()=>{ 
+    panel.classList.toggle('show'); 
+    if(panel.classList.contains('show')) checkWarning();
+  });
+  
   (closeBtn||toggle).addEventListener('click', ()=>{ panel.classList.remove('show'); localStorage.setItem('helpWidgetOpen','0'); });
+  
   sendBtn.addEventListener('click', ()=>{ const m = input.value.trim(); if(!m) return; if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(()=> askHelp(m), 300); });
   input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); const m=input.value.trim(); if(!m) return; if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(()=> askHelp(m), 300); }});
   
@@ -332,7 +405,10 @@
   // Persist open state across pages
   try{
     const wasOpen = localStorage.getItem('helpWidgetOpen') === '1';
-    if (wasOpen) panel.classList.add('show');
+    if (wasOpen) {
+        panel.classList.add('show');
+        checkWarning();
+    }
     toggle.addEventListener('click', ()=>{
       const open = panel.classList.contains('show');
       localStorage.setItem('helpWidgetOpen', open ? '1':'0');
@@ -343,6 +419,7 @@
   try{
     window._openHelpWidget = function(){
       panel.classList.add('show');
+      checkWarning();
       try{ localStorage.setItem('helpWidgetOpen','1'); }catch(_){}
     };
   }catch(_){ /* ignore */ }

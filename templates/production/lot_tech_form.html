@@ -1,12 +1,22 @@
 {% extends 'production/base_production.html' %}
 {% block title %}Nouveau lot technique - Mon Chai{% endblock %}
 {% block production_content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}" class="text-decoration-none">Production</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'production:lots_tech_list' %}" class="text-decoration-none">Lots techniques</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nouveau lot</li>
+  </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Nouveau lot technique</h1>
   <div>
-    <a href="/production/lots-techniques/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Retour liste</a>
+    <h1 class="h4 mb-0">Nouveau lot technique</h1>
+    <p class="text-muted mb-0 small">Créez un lot à partir d'une vendange</p>
   </div>
- </div>
+  <a href="{% url 'production:lots_tech_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Retour</a>
+</div>
 
 {% if messages %}
   {% for message in messages %}
@@ -19,10 +29,10 @@
   <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-origine" data-bs-toggle="tab" data-bs-target="#pane-origine" type="button" role="tab">1. Origine (vendange)</button>
+        <button class="nav-link active" id="tab-origine" data-bs-toggle="tab" data-bs-target="#pane-origine" type="button" role="tab">1. Origine & Cuvée</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-params" data-bs-toggle="tab" data-bs-target="#pane-params" type="button" role="tab">2. Paramètres</button>
+        <button class="nav-link" id="tab-params" data-bs-toggle="tab" data-bs-target="#pane-params" type="button" role="tab">2. Destination & Paramètres</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-resume" data-bs-toggle="tab" data-bs-target="#pane-resume" type="button" role="tab">3. Résumé</button>
@@ -31,37 +41,46 @@
   </div>
 
   <div class="card-body tab-content">
-    <!-- Origine -->
+    <!-- Origine & Cuvée -->
     <div class="tab-pane fade show active" id="pane-origine" role="tabpanel" aria-labelledby="tab-origine">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-6">
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-5">
           <label class="form-label">Rechercher une vendange</label>
           <input type="search" id="vendangeSearch" class="form-control" placeholder="Code, parcelle…" oninput="filterVendanges()">
         </div>
-        <div class="col-md-6 text-end">
-          <span class="text-muted small">Sélectionnez une vendange à débiter (kg restant &gt; 0 conseillé).</span>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold"><i class="bi bi-wine me-1"></i>Cuvée de destination</label>
+          <select name="cuvee_id" id="cuvee_id" class="form-select">
+            <option value="">— Sélectionner ou garder celle de la vendange —</option>
+            {% for c in cuvees %}
+              <option value="{{ c.id }}">{{ c.nom }}{% if c.couleur %} ({{ c.couleur }}){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <span class="text-muted small">Kg restant &gt; 0 conseillé</span>
         </div>
       </div>
-      <div class="table-responsive mt-3" style="max-height: 320px;">
+      <div class="table-responsive" style="max-height: 300px;">
         <table class="table table-hover align-middle mb-0" id="vendangesTable">
-          <thead class="table-light">
+          <thead class="table-light sticky-top">
             <tr>
               <th>Code</th>
               <th>Date</th>
               <th>Parcelle</th>
-              <th>Cuvée</th>
+              <th>Cuvée actuelle</th>
               <th class="text-end">Kg restant</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {% for v in vendanges %}
-              <tr data-id="{{ v.id }}" data-code="{{ v.code }}" data-parcelle="{{ v.parcelle }}" data-cuvee="{{ v.cuvee }}" data-kg="{{ v.kg_restant }}">
+              <tr data-id="{{ v.id }}" data-code="{{ v.code }}" data-parcelle="{{ v.parcelle }}" data-cuvee="{{ v.cuvee }}" data-cuvee-id="{{ v.cuvee_id }}" data-kg="{{ v.kg_restant }}">
                 <td><span class="fw-semibold">{{ v.code|default:'—' }}</span></td>
                 <td>{{ v.date }}</td>
                 <td>{{ v.parcelle|default:'—' }}</td>
-                <td>{{ v.cuvee|default:'—' }}</td>
-                <td class="text-end"><span class="badge bg-secondary">{{ v.kg_restant }}</span></td>
+                <td>{% if v.cuvee %}<span class="badge bg-primary">{{ v.cuvee }}</span>{% else %}<span class="text-danger small">Non affectée</span>{% endif %}</td>
+                <td class="text-end"><span class="badge {% if v.kg_restant > 0 %}bg-success{% else %}bg-secondary{% endif %}">{{ v.kg_restant }} kg</span></td>
                 <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary" onclick="selectVendange(this)">Choisir</button></td>
               </tr>
             {% empty %}
@@ -76,22 +95,59 @@
       </div>
     </div>
 
-    <!-- Paramètres -->
+    <!-- Destination & Paramètres -->
     <div class="tab-pane fade" id="pane-params" role="tabpanel" aria-labelledby="tab-params">
+      <!-- Sélection Cuve / Barrique -->
+      <div class="card mb-3 border-primary">
+        <div class="card-header bg-primary text-white py-2">
+          <i class="bi bi-bucket me-1"></i> Cuve / Barrique de destination
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label">Filtrer par type</label>
+              <select id="contenantTypeFilter" class="form-select form-select-sm" onchange="filterContenants()">
+                <option value="">Tous</option>
+                <option value="cuve">Cuves uniquement</option>
+                <option value="barrique">Barriques / Fûts</option>
+              </select>
+            </div>
+            <div class="col-md-9">
+              <label class="form-label fw-semibold">Sélectionner le contenant <span class="text-danger">*</span></label>
+              <select name="contenant" id="contenant" class="form-select" required>
+                <option value="">— Choisir une cuve ou barrique —</option>
+                {% for c in contenants %}
+                  <option value="{{ c.id }}" 
+                          data-type="{{ c.type_code }}" 
+                          data-is-cuve="{{ c.is_cuve|yesno:'true,false' }}"
+                          data-capacite="{{ c.capacite_l }}"
+                          data-libre="{{ c.libre_l }}"
+                          data-localisation="{{ c.localisation }}">
+                    {{ c.code }}{% if c.label %} – {{ c.label }}{% endif %} ({{ c.type }}) — {{ c.libre_l|floatformat:0 }} L libres / {{ c.capacite_l|floatformat:0 }} L{% if c.localisation %} — {{ c.localisation }}{% endif %}
+                  </option>
+                {% empty %}
+                  <option value="" disabled>Aucun contenant disponible</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div id="contenantInfo" class="mt-2 small text-muted" style="display:none;">
+            <i class="bi bi-info-circle me-1"></i><span id="contenantInfoText"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paramètres d'encuvage -->
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label">Contenant</label>
-          <input type="text" name="contenant" id="contenant" class="form-control" placeholder="Ex: Cuve inox 50hL" required>
+          <label class="form-label">Volume mesuré (L) <span class="text-muted">(optionnel)</span></label>
+          <input type="number" step="0.01" min="0" name="volume_mesure_l" id="volume_mesure_l" class="form-control" placeholder="Si mesuré directement">
         </div>
         <div class="col-md-4">
-          <label class="form-label">Volume mesuré (L) <span class="text-muted">(optionnel)</span></label>
-          <input type="number" step="0.01" min="0" name="volume_mesure_l" id="volume_mesure_l" class="form-control" placeholder="Si mesuré">
-        </div>
-        <div class="col-md-2">
           <label class="form-label">Rdt base (L/kg)</label>
           <input type="number" step="0.01" min="0.01" name="rendement_base" id="rendement_base" value="0.75" class="form-control">
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
           <label class="form-label">Efficacité (%)</label>
           <input type="number" step="0.1" min="1" name="effic_pct" id="effic_pct" value="100" class="form-control">
         </div>
@@ -105,7 +161,7 @@
         </div>
         <div class="col-md-2">
           <label class="form-label">Temp. (°C)</label>
-          <input type="number" step="0.1" name="temperature_c" id="temperature_c" class="form-control" placeholder="Ex: 18.5">
+          <input type="number" step="0.1" name="temperature_c" id="temperature_c" class="form-control" placeholder="18.5">
         </div>
         <div class="col-md-5">
           <label class="form-label">Notes</label>
@@ -129,7 +185,9 @@
           </select>
         </div>
       </div>
-      <div class="alert alert-secondary mt-3" id="calcHint">Astuce: si vous saisissez "Kg débités" ou "Part (%)", le volume estimé sera calculé à partir du rendement et de l'efficacité.</div>
+      <div class="alert alert-secondary mt-3 small" id="calcHint">
+        <i class="bi bi-lightbulb me-1"></i> <strong>Astuce :</strong> Si vous saisissez "Kg débités" ou "Part (%)", le volume estimé sera calculé à partir du rendement et de l'efficacité.
+      </div>
     </div>
 
     <!-- Résumé -->
@@ -162,6 +220,7 @@
 </form>
 
 <script>
+  // Filtrage des vendanges par recherche
   function filterVendanges(){
     const q = (document.getElementById('vendangeSearch').value || '').toLowerCase();
     const rows = document.querySelectorAll('#vendangesTable tbody tr');
@@ -172,58 +231,186 @@
       tr.style.display = (code.includes(q) || parc.includes(q) || cuv.includes(q)) ? '' : 'none';
     });
   }
+
+  // Sélection d'une vendange
   function selectVendange(btn){
     const tr = btn.closest('tr');
-    const id = tr.dataset.id; const code = tr.dataset.code; const parc = tr.dataset.parcelle; const cuv = tr.dataset.cuvee; const kg = tr.dataset.kg;
+    const id = tr.dataset.id;
+    const code = tr.dataset.code;
+    const parc = tr.dataset.parcelle;
+    const cuv = tr.dataset.cuvee;
+    const cuvId = tr.dataset.cuveeId;
+    const kg = tr.dataset.kg;
+    
     document.getElementById('vendange_id').value = id;
+    
+    // Pré-sélectionner la cuvée de la vendange si elle en a une et qu'on n'a pas déjà choisi
+    const cuveeSelect = document.getElementById('cuvee_id');
+    if (cuvId && cuveeSelect.value === '') {
+      cuveeSelect.value = cuvId;
+    }
+    
+    // Afficher le résumé de sélection
     const el = document.getElementById('vendangeSelected');
-    el.textContent = `Vendange ${code || '—'} – ${parc || '—'} – ${cuv || '—'} – kg restant ${kg}`;
+    let html = `<strong>Vendange sélectionnée :</strong> ${code || '—'} — ${parc || '—'}`;
+    if (cuv) {
+      html += ` — <span class="badge bg-primary">${cuv}</span>`;
+    } else {
+      html += ` — <span class="text-danger">Cuvée non affectée</span>`;
+    }
+    html += ` — <span class="badge bg-secondary">${kg} kg restants</span>`;
+    el.innerHTML = html;
     el.style.display = '';
+    
+    // Surligner la ligne sélectionnée
+    document.querySelectorAll('#vendangesTable tbody tr').forEach(r => r.classList.remove('table-primary'));
+    tr.classList.add('table-primary');
+    
     // Aller à l'onglet paramètres
     document.querySelector('#tab-params').click();
     updateResume();
   }
+
+  // Filtrage des contenants par type (cuve/barrique)
+  function filterContenants(){
+    const filter = document.getElementById('contenantTypeFilter').value;
+    const select = document.getElementById('contenant');
+    const options = select.querySelectorAll('option[data-type]');
+    
+    options.forEach(opt => {
+      const isCuve = opt.dataset.isCuve === 'true';
+      if (filter === '') {
+        opt.style.display = '';
+      } else if (filter === 'cuve') {
+        opt.style.display = isCuve ? '' : 'none';
+      } else if (filter === 'barrique') {
+        opt.style.display = !isCuve ? '' : 'none';
+      }
+    });
+    
+    // Si l'option sélectionnée est maintenant cachée, reset
+    if (select.selectedOptions[0] && select.selectedOptions[0].style.display === 'none') {
+      select.value = '';
+    }
+    updateContenantInfo();
+  }
+
+  // Afficher infos du contenant sélectionné
+  function updateContenantInfo(){
+    const select = document.getElementById('contenant');
+    const opt = select.selectedOptions[0];
+    const infoDiv = document.getElementById('contenantInfo');
+    const infoText = document.getElementById('contenantInfoText');
+    
+    if (opt && opt.value) {
+      const libre = parseFloat(opt.dataset.libre || 0);
+      const capacite = parseFloat(opt.dataset.capacite || 0);
+      const pct = capacite > 0 ? ((capacite - libre) / capacite * 100).toFixed(0) : 0;
+      const loc = opt.dataset.localisation || '';
+      
+      let txt = `Capacité libre : ${libre.toFixed(0)} L sur ${capacite.toFixed(0)} L (${pct}% occupé)`;
+      if (loc) txt += ` — Localisation : ${loc}`;
+      
+      infoText.textContent = txt;
+      infoDiv.style.display = '';
+    } else {
+      infoDiv.style.display = 'none';
+    }
+    updateResume();
+  }
+
+  // Navigation onglets
   function nextTab(){
     const active = document.querySelector('.nav-link.active');
-    if (active && active.id === 'tab-origine'){ document.querySelector('#tab-params').click(); }
-    else if (active && active.id === 'tab-params'){ document.querySelector('#tab-resume').click(); updateResume(); }
+    if (active && active.id === 'tab-origine'){ 
+      document.querySelector('#tab-params').click(); 
+    } else if (active && active.id === 'tab-params'){ 
+      document.querySelector('#tab-resume').click(); 
+      updateResume(); 
+    }
   }
   function prevTab(){
     const active = document.querySelector('.nav-link.active');
-    if (active && active.id === 'tab-resume'){ document.querySelector('#tab-params').click(); }
-    else if (active && active.id === 'tab-params'){ document.querySelector('#tab-origine').click(); }
+    if (active && active.id === 'tab-resume'){ 
+      document.querySelector('#tab-params').click(); 
+    } else if (active && active.id === 'tab-params'){ 
+      document.querySelector('#tab-origine').click(); 
+    }
   }
+
+  // Mise à jour du résumé
   function updateResume(){
-    const vend = document.getElementById('vendangeSelected').textContent || '—';
-    document.getElementById('resumeOrigine').textContent = vend || '—';
+    // Origine
+    const vendSel = document.getElementById('vendangeSelected');
+    const origineHtml = vendSel.style.display !== 'none' ? vendSel.innerHTML : 'Sélectionnez une vendange…';
+    document.getElementById('resumeOrigine').innerHTML = origineHtml;
+    
+    // Cuvée
+    const cuveeSelect = document.getElementById('cuvee_id');
+    const cuveeName = cuveeSelect.selectedOptions[0]?.textContent || '—';
+    
+    // Contenant
+    const contSelect = document.getElementById('contenant');
+    const contOpt = contSelect.selectedOptions[0];
+    const contName = contOpt && contOpt.value ? contOpt.textContent.split('—')[0].trim() : '—';
+    
     // Calcul volume estimé
     const volMes = parseFloat(document.getElementById('volume_mesure_l').value || '');
     const kg = parseFloat(document.getElementById('poids_debite_kg').value || '');
     const pct = parseFloat(document.getElementById('part_pct').value || '');
     const base = parseFloat(document.getElementById('rendement_base').value || '0.75');
     const eff = parseFloat(document.getElementById('effic_pct').value || '100');
-    let estimated = null; let explanation = '';
-    if (!isNaN(volMes) && volMes > 0){ estimated = volMes; explanation = 'Volume mesuré'; }
-    else {
+    
+    let estimated = null;
+    let explanation = '';
+    if (!isNaN(volMes) && volMes > 0){ 
+      estimated = volMes; 
+      explanation = 'Volume mesuré'; 
+    } else {
       let kgUsed = (!isNaN(kg) && kg > 0) ? kg : null;
       if (!kgUsed && !isNaN(pct) && pct > 0){
-        // Approx: pas d'accès au poids total ici; afficher formule générique
         explanation = 'Estimation basée sur part (%) et rendement';
       }
-      if (kgUsed){ estimated = kgUsed * base * (eff/100.0); explanation = 'Estimation basée sur kg débités'; }
+      if (kgUsed){ 
+        estimated = kgUsed * base * (eff/100.0); 
+        explanation = 'Estimation basée sur kg débités'; 
+      }
     }
-    const cont = document.getElementById('contenant').value || '—';
-    const txt = `Contenant: ${cont}. Rendement: ${base} L/kg, Efficacité: ${eff}%.` + (estimated? ` Volume estimé: ${estimated.toFixed(2)} L (${explanation}).` : '');
-    document.getElementById('resumeParams').textContent = txt;
+    
+    let html = `<p><strong>Cuvée :</strong> ${cuveeName}</p>`;
+    html += `<p><strong>Contenant :</strong> ${contName}</p>`;
+    html += `<p>Rendement: ${base} L/kg, Efficacité: ${eff}%</p>`;
+    if (estimated) {
+      html += `<p class="text-success fw-semibold"><i class="bi bi-droplet me-1"></i>Volume estimé : ${estimated.toFixed(0)} L <small class="text-muted">(${explanation})</small></p>`;
+    }
+    document.getElementById('resumeParams').innerHTML = html;
   }
-  ['volume_mesure_l','poids_debite_kg','part_pct','rendement_base','effic_pct','contenant','notes','mode_encuvage','lot_type'].forEach(id=>{
-    const el = document.getElementById(id); if (el){ el.addEventListener('input', updateResume); el.addEventListener('change', updateResume); }
+
+  // Event listeners
+  document.getElementById('contenant').addEventListener('change', updateContenantInfo);
+  document.getElementById('cuvee_id').addEventListener('change', updateResume);
+  ['volume_mesure_l','poids_debite_kg','part_pct','rendement_base','effic_pct','notes','mode_encuvage','lot_type'].forEach(id => {
+    const el = document.getElementById(id); 
+    if (el){ 
+      el.addEventListener('input', updateResume); 
+      el.addEventListener('change', updateResume); 
+    }
   });
+
+  // Validation avant soumission
   function validateBeforeSubmit(){
     const v = document.getElementById('vendange_id').value;
-    if (!v){ alert('Sélectionnez une vendange.'); document.querySelector('#tab-origine').click(); return false; }
+    if (!v){ 
+      alert('Sélectionnez une vendange.'); 
+      document.querySelector('#tab-origine').click(); 
+      return false; 
+    }
     const cont = document.getElementById('contenant').value.trim();
-    if (!cont){ alert('Le contenant est requis.'); document.querySelector('#tab-params').click(); return false; }
+    if (!cont){ 
+      alert('Sélectionnez une cuve ou barrique.'); 
+      document.querySelector('#tab-params').click(); 
+      return false; 
+    }
     return true;
   }
 </script>

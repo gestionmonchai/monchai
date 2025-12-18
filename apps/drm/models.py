@@ -14,13 +14,13 @@ class DRMLine(models.Model):
         ("vrac", "Vrac"),
     )
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateField(default=timezone.now)
     type = models.CharField(max_length=16, choices=TYPE_CHOICES)
     volume_l = models.DecimalField(max_digits=12, decimal_places=2)
     ref_kind = models.CharField(max_length=32)
-    ref_id = models.UUIDField(null=True, blank=True)
+    ref_id = models.BigIntegerField(null=True, blank=True)
     campagne = models.CharField(max_length=9)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -35,7 +35,7 @@ class DRMLine(models.Model):
 
 
 class INAOCode(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     code_inao = models.CharField(max_length=32)
     code_nc = models.CharField(max_length=32)
     appellation_label = models.CharField(max_length=160, blank=True)

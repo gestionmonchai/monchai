@@ -17,6 +17,7 @@ from apps.production.models import CostEntry
 from apps.referentiels.models import Cuvee
 from apps.stock.models import SKU, StockSKUBalance
 from apps.sales.models import StockReservation
+from apps.produits.models import LotCommercial
 
 
 class PermissionMixin:
@@ -184,6 +185,37 @@ class InventoryMSTable(TemplateView):
             items = qs.only('id', 'code', 'name', 'family', 'cmp_eur_u', 'stock_min')
         ctx['items'] = items
         return ctx
+
+
+class InventoryLotsCommerciaux(ListView):
+    """Vue des lots commerciaux (bouteilles issues de mises)."""
+    template_name = 'production/_inventaire_lots_commerciaux_table.html'
+    paginate_by = 25
+    model = LotCommercial
+
+    def get_queryset(self):
+        request = self.request
+        org = _get_org(request)
+        qs = LotCommercial.objects.select_related('cuvee', 'mise')
+        if org:
+            qs = qs.filter(organization=org)
+        # Filters
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            qs = qs.filter(Q(code_lot__icontains=q) | Q(cuvee__name__icontains=q))
+        etiq = (request.GET.get('etiquetage') or '').strip()
+        if etiq:
+            qs = qs.filter(etiquetage=etiq)
+        fmt = (request.GET.get('format') or '').strip()
+        if fmt:
+            try:
+                qs = qs.filter(format_ml=int(fmt))
+            except ValueError:
+                pass
+        dispo_only = (request.GET.get('dispo_gt0') or '').strip()
+        if dispo_only in ['1', 'true', 'True']:
+            qs = qs.filter(stock_disponible__gt=0)
+        return qs.order_by('-date_mise', '-created_at')
 
 
 class InventoryRedirectView(RedirectView):

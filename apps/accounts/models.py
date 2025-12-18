@@ -135,6 +135,32 @@ class Organization(models.Model):
         help_text='Marque ce chai comme environnement de test'
     )
     
+    # Région viticole pour préfiltrer les cépages
+    REGION_VITICOLE_CHOICES = [
+        ('', '-- Non spécifiée --'),
+        ('bordeaux', 'Bordeaux'),
+        ('bourgogne', 'Bourgogne'),
+        ('alsace', 'Alsace'),
+        ('champagne', 'Champagne'),
+        ('loire', 'Val de Loire'),
+        ('rhone', 'Vallée du Rhône'),
+        ('provence', 'Provence'),
+        ('languedoc', 'Languedoc-Roussillon'),
+        ('sud_ouest', 'Sud-Ouest'),
+        ('jura', 'Jura'),
+        ('savoie', 'Savoie'),
+        ('corse', 'Corse'),
+        ('beaujolais', 'Beaujolais'),
+    ]
+    region_viticole = models.CharField(
+        'Région viticole',
+        max_length=20,
+        choices=REGION_VITICOLE_CHOICES,
+        blank=True,
+        default='',
+        help_text='Région viticole principale pour préfiltrer les cépages'
+    )
+    
     is_initialized = models.BooleanField(
         'Initialisé',
         default=False,

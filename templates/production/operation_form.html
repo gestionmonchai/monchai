@@ -1,0 +1,456 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if operation %}Modifier{% else %}Nouvelle{% endif %} opération{% endblock %}
+
+{% block production_content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-2">
+            <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}">Production</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'production:vinification_home' %}">Journal opérations</a></li>
+            <li class="breadcrumb-item active">{% if operation %}Modifier{% else %}Nouvelle{% endif %}</li>
+        </ol>
+    </nav>
+    <h1 class="h4 mb-0 fw-bold">
+        <i class="bi bi-{% if operation %}pencil{% else %}plus-lg{% endif %} me-2"></i>
+        {% if operation %}Modifier l'opération{% else %}Nouvelle opération{% endif %}
+    </h1>
+</div>
+
+<form method="post" id="operationForm">
+    {% csrf_token %}
+    
+    <div class="row g-4">
+        <!-- Formulaire principal -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="bi bi-1-circle me-2 text-primary"></i>Informations essentielles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Lot technique <span class="text-danger">*</span></label>
+                            <select name="lot_id" id="lotSelect" class="form-select" required>
+                                <option value="">-- Sélectionner un lot --</option>
+                                {% for lot in lots %}
+                                <option value="{{ lot.id }}" {% if selected_lot == lot.id %}selected{% endif %}>
+                                    {{ lot.code }} - {{ lot.cuvee.nom|default:"Sans cuvée" }} ({{ lot.volume_l|floatformat:0 }}L)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Date <span class="text-danger">*</span></label>
+                            <input type="date" name="date" class="form-control" value="{{ operation.date|date:'Y-m-d'|default:today }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Type d'opération <span class="text-danger">*</span></label>
+                            <select name="type" id="opTypeSelect" class="form-select" required>
+                                <option value="">-- Choisir le type --</option>
+                                <optgroup label="🍇 Pré-fermentaire">
+                                    <option value="pressurage" data-icon="🍇" {% if operation.type == 'pressurage' %}selected{% endif %}>Pressurage</option>
+                                    <option value="debourbage" data-icon="🧊" {% if operation.type == 'debourbage' %}selected{% endif %}>Débourbage</option>
+                                    <option value="enzymage" data-icon="🧪" {% if operation.type == 'enzymage' %}selected{% endif %}>Enzymage</option>
+                                    <option value="sulfitage_preferm" data-icon="⚗️" {% if operation.type == 'sulfitage_preferm' %}selected{% endif %}>Sulfitage pré-fermentaire</option>
+                                </optgroup>
+                                <optgroup label="🍷 Fermentation alcoolique">
+                                    <option value="inoculation_levures" data-icon="🦠" {% if operation.type == 'inoculation_levures' %}selected{% endif %}>Inoculation levures</option>
+                                    <option value="debut_fa" data-icon="▶️" {% if operation.type == 'debut_fa' %}selected{% endif %}>Début FA</option>
+                                    <option value="chaptalisation" data-icon="🍬" {% if operation.type == 'chaptalisation' %}selected{% endif %}>Chaptalisation</option>
+                                    <option value="remontage" data-icon="🔄" {% if operation.type == 'remontage' %}selected{% endif %}>Remontage</option>
+                                    <option value="pigeage" data-icon="👊" {% if operation.type == 'pigeage' %}selected{% endif %}>Pigeage</option>
+                                    <option value="delestage" data-icon="⬇️" {% if operation.type == 'delestage' %}selected{% endif %}>Délestage</option>
+                                    <option value="controle_densite_temp" data-icon="🌡️" {% if operation.type == 'controle_densite_temp' %}selected{% endif %}>Contrôle densité/T°</option>
+                                    <option value="fin_fa" data-icon="⏹️" {% if operation.type == 'fin_fa' %}selected{% endif %}>Fin FA</option>
+                                    <option value="ecoulage" data-icon="🚿" {% if operation.type == 'ecoulage' %}selected{% endif %}>Écoulage</option>
+                                    <option value="pressurage_marc" data-icon="🍷" {% if operation.type == 'pressurage_marc' %}selected{% endif %}>Pressurage marc</option>
+                                </optgroup>
+                                <optgroup label="🧫 Fermentation malolactique">
+                                    <option value="inoculation_bacteries" data-icon="🦠" {% if operation.type == 'inoculation_bacteries' %}selected{% endif %}>Inoculation bactéries</option>
+                                    <option value="debut_fml" data-icon="▶️" {% if operation.type == 'debut_fml' %}selected{% endif %}>Début FML</option>
+                                    <option value="fin_fml" data-icon="⏹️" {% if operation.type == 'fin_fml' %}selected{% endif %}>Fin FML</option>
+                                </optgroup>
+                                <optgroup label="🏺 Élevage & stabilisation">
+                                    <option value="soutirage" data-icon="↕️" {% if operation.type == 'soutirage' %}selected{% endif %}>Soutirage</option>
+                                    <option value="ouillage" data-icon="💧" {% if operation.type == 'ouillage' %}selected{% endif %}>Ouillage</option>
+                                    <option value="batonnage" data-icon="🥄" {% if operation.type == 'batonnage' %}selected{% endif %}>Bâtonnage</option>
+                                    <option value="so2" data-icon="⚗️" {% if operation.type == 'so2' %}selected{% endif %}>Ajout SO₂</option>
+                                    <option value="collage" data-icon="🧹" {% if operation.type == 'collage' %}selected{% endif %}>Collage</option>
+                                    <option value="filtration" data-icon="🔬" {% if operation.type == 'filtration' %}selected{% endif %}>Filtration</option>
+                                    <option value="stabilisation_tartrique" data-icon="❄️" {% if operation.type == 'stabilisation_tartrique' %}selected{% endif %}>Stabilisation tartrique</option>
+                                    <option value="correction_acidite" data-icon="⚖️" {% if operation.type == 'correction_acidite' %}selected{% endif %}>Correction acidité</option>
+                                </optgroup>
+                                <optgroup label="🔬 Analyses & contrôles">
+                                    <option value="analyse_labo" data-icon="🔬" {% if operation.type == 'analyse_labo' %}selected{% endif %}>Analyse laboratoire</option>
+                                    <option value="degustation" data-icon="🍷" {% if operation.type == 'degustation' %}selected{% endif %}>Dégustation</option>
+                                </optgroup>
+                                <optgroup label="📝 Autre">
+                                    <option value="autre" data-icon="📝" {% if operation.type == 'autre' %}selected{% endif %}>Autre opération</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Champs spécifiques par type d'opération -->
+            <div class="card border-0 shadow-sm mt-4" id="specificFieldsCard">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="bi bi-2-circle me-2 text-success"></i>Paramètres spécifiques
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted fst-italic" id="noFieldsMsg">Sélectionnez un type d'opération pour voir les champs spécifiques.</p>
+                    
+                    <!-- DÉBOURBAGE -->
+                    <div class="row g-3 op-fields d-none" data-for="debourbage">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Durée (heures)</label>
+                            <input type="number" name="duree_h" class="form-control" step="0.5" placeholder="ex: 24">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Température (°C)</label>
+                            <input type="number" name="temperature" class="form-control" step="0.1" placeholder="ex: 8">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Méthode</label>
+                            <select name="methode_debourbage" class="form-select">
+                                <option value="statique">Statique (froid)</option>
+                                <option value="enzymatique">Enzymatique</option>
+                                <option value="flotation">Flottation</option>
+                                <option value="centrifugation">Centrifugation</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- INOCULATION LEVURES -->
+                    <div class="row g-3 op-fields d-none" data-for="inoculation_levures">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Souche de levure</label>
+                            <input type="text" name="souche_levure" class="form-control" placeholder="ex: QA23, F10, IOC 18-2007...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Dose (g/hL)</label>
+                            <input type="number" name="dose_levure" class="form-control" step="0.1" placeholder="ex: 25">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Fournisseur</label>
+                            <input type="text" name="fournisseur_levure" class="form-control" placeholder="ex: Lallemand">
+                        </div>
+                    </div>
+                    
+                    <!-- CHAPTALISATION -->
+                    <div class="row g-3 op-fields d-none" data-for="chaptalisation">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Quantité sucre (kg)</label>
+                            <input type="number" name="qte_sucre_kg" class="form-control" step="0.1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Type de sucre</label>
+                            <select name="type_sucre" class="form-select">
+                                <option value="saccharose">Saccharose</option>
+                                <option value="mcr">MCR (Moût concentré rectifié)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Gain alcool estimé (% vol)</label>
+                            <input type="number" name="gain_alcool" class="form-control" step="0.1" placeholder="ex: 1.5">
+                        </div>
+                    </div>
+                    
+                    <!-- REMONTAGE / PIGEAGE / DELESTAGE -->
+                    <div class="row g-3 op-fields d-none" data-for="remontage pigeage delestage">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Durée (minutes)</label>
+                            <input type="number" name="duree_min" class="form-control" placeholder="ex: 30">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Nombre de cycles</label>
+                            <input type="number" name="nb_cycles" class="form-control" placeholder="ex: 2">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Aération</label>
+                            <select name="aeration" class="form-select">
+                                <option value="non">Non</option>
+                                <option value="legere">Légère</option>
+                                <option value="forte">Forte</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- CONTRÔLE DENSITÉ/TEMPÉRATURE -->
+                    <div class="row g-3 op-fields d-none" data-for="controle_densite_temp debut_fa fin_fa">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Densité</label>
+                            <input type="number" name="densite" class="form-control" step="0.001" placeholder="ex: 1.085">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Température (°C)</label>
+                            <input type="number" name="temperature" class="form-control" step="0.1" placeholder="ex: 22">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Sucres résiduels (g/L)</label>
+                            <input type="number" name="sucres_residuels" class="form-control" step="0.1" placeholder="ex: 2">
+                        </div>
+                    </div>
+                    
+                    <!-- SO2 -->
+                    <div class="row g-3 op-fields d-none" data-for="so2 sulfitage_preferm">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Dose SO₂ (g/hL)</label>
+                            <input type="number" name="dose_so2" class="form-control" step="0.1" placeholder="ex: 3">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Forme</label>
+                            <select name="forme_so2" class="form-select">
+                                <option value="metabisulfite">Métabisulfite</option>
+                                <option value="so2_liquide">SO₂ liquide</option>
+                                <option value="meche">Mèche soufrée</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">SO₂ libre visé (mg/L)</label>
+                            <input type="number" name="so2_libre_vise" class="form-control" placeholder="ex: 30">
+                        </div>
+                    </div>
+                    
+                    <!-- FML -->
+                    <div class="row g-3 op-fields d-none" data-for="inoculation_bacteries debut_fml fin_fml">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Souche bactéries</label>
+                            <input type="text" name="souche_bacteries" class="form-control" placeholder="ex: VP41, CH16...">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Acide malique (g/L)</label>
+                            <input type="number" name="acide_malique" class="form-control" step="0.01" placeholder="ex: 2.5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Acide lactique (g/L)</label>
+                            <input type="number" name="acide_lactique" class="form-control" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <!-- COLLAGE -->
+                    <div class="row g-3 op-fields d-none" data-for="collage">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Produit de collage</label>
+                            <select name="produit_collage" class="form-select">
+                                <option value="bentonite">Bentonite</option>
+                                <option value="gelatine">Gélatine</option>
+                                <option value="blanc_oeuf">Blanc d'œuf</option>
+                                <option value="pvpp">PVPP</option>
+                                <option value="caseine">Caséine</option>
+                                <option value="colle_poisson">Colle de poisson</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Dose (g/hL)</label>
+                            <input type="number" name="dose_collage" class="form-control" step="0.1" placeholder="ex: 30">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Durée contact (jours)</label>
+                            <input type="number" name="duree_collage" class="form-control" placeholder="ex: 7">
+                        </div>
+                    </div>
+                    
+                    <!-- FILTRATION -->
+                    <div class="row g-3 op-fields d-none" data-for="filtration">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Type de filtration</label>
+                            <select name="type_filtration" class="form-select">
+                                <option value="plaques">Sur plaques (Kieselguhr)</option>
+                                <option value="tangentielle">Tangentielle</option>
+                                <option value="cartouches">Sur cartouches</option>
+                                <option value="terre">Sur terre</option>
+                                <option value="sterile">Stérile (0.45µm)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Porosité / Seuil (µm)</label>
+                            <input type="text" name="porosite" class="form-control" placeholder="ex: 0.65">
+                        </div>
+                    </div>
+                    
+                    <!-- OUILLAGE -->
+                    <div class="row g-3 op-fields d-none" data-for="ouillage">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Volume ajouté (L)</label>
+                            <input type="number" name="volume_ouillage" class="form-control" step="0.1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Lot source ouillage</label>
+                            <select name="lot_source_ouillage" class="form-select">
+                                <option value="">Même lot</option>
+                                {% for lot in lots %}
+                                <option value="{{ lot.id }}">{{ lot.code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notes -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="bi bi-3-circle me-2 text-info"></i>Notes & observations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <textarea name="notes" class="form-control" rows="4" placeholder="Observations, remarques, conditions particulières...">{{ operation.notes }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Résumé lot sélectionné -->
+            <div class="card border-0 shadow-sm" id="lotSummaryCard" style="display: none;">
+                <div class="card-header bg-primary bg-opacity-10 border-bottom">
+                    <h6 class="card-title mb-0 fw-bold text-primary">
+                        <i class="bi bi-box-seam me-2"></i>Lot sélectionné
+                    </h6>
+                </div>
+                <div class="card-body" id="lotSummary">
+                    <!-- Rempli par JS -->
+                </div>
+            </div>
+            
+            <!-- Créer alerte -->
+            <div class="card border-0 shadow-sm mt-3 border-warning">
+                <div class="card-header bg-warning bg-opacity-10 border-bottom">
+                    <h6 class="card-title mb-0 fw-bold text-warning">
+                        <i class="bi bi-bell me-2"></i>Programmer un rappel ?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="create_alert" id="createAlertCheck">
+                        <label class="form-check-label" for="createAlertCheck">
+                            Créer une alerte de suivi
+                        </label>
+                    </div>
+                    <div id="alertFields" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Rappel dans</label>
+                            <select name="alert_delay" class="form-select form-select-sm">
+                                <option value="1">1 jour</option>
+                                <option value="2">2 jours</option>
+                                <option value="3" selected>3 jours</option>
+                                <option value="7">1 semaine</option>
+                                <option value="14">2 semaines</option>
+                                <option value="30">1 mois</option>
+                            </select>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small fw-bold">Message rappel</label>
+                            <input type="text" name="alert_message" class="form-control form-control-sm" 
+                                   placeholder="ex: Vérifier la densité">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-lg me-2"></i>
+                            {% if operation %}Enregistrer{% else %}Créer l'opération{% endif %}
+                        </button>
+                        <a href="{% url 'production:vinification_home' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-2"></i>Annuler
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const opTypeSelect = document.getElementById('opTypeSelect');
+    const opFieldsContainers = document.querySelectorAll('.op-fields');
+    const noFieldsMsg = document.getElementById('noFieldsMsg');
+    const createAlertCheck = document.getElementById('createAlertCheck');
+    const alertFields = document.getElementById('alertFields');
+    const lotSelect = document.getElementById('lotSelect');
+    const lotSummaryCard = document.getElementById('lotSummaryCard');
+    
+    // Données lots pour affichage
+    const lotsData = {
+        {% for lot in lots %}
+        "{{ lot.id }}": {
+            "code": "{{ lot.code }}",
+            "cuvee": "{{ lot.cuvee.nom|default:'Sans cuvée' }}",
+            "volume": "{{ lot.volume_l|floatformat:0 }}",
+            "statut": "{{ lot.get_statut_display|default:lot.statut }}"
+        },
+        {% endfor %}
+    };
+    
+    // Afficher champs selon type opération
+    function updateOpFields() {
+        const selectedType = opTypeSelect.value;
+        let hasVisible = false;
+        
+        opFieldsContainers.forEach(container => {
+            const types = container.dataset.for.split(' ');
+            if (types.includes(selectedType)) {
+                container.classList.remove('d-none');
+                hasVisible = true;
+            } else {
+                container.classList.add('d-none');
+            }
+        });
+        
+        noFieldsMsg.style.display = hasVisible ? 'none' : 'block';
+    }
+    
+    // Afficher résumé lot
+    function updateLotSummary() {
+        const lotId = lotSelect.value;
+        if (lotId && lotsData[lotId]) {
+            const lot = lotsData[lotId];
+            lotSummaryCard.style.display = 'block';
+            document.getElementById('lotSummary').innerHTML = `
+                <p class="mb-1"><strong>${lot.code}</strong></p>
+                <p class="mb-1 small text-muted">${lot.cuvee}</p>
+                <p class="mb-1 small"><i class="bi bi-droplet me-1"></i>${lot.volume} L</p>
+                <p class="mb-0"><span class="badge bg-secondary">${lot.statut}</span></p>
+            `;
+        } else {
+            lotSummaryCard.style.display = 'none';
+        }
+    }
+    
+    // Toggle champs alerte
+    createAlertCheck.addEventListener('change', function() {
+        if (this.checked) {
+            alertFields.classList.remove('d-none');
+        } else {
+            alertFields.classList.add('d-none');
+        }
+    });
+    
+    opTypeSelect.addEventListener('change', updateOpFields);
+    lotSelect.addEventListener('change', updateLotSummary);
+    
+    // Init
+    updateOpFields();
+    updateLotSummary();
+});
+</script>
+{% endblock %}

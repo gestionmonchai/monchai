@@ -18,6 +18,12 @@ from .views_catalog import (
     ProductDetailView,
     ProductUpdateView,
     SKUUpdateView,
+    PurchaseArticleCreateView,
+    PurchaseArticleSuccessView,
+    BridgePurchaseToSalesView,
+    SalesArticleCreateView,
+    SalesArticleSuccessView,
+    BridgeSalesToPurchaseView,
 )
 from . import views_catalog
 from .views import products_suggestions_api
@@ -38,13 +44,22 @@ urlpatterns = [
     # Cuvées
     path('produits/cuvees/', login_required(cat_views.products_cuvees), name='cuvees_list'),
     path('produits/cuvees/nouveau/', login_required(cat_views.cuvee_create), name='cuvee_new'),
-    path('produits/cuvees/<uuid:pk>/', login_required(cat_views.cuvee_detail), name='cuvee_detail'),
+    path('produits/cuvees/<int:pk>/', login_required(cat_views.cuvee_detail), name='cuvee_detail'),
 
     # SKUs
     path('produits/skus/', login_required(cat_views.products_skus), name='skus_list'),
     # Remap nouveau to universal ProductCreateView (fiche à volets)
     path('produits/skus/nouveau/', login_required(ProductCreateView.as_view()), name='sku_new'),
-    path('produits/skus/<uuid:pk>/', login_required(cat_views.sku_detail), name='sku_detail'),
+    path('produits/skus/<int:pk>/', login_required(cat_views.sku_detail), name='sku_detail'),
+
+    # Nouveaux flux de création (Workflow Achat/Vente)
+    path('produits/achats/nouveau/', login_required(PurchaseArticleCreateView.as_view()), name='purchase_new'),
+    path('produits/achats/<slug:slug>/succes/', login_required(PurchaseArticleSuccessView.as_view()), name='purchase_success'),
+    path('produits/achats/<slug:slug>/vendre/', login_required(BridgePurchaseToSalesView.as_view()), name='bridge_purchase_to_sales'),
+    
+    path('produits/ventes/nouveau/', login_required(SalesArticleCreateView.as_view()), name='sales_new'),
+    path('produits/ventes/<slug:slug>/succes/', login_required(SalesArticleSuccessView.as_view()), name='sales_success'),
+    path('produits/ventes/<slug:slug>/acheter/', login_required(BridgeSalesToPurchaseView.as_view()), name='bridge_sales_to_purchase'),
 
     # Partials HTMX (universal product form)
     path('produits/form/panels/', views_catalog.product_panels_partial, name='panels'),
@@ -69,5 +84,5 @@ urlpatterns = [
     path('produits/catalogue/nouveau/', login_required(ProductCreateView.as_view()), name='product_new'),
     path('produits/catalogue/<slug:slug>/', login_required(ProductDetailView.as_view()), name='product_detail'),
     path('produits/catalogue/<slug:slug>/edit/', login_required(ProductUpdateView.as_view()), name='product_edit'),
-    path('produits/skus/<uuid:pk>/edit/', login_required(SKUUpdateView.as_view()), name='sku_edit'),
+    path('produits/skus/<int:pk>/edit/', login_required(SKUUpdateView.as_view()), name='sku_edit'),
 ]

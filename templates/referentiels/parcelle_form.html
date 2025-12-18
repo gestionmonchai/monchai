@@ -39,7 +39,8 @@
         padding: 0.5rem;
         border-radius: 12px;
         position: relative;
-        z-index: 10;
+        z-index: 100;
+        isolation: isolate;
     }
     .form-tab {
         flex: 1;
@@ -56,7 +57,8 @@
         justify-content: center;
         gap: 0.5rem;
         position: relative;
-        z-index: 11;
+        z-index: 101;
+        pointer-events: auto !important;
     }
     .form-tab:hover {
         background: rgba(123, 30, 34, 0.1);
@@ -72,12 +74,12 @@
         padding: 0.2rem 0.4rem;
     }
     
-    /* Tab Panels */
+    /* Tab Panels - Gérés par JavaScript */
     .tab-panel {
-        display: none;
+        display: none !important;
     }
     .tab-panel.active {
-        display: block;
+        display: block !important;
     }
     
     /* Section Cards */
@@ -473,21 +475,106 @@
     </div>
     
     <!-- Tabs Navigation -->
-    <div class="form-tabs">
-        <button type="button" class="form-tab active" data-tab="infos">
+    <div class="form-tabs" id="parcelle-tabs-container">
+        <button type="button" class="form-tab active" data-tab="infos" id="tab-infos">
             <i class="bi bi-card-text"></i>
             <span>Informations</span>
         </button>
-        <button type="button" class="form-tab" data-tab="carte">
+        <button type="button" class="form-tab" data-tab="carte" id="tab-carte">
             <i class="bi bi-map"></i>
             <span>Carte</span>
         </button>
-        <button type="button" class="form-tab" data-tab="encepagement">
+        <button type="button" class="form-tab" data-tab="encepagement" id="tab-encepagement">
             <i class="bi bi-pie-chart"></i>
             <span>Encépagement</span>
             <span class="badge bg-success" id="encepagement-count">0</span>
         </button>
     </div>
+    
+    <!-- SCRIPT ONGLETS AUTONOME - Exécuté immédiatement -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // Fonction robuste pour changer d'onglet
+        function activerOnglet(nomOnglet) {
+            try {
+                // Trouver tous les onglets et panels
+                var onglets = document.querySelectorAll('.form-tab');
+                var panels = document.querySelectorAll('.tab-panel');
+                
+                // Désactiver tous les onglets
+                for (var i = 0; i < onglets.length; i++) {
+                    onglets[i].classList.remove('active');
+                }
+                
+                // Désactiver tous les panels
+                for (var j = 0; j < panels.length; j++) {
+                    panels[j].classList.remove('active');
+                    panels[j].style.display = 'none';
+                }
+                
+                // Activer l'onglet cliqué
+                var ongletCible = document.querySelector('.form-tab[data-tab="' + nomOnglet + '"]');
+                if (ongletCible) {
+                    ongletCible.classList.add('active');
+                }
+                
+                // Activer le panel correspondant
+                var panelCible = document.querySelector('.tab-panel[data-panel="' + nomOnglet + '"]');
+                if (panelCible) {
+                    panelCible.classList.add('active');
+                    panelCible.style.display = 'block';
+                }
+                
+                // Redimensionner la carte si on va sur l'onglet carte
+                if (nomOnglet === 'carte' && window.parcellemap) {
+                    setTimeout(function() {
+                        try { window.parcellemap.resize(); } catch(e) {}
+                    }, 150);
+                }
+            } catch (err) {
+                console.error('[Onglets Parcelle] Erreur:', err);
+            }
+        }
+        
+        // Exposer globalement
+        window.activerOnglet = activerOnglet;
+        
+        // Attacher les événements aux onglets
+        function attacherEvenements() {
+            var container = document.getElementById('parcelle-tabs-container');
+            if (!container) return;
+            
+            // Event delegation sur le container
+            container.addEventListener('click', function(e) {
+                var btn = e.target.closest('.form-tab');
+                if (btn && btn.dataset.tab) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    activerOnglet(btn.dataset.tab);
+                }
+            });
+            
+            // Initialiser l'affichage des panels
+            var panels = document.querySelectorAll('.tab-panel');
+            for (var k = 0; k < panels.length; k++) {
+                if (panels[k].classList.contains('active')) {
+                    panels[k].style.display = 'block';
+                } else {
+                    panels[k].style.display = 'none';
+                }
+            }
+        }
+        
+        // Exécuter dès que possible
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attacherEvenements);
+        } else {
+            attacherEvenements();
+        }
+    })();
+    </script>
     
     <form method="post" novalidate id="parcelle-form">
         {% csrf_token %}
@@ -495,6 +582,22 @@
         <input type="hidden" name="next" value="{{ next }}" />
         {% endif %}
         <div style="display: none;">{{ form.geojson }}</div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger shadow-sm border-danger mb-4">
+            <div class="d-flex">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1">Erreur de validation</h6>
+                    <ul class="mb-0 ps-3">
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Tab 1: Informations -->
         <div class="tab-panel active" data-panel="infos">
@@ -510,22 +613,27 @@
                                     <label for="{{ form.nom.id_for_label }}" class="form-label">
                                         Nom de la parcelle <span class="text-danger">*</span>
                                     </label>
-                                    {{ form.nom|add_class:"form-control form-control-lg"|attr:"placeholder:Ex: Les Vignes du Haut" }}
                                     {% if form.nom.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.nom.errors.0 }}</div>
+                                        {{ form.nom|add_class:"form-control form-control-lg is-invalid"|attr:"placeholder:Ex: Les Vignes du Haut" }}
+                                        <div class="invalid-feedback d-block fw-bold">{{ form.nom.errors.0 }}</div>
+                                    {% else %}
+                                        {{ form.nom|add_class:"form-control form-control-lg"|attr:"placeholder:Ex: Les Vignes du Haut" }}
                                     {% endif %}
                                 </div>
                                 <div class="col-md-4">
                                     <label for="{{ form.surface.id_for_label }}" class="form-label">
                                         Surface (ha) <span class="text-danger">*</span>
                                     </label>
-                                    <div class="input-group">
-                                        {{ form.surface|add_class:"form-control form-control-lg"|attr:"placeholder:0.50" }}
-                                        <span class="input-group-text">ha</span>
+                                    <div class="input-group has-validation">
+                                        {% if form.surface.errors %}
+                                            {{ form.surface|add_class:"form-control form-control-lg is-invalid"|attr:"placeholder:0.50" }}
+                                            <span class="input-group-text">ha</span>
+                                            <div class="invalid-feedback d-block fw-bold">{{ form.surface.errors.0 }}</div>
+                                        {% else %}
+                                            {{ form.surface|add_class:"form-control form-control-lg"|attr:"placeholder:0.50" }}
+                                            <span class="input-group-text">ha</span>
+                                        {% endif %}
                                     </div>
-                                    {% if form.surface.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.surface.errors.0 }}</div>
-                                    {% endif %}
                                     <div id="surfBadge" class="form-text"></div>
                                 </div>
                                 <div class="col-md-6">
@@ -1068,28 +1176,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ============================================
-    // TABS NAVIGATION
-    // ============================================
-    const tabs = document.querySelectorAll('.form-tab');
-    const panels = document.querySelectorAll('.tab-panel');
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            const targetPanel = this.dataset.tab;
-            
-            tabs.forEach(t => t.classList.remove('active'));
-            panels.forEach(p => p.classList.remove('active'));
-            
-            this.classList.add('active');
-            document.querySelector(`[data-panel="${targetPanel}"]`).classList.add('active');
-            
-            // Resize map when switching to carte tab
-            if (targetPanel === 'carte' && window.parcellemap) {
-                setTimeout(() => window.parcellemap.resize(), 100);
-            }
-        });
-    });
+    // Les onglets sont gérés par le script autonome ci-dessus
     
     // ============================================
     // ENCEPAGEMENT BUILDER
@@ -1104,13 +1191,13 @@ document.addEventListener('DOMContentLoaded', function() {
         {
             id: {{ e.pk }},
             cepage_id: {{ e.cepage.pk }},
-            cepage_nom: "{{ e.cepage.nom }}",
-            cepage_couleur: "{{ e.cepage.couleur }}",
-            pourcentage: {{ e.pourcentage }},
+            cepage_nom: "{{ e.cepage.nom|escapejs }}",
+            cepage_couleur: "{{ e.cepage.couleur|default:'' }}",
+            pourcentage: parseFloat("{{ e.pourcentage|stringformat:'f' }}"),
             rang_debut: {{ e.rang_debut|default:"null" }},
             rang_fin: {{ e.rang_fin|default:"null" }},
             annee_plantation: {{ e.annee_plantation|default:"null" }},
-            porte_greffe: "{{ e.porte_greffe|default:'' }}",
+            porte_greffe: "{{ e.porte_greffe|default:''|escapejs }}",
             densite: {{ e.densite_pieds_ha|default:"null" }}
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
@@ -1554,17 +1641,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 map.addLayer({ id: 'parcel-selected-fill', type: 'fill', source: 'parcel-selected', paint: { 'fill-color': '#ffd54f', 'fill-opacity': 0.35 } });
                 map.addLayer({ id: 'parcel-selected-line', type: 'line', source: 'parcel-selected', paint: { 'line-color': '#ff6f00', 'line-width': 3 } });
                 
-                // Click handler - multi-selection toggle
-                map.on('click', 'cadvt-fill', (e) => {
+                // Click handler - multi-selection toggle (améliored pour gérer les parcelles avec numéros dupliqués)
+                function handleParcelClick(e) {
                     if (!e.features || !e.features.length) return;
-                    const f = e.features[0];
-                    const feat = { type: 'Feature', properties: f.properties || {}, geometry: f.geometry };
-                    // Toggle selection (click to select, click again to deselect)
-                    toggleParcelSelection(feat);
-                });
+                    const clickedFeature = e.features[0];
+                    const clickedProps = clickedFeature.properties || {};
+                    
+                    // Identifier la parcelle par son id unique
+                    const parcelId = clickedProps.id || clickedProps.numero || '';
+                    const parcelSection = clickedProps.section || '';
+                    const parcelInsee = clickedProps.code_insee || clickedProps.INSEE || '';
+                    
+                    // Rechercher TOUS les fragments de cette parcelle dans les tuiles visibles
+                    // Cela permet de combiner les parties d'une grande parcelle découpée par les tuiles
+                    const allFeatures = map.queryRenderedFeatures({ layers: ['cadvt-fill'] });
+                    const matchingFeatures = allFeatures.filter(f => {
+                        const p = f.properties || {};
+                        const fId = p.id || p.numero || '';
+                        const fSection = p.section || '';
+                        const fInsee = p.code_insee || p.INSEE || '';
+                        // Correspondance sur id + section (+ insee si disponible)
+                        return fId === parcelId && fSection === parcelSection && 
+                               (fInsee === parcelInsee || !fInsee || !parcelInsee);
+                    });
+                    
+                    let combinedFeature;
+                    if (matchingFeatures.length > 1) {
+                        // Combiner tous les fragments en un seul polygone/multipolygone
+                        try {
+                            let combined = { type: 'Feature', properties: clickedProps, geometry: matchingFeatures[0].geometry };
+                            for (let i = 1; i < matchingFeatures.length; i++) {
+                                const nextFeat = { type: 'Feature', properties: {}, geometry: matchingFeatures[i].geometry };
+                                try {
+                                    combined = turf.union(combined, nextFeat);
+                                } catch(unionErr) {
+                                    // Si l'union échoue, utiliser un MultiPolygon
+                                    console.log('Union failed, using collection');
+                                }
+                            }
+                            combinedFeature = { type: 'Feature', properties: clickedProps, geometry: combined.geometry };
+                        } catch(err) {
+                            console.error('Error combining parcel fragments:', err);
+                            combinedFeature = { type: 'Feature', properties: clickedProps, geometry: clickedFeature.geometry };
+                        }
+                    } else {
+                        combinedFeature = { type: 'Feature', properties: clickedProps, geometry: clickedFeature.geometry };
+                    }
+                    
+                    // Toggle selection
+                    toggleParcelSelection(combinedFeature);
+                }
+                
+                // Handler sur le fill (polygone de la parcelle)
+                map.on('click', 'cadvt-fill', handleParcelClick);
+                
+                // Handler sur les numéros de parcelles - permet de sélectionner en cliquant sur le numéro
+                map.on('click', 'cadvt-num', handleParcelClick);
                 
                 map.on('mouseenter', 'cadvt-fill', () => map.getCanvas().style.cursor = 'pointer');
                 map.on('mouseleave', 'cadvt-fill', () => map.getCanvas().style.cursor = '');
+                map.on('mouseenter', 'cadvt-num', () => map.getCanvas().style.cursor = 'pointer');
+                map.on('mouseleave', 'cadvt-num', () => map.getCanvas().style.cursor = '');
             } catch(e) { console.error(e); }
             
             // UI handlers
@@ -1604,12 +1741,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 const el = document.getElementById('existing-geojson');
                 if (el && el.textContent) {
                     const existing = JSON.parse(el.textContent);
-                    if (existing && existing.geometry) {
-                        map.getSource('parcel-selected').setData({ type: 'FeatureCollection', features: [existing] });
-                        applyParcelGeometry(existing);
+                    if (existing) {
+                        // Handle both Feature and direct Geometry formats
+                        let feature;
+                        if (existing.type === 'Feature') {
+                            feature = existing;
+                        } else if (existing.type === 'FeatureCollection') {
+                            // FeatureCollection - use features directly
+                            if (existing.features && existing.features.length > 0) {
+                                map.getSource('parcel-selected').setData(existing);
+                                try {
+                                    const bb = turf.bbox(existing);
+                                    if (bb) map.fitBounds([[bb[0],bb[1]], [bb[2],bb[3]]], { padding: 40 });
+                                } catch(e) {}
+                                // Set hidden field value
+                                if ($hidden) $hidden.value = el.textContent;
+                            }
+                            feature = null;
+                        } else if (existing.type && existing.coordinates) {
+                            // Direct geometry (Polygon, MultiPolygon, etc.)
+                            feature = { type: 'Feature', properties: {}, geometry: existing };
+                        } else if (existing.geometry) {
+                            // Feature-like object
+                            feature = existing;
+                        }
+                        
+                        if (feature) {
+                            map.getSource('parcel-selected').setData({ type: 'FeatureCollection', features: [feature] });
+                            applyParcelGeometry(feature);
+                            // Set hidden field value for form submission
+                            if ($hidden) $hidden.value = JSON.stringify(feature);
+                        }
                     }
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error('Error loading existing geometry:', e);
+            }
             
             // ============================================
             // ZONES DRAWING SYSTEM (Formes géométriques)
@@ -2160,7 +2327,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Switch to encepagement tab
-                document.querySelector('[data-tab="encepagement"]').click();
+                if (window.activerOnglet) {
+                    window.activerOnglet('encepagement');
+                }
             }
             
             // Auto-save zones when they change

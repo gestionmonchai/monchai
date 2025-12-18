@@ -18,7 +18,7 @@ urlpatterns = [
     # Inventaires (nouvelle arborescence)
     path('inventaires/', views.inventaire_list, name='inventaire_list'),
     path('inventaires/nouveau/', views.inventaire_new, name='inventaire_new'),
-    path('inventaires/<uuid:pk>/', views.inventaire_detail, name='inventaire_detail'),
+    path('inventaires/<int:pk>/', views.inventaire_detail, name='inventaire_detail'),
 
     # Entrepôts & Emplacements
     path('entrepots/', views.entrepots_list, name='entrepots'),
@@ -30,7 +30,7 @@ urlpatterns = [
     
     # Inventaire - Roadmap 33 (existants)
     path('inventaire/', views.inventaire_view, name='inventaire_view'),
-    path('inventaire/counting/<uuid:warehouse_id>/', views.inventaire_counting_view, name='inventaire_counting_view'),
+    path('inventaire/counting/<int:warehouse_id>/', views.inventaire_counting_view, name='inventaire_counting_view'),
     
     # Alertes - Roadmap 34
     path('alertes/', views.alertes_view, name='alertes_view'),
@@ -42,7 +42,7 @@ urlpatterns = [
     
     # API Inventaire - Roadmap 33
     path('api/inventaire/', api_views.inventaire_api, name='inventaire_api'),
-    path('api/inventaire/counting/<uuid:warehouse_id>/', api_views.inventaire_counting_api, name='inventaire_counting_api'),
+    path('api/inventaire/counting/<int:warehouse_id>/', api_views.inventaire_counting_api, name='inventaire_counting_api'),
     path('api/inventaire/calculate-adjustments/', api_views.inventaire_calculate_adjustments_api, name='inventaire_calculate_adjustments_api'),
     path('api/inventaire/apply-adjustments/', api_views.inventaire_apply_adjustments_api, name='inventaire_apply_adjustments_api'),
     
@@ -51,5 +51,5 @@ urlpatterns = [
     path('api/alertes/acknowledge/', api_views.acknowledge_alert_api, name='acknowledge_alert_api'),
     path('api/alertes/badge-count/', api_views.alerts_badge_count_api, name='alerts_badge_count_api'),
     path('api/seuils/create/', api_views.create_threshold_api, name='create_threshold_api'),
-    path('api/seuils/<uuid:threshold_id>/', api_views.delete_threshold_api, name='delete_threshold_api'),
+    path('api/seuils/<int:threshold_id>/', api_views.delete_threshold_api, name='delete_threshold_api'),
 ]

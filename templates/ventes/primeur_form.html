@@ -22,7 +22,7 @@
             {% if not customers %}
             <div class="alert alert-danger mt-2">
                 <i class="bi bi-exclamation-triangle"></i> Aucun client disponible. 
-                <a href="{% url 'ventes:client_new' %}" class="alert-link">Créer un client</a>
+                <a href="{% url 'clients:customer_create' %}" class="alert-link">Créer un client</a>
             </div>
             {% endif %}
         </div>

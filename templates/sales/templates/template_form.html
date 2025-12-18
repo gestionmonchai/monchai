@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'commerce/base_commerce.html' %}
 {% load static %}
 
 {% block title %}
@@ -68,7 +68,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block commerce_content %}
 <div class="row mb-4">
     <div class="col-12">
         <h1 class="h3">
@@ -79,8 +79,8 @@
             {% endif %}
         </h1>
         <!-- Données pour JS -->
-    <div id="defaultTemplatesData" data-default-templates='{% if mode == "create" %}{{ default_templates|safe|escapejs }}{% else %}{}{% endif %}' style="display:none;"></div>
-    <div id="docTemplateMeta" data-preview-url="{% if template %}{% url 'sales:template_preview' pk=template.id %}{% endif %}" style="display:none;"></div>
+    <div id="defaultTemplatesData" data-default-templates='{% if mode == "create" %}{{ default_templates_json|safe }}{% else %}{}{% endif %}' style="display:none;"></div>
+    <div id="docTemplateMeta" data-preview-url="{% if template %}{% url 'ventes:template_preview' pk=template.id %}{% endif %}" style="display:none;"></div>
 </div>
 {% if mode == 'edit' %}
 <!-- Modal Généraliser -->
@@ -91,7 +91,7 @@
                 <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Généraliser le modèle</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'sales:template_generalize' pk=template.id %}">
+            <form method="post" action="{% url 'ventes:template_generalize' pk=template.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <p class="text-muted small">Crée des copies de ce modèle vers d'autres types de documents. Choisissez les types et si vous souhaitez une variante <em>sans prix</em>.</p>
@@ -246,7 +246,7 @@
             
             <!-- Boutons d'action -->
             <div class="d-flex justify-content-between">
-                <a href="{% url 'sales:template_list' %}" class="btn btn-light">
+                <a href="{% url 'ventes:template_list' %}" class="btn btn-light">
                     <i class="bi bi-arrow-left"></i> Retour
                 </a>
                 <div>
@@ -299,46 +299,47 @@
             <div class="modal-body">
                 <div class="variables-panel">
                     <h6 class="mb-3">Cliquez sur une variable pour l'insérer</h6>
-                    
+                    {% verbatim %}
                     <div class="mb-4">
                         <strong>Organisation :</strong><br>
-                        <span class="variable-chip" onclick="insertVariable('organization.name')">{{ '{{ organization.name }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('organization.address')">{{ '{{ organization.address }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('organization.city')">{{ '{{ organization.city }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('organization.email')">{{ '{{ organization.email }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('organization.phone')">{{ '{{ organization.phone }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('organization.vat_number')">{{ '{{ organization.vat_number }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.name')">{{ organization.name }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.address')">{{ organization.address }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.city')">{{ organization.city }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.email')">{{ organization.email }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.phone')">{{ organization.phone }}</span>
+                        <span class="variable-chip" onclick="insertVariable('organization.vat_number')">{{ organization.vat_number }}</span>
                     </div>
                     
                     <div class="mb-4">
                         <strong>Client :</strong><br>
-                        <span class="variable-chip" onclick="insertVariable('customer.legal_name')">{{ '{{ customer.legal_name }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('customer.billing_address')">{{ '{{ customer.billing_address }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('customer.billing_city')">{{ '{{ customer.billing_city }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('customer.legal_name')">{{ customer.legal_name }}</span>
+                        <span class="variable-chip" onclick="insertVariable('customer.billing_address')">{{ customer.billing_address }}</span>
+                        <span class="variable-chip" onclick="insertVariable('customer.billing_city')">{{ customer.billing_city }}</span>
                     </div>
                     
                     <div class="mb-4">
                         <strong>Document :</strong><br>
-                        <span class="variable-chip" onclick="insertVariable('document.number')">{{ '{{ document.number }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('document.date')">{{ '{{ document.date|date_format }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('document.status')">{{ '{{ document.status }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('document.number')">{{ document.number }}</span>
+                        <span class="variable-chip" onclick="insertVariable('document.date|date_format')">{{ document.date }}</span>
+                        <span class="variable-chip" onclick="insertVariable('document.status')">{{ document.status }}</span>
                     </div>
                     
                     <div class="mb-4">
                         <strong>Totaux :</strong><br>
-                        <span class="variable-chip" onclick="insertVariable('totals.total_ht')">{{ '{{ totals.total_ht|currency }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('totals.total_tax')">{{ '{{ totals.total_tax|currency }}' }}</span>
-                        <span class="variable-chip" onclick="insertVariable('totals.total_ttc')">{{ '{{ totals.total_ttc|currency }}' }}</span>
+                        <span class="variable-chip" onclick="insertVariable('totals.total_ht|currency')">{{ totals.total_ht }}</span>
+                        <span class="variable-chip" onclick="insertVariable('totals.total_tax|currency')">{{ totals.total_tax }}</span>
+                        <span class="variable-chip" onclick="insertVariable('totals.total_ttc|currency')">{{ totals.total_ttc }}</span>
                     </div>
                     
                     <div class="alert alert-info">
                         <strong>Boucle sur les lignes :</strong>
-                        <pre class="mb-0">{% verbatim %}{% for line in lines %}
+                        <pre class="mb-0">{% for line in lines %}
   {{ line.description }}
   {{ line.qty }}
   {{ line.unit_price|currency }}
-{% endfor %}{% endverbatim %}</pre>
+{% endfor %}</pre>
                     </div>
+                    {% endverbatim %}
                 </div>
             </div>
         </div>
@@ -368,6 +369,7 @@
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/mode/javascript/javascript.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.2/mode/css/css.js"></script>
 
+{% verbatim %}
 <script>
 // Éditeurs CodeMirror
 let editors = {};
@@ -424,7 +426,7 @@ function insertVariable(varName) {
     const doc = editor.getDoc();
     const cursor = doc.getCursor();
     
-    doc.replaceRange(`{{ ${varName} }}`, cursor);
+    doc.replaceRange('{{ ' + varName + ' }}', cursor);
     editor.focus();
 }
 
@@ -463,4 +465,5 @@ document.getElementById('templateForm').addEventListener('submit', function(e) {
     });
 });
 </script>
+{% endverbatim %}
 {% endblock %}

@@ -1,0 +1,421 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ produit.name }} - Produits{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Shopify-like Detail Style */
+body {
+    background-color: #f1f2f4;
+}
+
+.product-header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.badge-status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+.badge-status.active { background: #dcfce7; color: #166534; }
+.badge-status.archived { background: #f1f5f9; color: #64748b; }
+
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.content-card h5 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.detail-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 16px;
+}
+
+.tag-pill {
+    background: #eef2ff;
+    color: #4f46e5;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-block;
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
+
+.product-image-container {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.product-image {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+/* Tabs styling */
+.custom-tabs {
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.custom-tabs .nav-link {
+    border: none;
+    color: #64748b;
+    font-weight: 500;
+    padding: 12px 24px;
+    position: relative;
+    background: transparent;
+}
+
+.custom-tabs .nav-link:hover {
+    color: #1e293b;
+}
+
+.custom-tabs .nav-link.active {
+    color: #6366f1;
+    background: transparent;
+}
+
+.custom-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #6366f1;
+}
+
+/* Table styling for stocks/movements */
+.table-custom th {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 600;
+    background: #f8fafc;
+    border-top: none;
+}
+.table-custom td {
+    vertical-align: middle;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="product-header">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'referentiels:produit_list' %}" class="btn btn-outline-secondary btn-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="product-title">{{ produit.name }}</h1>
+                {% if produit.is_active %}
+                <span class="badge badge-status active">Actif</span>
+                {% else %}
+                <span class="badge badge-status archived">Archivé</span>
+                {% endif %}
+            </div>
+            {% if produit.sku %}<small class="text-muted text-uppercase font-monospace">{{ produit.sku }}</small>{% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        {% if can_edit %}
+        <form method="post" action="{% url 'referentiels:produit_archive' pk=produit.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary">
+                {% if produit.is_active %}Archiver{% else %}Réactiver{% endif %}
+            </button>
+        </form>
+        <a href="{% url 'referentiels:produit_update' pk=produit.pk %}" class="btn btn-primary">
+            Modifier
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Details & Tabs -->
+    <div class="col-lg-8">
+        
+        <!-- Main Card -->
+        <div class="content-card">
+            {% if produit.description %}
+            <div class="mb-4">
+                <span class="detail-label">Description</span>
+                <p class="text-muted">{{ produit.description }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Custom Tabs -->
+            <ul class="nav nav-tabs custom-tabs" id="productTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'general' %}active{% endif %}" href="?tab=general">Détails</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'degustation' %}active{% endif %}" href="?tab=degustation">Dégustation</a>
+                </li>
+                {% if produit.is_stock_managed %}
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'stock' %}active{% endif %}" href="?tab=stock">Stock</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'mouvements' %}active{% endif %}" href="?tab=mouvements">Mouvements</a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                
+                <!-- General Tab -->
+                {% if tab == 'general' %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <span class="detail-label">Type de produit</span>
+                        <div class="detail-value">{{ produit.get_article_type_display }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="detail-label">Catégorie</span>
+                        <div class="detail-value">{{ produit.category.name|default:"-" }}</div>
+                    </div>
+                    
+                    <div class="col-12"><hr class="my-3 text-muted opacity-25"></div>
+                    
+                    <div class="col-md-4">
+                        <span class="detail-label">Prix de vente HT</span>
+                        <div class="detail-value">{{ produit.price_ht|floatformat:2 }} €</div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="detail-label">TVA</span>
+                        <div class="detail-value">{{ produit.vat_rate|floatformat:1 }} %</div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="detail-label">Prix de vente TTC</span>
+                        <div class="detail-value">{{ produit.price_ttc|floatformat:2 }} €</div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <span class="detail-label">Prix d'achat HT</span>
+                        <div class="detail-value text-muted">{{ produit.purchase_price|floatformat:2 }} €</div>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="detail-label">Marge brute</span>
+                        {% with marge=produit.price_ht|add:produit.purchase_price|floatformat:2 %}
+                        <div class="detail-value text-success">{{ produit.price_ht|add:"-"|add:produit.purchase_price|floatformat:2 }} €</div>
+                        {% endwith %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Degustation Tab -->
+                {% if tab == 'degustation' %}
+                <div>
+                    {% if produit.tasting_notes %}
+                        <div class="p-3 bg-light rounded-3 border mb-3">
+                            <span class="detail-label mb-2">Notes de dégustation</span>
+                            {{ produit.tasting_notes|linebreaks }}
+                        </div>
+                    {% else %}
+                        <p class="text-muted fst-italic">Aucune note de dégustation.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Stock Tab -->
+                {% if tab == 'stock' %}
+                <div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fw-bold">Total en stock</span>
+                        <span class="badge bg-primary rounded-pill fs-6">{{ stock_total|floatformat:0 }} {{ produit.unit }}</span>
+                    </div>
+                    {% if stocks %}
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Emplacement</th>
+                                <th>Lot / Batch</th>
+                                <th class="text-end">Quantité</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in stocks %}
+                            <tr>
+                                <td>{{ stock.location.nom }}</td>
+                                <td><code class="text-muted">{{ stock.batch_number|default:"-" }}</code></td>
+                                <td class="text-end fw-bold">{{ stock.quantity|floatformat:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">Aucun stock.</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Mouvements Tab -->
+                {% if tab == 'mouvements' %}
+                <div>
+                    {% if mouvements %}
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Lieu</th>
+                                    <th class="text-end">Qté</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mvt in mouvements %}
+                                <tr>
+                                    <td>{{ mvt.date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if mvt.movement_type == 'in' %}<span class="text-success">Entrée</span>
+                                        {% elif mvt.movement_type == 'out' %}<span class="text-danger">Sortie</span>
+                                        {% else %}<span class="text-warning">Ajust.</span>{% endif %}
+                                    </td>
+                                    <td>{{ mvt.location.nom }}</td>
+                                    <td class="text-end fw-bold">{{ mvt.quantity|floatformat:0 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">Aucun mouvement récent.</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column: Sidebar -->
+    <div class="col-lg-4">
+        
+        <!-- Image Card -->
+        <div class="content-card">
+            <div class="product-image-container">
+                {% if produit.image %}
+                <img src="{{ produit.image.url }}" alt="{{ produit.name }}" class="product-image">
+                {% else %}
+                <div class="text-center text-muted opacity-50">
+                    <i class="bi bi-image fs-1"></i>
+                    <p class="small mt-2">Aucune image</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Douane & Régie Card -->
+        <div class="content-card">
+            <h5>Douane & Régie</h5>
+            <div class="row">
+                <div class="col-6">
+                    <span class="detail-label">Code SH</span>
+                    <div class="detail-value">{{ produit.hs_code|default:"-" }}</div>
+                </div>
+                <div class="col-6">
+                    <span class="detail-label">Origine</span>
+                    <div class="detail-value">{{ produit.origin_country|default:"-" }}</div>
+                </div>
+                <div class="col-6">
+                    <span class="detail-label">Degré</span>
+                    <div class="detail-value">{{ produit.alcohol_degree|default:"-" }} %</div>
+                </div>
+                <div class="col-6">
+                    <span class="detail-label">Vol. Net</span>
+                    <div class="detail-value">{{ produit.net_volume|default:"-" }} L</div>
+                </div>
+                {% if produit.customs_notes %}
+                <div class="col-12">
+                    <span class="detail-label">Notes douanières</span>
+                    <p class="small text-muted mb-0">{{ produit.customs_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tags & Organization Card -->
+        <div class="content-card">
+            <h5>Organisation</h5>
+            
+            <div class="mb-3">
+                <span class="detail-label">Tags</span>
+                {% for tag in produit.tags.all %}
+                <span class="tag-pill">{{ tag.name }}</span>
+                {% empty %}
+                <span class="text-muted small">Aucun tag</span>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <span class="detail-label">Canaux de vente</span>
+                <div class="d-flex flex-column gap-1 mt-1">
+                    {% if produit.is_sellable %}
+                    <div class="text-success small"><i class="bi bi-check-circle me-1"></i> Vendable</div>
+                    {% else %}
+                    <div class="text-muted small"><i class="bi bi-x-circle me-1"></i> Non vendable</div>
+                    {% endif %}
+                    
+                    {% if produit.is_buyable %}
+                    <div class="text-success small"><i class="bi bi-check-circle me-1"></i> Achetable</div>
+                    {% else %}
+                    <div class="text-muted small"><i class="bi bi-x-circle me-1"></i> Non achetable</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% load static %}
+<div class="card shadow-sm mb-4 border-0">
+    <!-- HEADER ACHATS - Vert -->
+    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, #198754 0%, #146c43 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Logo + Titre -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi bi-cart-check text-white"></i>
+                </div>
+                <span class="sidebar-label text-white fw-semibold" style="font-size: 0.9rem;">Achats</span>
+            </div>
+            
+            <!-- Actions: Toggle -->
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block" id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
+                    <i class="bi bi-chevron-left" id="desktopChevron"></i>
+                </button>
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none" id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
+                    <i class="bi bi-chevron-down" id="mobileMenuChevron"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="list-group list-group-flush">
+
+        <!-- Tableau de bord -->
+        <a href="{% url 'achats:dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2 me-2"></i><span class="sidebar-label">Tableau de bord</span>
+        </a>
+
+        <!-- Fournisseurs -->
+        <a href="{% url 'achats:suppliers_list' %}" class="list-group-item list-group-item-action {% if '/fournisseurs/' in request.path %}active{% endif %}">
+            <i class="bi bi-people me-2"></i><span class="sidebar-label">Fournisseurs</span>
+        </a>
+
+        <!-- Cycle d'achat -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-success">
+            <span class="sidebar-label">Achats & Appro</span>
+        </div>
+        
+        <a href="{% url 'achats:quotes_list' %}" class="list-group-item list-group-item-action {% if 'demandes-prix' in request.path %}active{% endif %}">
+            <i class="bi bi-chat-quote me-2"></i><span class="sidebar-label">Demandes de prix</span>
+        </a>
+        <a href="{% url 'achats:orders_list' %}" class="list-group-item list-group-item-action {% if 'commandes' in request.path %}active{% endif %}">
+            <i class="bi bi-cart4 me-2"></i><span class="sidebar-label">Commandes fourn.</span>
+        </a>
+        <a href="{% url 'achats:deliveries_list' %}" class="list-group-item list-group-item-action {% if 'receptions' in request.path %}active{% endif %}">
+            <i class="bi bi-box-seam me-2"></i><span class="sidebar-label">Réceptions (BR)</span>
+        </a>
+
+        <!-- Facturation -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-success">
+            <span class="sidebar-label">Facturation Fourn.</span>
+        </div>
+        
+        <a href="{% url 'achats:invoices_list' %}" class="list-group-item list-group-item-action {% if 'factures' in request.path %}active{% endif %}">
+            <i class="bi bi-receipt me-2"></i><span class="sidebar-label">Factures fourn.</span>
+        </a>
+        <a href="{% url 'achats:credit_notes_list' %}" class="list-group-item list-group-item-action {% if 'avoirs' in request.path %}active{% endif %}">
+            <i class="bi bi-arrow-counterclockwise me-2"></i><span class="sidebar-label">Avoirs fourn.</span>
+        </a>
+
+        <!-- Paiements -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-success">
+            <span class="sidebar-label">Paiements Fourn.</span>
+        </div>
+        
+        <a href="{% url 'achats:payment_schedule' %}" class="list-group-item list-group-item-action {% if 'echeancier' in request.path %}active{% endif %}">
+            <i class="bi bi-calendar-event me-2"></i><span class="sidebar-label">Échéancier</span>
+        </a>
+        <a href="{% url 'achats:payment_list' %}" class="list-group-item list-group-item-action {% if 'effectues' in request.path %}active{% endif %}">
+            <i class="bi bi-cash-stack me-2"></i><span class="sidebar-label">Paiements effectués</span>
+        </a>
+
+        <!-- Articles & Stock -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-success">
+            <span class="sidebar-label">Articles & Stock</span>
+        </div>
+        
+        <a href="{% url 'achats:article_create' %}" class="list-group-item list-group-item-action text-success fw-bold">
+            <i class="bi bi-plus-circle me-2"></i><span class="sidebar-label">Nouveau produit</span>
+        </a>
+        <a href="{% url 'achats:article_list' %}" class="list-group-item list-group-item-action {% if '/achats/articles/' in request.path %}active{% endif %}">
+            <i class="bi bi-tags me-2"></i><span class="sidebar-label">Articles (Ref)</span>
+        </a>
+        <a href="{% url 'catalogue:inventory_list' %}" class="list-group-item list-group-item-action {% if 'stock' in request.path %}active{% endif %}">
+            <i class="bi bi-boxes me-2"></i><span class="sidebar-label">Stocks & Coûts</span>
+        </a>
+        <a href="#" class="list-group-item list-group-item-action text-muted">
+            <i class="bi bi-graph-up me-2"></i><span class="sidebar-label">Valorisation</span>
+        </a>
+
+    </div>
+</div>

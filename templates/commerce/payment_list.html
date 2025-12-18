@@ -1,0 +1,74 @@
+{% extends "commerce/base_commerce.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">{{ page_title }}</h1>
+    <!-- Pas de bouton 'Nouveau' ici, le paiement se fait depuis la facture -->
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Date</th>
+                    <th>Document</th>
+                    <th>Tiers</th>
+                    <th>Moyen</th>
+                    <th>Référence</th>
+                    <th class="text-end pe-4">Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td class="ps-4">{{ payment.date|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url namespace|add:':document_detail' payment.document.id %}" class="text-decoration-none fw-medium">
+                            {{ payment.document.get_type_display }} {{ payment.document.number }}
+                        </a>
+                    </td>
+                    <td>{{ payment.document.client.name }}</td>
+                    <td>{{ payment.get_method_display }}</td>
+                    <td class="text-muted small">{{ payment.reference|default:"-" }}</td>
+                    <td class="text-end pe-4 fw-bold {% if side == 'sale' %}text-success{% else %}text-danger{% endif %}">
+                        {% if side == 'purchase' %}- {% endif %}{{ payment.amount|floatformat:2 }} €
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-wallet2 fs-1 d-block mb-3"></i>
+                        Aucun paiement trouvé
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="card-footer bg-white py-3">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link border-0" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link border-0" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -253,3 +253,41 @@ class MouvementLotForm(forms.ModelForm):
                 self.lot.save()
         
         return mouvement
+
+
+# --- FORMS CATALOGUE GÉNÉRIQUE (ARTICLES) ---
+
+from .models import Article, ArticleCategory
+
+class ArticleForm(forms.ModelForm):
+    """
+    Formulaire pour créer/modifier un Article commercial
+    """
+    class Meta:
+        model = Article
+        fields = [
+            'category', 'article_type', 'name', 'sku', 'description', 
+            'price_ht', 'vat_rate', 'unit', 'is_stock_managed', 
+            'is_buyable', 'is_sellable', 'is_active'
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'article_type': forms.Select(attrs={'class': 'form-select'}),
+            'unit': forms.TextInput(attrs={'placeholder': 'Ex: Bouteille, Carton, Nuit...'}),
+        }
+    
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            self.fields['category'].queryset = ArticleCategory.objects.filter(organization=organization)
+        
+        # Style Bootstrap générique
+        for name, field in self.fields.items():
+            if isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect)):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            else:
+                field.widget.attrs['class'] = 'form-control'
+

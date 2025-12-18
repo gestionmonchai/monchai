@@ -15,7 +15,7 @@
         <p class="text-muted small mb-4">Cette action est irréversible.</p>
         <form method="post">
           {% csrf_token %}
-          <a href="{% url 'sales:template_detail' pk=template.id %}" class="btn btn-light">
+          <a href="{% url 'ventes:template_detail' pk=template.id %}" class="btn btn-light">
             <i class="bi bi-arrow-left"></i> Annuler
           </a>
           <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Supprimer</button>

@@ -17,18 +17,7 @@ urlpatterns = [
     path('search/', views_grid.catalogue_search_ajax, name='search_ajax'),
     
     # Catalogue détail - Roadmap 26 (canonique)
-    path('<uuid:pk>/', views_unified.cuvee_detail, name='cuvee_detail'),
-    
-    # Lots - Routes legacy (renommées pour éviter collisions)
-    path('lots/', views.lot_list, name='lot_list_legacy'),
-    path('lots/nouveau/', views.lot_create, name='lot_create_legacy'),
-    path('lots/<int:pk>/', views.lot_detail, name='lot_detail_legacy'),
-    path('lots/<int:pk>/modifier/', views.lot_update, name='lot_update_legacy'),
-    path('lots/<int:pk>/supprimer/', views.lot_delete, name='lot_delete_legacy'),
-    path('lots/<int:pk>/mouvement/', views.lot_add_mouvement, name='lot_add_mouvement_legacy'),
-    
-    # Media upload - Roadmap item 24
-    # path('media/upload/', views.media_upload, name='media_upload'),
+    path('<int:pk>/', views_unified.cuvee_detail, name='cuvee_detail'),
     
     # Interface unifiée produits - Même ergonomie que clients
     path('produits/', views_unified.products_dashboard, name='products_dashboard'),
@@ -41,19 +30,29 @@ urlpatterns = [
     # Alias rétrocompatible pour dashboard et anciens liens
     path('produits/lots/', views_unified.products_lots, name='lot_list'),
     path('produits/lots/nouveau/', views_unified.lot_create, name='lot_create'),
-    path('produits/lots/<uuid:pk>/', views_unified.lot_detail, name='lot_detail'),
+    path('produits/lots/<int:pk>/', views_unified.lot_detail, name='lot_detail'),
     path('produits/skus/', views_unified.products_skus, name='products_skus'),
     path('produits/skus/search-ajax/', views_unified.skus_search_ajax, name='products_skus_search_ajax'),
     # Remap to universal product create view (keeps URL/name stable)
     path('produits/skus/nouveau/', login_required(ProductCreateView.as_view()), name='sku_create'),
-    path('produits/skus/<uuid:pk>/', views_unified.sku_detail, name='sku_detail'),
+    path('produits/skus/<int:pk>/', views_unified.sku_detail, name='sku_detail'),
     path('produits/referentiels/', views_unified.products_referentiels, name='products_referentiels'),
     path('produits/search/', views_unified.products_search_ajax, name='products_search_ajax'),
     
     # API Catalogue - Roadmap 25 & 26
     path('api/catalogue/', api_views.catalogue_api, name='catalogue_api'),
     path('api/catalogue/facets/', api_views.catalogue_facets_api, name='catalogue_facets_api'),
-    path('api/catalogue/<uuid:cuvee_id>/', api_views.catalogue_detail_api, name='catalogue_detail_api'),
+    path('api/catalogue/<int:cuvee_id>/', api_views.catalogue_detail_api, name='catalogue_detail_api'),
     # API Parcelles (création via modal)
     path('api/plots/create/', api_views.create_vineyard_plot_api, name='create_vineyard_plot_api'),
+
+    # --- NOUVEAU CATALOGUE (ARTICLES) ---
+    path('articles/', views.ArticleListView.as_view(), name='article_list'),
+    path('articles/achats/', views.PurchaseArticleListView.as_view(), name='article_list_purchase'),
+    path('articles/ventes/', views.SalesArticleListView.as_view(), name='article_list_sales'),
+    path('articles/nouveau/', views.ArticleCreateView.as_view(), name='article_create'),
+    path('articles/<int:pk>/', views.ArticleUpdateView.as_view(), name='article_detail'),
+    
+    path('stock/', views.InventoryListView.as_view(), name='inventory_list'),
 ]
+

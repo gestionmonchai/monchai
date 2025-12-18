@@ -6,7 +6,7 @@ from apps.core.tenancy import TenantManager
 
 
 class Contenant(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey('accounts.Organization', on_delete=models.CASCADE)
     # Hotfix: default manager scoped by current organization
     objects = TenantManager()
@@ -29,8 +29,101 @@ class Contenant(models.Model):
     capacite_utile_l = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
     localisation = models.CharField(max_length=120, blank=True)
-    temperature_cible = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # ══════════════════════════════════════════════════════════════════════════════
+    # CHAMPS SPÉCIFIQUES CUVES (thermorégulation)
+    # ══════════════════════════════════════════════════════════════════════════════
     thermo_regule = models.BooleanField(default=False)
+    TYPE_THERMOREGULATION_CHOICES = [
+        ('double_enveloppe', 'Double enveloppe'),
+        ('serpentin', 'Serpentin'),
+        ('drapeaux', 'Drapeaux'),
+        ('ceinture', 'Ceinture extérieure'),
+        ('autre', 'Autre'),
+    ]
+    type_thermoregulation = models.CharField(
+        max_length=32, choices=TYPE_THERMOREGULATION_CHOICES, blank=True,
+        help_text="Type de système de thermorégulation"
+    )
+    # Plage de température conseillée (plus réaliste que temperature_cible seule)
+    temperature_cible = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Température cible (legacy) - préférer min/max"
+    )
+    temperature_min = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Température minimale conseillée (°C)"
+    )
+    temperature_max = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Température maximale conseillée (°C)"
+    )
+    FORME_CHOICES = [
+        ('cylindrique', 'Cylindrique'),
+        ('tronconique', 'Tronconique'),
+        ('ovoide', 'Ovoïde'),
+        ('rectangulaire', 'Rectangulaire'),
+        ('autre', 'Autre'),
+    ]
+    forme = models.CharField(
+        max_length=32, choices=FORME_CHOICES, blank=True,
+        help_text="Forme de la cuve (optionnel)"
+    )
+    
+    # ══════════════════════════════════════════════════════════════════════════════
+    # CHAMPS SPÉCIFIQUES BARRIQUES / FOUDRES (bois & élevage)
+    # ══════════════════════════════════════════════════════════════════════════════
+    ORIGINE_BOIS_CHOICES = [
+        ('francais', 'Français'),
+        ('americain', 'Américain'),
+        ('mixte', 'Mixte'),
+        ('hongrois', 'Hongrois'),
+        ('autre', 'Autre'),
+    ]
+    origine_bois = models.CharField(
+        max_length=32, choices=ORIGINE_BOIS_CHOICES, blank=True,
+        help_text="Origine du bois (barriques/foudres)"
+    )
+    GRAIN_BOIS_CHOICES = [
+        ('extra_fin', 'Extra fin'),
+        ('fin', 'Fin'),
+        ('moyen', 'Moyen'),
+        ('gros', 'Gros'),
+    ]
+    grain_bois = models.CharField(
+        max_length=32, choices=GRAIN_BOIS_CHOICES, blank=True,
+        help_text="Grain du bois"
+    )
+    TYPE_CHAUFFE_CHOICES = [
+        ('legere', 'Légère'),
+        ('moyenne_moins', 'Moyenne -'),
+        ('moyenne', 'Moyenne'),
+        ('moyenne_plus', 'Moyenne +'),
+        ('forte', 'Forte'),
+    ]
+    type_chauffe = models.CharField(
+        max_length=32, choices=TYPE_CHAUFFE_CHOICES, blank=True,
+        help_text="Type de chauffe"
+    )
+    tonnelier = models.CharField(
+        max_length=100, blank=True,
+        help_text="Nom du tonnelier / fabricant"
+    )
+    STATUT_BARRIQUE_CHOICES = [
+        ('neuve', 'Neuve'),
+        ('1_vin', '1 vin'),
+        ('2_vins', '2 vins'),
+        ('3_vins_plus', '3 vins et +'),
+        ('a_reformer', 'À réformer'),
+    ]
+    statut_barrique = models.CharField(
+        max_length=20, choices=STATUT_BARRIQUE_CHOICES, blank=True,
+        help_text="Statut d'usage de la barrique/foudre"
+    )
+    annee_mise_service = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Année de première utilisation"
+    )
 
     # Sanitaire / maintenance
     date_dernier_nettoyage = models.DateField(null=True, blank=True)
@@ -93,3 +186,59 @@ class Contenant(models.Model):
             return self.statut in ('disponible', 'occupe') and vol <= self.free_capacity_l()
         except Exception:
             return False
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # HELPERS pour UI contextuelle
+    # ══════════════════════════════════════════════════════════════════════════════
+    @property
+    def is_cuve(self) -> bool:
+        """Retourne True si le contenant est une cuve (inox, béton, fibre)"""
+        return self.type in ('cuve_inox', 'cuve_beton', 'cuve_fibre')
+
+    @property
+    def is_barrique_or_foudre(self) -> bool:
+        """Retourne True si le contenant est une barrique, fût ou foudre"""
+        return self.type in ('fut_225', 'foudre')
+
+    @property
+    def temperature_range_display(self) -> str:
+        """Affiche la plage de température ou la cible legacy"""
+        if self.temperature_min is not None and self.temperature_max is not None:
+            return f"{self.temperature_min}°C - {self.temperature_max}°C"
+        elif self.temperature_cible is not None:
+            return f"{self.temperature_cible}°C"
+        return "—"
+
+    @property
+    def occupancy_pct(self) -> Decimal:
+        """Calcule le taux d'occupation en pourcentage"""
+        try:
+            cap = Decimal(str(self.capacite_utile_effective_l or self.capacite_l or 0))
+            if cap <= 0:
+                return Decimal('0')
+            occ = Decimal(str(self.volume_occupe_l or 0))
+            pct = (occ / cap) * Decimal('100')
+            return pct.quantize(Decimal('0.1'))
+        except Exception:
+            return Decimal('0')
+
+    @property
+    def occupancy_ratio(self) -> int:
+        """Alias pour occupancy_pct en entier (pour les templates)"""
+        try:
+            return int(self.occupancy_pct)
+        except Exception:
+            return 0
+
+    def recalculate_occupancy(self) -> None:
+        """Recalcule le volume occupé à partir du lot courant"""
+        if self.lot_courant_id:
+            try:
+                vol = self.lot_courant.volume_l or Decimal('0')
+                self.volume_occupe_l = vol
+                self.statut = 'occupe' if vol > 0 else 'disponible'
+            except Exception:
+                pass
+        else:
+            self.volume_occupe_l = Decimal('0')
+            self.statut = 'disponible'

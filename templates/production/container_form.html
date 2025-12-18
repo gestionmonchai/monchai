@@ -1,14 +1,14 @@
 {% extends 'production/base_production.html' %}
 {% load widget_tweaks %}
-{% block title %}Nouveau contenant - Mon Chai{% endblock %}
+{% block title %}Nouvelle cuve / barrique - Mon Chai{% endblock %}
 {% block production_content %}
-<h1 class="h4 mb-3">Nouveau contenant</h1>
+<h1 class="h4 mb-3">Nouvelle cuve / barrique</h1>
 <form method="post">
   {% csrf_token %}
   {{ form.non_field_errors }}
 
   <div class="card mb-3">
-    <div class="card-header fw-semibold">Informations du contenant</div>
+    <div class="card-header fw-semibold">Informations</div>
     <div class="card-body">
       <div class="row g-3">
         <div class="col-md-6">

@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'commerce/base_commerce.html' %}
 {% load static %}
 
 {% block title %}{{ title }} - Grilles Tarifaires{% endblock %}
 
-{% block content %}
+{% block commerce_content %}
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -110,7 +110,7 @@
 
                         <!-- Boutons -->
                         <div class="d-flex justify-content-between">
-                            <a href="{% if pricelist %}{% url 'sales:pricelist_detail' pricelist.pk %}{% else %}{% url 'sales:pricelist_list' %}{% endif %}" 
+                            <a href="{% if pricelist %}{% url 'ventes:pricelist_detail' pricelist.pk %}{% else %}{% url 'ventes:pricelist_list' %}{% endif %}" 
                                class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> Annuler
                             </a>

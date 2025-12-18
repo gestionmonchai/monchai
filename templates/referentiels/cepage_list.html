@@ -2,32 +2,178 @@
 
 {% block title %}Cépages - {{ organization.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.cepage-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.cepage-chip.rouge { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+.cepage-chip.blanc { background: #fef9c3; border: 1px solid #fde047; color: #854d0e; }
+.cepage-chip.rose { background: #fce7f3; border: 1px solid #f9a8d4; color: #9d174d; }
+.cepage-chip.gris { background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; }
+.cepage-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.cepage-chip.imported { opacity: 0.5; cursor: not-allowed; }
+.cepage-chip .bi-check { color: #16a34a; }
+.region-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #e5e7eb; }
+.import-selected { position: sticky; bottom: 0; background: #fff; padding: 12px; border-top: 1px solid #ddd; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>
                 <i class="bi bi-flower1 me-2 text-success"></i>Cépages
+                <small class="text-muted fs-6">({{ total_reference }} cépages dans le référentiel)</small>
             </h1>
             <div class="d-flex align-items-center">
                 <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary me-2">
                     <i class="bi bi-arrow-left"></i> Référentiels
                 </a>
                 
-                <!-- Boutons Import/Export -->
-                {% include 'components/import_export_buttons.html' with entity_type='grape_variety' entity_name='Cépages' %}
-                
-                {% if user.get_active_membership.can_edit_data %}
-                    <a href="{% url 'referentiels:cepage_create' %}" class="btn btn-primary">
-                        <i class="bi bi-plus"></i> Nouveau cépage
-                    </a>
+                {% if tab == 'mes_cepages' %}
+                    <!-- Boutons Import/Export -->
+                    {% include 'components/import_export_buttons.html' with entity_type='grape_variety' entity_name='Cépages' %}
+                    
+                    {% if user.get_active_membership.can_edit_data %}
+                        <a href="{% url 'referentiels:cepage_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Nouveau cépage
+                        </a>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Recherche avancée par champs -->
+<!-- Onglets -->
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'mes_cepages' %}active{% endif %}" href="?tab=mes_cepages">
+            <i class="bi bi-list-check me-1"></i> Mes Cépages
+            {% if stats.total %}<span class="badge bg-primary">{{ stats.total }}</span>{% endif %}
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if tab == 'reference' %}active{% endif %}" href="?tab=reference">
+            <i class="bi bi-book me-1"></i> Référentiel Officiel
+            <span class="badge bg-secondary">{{ total_reference }}</span>
+        </a>
+    </li>
+</ul>
+
+{% if tab == 'reference' %}
+<!-- ===== ONGLET RÉFÉRENTIEL ===== -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filtrer les cépages du référentiel
+            </h6>
+            {% if region_org %}
+            <span class="badge bg-info">
+                <i class="bi bi-geo-alt"></i> Région détectée : {{ region_org|title }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <input type="hidden" name="tab" value="reference">
+            <div class="col-md-4">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Nom ou synonyme...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Région</label>
+                <select name="region" class="form-select">
+                    <option value="">Toutes les régions</option>
+                    {% for code, label in regions_choices %}
+                    <option value="{{ code }}" {% if filters.region == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Couleur</label>
+                <select name="couleur" class="form-select">
+                    <option value="">Toutes</option>
+                    <option value="rouge" {% if filters.couleur == 'rouge' %}selected{% endif %}>Rouge</option>
+                    <option value="blanc" {% if filters.couleur == 'blanc' %}selected{% endif %}>Blanc</option>
+                    <option value="rose" {% if filters.couleur == 'rose' %}selected{% endif %}>Rosé</option>
+                    <option value="gris" {% if filters.couleur == 'gris' %}selected{% endif %}>Gris</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Rechercher
+                </button>
+                <a href="?tab=reference" class="btn btn-outline-secondary">
+                    <i class="bi bi-x"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des cépages du référentiel -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            {{ page_obj.paginator.count }} cépage{{ page_obj.paginator.count|pluralize }} trouvé{{ page_obj.paginator.count|pluralize }}
+            {% if filters.region %} pour la région <strong>{{ filters.region|title }}</strong>{% endif %}
+        </span>
+        {% if user.get_active_membership.can_edit_data %}
+        <button type="button" class="btn btn-success btn-sm" id="btn-import-selected" disabled>
+            <i class="bi bi-download"></i> Importer sélection (<span id="import-count">0</span>)
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+        <div class="d-flex flex-wrap">
+            {% for cepage in page_obj %}
+            <div class="cepage-chip {{ cepage.couleur }} {% if cepage.name_norm in cepages_org_noms %}imported{% endif %}"
+                 data-id="{{ cepage.id }}"
+                 data-nom="{{ cepage.nom }}"
+                 {% if cepage.name_norm not in cepages_org_noms %}onclick="toggleSelectCepage(this)"{% endif %}
+                 title="{% if cepage.name_norm in cepages_org_noms %}Déjà dans vos cépages{% else %}Cliquez pour sélectionner{% endif %}{% if cepage.synonymes %} | Synonymes: {{ cepage.synonymes|join:', ' }}{% endif %}">
+                {% if cepage.name_norm in cepages_org_noms %}
+                <i class="bi bi-check-circle-fill"></i>
+                {% else %}
+                <input type="checkbox" class="form-check-input cepage-checkbox" style="margin: 0;">
+                {% endif %}
+                <span>{{ cepage.nom }}</span>
+                {% for r in cepage.regions|slice:":2" %}
+                <span class="region-badge">{{ r }}</span>
+                {% endfor %}
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-5 w-100">
+                <i class="bi bi-search fs-1"></i>
+                <p class="mt-2">Aucun cépage trouvé avec ces critères</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer">
+        {% include 'referentiels/partials/pagination.html' %}
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+<!-- ===== ONGLET MES CÉPAGES ===== -->
 <div class="card mb-4">
     <div class="card-header">
         <div class="d-flex justify-content-between align-items-center">
@@ -174,33 +320,265 @@
         </div>
     </div>
 {% else %}
+    {% if search %}
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info text-center">
-                <i class="bi bi-info-circle fs-1 mb-3"></i>
+                <i class="bi bi-search fs-1 mb-3"></i>
                 <h4>Aucun cépage trouvé</h4>
-                {% if search %}
-                    <p>Aucun cépage ne correspond à votre recherche "{{ search }}".</p>
-                    <a href="{% url 'referentiels:cepage_list' %}" class="btn btn-outline-primary">
-                        Voir tous les cépages
-                    </a>
-                {% else %}
-                    <p>Vous n'avez pas encore créé de cépage.</p>
-                    {% if user.get_active_membership.can_edit_data %}
-                        <a href="{% url 'referentiels:cepage_create' %}" class="btn btn-primary">
-                            <i class="bi bi-plus"></i> Créer votre premier cépage
-                        </a>
-                    {% endif %}
-                {% endif %}
+                <p>Aucun cépage ne correspond à votre recherche "{{ search }}".</p>
+                <a href="{% url 'referentiels:cepage_list' %}" class="btn btn-outline-primary">
+                    Voir tous les cépages
+                </a>
             </div>
         </div>
     </div>
+    {% else %}
+    <!-- ONBOARDING : Première visite - Sélection visuelle des cépages -->
+    <div class="card border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-stars me-2"></i>Bienvenue ! Sélectionnez vos premiers cépages
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-4">
+                Cliquez sur les cépages que vous cultivez pour les ajouter à votre chai. 
+                Vous pouvez en sélectionner plusieurs d'un coup, puis cliquer sur "Importer".
+            </p>
+            
+            <!-- Filtres rapides par région -->
+            <div class="mb-4">
+                <label class="form-label fw-bold">Filtrer par région :</label>
+                <div class="btn-group flex-wrap" role="group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm active" data-region="all">
+                        Toutes
+                    </button>
+                    {% for code, label in regions_choices %}
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-region="{{ code }}">
+                        {{ label }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Cépages les plus courants -->
+            <div class="mb-4">
+                <h6 class="text-muted mb-3"><i class="bi bi-star-fill text-warning me-1"></i> Cépages les plus courants</h6>
+                <div class="d-flex flex-wrap" id="cepages-courants">
+                    <!-- Rempli par JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Tous les cépages par couleur -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h6 class="mb-3"><span class="badge bg-danger">Rouge</span> Cépages rouges</h6>
+                    <div class="d-flex flex-wrap" id="cepages-rouges" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Rempli par JavaScript -->
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6 class="mb-3"><span class="badge bg-warning text-dark">Blanc</span> Cépages blancs</h6>
+                    <div class="d-flex flex-wrap" id="cepages-blancs" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Rempli par JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bouton d'import -->
+            <div class="text-center mt-4 pt-3 border-top">
+                <button type="button" class="btn btn-success btn-lg" id="btn-onboarding-import" disabled>
+                    <i class="bi bi-download me-2"></i>Importer les cépages sélectionnés (<span id="onboarding-count">0</span>)
+                </button>
+                <p class="text-muted small mt-2">
+                    Ou <a href="{% url 'referentiels:cepage_create' %}">créer un cépage manuellement</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
+{% if tab == 'reference' %}
+<!-- JavaScript pour l'import des cépages -->
 <script>
+let selectedCepages = new Set();
+
+function toggleSelectCepage(chip) {
+    const checkbox = chip.querySelector('.cepage-checkbox');
+    const id = chip.dataset.id;
+    
+    if (checkbox.checked) {
+        checkbox.checked = false;
+        chip.style.outline = '';
+        selectedCepages.delete(id);
+    } else {
+        checkbox.checked = true;
+        chip.style.outline = '2px solid #16a34a';
+        selectedCepages.add(id);
+    }
+    
+    updateImportButton();
+}
+
+function updateImportButton() {
+    const btn = document.getElementById('btn-import-selected');
+    const count = document.getElementById('import-count');
+    if (btn && count) {
+        count.textContent = selectedCepages.size;
+        btn.disabled = selectedCepages.size === 0;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    const importBtn = document.getElementById('btn-import-selected');
+    if (importBtn) {
+        importBtn.addEventListener('click', function() {
+            if (selectedCepages.size === 0) return;
+            
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Import en cours...';
+            
+            fetch('{% url "referentiels:cepage_import_reference" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ ids: Array.from(selectedCepages) })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`${data.imported} cépage(s) importé(s), ${data.skipped} déjà existant(s)`);
+                    window.location.reload();
+                } else {
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(err => {
+                alert('Erreur: ' + err.message);
+            })
+            .finally(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-download"></i> Importer sélection (<span id="import-count">0</span>)';
+            });
+        });
+    }
+});
+</script>
+{% else %}
+<!-- JavaScript pour l'onboarding et la liste -->
+<script>
+// Données des cépages de référence pour l'onboarding
+const cepagesRef = {{ cepages_ref_json|safe }};
+let selectedOnboarding = new Set();
+
+// Cépages les plus courants
+const cepagesCourants = ['Merlot', 'Cabernet Sauvignon', 'Pinot Noir', 'Syrah', 'Grenache Noir', 'Chardonnay', 'Sauvignon Blanc', 'Gamay', 'Cabernet Franc', 'Chenin Blanc'];
+
+function createCepageChip(cepage, container) {
+    const chip = document.createElement('div');
+    chip.className = `cepage-chip ${cepage.couleur}`;
+    chip.dataset.id = cepage.id;
+    chip.dataset.regions = JSON.stringify(cepage.regions);
+    chip.innerHTML = `<input type="checkbox" class="form-check-input" style="margin:0;"><span>${cepage.nom}</span>`;
+    chip.onclick = function() {
+        const cb = this.querySelector('input');
+        cb.checked = !cb.checked;
+        if (cb.checked) {
+            this.style.outline = '2px solid #16a34a';
+            selectedOnboarding.add(cepage.id);
+        } else {
+            this.style.outline = '';
+            selectedOnboarding.delete(cepage.id);
+        }
+        updateOnboardingButton();
+    };
+    container.appendChild(chip);
+}
+
+function updateOnboardingButton() {
+    const btn = document.getElementById('btn-onboarding-import');
+    const count = document.getElementById('onboarding-count');
+    if (btn && count) {
+        count.textContent = selectedOnboarding.size;
+        btn.disabled = selectedOnboarding.size === 0;
+    }
+}
+
+function filterByRegion(region) {
+    document.querySelectorAll('.cepage-chip').forEach(chip => {
+        const regions = JSON.parse(chip.dataset.regions || '[]');
+        if (region === 'all' || regions.includes(region)) {
+            chip.style.display = '';
+        } else {
+            chip.style.display = 'none';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser l'onboarding si présent
+    if (cepagesRef && cepagesRef.length > 0) {
+        const courantsContainer = document.getElementById('cepages-courants');
+        const rougesContainer = document.getElementById('cepages-rouges');
+        const blancsContainer = document.getElementById('cepages-blancs');
+        
+        if (courantsContainer && rougesContainer && blancsContainer) {
+            // Cépages courants
+            cepagesRef.filter(c => cepagesCourants.includes(c.nom)).forEach(c => createCepageChip(c, courantsContainer));
+            
+            // Rouges
+            cepagesRef.filter(c => c.couleur === 'rouge').forEach(c => createCepageChip(c, rougesContainer));
+            
+            // Blancs + gris + rosé
+            cepagesRef.filter(c => ['blanc', 'gris', 'rose'].includes(c.couleur)).forEach(c => createCepageChip(c, blancsContainer));
+            
+            // Filtres par région
+            document.querySelectorAll('[data-region]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-region]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    filterByRegion(this.dataset.region);
+                });
+            });
+            
+            // Bouton d'import
+            const importBtn = document.getElementById('btn-onboarding-import');
+            if (importBtn) {
+                importBtn.addEventListener('click', function() {
+                    if (selectedOnboarding.size === 0) return;
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Import...';
+                    
+                    fetch('{% url "referentiels:cepage_import_reference" %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ ids: Array.from(selectedOnboarding) })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                        }
+                    })
+                    .catch(err => alert('Erreur: ' + err.message))
+                    .finally(() => {
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-download me-2"></i>Importer les cépages sélectionnés (<span id="onboarding-count">0</span>)';
+                    });
+                });
+            }
+        }
+    }
+    
     // Éléments du DOM
     const quickSearchInput = document.getElementById('quick-search');
     const filterInputs = {
@@ -460,11 +838,68 @@ document.addEventListener('DOMContentLoaded', function() {
         quickSearchInput.focus();
     }
     
+    // Gestion de la suppression des cépages
+    function attachDeleteEvents() {
+        document.querySelectorAll('.btn-delete-cepage').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const nom = this.dataset.nom;
+                
+                if (confirm(`Êtes-vous sûr de vouloir supprimer le cépage "${nom}" ?\n\nCette action est irréversible.`)) {
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                    
+                    fetch(`/referentiels/cepages/${id}/supprimer/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Supprimer la ligne du tableau
+                            this.closest('tr').remove();
+                            // Mettre à jour le compteur si nécessaire
+                            const info = document.getElementById('search-info');
+                            if (info) {
+                                const match = info.textContent.match(/(\d+)/);
+                                if (match) {
+                                    const count = parseInt(match[1]) - 1;
+                                    info.textContent = info.textContent.replace(/\d+/, count);
+                                }
+                            }
+                        } else {
+                            alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                            this.disabled = false;
+                            this.innerHTML = '<i class="bi bi-trash"></i>';
+                        }
+                    })
+                    .catch(err => {
+                        alert('Erreur: ' + err.message);
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-trash"></i>';
+                    });
+                }
+            });
+        });
+    }
+    
+    attachDeleteEvents();
+    
+    // Réattacher après mise à jour AJAX des résultats
+    const originalUpdateResults = updateResults;
+    updateResults = function(data, filters) {
+        originalUpdateResults(data, filters);
+        attachDeleteEvents();
+    };
+    
     console.log('Recherche avancée par champs initialisée');
 });
 </script>
 
 <!-- Modals Import/Export -->
 {% include 'components/import_export_modals.html' %}
-
+{% endif %}
 {% endblock %}

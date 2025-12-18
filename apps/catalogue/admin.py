@@ -1,5 +1,46 @@
 from django.contrib import admin
-from .models import Lot, MouvementLot
+from .models import Lot, MouvementLot, Article, ArticleCategory, ArticleStock, StockMovement
+
+
+@admin.register(ArticleCategory)
+class ArticleCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'organization', 'created_at')
+    search_fields = ('name',)
+    list_filter = ('organization',)
+
+
+@admin.register(Article)
+class ArticleAdmin(admin.ModelAdmin):
+    list_display = ('sku', 'name', 'article_type', 'category', 'price_ht', 'unit', 'is_active')
+    list_filter = ('article_type', 'is_active', 'organization', 'category')
+    search_fields = ('name', 'sku', 'description')
+    ordering = ('name',)
+    fieldsets = (
+        ('Identification', {
+            'fields': ('organization', 'category', 'article_type', 'name', 'sku', 'description')
+        }),
+        ('Commercial', {
+            'fields': ('price_ht', 'vat_rate', 'unit', 'is_active')
+        }),
+        ('Paramètres', {
+            'fields': ('is_stock_managed',)
+        })
+    )
+
+
+@admin.register(ArticleStock)
+class ArticleStockAdmin(admin.ModelAdmin):
+    list_display = ('article', 'location', 'batch_number', 'quantity', 'updated_at')
+    list_filter = ('location', 'organization')
+    search_fields = ('article__name', 'batch_number')
+
+
+@admin.register(StockMovement)
+class StockMovementAdmin(admin.ModelAdmin):
+    list_display = ('date', 'movement_type', 'article', 'quantity', 'location', 'batch_number', 'reference')
+    list_filter = ('movement_type', 'location', 'organization', 'date')
+    search_fields = ('article__name', 'reference', 'notes')
+    readonly_fields = ('date', 'created_by')
 
 
 # @admin.register(Lot)  # DÉSENREGISTRÉ

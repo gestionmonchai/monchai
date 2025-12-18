@@ -17,6 +17,78 @@
 
 
     <div class="mt-4 p-4 bg-white rounded shadow">
+      <!-- Profils & Passerelles -->
+      <div class="mb-4 pb-4 border-b border-gray-100 flex flex-wrap gap-4">
+        <!-- Profil Achat -->
+        <div class="flex-1 p-3 rounded border {% if product.is_buyable %}border-blue-200 bg-blue-50{% else %}border-gray-200 bg-gray-50 opacity-75{% endif %}">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-gray-700 flex items-center">
+              <i class="bi bi-cart-fill mr-2"></i> Profil Achat
+            </h3>
+            {% if product.is_buyable %}
+              <span class="badge bg-blue-100 text-blue-800">Actif</span>
+            {% endif %}
+          </div>
+          
+          {% if product.is_buyable %}
+            <div class="text-sm text-gray-600">
+              {% if product.purchase_profile %}
+                <div>Unité: <strong>{{ product.purchase_profile.purchase_unit }}</strong></div>
+                <div>Fournisseur: {{ product.purchase_profile.main_supplier|default:"-" }}</div>
+              {% else %}
+                <span class="text-warning">Profil incomplet</span>
+              {% endif %}
+              <div class="mt-2">
+                {% if product.stockable %}
+                  <span class="badge bg-green-100 text-green-800">Stockable</span>
+                {% else %}
+                  <span class="badge bg-gray-100 text-gray-800">Non stocké</span>
+                {% endif %}
+                {% if product.is_consumable %}
+                  <span class="badge bg-purple-100 text-purple-800">Consommable</span>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            <div class="text-center py-2">
+              <a href="{% url 'produits:bridge_sales_to_purchase' slug=product.slug %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-circle mr-1"></i>Activer l'achat
+              </a>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Profil Vente -->
+        <div class="flex-1 p-3 rounded border {% if product.is_sellable %}border-green-200 bg-green-50{% else %}border-gray-200 bg-gray-50 opacity-75{% endif %}">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-gray-700 flex items-center">
+              <i class="bi bi-shop mr-2"></i> Profil Vente
+            </h3>
+            {% if product.is_sellable %}
+              <span class="badge bg-green-100 text-green-800">Actif</span>
+            {% endif %}
+          </div>
+
+          {% if product.is_sellable %}
+            <div class="text-sm text-gray-600">
+              {% if product.sales_profile %}
+                <div>Nom comm.: <strong>{{ product.sales_profile.commercial_name }}</strong></div>
+                <div>Prix: <strong>{{ product.sales_profile.sales_price }} €</strong></div>
+                <div>TVA: {{ product.sales_profile.vat_rate }}%</div>
+              {% else %}
+                <span class="text-warning">Profil incomplet</span>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="text-center py-2">
+              <a href="{% url 'produits:bridge_purchase_to_sales' slug=product.slug %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-plus-circle mr-1"></i>Activer la vente
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <div>
           <div><span class="font-medium">Marque:</span> {{ product.brand|default:'—' }}</div>

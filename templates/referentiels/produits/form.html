@@ -1,0 +1,527 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_new %}Nouveau produit{% else %}Modifier {{ produit.name }}{% endif %} - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Shopify-like Style */
+body {
+    background-color: #f1f2f4; /* Light grey background */
+}
+
+.form-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.form-section h5 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.form-control, .form-select {
+    border-color: #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Image Upload Area */
+.image-upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background: #f8fafc;
+    transition: all 0.2s;
+    position: relative;
+    cursor: pointer;
+}
+
+.image-upload-area:hover, .image-upload-area.dragover {
+    border-color: #6366f1;
+    background: #eef2ff;
+}
+
+.image-preview {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Tags Input */
+.tags-input-container {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 12px;
+    background: white;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 42px;
+}
+
+.tags-input-container:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.tag-badge {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tag-badge i {
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.tags-input-container input {
+    border: none;
+    outline: none;
+    padding: 4px;
+    flex-grow: 1;
+    min-width: 100px;
+    font-size: 14px;
+}
+
+/* Checkbox Cards Small */
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.checkbox-row:last-child { border-bottom: none; }
+.checkbox-row .form-check-input { margin-right: 12px; width: 1.2em; height: 1.2em; }
+.checkbox-row label { cursor: pointer; font-weight: 500; font-size: 14px; margin-bottom: 0; flex-grow: 1; }
+
+.page-actions {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="produit-form" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+
+    <div class="page-actions">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ back_url|default:'/referentiels/produits/' }}" class="btn btn-outline-secondary btn-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h4 class="mb-0 fw-bold">
+                {% if is_new %}Nouveau produit{% else %}{{ produit.name }}{% endif %}
+            </h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ back_url|default:'/referentiels/produits/' }}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Column -->
+        <div class="col-lg-8">
+            
+            <!-- General Info -->
+            <div class="form-section">
+                <h5>Informations générales</h5>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Titre</label>
+                    <input type="text" name="name" id="name" class="form-control form-control-lg" 
+                           value="{{ data.name|default:'' }}" required placeholder="Ex: Château Margaux 2015">
+                    {% if errors.name %}<div class="text-danger small mt-1">{{ errors.name }}</div>{% endif %}
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea name="description" id="description" class="form-control" rows="4" 
+                              placeholder="Description détaillée du produit...">{{ data.description|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Media -->
+            <div class="form-section">
+                <h5>Médias</h5>
+                <div class="image-upload-area" id="drop-zone">
+                    <input type="file" name="image" id="image-input" class="d-none" accept="image/*">
+                    <div id="upload-placeholder" {% if produit.image %}style="display:none;"{% endif %}>
+                        <i class="bi bi-cloud-arrow-up text-primary fs-1 mb-2"></i>
+                        <p class="mb-1 fw-bold">Ajouter une image</p>
+                        <p class="text-muted small">Glissez-déposez ou cliquez pour télécharger</p>
+                    </div>
+                    <div id="preview-container" {% if not produit.image %}style="display:none;"{% endif %}>
+                        {% if produit.image %}
+                        <img src="{{ produit.image.url }}" class="image-preview mb-3" id="current-preview">
+                        {% else %}
+                        <img src="" class="image-preview mb-3" id="current-preview">
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="btn-remove-image">
+                            <i class="bi bi-trash me-1"></i> Supprimer l'image
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="form-section">
+                <h5>Tarification</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="price_ht" class="form-label">Prix de vente (HT)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number" name="price_ht" id="price_ht" class="form-control" 
+                                   value="{{ data.price_ht|default:'0' }}" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="purchase_price" class="form-label">Prix d'achat (HT)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number" name="purchase_price" id="purchase_price" class="form-control" 
+                                   value="{{ data.purchase_price|default:'0' }}" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="vat_rate" class="form-label">TVA (%)</label>
+                        <input type="number" name="vat_rate" id="vat_rate" class="form-control" 
+                               value="{{ data.vat_rate|default:'20' }}" step="0.1" min="0" max="100">
+                    </div>
+                </div>
+                <div class="mt-3 text-muted small d-flex justify-content-between">
+                    <span>Marge estimée : <span id="margin-display" class="fw-bold">--</span> €</span>
+                    <span>Prix TTC : <span id="ttc-display" class="fw-bold">--</span> €</span>
+                </div>
+            </div>
+
+            <!-- Inventory -->
+            <div class="form-section">
+                <h5>Inventaire</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="sku" class="form-label">SKU (Code Article)</label>
+                        <input type="text" name="sku" id="sku" class="form-control" 
+                               value="{{ data.sku|default:'' }}" placeholder="">
+                        {% if errors.sku %}<div class="text-danger small mt-1">{{ errors.sku }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="unit" class="form-label">Unité de stock</label>
+                        <input type="text" name="unit" id="unit" class="form-control" 
+                               value="{{ data.unit|default:'PCE' }}" placeholder="Ex: Bouteille, Carton">
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_stock_managed" id="is_stock_managed" {% if data.is_stock_managed %}checked{% endif %}>
+                            <label class="form-check-label" for="is_stock_managed">Suivre la quantité en stock</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Douane et Expédition -->
+            <div class="form-section">
+                <h5><i class="bi bi-globe me-2 text-muted"></i>Douane & Régie</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="hs_code" class="form-label">Code SH (Système Harmonisé)</label>
+                        <input type="text" name="hs_code" id="hs_code" class="form-control" 
+                               value="{{ data.hs_code|default:'' }}" placeholder="Ex: 2204 21">
+                        <div class="form-text">Pour le dédouanement et les déclarations.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="origin_country" class="form-label">Pays d'origine</label>
+                        <input type="text" name="origin_country" id="origin_country" class="form-control" 
+                               value="{{ data.origin_country|default:'France' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="alcohol_degree" class="form-label">Degré d'alcool (%)</label>
+                        <input type="number" name="alcohol_degree" id="alcohol_degree" class="form-control" 
+                               value="{{ data.alcohol_degree|default:'' }}" step="0.1" min="0" max="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="net_volume" class="form-label">Volume net (L)</label>
+                        <input type="number" name="net_volume" id="net_volume" class="form-control" 
+                               value="{{ data.net_volume|default:'' }}" step="0.001" min="0">
+                    </div>
+                    <div class="col-12">
+                        <label for="customs_notes" class="form-label">Notes douanières</label>
+                        <textarea name="customs_notes" id="customs_notes" class="form-control" rows="2" 
+                                  placeholder="Informations supplémentaires pour la douane...">{{ data.customs_notes|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Tasting Notes -->
+             <div class="form-section">
+                <h5><i class="bi bi-chat-quote me-2 text-muted"></i>Notes de dégustation</h5>
+                <textarea name="tasting_notes" id="tasting_notes" class="form-control" rows="4" 
+                          placeholder="Arômes, robe, bouche, accords mets-vins...">{{ data.tasting_notes|default:'' }}</textarea>
+            </div>
+
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-4">
+            
+            <!-- Organization -->
+            <div class="form-section">
+                <h5>Organisation</h5>
+                <div class="mb-3">
+                    <label for="article_type" class="form-label">Type de produit</label>
+                    <select name="article_type" id="article_type" class="form-select">
+                        {% for code, label in type_choices %}
+                        <option value="{{ code }}" {% if data.article_type == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Catégorie</label>
+                    <div class="input-group">
+                        <select name="category" id="category" class="form-select">
+                            <option value="">-- Aucune --</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if data.category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tags</label>
+                    <div class="tags-input-container" id="tags-container">
+                        <input type="text" id="tag-input" placeholder="Ajouter un tag...">
+                    </div>
+                    <input type="hidden" name="tags" id="tags-hidden" value="{{ data.tags|default:'' }}">
+                    <div class="form-text">Appuyez sur Entrée pour ajouter un tag.</div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="form-section">
+                <h5>Canaux de vente</h5>
+                <div class="checkbox-row">
+                    <input class="form-check-input" type="checkbox" name="is_sellable" id="is_sellable" {% if data.is_sellable %}checked{% endif %}>
+                    <label for="is_sellable">Vendable (Clients)</label>
+                </div>
+                <div class="checkbox-row">
+                    <input class="form-check-input" type="checkbox" name="is_buyable" id="is_buyable" {% if data.is_buyable %}checked{% endif %}>
+                    <label for="is_buyable">Achetable (Fournisseurs)</label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+<!-- Modal nouvelle catégorie -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle catégorie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-category-name" class="form-control" placeholder="Nom de la catégorie">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-create-category">Créer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- Image Upload Drag & Drop ---
+    const dropZone = document.getElementById('drop-zone');
+    const imageInput = document.getElementById('image-input');
+    const previewContainer = document.getElementById('preview-container');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const currentPreview = document.getElementById('current-preview');
+    const removeBtn = document.getElementById('btn-remove-image');
+
+    dropZone.addEventListener('click', () => imageInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            imageInput.files = e.dataTransfer.files;
+            updatePreview(e.dataTransfer.files[0]);
+        }
+    });
+
+    imageInput.addEventListener('change', () => {
+        if (imageInput.files.length) {
+            updatePreview(imageInput.files[0]);
+        }
+    });
+
+    function updatePreview(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentPreview.src = e.target.result;
+            previewContainer.style.display = 'block';
+            uploadPlaceholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        imageInput.value = '';
+        currentPreview.src = '';
+        previewContainer.style.display = 'none';
+        uploadPlaceholder.style.display = 'block';
+    });
+
+    // --- Tags Input ---
+    const tagsContainer = document.getElementById('tags-container');
+    const tagInput = document.getElementById('tag-input');
+    const tagsHidden = document.getElementById('tags-hidden');
+    let tags = tagsHidden.value ? tagsHidden.value.split(',').map(t => t.trim()).filter(t => t) : [];
+
+    function renderTags() {
+        // Clear existing tags (except input)
+        Array.from(tagsContainer.children).forEach(child => {
+            if (child !== tagInput) tagsContainer.removeChild(child);
+        });
+
+        tags.forEach((tag, index) => {
+            const badge = document.createElement('span');
+            badge.className = 'tag-badge';
+            badge.innerHTML = `${tag} <i class="bi bi-x" data-index="${index}"></i>`;
+            tagsContainer.insertBefore(badge, tagInput);
+        });
+        
+        tagsHidden.value = tags.join(',');
+    }
+
+    tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = tagInput.value.trim();
+            if (val && !tags.includes(val)) {
+                tags.push(val);
+                tagInput.value = '';
+                renderTags();
+            }
+        } else if (e.key === 'Backspace' && !tagInput.value && tags.length) {
+            tags.pop();
+            renderTags();
+        }
+    });
+
+    tagsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('bi-x')) {
+            const index = e.target.dataset.index;
+            tags.splice(index, 1);
+            renderTags();
+        } else {
+            tagInput.focus();
+        }
+    });
+
+    renderTags();
+
+    // --- Price Calculations ---
+    const priceHtInput = document.getElementById('price_ht');
+    const purchasePriceInput = document.getElementById('purchase_price');
+    const vatRateInput = document.getElementById('vat_rate');
+    const marginDisplay = document.getElementById('margin-display');
+    const ttcDisplay = document.getElementById('ttc-display');
+
+    function updateCalculations() {
+        const price = parseFloat(priceHtInput.value) || 0;
+        const purchase = parseFloat(purchasePriceInput.value) || 0;
+        const vat = parseFloat(vatRateInput.value) || 0;
+
+        const margin = price - purchase;
+        const ttc = price * (1 + vat / 100);
+
+        marginDisplay.textContent = margin.toFixed(2);
+        marginDisplay.className = margin >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+        ttcDisplay.textContent = ttc.toFixed(2);
+    }
+
+    [priceHtInput, purchasePriceInput, vatRateInput].forEach(input => {
+        input.addEventListener('input', updateCalculations);
+    });
+    updateCalculations();
+
+    // --- Category Creation ---
+    document.getElementById('btn-create-category').addEventListener('click', function() {
+        const name = document.getElementById('new-category-name').value.trim();
+        if (!name) return;
+        
+        fetch('{% url "referentiels:categorie_create_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: 'name=' + encodeURIComponent(name)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.id) {
+                const select = document.getElementById('category');
+                const option = new Option(data.name, data.id, true, true);
+                select.add(option);
+                bootstrap.Modal.getInstance(document.getElementById('newCategoryModal')).hide();
+                document.getElementById('new-category-name').value = '';
+            } else {
+                alert(data.error || 'Erreur');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

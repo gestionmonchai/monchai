@@ -1,52 +1,123 @@
 <div class="d-none" id="vendanges-table-meta" data-total="{{ total_count }}"></div>
-<table class="table align-middle">
-  <thead>
-    <tr>
-      <th>Code</th>
-      <th>Date</th>
-      <th>Campagne</th>
-      <th>Parcelle</th>
-      <th>Cuvée</th>
-      <th class="text-end">Poids (kg)</th>
-      <th>Statut</th>
-      <th class="text-end">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for v in vendanges %}
-    <tr class="row-click" data-href="/production/vendanges/{{ v.id }}/">
-      <td><a href="/production/vendanges/{{ v.id }}/">{{ v.code|default:'—' }}</a></td>
-      <td>{{ v.date }}</td>
-      <td>{{ v.campagne|default:'—' }}</td>
-      <td>{{ v.parcelle }}</td>
-      <td>{% if v.cuvee %}{{ v.cuvee.nom }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-      <td class="text-end">{{ v.poids_kg }}</td>
-      <td>
-        {% if v.statut %}
-          <span class="badge text-bg-secondary">{{ v.get_statut_display }}</span>
-        {% else %}
-          <span class="text-muted">—</span>
-        {% endif %}
-      </td>
-      <td class="text-end">
-        <a class="btn btn-sm btn-outline-primary" href="/production/vendanges/{{ v.id }}/">Ouvrir</a>
-      </td>
-    </tr>
-  {% empty %}
-    <tr><td colspan="8" class="text-center text-muted py-5">Aucune vendange</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Code / Campagne</th>
+          <th>Date</th>
+          <th>Parcelle & Cuvée</th>
+          <th class="text-end" style="min-width: 150px;">Volume / Poids</th>
+          <th class="text-center">Statut</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for v in vendanges %}
+        <tr class="row-click cursor-pointer" onclick="window.location='{% url 'production:vendange_detail' v.id %}'">
+          <td>
+            <div class="fw-bold text-primary">{{ v.code|default:'—' }}</div>
+            <small class="text-muted">{{ v.campagne|default:'—' }}</small>
+          </td>
+          <td>
+            <div class="fw-medium">{{ v.date|date:'d/m/Y' }}</div>
+            <small class="text-muted">{{ v.date|time:"H:i" }}</small>
+          </td>
+          <td>
+            <div class="d-flex align-items-center mb-1">
+                <i class="bi bi-geo-alt me-2 text-secondary"></i>
+                <span class="fw-medium">{{ v.parcelle }}</span>
+            </div>
+            {% if v.cuvee %}
+                <div class="d-flex align-items-center text-muted small">
+                    <i class="bi bi-tag me-2"></i>
+                    {{ v.cuvee.nom }}
+                </div>
+            {% else %}
+                <div class="badge bg-light text-secondary border fw-normal">Sans cuvée</div>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="fw-bold mb-1">{{ v.poids_total|floatformat:0 }} <small>kg</small></div>
+            {% if v.kg_debites_cumules > 0 and v.poids_total > 0 %}
+                {% widthratio v.kg_debites_cumules v.poids_total 100 as ratio %}
+                <div class="progress" style="height: 6px;" title="{{ ratio }}% encuvé">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ ratio }}%"></div>
+                </div>
+                <small class="text-muted" style="font-size: 0.75rem;">{{ v.kg_debites_cumules|floatformat:0 }} kg encuvés</small>
+            {% else %}
+                <small class="text-muted">Non traité</small>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if v.statut == 'receptionnee' %}
+              <span class="badge rounded-pill text-bg-warning"><i class="bi bi-inbox me-1"></i>Réceptionnée</span>
+            {% elif v.statut == 'encuvee' %}
+              <span class="badge rounded-pill text-bg-success"><i class="bi bi-check-circle me-1"></i>Encuvée</span>
+            {% elif v.statut == 'brouillon' %}
+              <span class="badge rounded-pill text-bg-secondary opacity-50"><i class="bi bi-pencil me-1"></i>Brouillon</span>
+            {% elif v.statut == 'close' %}
+              <span class="badge rounded-pill text-bg-dark"><i class="bi bi-archive me-1"></i>Clôturée</span>
+            {% else %}
+              <span class="badge rounded-pill text-bg-light border text-dark">{{ v.get_statut_display }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end" onclick="event.stopPropagation();">
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li><h6 class="dropdown-header">Actions</h6></li>
+                    <li><a class="dropdown-item" href="{% url 'production:vendange_detail' v.id %}"><i class="bi bi-eye me-2"></i>Consulter</a></li>
+                    <li><a class="dropdown-item" href="{% url 'production:vendange_update' v.id %}"><i class="bi bi-pencil me-2"></i>Modifier</a></li>
+                    {% if v.statut == 'receptionnee' or v.statut == 'brouillon' %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-primary fw-medium" href="{% url 'production:vendange_encuvage' v.id %}">
+                                <i class="bi bi-arrow-right-circle me-2"></i>Lancer l'encuvage
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+            <td colspan="6" class="text-center py-5">
+                <div class="text-muted mb-3"><i class="bi bi-basket display-4"></i></div>
+                <h6 class="fw-bold text-secondary">Aucune vendange trouvée</h6>
+                <p class="text-muted small">Commencez par enregistrer une réception de vendange.</p>
+                <a href="{% url 'production:vendange_new' %}" class="btn btn-primary btn-sm mt-2">
+                    <i class="bi bi-plus-lg me-1"></i>Nouvelle réception
+                </a>
+            </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+</div>
 
 {% if is_paginated %}
-<nav class="d-flex justify-content-end">
-  <ul class="pagination mb-0">
+<nav class="d-flex justify-content-between align-items-center mt-3 px-2">
+  <div class="text-muted small">
+    Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ paginator.count }} vendanges
+  </div>
+  <ul class="pagination pagination-sm mb-0">
     {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.previous_page_number }}&{{ querystring }}" hx-include="#vendanges-filter-form" hx-target="#vendanges-table" hx-swap="innerHTML">«</a></li>
+      <li class="page-item">
+        <a class="page-link border-0 bg-light text-dark" hx-get="?page={{ page_obj.previous_page_number }}&{{ querystring }}" hx-include="#vendanges-filter-form" hx-target="#vendanges-table" hx-swap="innerHTML">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
     {% endif %}
-    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span></li>
+    <li class="page-item disabled"><span class="page-link border-0 bg-transparent fw-bold text-dark">Page {{ page_obj.number }}</span></li>
     {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" hx-get="?page={{ page_obj.next_page_number }}&{{ querystring }}" hx-include="#vendanges-filter-form" hx-target="#vendanges-table" hx-swap="innerHTML">»</a></li>
+      <li class="page-item">
+        <a class="page-link border-0 bg-light text-dark" hx-get="?page={{ page_obj.next_page_number }}&{{ querystring }}" hx-include="#vendanges-filter-form" hx-target="#vendanges-table" hx-swap="innerHTML">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
     {% endif %}
   </ul>
 </nav>

@@ -18,6 +18,9 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-producti
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+# Default primary key field type for all models
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,192.168.1.11').split(',')
 
 # Feature flags
@@ -57,8 +60,6 @@ LOCAL_APPS = [
     # New lightweight namespace apps for navigation
     'apps.production.apps.ProductionConfig',
     'apps.ventes',
-    'apps.stock_drm',
-    'apps.ref',
     'apps.site',
     'apps.drm',
     # AI help module
@@ -69,6 +70,8 @@ LOCAL_APPS = [
     'urbanisme',
     # Cadastre clone app (MapLibre + Mes parcelles)
     'cadastre_app',
+    # New Commerce app (Refonte Achats/Ventes)
+    'apps.commerce',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

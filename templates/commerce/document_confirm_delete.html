@@ -1,0 +1,32 @@
+{% extends "commerce/base_commerce.html" %}
+
+{% block title %}Supprimer document{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-sm mt-5">
+                <div class="card-body p-4 text-center">
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4 class="card-title mb-3">Confirmer la suppression ?</h4>
+                    <p class="text-muted mb-4">
+                        Vous êtes sur le point de supprimer le document <strong>{{ object.get_type_display }} {{ object.number }}</strong>.
+                        <br>Cette action est irréversible.
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">Oui, supprimer</button>
+                            <a href="{% url namespace|add:':document_detail' object.id %}" class="btn btn-light">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

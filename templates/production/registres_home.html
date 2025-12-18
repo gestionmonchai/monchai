@@ -1,0 +1,240 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Registres obligatoires - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 mb-0">
+        <i class="bi bi-file-earmark-text me-2"></i>Registres obligatoires
+    </h1>
+</div>
+
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Traçabilité viticole</strong> — Cette page permet d'exporter les registres obligatoires à partir des données saisies dans Mon Chai.
+</div>
+
+<div class="row g-4">
+    <!-- Cahier de culture / Registre viticole -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-tree me-2"></i>Cahier de culture</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Registre des interventions à la parcelle : travaux en vert, travail du sol, fertilisation, irrigation, observations.
+                </p>
+                <ul class="small text-muted mb-3">
+                    <li>Taille, ébourgeonnage, rognage, effeuillage</li>
+                    <li>Travail du sol, enherbement</li>
+                    <li>Fertilisation, amendements</li>
+                    <li>Observations phénologiques</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-link-45deg me-1"></i>
+                    Source : <a href="{% url 'production:cahier_cultural' %}">Cahier cultural</a>
+                </p>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="btn-group w-100">
+                    <button class="btn btn-outline-success" disabled>
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </button>
+                    <button class="btn btn-outline-success" disabled>
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
+                    </button>
+                </div>
+                <small class="text-muted d-block text-center mt-2">Bientôt disponible</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registre phytosanitaire -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-shield-check me-2"></i>Registre phytosanitaire</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Registre des traitements phytosanitaires obligatoire (arrêté du 16 juin 2009).
+                </p>
+                <ul class="small text-muted mb-3">
+                    <li>Produit utilisé (nom commercial, n° AMM)</li>
+                    <li>Date et heure de traitement</li>
+                    <li>Dose, surface traitée</li>
+                    <li>Parcelle(s) concernée(s)</li>
+                    <li>Opérateur, conditions météo</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-link-45deg me-1"></i>
+                    Source : <a href="{% url 'production:registre_phyto' %}">Registre phyto</a>
+                </p>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="btn-group w-100">
+                    <button class="btn btn-outline-warning" disabled>
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </button>
+                    <button class="btn btn-outline-warning" disabled>
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
+                    </button>
+                </div>
+                <small class="text-muted d-block text-center mt-2">Bientôt disponible</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cahier de cave -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-boxes me-2"></i>Cahier de cave</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Registre de cave retraçant l'historique complet des lots : vinification, élevage, assemblages.
+                </p>
+                <ul class="small text-muted mb-3">
+                    <li>Réception vendanges</li>
+                    <li>Encuvages, fermentations</li>
+                    <li>Soutirages, transferts</li>
+                    <li>Assemblages, corrections</li>
+                    <li>Analyses œnologiques</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-link-45deg me-1"></i>
+                    Sources : <a href="{% url 'production:vendanges_list' %}">Vendanges</a>, 
+                    <a href="{% url 'production:lots_tech_list' %}">Lots techniques</a>
+                </p>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="btn-group w-100">
+                    <button class="btn btn-outline-primary" disabled>
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </button>
+                    <button class="btn btn-outline-primary" disabled>
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
+                    </button>
+                </div>
+                <small class="text-muted d-block text-center mt-2">Bientôt disponible</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registre de conditionnement -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-box2 me-2"></i>Registre de conditionnement</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Registre des mises en bouteilles et opérations de conditionnement.
+                </p>
+                <ul class="small text-muted mb-3">
+                    <li>Date de mise</li>
+                    <li>Lot(s) source et volumes</li>
+                    <li>Nombre de cols par format</li>
+                    <li>Numéros de lots conditionnés</li>
+                    <li>Prestataire (si externe)</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-link-45deg me-1"></i>
+                    Source : <a href="{% url 'production:mises_list' %}">Mises (OF)</a>
+                </p>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="btn-group w-100">
+                    <button class="btn btn-outline-info" disabled>
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </button>
+                    <button class="btn btn-outline-info" disabled>
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
+                    </button>
+                </div>
+                <small class="text-muted d-block text-center mt-2">Bientôt disponible</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRM -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-ruled me-2"></i>DRM (Déclaration Récapitulative)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Export des données pour la Déclaration Récapitulative Mensuelle.
+                </p>
+                <ul class="small text-muted mb-3">
+                    <li>Stocks début/fin de mois</li>
+                    <li>Entrées (récolte, achats)</li>
+                    <li>Sorties (ventes, pertes)</li>
+                    <li>Mouvements internes</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-link-45deg me-1"></i>
+                    Source : <a href="{% url 'production:inventaire' %}">Inventaire</a>
+                </p>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="btn-group w-100">
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-filetype-xml me-1"></i>XML
+                    </button>
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="bi bi-filetype-csv me-1"></i>CSV
+                    </button>
+                </div>
+                <small class="text-muted d-block text-center mt-2">Bientôt disponible</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traçabilité lot -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Fiche traçabilité lot</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Fiche complète d'un lot de la parcelle à la bouteille.
+                </p>
+                <ul class="small text-muted mb-3">
+                    <li>Origine (parcelle, cépage, vendange)</li>
+                    <li>Itinéraire technique complet</li>
+                    <li>Analyses et interventions</li>
+                    <li>Assemblages et mouvements</li>
+                    <li>Conditionnement final</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Sélectionner un lot pour générer sa fiche
+                </p>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="btn-group w-100">
+                    <button class="btn btn-outline-dark" disabled>
+                        <i class="bi bi-filetype-pdf me-1"></i>PDF
+                    </button>
+                </div>
+                <small class="text-muted d-block text-center mt-2">Bientôt disponible</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h5><i class="bi bi-lightbulb me-2"></i>Comment ça marche ?</h5>
+        <p class="text-muted mb-0">
+            Les registres sont générés automatiquement à partir des données que vous saisissez dans Mon Chai.
+            Plus vous renseignez d'informations (parcelles, interventions, vendanges, lots, analyses, mises), 
+            plus vos registres seront complets et conformes aux exigences réglementaires.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,488 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Journal cultural - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 mb-0">
+        <i class="bi bi-journal-text me-2"></i>Journal cultural
+    </h1>
+    <div class="btn-group">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNewIntervention">
+            <i class="bi bi-plus-circle me-1"></i>Nouvelle intervention
+        </button>
+    </div>
+</div>
+
+<!-- Filtres avancés -->
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+                    <i class="bi bi-chevron-down"></i> Avancé
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="clear-filters">
+                    <i class="bi bi-x-circle"></i> Effacer
+                </button>
+            </div>
+        </div>
+
+        <form id="journal-filter-form"
+              hx-get="{% url 'production:journal_cultural_table' %}"
+              hx-target="#journal-table-content"
+              hx-swap="innerHTML"
+              hx-trigger="change, keyup delay:200ms from:input">
+            <!-- Recherche rapide -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <div class="position-relative">
+                        <input type="text" name="q" id="quick-search" value="{{ selected_q }}" placeholder="Recherche rapide (parcelle, type, résumé, notes)" class="form-control pe-5" autocomplete="off">
+                        <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                            <i class="bi bi-search text-muted" id="search-icon"></i>
+                            <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                                <span class="visually-hidden">Recherche...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div id="search-info" class="text-muted small mt-2">{{ interventions_count }} intervention{{ interventions_count|pluralize }}</div>
+                </div>
+            </div>
+
+            <!-- Filtres avancés -->
+            <div id="advanced-filters" class="collapse">
+                <hr>
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label">Parcelle</label>
+                        <select class="form-select" name="parcelle">
+                            <option value="">— Toutes —</option>
+                            {% for p in parcelles %}
+                            <option value="{{ p.pk }}" {% if selected_parcelle == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Type d'opération</label>
+                        <select class="form-select" name="type">
+                            <option value="">— Tous —</option>
+                            {% for ot in op_types %}
+                            <option value="{{ ot.code }}" {% if selected_type == ot.code %}selected{% endif %}>{{ ot.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Date début</label>
+                        <input type="date" name="date_from" value="{{ selected_date_from }}" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Date fin</label>
+                        <input type="date" name="date_to" value="{{ selected_date_to }}" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tri</label>
+                        <select name="sort" class="form-select">
+                            <option value="date_desc" {% if selected_sort == 'date_desc' %}selected{% endif %}>Date ↓</option>
+                            <option value="date_asc" {% if selected_sort == 'date_asc' %}selected{% endif %}>Date ↑</option>
+                            <option value="parcelle" {% if selected_sort == 'parcelle' %}selected{% endif %}>Parcelle</option>
+                            <option value="type" {% if selected_sort == 'type' %}selected{% endif %}>Type</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Onglets -->
+<ul class="nav nav-tabs mb-4" id="journalTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'interventions' %}active{% endif %}" id="interventions-tab" data-bs-toggle="tab" data-bs-target="#interventions" type="button" role="tab">
+            <i class="bi bi-calendar-event me-1"></i>Interventions
+            <span class="badge bg-secondary ms-1">{{ interventions_count|default:0 }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'phyto' %}active{% endif %}" id="phyto-tab" data-bs-toggle="tab" data-bs-target="#phyto" type="button" role="tab">
+            <i class="bi bi-shield-check me-1"></i>Traitements phyto
+            <span class="badge bg-warning text-dark ms-1">{{ traitements_count|default:0 }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if active_tab == 'maturite' %}active{% endif %}" id="maturite-tab" data-bs-toggle="tab" data-bs-target="#maturite" type="button" role="tab">
+            <i class="bi bi-graph-up-arrow me-1"></i>Suivi maturité
+            <span class="badge bg-success ms-1">--</span>
+        </button>
+    </li>
+</ul>
+
+<!-- Contenu des onglets -->
+<div class="tab-content" id="journalTabsContent">
+    <!-- ONGLET INTERVENTIONS -->
+    <div class="tab-pane fade {% if active_tab == 'interventions' %}show active{% endif %}" id="interventions" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Toutes les interventions</h5>
+                <span class="text-muted small" id="interventions-count-label">{{ interventions_count }} intervention{{ interventions_count|pluralize }}</span>
+            </div>
+            <div id="journal-table-content" 
+                 hx-get="{% url 'production:journal_cultural_table' %}" 
+                 hx-trigger="load" 
+                 hx-swap="innerHTML">
+                <div class="text-center py-4 text-muted">Chargement…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONGLET PHYTO -->
+    <div class="tab-pane fade {% if active_tab == 'phyto' %}show active{% endif %}" id="phyto" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-shield-check me-2 text-warning"></i>Registre phytosanitaire</h5>
+                <span class="text-muted small">{{ traitements_count }} traitement{{ traitements_count|pluralize }}</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Registre obligatoire</strong> — Conformément à l'arrêté du 16 juin 2009, vous devez tenir un registre des traitements phytosanitaires avec : produit, dose, parcelle, date, opérateur.
+                </div>
+                {% if traitements %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 100px;">Date</th>
+                                <th>Parcelle</th>
+                                <th>Produit / Description</th>
+                                <th class="text-end" style="width: 100px;">Coût</th>
+                                <th style="width: 130px;">Saisi le</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in traitements %}
+                            <tr class="journal-row" style="cursor: pointer;" 
+                                onclick="window.location='{{ t.url }}'">
+                                <td class="text-nowrap">{{ t.date|date:"d/m/Y" }}</td>
+                                <td>
+                                    <strong>{{ t.parcelle_nom }}</strong>
+                                </td>
+                                <td>
+                                    {{ t.resume|default:"—" }}
+                                    {% if t.notes %}<small class="text-muted d-block">{{ t.notes|truncatewords:10 }}</small>{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if t.cout_total %}{{ t.cout_total|floatformat:2 }} €{% else %}—{% endif %}
+                                </td>
+                                <td class="text-muted small text-nowrap">
+                                    {{ t.created_at|date:"d/m/Y H:i" }}
+                                </td>
+                                <td class="text-center">
+                                    <i class="bi bi-box-arrow-up-right text-primary" title="Ouvrir l'événement"></i>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-x text-muted display-1"></i>
+                    </div>
+                    <h5 class="text-muted">Aucun traitement enregistré</h5>
+                    <p class="text-muted mb-4">
+                        Les traitements phytosanitaires apparaîtront ici automatiquement lorsque vous enregistrerez une intervention de type "Traitement phyto".
+                    </p>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalNewIntervention" data-type="traitement">
+                        <i class="bi bi-plus-circle me-1"></i>Nouveau traitement
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ONGLET MATURITÉ -->
+    <div class="tab-pane fade {% if active_tab == 'maturite' %}show active{% endif %}" id="maturite" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Suivi de maturité</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Suivez l'évolution de la maturité de vos parcelles : degré probable, acidité totale, dégustation de baies. Ces données vous aideront à planifier vos vendanges.
+                </p>
+                <div class="text-center py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-graph-down text-muted display-1"></i>
+                    </div>
+                    <h5 class="text-muted">Aucun relevé de maturité</h5>
+                    <p class="text-muted mb-4">
+                        Enregistrez vos prélèvements de baies et analyses de maturité pour suivre l'évolution avant vendanges.
+                    </p>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNewMaturite">
+                        <i class="bi bi-plus-circle me-1"></i>Nouveau relevé
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Légende des types d'intervention -->
+<div class="card mt-4">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Types d'interventions disponibles</h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <span class="badge bg-success me-1">Taille</span>
+                <small class="text-muted">Taille d'hiver, taille en vert</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-info me-1">Palissage</span>
+                <small class="text-muted">Liage, relevage</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-primary me-1">Travaux en vert</span>
+                <small class="text-muted">Ébourgeonnage, rognage, effeuillage</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-secondary me-1">Travail du sol</span>
+                <small class="text-muted">Labour, enherbement, désherbage</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-warning text-dark me-1">Traitement phyto</span>
+                <small class="text-muted">→ Registre phytosanitaire</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-dark me-1">Fertilisation</span>
+                <small class="text-muted">Amendements, engrais</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-info me-1">Irrigation</span>
+                <small class="text-muted">Arrosage (si autorisé)</small>
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-light text-dark border me-1">Observation</span>
+                <small class="text-muted">Notes, photos, suivi</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouvelle intervention -->
+<div class="modal fade" id="modalNewIntervention" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nouvelle intervention</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Étape 1 : Sélection de parcelle -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold"><i class="bi bi-geo-alt me-2"></i>1. Sélectionner une parcelle</label>
+                    <select class="form-select form-select-lg" id="modal-parcelle-select">
+                        <option value="">— Choisir une parcelle —</option>
+                        {% for p in parcelles %}
+                        <option value="{{ p.pk }}" data-surface="{{ p.surface|floatformat:2 }}">
+                            {{ p.nom }} {% if p.surface %}({{ p.surface|floatformat:2 }} ha){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Étape 2 : Actions rapides -->
+                <div class="mb-4" id="quick-actions-container" style="display: none;">
+                    <label class="form-label fw-bold"><i class="bi bi-lightning me-2"></i>2. Type d'intervention</label>
+                    <div class="row g-2" id="quick-actions-grid">
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-success w-100 quick-action-btn" data-type="taille">
+                                <i class="bi bi-scissors d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Taille</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-warning w-100 quick-action-btn" data-type="traitement">
+                                <i class="bi bi-droplet-fill d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Traitement phyto</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-info w-100 quick-action-btn" data-type="palissage">
+                                <i class="bi bi-diagram-3 d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Palissage</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-success w-100 quick-action-btn" data-type="rognage">
+                                <i class="bi bi-scissors d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Rognage</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-success w-100 quick-action-btn" data-type="effeuillage">
+                                <i class="bi bi-leaf d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Effeuillage</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-secondary w-100 quick-action-btn" data-type="travail_sol">
+                                <i class="bi bi-tools d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Travail du sol</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-dark w-100 quick-action-btn" data-type="fertilisation">
+                                <i class="bi bi-droplet-half d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Fertilisation</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-info w-100 quick-action-btn" data-type="irrigation">
+                                <i class="bi bi-moisture d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Irrigation</span>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <button type="button" class="btn btn-outline-secondary w-100 quick-action-btn" data-type="observation">
+                                <i class="bi bi-eye d-block mb-1" style="font-size: 1.5rem;"></i>
+                                <span>Observation</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Message si pas de parcelle -->
+                <div class="text-center text-muted py-3" id="no-parcelle-hint">
+                    <i class="bi bi-arrow-up-circle d-block mb-2" style="font-size: 2rem;"></i>
+                    Sélectionnez d'abord une parcelle pour voir les actions disponibles
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const parcelleSelect = document.getElementById('modal-parcelle-select');
+    const quickActionsContainer = document.getElementById('quick-actions-container');
+    const noParcelle = document.getElementById('no-parcelle-hint');
+    
+    if (parcelleSelect) {
+        parcelleSelect.addEventListener('change', function() {
+            if (this.value) {
+                quickActionsContainer.style.display = 'block';
+                noParcelle.style.display = 'none';
+            } else {
+                quickActionsContainer.style.display = 'none';
+                noParcelle.style.display = 'block';
+            }
+        });
+    }
+    
+    // Quick action buttons
+    document.querySelectorAll('.quick-action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const parcellePk = parcelleSelect.value;
+            const opType = this.dataset.type;
+            if (parcellePk && opType) {
+                window.location.href = `/viticulture/parcelles/${parcellePk}/operation/${opType}/`;
+            }
+        });
+    });
+});
+</script>
+
+<!-- Modal Nouveau relevé maturité (placeholder) -->
+<div class="modal fade" id="modalNewMaturite" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-graph-up-arrow me-2"></i>Nouveau relevé de maturité</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Formulaire en cours de développement.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activer l'onglet selon le paramètre URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab) {
+        const tabEl = document.querySelector(`#${tab}-tab`);
+        if (tabEl) {
+            const bsTab = new bootstrap.Tab(tabEl);
+            bsTab.show();
+        }
+    }
+    
+    // Filtres avancés - toggle
+    const advBtn = document.getElementById('toggle-advanced-search');
+    const adv = document.getElementById('advanced-filters');
+    if (advBtn && adv) {
+        advBtn.addEventListener('click', function() {
+            adv.classList.toggle('show');
+            const i = advBtn.querySelector('i');
+            if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+        });
+    }
+    
+    // Clear filters
+    const clearBtn = document.getElementById('clear-filters');
+    const form = document.getElementById('journal-filter-form');
+    if (clearBtn && form) {
+        clearBtn.addEventListener('click', function() {
+            form.reset();
+            form.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+    
+    // Spinner on search
+    const quick = document.getElementById('quick-search');
+    const spinner = document.getElementById('search-spinner');
+    const icon = document.getElementById('search-icon');
+    const info = document.getElementById('search-info');
+    
+    function setLoading(isLoading) {
+        if (spinner && icon) {
+            spinner.classList.toggle('d-none', !isLoading);
+            icon.classList.toggle('d-none', isLoading);
+        }
+    }
+    
+    if (quick) quick.addEventListener('input', function() { setLoading(true); });
+    
+    // Update count after HTMX swap
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.target && evt.target.id === 'journal-table-content') {
+            setLoading(false);
+            const meta = document.getElementById('journal-table-meta');
+            if (meta && info) {
+                const total = meta.getAttribute('data-total') || '0';
+                info.textContent = total + ' intervention' + (parseInt(total) > 1 ? 's' : '');
+                // Update the label in card header too
+                const label = document.getElementById('interventions-count-label');
+                if (label) label.textContent = info.textContent;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -42,21 +42,44 @@ class Mise(models.Model):
 
 
 class LotCommercial(models.Model):
+    """
+    Lot commercial = batch de bouteilles issues d'une mise en bouteille.
+    Traçabilité complète: mise → lot technique → vendange.
+    Peut aussi être créé manuellement pour les stocks existants (sans mise).
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    mise = models.ForeignKey(Mise, on_delete=models.CASCADE, related_name="lots")
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='lots_commerciaux', null=True, blank=True)
+    mise = models.ForeignKey(Mise, on_delete=models.SET_NULL, related_name="lots", null=True, blank=True)  # Optionnel
     code_lot = models.CharField(max_length=64, unique=True)
     cuvee = models.ForeignKey(ViticultureCuvee, on_delete=models.PROTECT, related_name="lots_commerciaux", null=True, blank=True)
     format_ml = models.PositiveIntegerField(default=750)
-    date_mise = models.DateField()
-    quantite_unites = models.PositiveIntegerField(default=0)
-    stock_disponible = models.PositiveIntegerField(default=0)
+    date_mise = models.DateField(null=True, blank=True)  # Optionnel si stock existant
+    quantite_unites = models.PositiveIntegerField(default=0, help_text="Quantité initiale produite")
+    stock_disponible = models.PositiveIntegerField(default=0, help_text="Stock restant disponible")
+    
+    # Statut étiquetage
+    ETIQUETAGE_CHOICES = (
+        ('non_etiquete', 'Non étiqueté'),
+        ('etiquete', 'Étiqueté'),
+        ('partiel', 'Partiellement étiqueté'),
+    )
+    etiquetage = models.CharField(max_length=20, choices=ETIQUETAGE_CHOICES, default='non_etiquete')
+    
+    # Codes réglementaires
     inao_code = models.CharField(max_length=32, blank=True)
     nc_code = models.CharField(max_length=32, blank=True)
     emb_code = models.CharField(max_length=32, blank=True)
     capsule_crd = models.BooleanField(default=False)
     capsule_crd_color = models.CharField(max_length=20, blank=True)
     capsule_marking = models.CharField(max_length=64, blank=True)
+    
+    # Métadonnées
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+    
     TENANT_ORG_LOOKUPS = (
+        'organization',
         'mise__lignes__lot_tech_source__cuvee__organization',
         'mise__lignes__lot_tech_source__source__organization',
         'cuvee__organization',

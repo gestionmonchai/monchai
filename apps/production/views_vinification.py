@@ -14,6 +14,18 @@ from apps.viticulture.models import Lot as VitiLot, Warehouse
 from apps.viticulture.models_extended import LotIntervention, LotMeasurement
 from .forms_vinification import VinificationOperationForm
 
+# Mapping des icônes par type d'opération
+OPERATION_ICONS = {
+    'pressurage': '🍇', 'debourbage': '🧊', 'enzymage': '🧪', 'sulfitage_preferm': '⚗️',
+    'inoculation_levures': '🦠', 'debut_fa': '▶️', 'chaptalisation': '🍬',
+    'remontage': '🔄', 'pigeage': '👊', 'delestage': '⬇️', 'controle_densite_temp': '🌡️',
+    'fin_fa': '⏹️', 'ecoulage': '🚿', 'pressurage_marc': '🍷',
+    'inoculation_bacteries': '🦠', 'debut_fml': '▶️', 'fin_fml': '⏹️',
+    'soutirage': '↕️', 'ouillage': '💧', 'batonnage': '🥄', 'so2': '⚗️',
+    'collage': '🧹', 'filtration': '🔬', 'stabilisation_tartrique': '❄️',
+    'correction_acidite': '⚖️', 'analyse_labo': '🔬', 'degustation': '🍷', 'autre': '📝',
+}
+
 def _ensure_viti_lot_for_lottech(lottech: LotTechnique) -> VitiLot:
     """Garantit un Lot (viticulture) lié à un LotTechnique via external_lot_id.
     Crée le Lot si nécessaire en copiant code/cuvée/volume, et en choisissant un entrepôt.
@@ -60,20 +72,11 @@ class VinificationHomeView(TemplateView):
         form = VinificationOperationForm(organization=org)
         ctx['form'] = form
 
-        # Récupérer les opérations de vinification (LotIntervention et LotMeasurement)
-        # Filtrer sur les lots de l'organisation
-        # Types pertinents pour la vinification
-        vinif_types = [
-            'chaptalisation', 'acidification', 'so2', 'batonnage', 
-            'fml', 'correction', 'remontage', 'pigeage', 
-            'debourbage', 'inoculation_levures', 'inoculation_bacteries',
-            'delestage', 'debut_fa', 'fin_fa', 'debut_fml', 'fin_fml'
-        ]
-        
+        # Récupérer TOUTES les opérations de cave
+        # (tous types : vinification, élevage, stabilisation)
         interventions = LotIntervention.objects.filter(
-            organization=org,
-            type__in=vinif_types
-        ).select_related('lot')
+            organization=org
+        ).select_related('lot', 'lot__cuvee').order_by('-date')
 
         # Mesures pertinentes
         meas_types = ['densite', 'temperature']
@@ -86,24 +89,25 @@ class VinificationHomeView(TemplateView):
         operations = []
         for i in interventions:
             operations.append({
-                'date': i.date, # datefield
-                'lot': i.lot, # VitiLot -> il faudrait remonter au LotTechnique pour l'affichage si possible
+                'date': i.date,
+                'lot': i.lot,
                 'type_display': i.get_type_display(),
                 'type_code': i.type,
-                'valeur': i.volume_in_l or i.volume_out_l, # Pas top, mais bon
+                'type_icon': OPERATION_ICONS.get(i.type, '📝'),
+                'valeur': i.volume_in_l or i.volume_out_l or '',
                 'notes': i.notes,
                 'source': 'intervention',
                 'obj': i
             })
         
         for m in measurements:
-            # Convert datetime to date for sorting if needed, or keep datetime
             d = m.date.date() if hasattr(m.date, 'date') else m.date
             operations.append({
                 'date': d,
                 'lot': m.lot,
                 'type_display': m.get_type_display(),
                 'type_code': m.type,
+                'type_icon': '🌡️' if m.type == 'temperature' else '📊',
                 'valeur': f"{m.value} {m.unit}",
                 'notes': m.notes,
                 'source': 'measurement',

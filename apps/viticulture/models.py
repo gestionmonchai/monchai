@@ -17,7 +17,7 @@ from apps.accounts.models import Organization
 class BaseViticultureModel(models.Model):
     """Modèle de base pour tous les modèles viticulture"""
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey(
         Organization, 
         on_delete=models.CASCADE,

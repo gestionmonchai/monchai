@@ -1,0 +1,1705 @@
+{% extends 'commerce/base_commerce.html' %}
+{% load static %}
+
+{% block title %}
+{% if mode == 'edit' %}Modifier{% else %}Créer{% endif %} un template - Mon Chai
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ========== LAYOUT PRINCIPAL ========== */
+.builder-wrapper {
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    padding-top: 0;
+}
+
+.builder-container {
+    display: grid;
+    grid-template-columns: 260px 1fr 340px;
+    gap: 0;
+    height: calc(100vh - 60px);
+    background: #f0f0f0;
+}
+
+.builder-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #8B1538 0%, #6d1029 100%);
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.builder-header input,
+.builder-header select {
+    padding: 6px 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 6px;
+    font-size: 13px;
+    background: rgba(255,255,255,0.95);
+}
+
+.builder-header input[name="name"] {
+    width: 220px;
+    font-weight: 500;
+}
+
+.builder-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.builder-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.builder-actions .btn {
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+/* ========== PALETTE DE BLOCS (gauche) ========== */
+.blocks-palette {
+    background: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.palette-section {
+    margin-bottom: 20px;
+}
+
+.palette-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    padding: 0 4px;
+}
+
+.block-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: grab;
+    transition: all 0.2s;
+    font-size: 13px;
+}
+
+.block-item:hover {
+    background: #e9ecef;
+    border-color: #d4af37;
+    transform: translateX(4px);
+}
+
+.block-item:active {
+    cursor: grabbing;
+}
+
+.block-item i {
+    font-size: 16px;
+    color: #8B1538;
+    width: 20px;
+}
+
+/* ========== CANEVAS A4 (centre) ========== */
+.canvas-area {
+    background: #e0e0e0;
+    overflow: auto;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.a4-canvas {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 20mm;
+    position: relative;
+}
+
+.a4-canvas.landscape {
+    width: 297mm;
+    min-height: 210mm;
+}
+
+.canvas-placeholder {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    color: #999;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.canvas-placeholder i {
+    font-size: 48px;
+    opacity: 0.3;
+}
+
+/* Blocs dans le canevas */
+.canvas-block {
+    position: relative;
+    margin-bottom: 4px;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+
+.canvas-block:hover {
+    border-color: #d4af37;
+}
+
+.canvas-block.selected {
+    border-color: #8B1538;
+    box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.15);
+}
+
+.canvas-block.drag-over {
+    border-color: #28a745;
+    border-style: dashed;
+}
+
+.block-handle {
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background: #8B1538;
+    color: #fff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    cursor: grab;
+    transition: opacity 0.15s;
+    font-size: 12px;
+}
+
+.canvas-block:hover .block-handle,
+.canvas-block.selected .block-handle {
+    opacity: 1;
+}
+
+.block-delete {
+    position: absolute;
+    right: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background: #dc3545;
+    color: #fff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    font-size: 12px;
+    border: none;
+}
+
+.canvas-block:hover .block-delete,
+.canvas-block.selected .block-delete {
+    opacity: 1;
+}
+
+/* Zone de drop */
+.drop-zone {
+    height: 4px;
+    margin: 2px 0;
+    border-radius: 2px;
+    transition: all 0.15s;
+}
+
+.drop-zone.active {
+    height: 40px;
+    background: rgba(212, 175, 55, 0.2);
+    border: 2px dashed #d4af37;
+}
+
+/* ========== PANNEAU DE PROPRIÉTÉS (droite) ========== */
+.properties-panel {
+    background: #fff;
+    border-left: 1px solid #ddd;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.properties-header {
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.properties-header h6 {
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.properties-body {
+    padding: 16px;
+    flex: 1;
+}
+
+.property-group {
+    margin-bottom: 20px;
+}
+
+.property-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.property-row {
+    margin-bottom: 12px;
+}
+
+.property-row label {
+    display: block;
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.property-row input[type="text"],
+.property-row input[type="number"],
+.property-row select,
+.property-row textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.property-row input[type="color"] {
+    width: 50px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.property-row-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.property-row-inline label {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.btn-group-prop {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-group-prop .btn {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.btn-group-prop .btn.active {
+    background: #8B1538;
+    border-color: #8B1538;
+    color: #fff;
+}
+
+/* No selection state */
+.no-selection {
+    text-align: center;
+    color: #999;
+    padding: 40px 20px;
+}
+
+.no-selection i {
+    font-size: 48px;
+    opacity: 0.3;
+    margin-bottom: 10px;
+}
+
+/* ========== VARIABLES PANEL ========== */
+.variables-section {
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+.variable-category {
+    margin-bottom: 12px;
+}
+
+.variable-category-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8B1538;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.variable-chip {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: monospace;
+    margin: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.variable-chip:hover {
+    background: #d4af37;
+    color: #fff;
+    border-color: #d4af37;
+}
+
+.variable-chip.required {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+/* ========== PIXEL CONTROLS ========== */
+.pixel-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pixel-input-group input {
+    width: 70px;
+    text-align: center;
+}
+
+.pixel-input-group span {
+    font-size: 11px;
+    color: #888;
+}
+
+.spacing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.spacing-grid .property-row {
+    margin-bottom: 0;
+}
+
+/* ========== TEXT WITH VARIABLES MODAL ========== */
+.text-editor-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.text-editor-content {
+    background: #fff;
+    border-radius: 12px;
+    width: 700px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.text-editor-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.text-editor-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.text-editor-body textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.text-editor-variables {
+    margin-top: 16px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.text-editor-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* ========== PRESETS SIDEBAR ========== */
+.presets-section {
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+.preset-card {
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(139, 21, 56, 0.05) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-card:hover {
+    border-color: #d4af37;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 21, 56, 0.1);
+}
+
+.preset-card h6 {
+    margin: 0 0 4px 0;
+    font-size: 13px;
+    color: #8B1538;
+}
+
+.preset-card p {
+    margin: 0;
+    font-size: 11px;
+    color: #666;
+}
+
+/* ========== RENDUS DES BLOCS (prévisualisation) ========== */
+.block-preview {
+    padding: 8px;
+}
+
+.block-preview-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.block-preview-org {
+    line-height: 1.5;
+}
+
+.block-preview-customer {
+    padding: 12px;
+    border-left: 4px solid #d4af37;
+    background: #f9f9f9;
+}
+
+.block-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.block-preview-table th,
+.block-preview-table td {
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    text-align: left;
+}
+
+.block-preview-table th {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.block-preview-totals {
+    margin-left: auto;
+    width: fit-content;
+}
+
+.block-preview-totals table {
+    border-collapse: collapse;
+}
+
+.block-preview-totals td {
+    padding: 4px 12px;
+}
+
+.block-preview-totals .total-row {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.block-preview-conditions {
+    padding: 12px;
+    background: #f7e7ce;
+    border: 1px solid #d4af37;
+    border-radius: 4px;
+}
+
+.block-preview-footer {
+    text-align: center;
+    font-size: 8pt;
+    color: #666;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.block-preview-spacer {
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(0,0,0,0.03) 5px,
+        rgba(0,0,0,0.03) 10px
+    );
+}
+
+.block-preview-divider hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 0;
+}
+
+.block-preview-signature {
+    border: 1px solid #333;
+    padding: 15px;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1400px) {
+    .builder-container {
+        grid-template-columns: 240px 1fr 280px;
+    }
+}
+
+@media print {
+    .builder-header,
+    .blocks-palette,
+    .properties-panel,
+    .block-handle,
+    .block-delete {
+        display: none !important;
+    }
+    
+    .builder-container {
+        display: block;
+    }
+    
+    .canvas-area {
+        padding: 0;
+        background: none;
+    }
+    
+    .a4-canvas {
+        box-shadow: none;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block commerce_content %}
+<div class="builder-wrapper">
+<!-- Header du builder -->
+<div class="builder-header">
+    <div class="builder-meta">
+        <a href="{% url 'ventes:template_list' %}" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <input type="text" name="name" id="template-name" placeholder="Nom du template" 
+               value="{% if template %}{{ template.name }}{% endif %}">
+        <select name="document_type" id="template-type">
+            {% for value, label in doc_types %}
+            <option value="{{ value }}" {% if template and template.document_type == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </select>
+        <select name="orientation" id="template-orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape" {% if template and template.orientation == 'landscape' %}selected{% endif %}>Paysage</option>
+        </select>
+    </div>
+    <div class="builder-actions">
+        <button type="button" class="btn btn-outline-light btn-sm" onclick="previewTemplate()">
+            <i class="bi bi-eye"></i> Aperçu
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" onclick="saveTemplate()">
+            <i class="bi bi-check-lg"></i> Enregistrer
+        </button>
+    </div>
+</div>
+
+<!-- Container principal -->
+<div class="builder-container">
+    <!-- Palette de blocs -->
+    <div class="blocks-palette">
+        <div class="palette-section">
+            <div class="palette-section-title">En-tête</div>
+            <div class="block-item" draggable="true" data-block-type="logo">
+                <i class="bi bi-image"></i> Logo
+            </div>
+            <div class="block-item" draggable="true" data-block-type="title">
+                <i class="bi bi-type-h1"></i> Titre
+            </div>
+            <div class="block-item" draggable="true" data-block-type="document_info">
+                <i class="bi bi-file-text"></i> Infos document
+            </div>
+            <div class="block-item" draggable="true" data-block-type="org_info">
+                <i class="bi bi-building"></i> Infos entreprise
+            </div>
+            <div class="block-item" draggable="true" data-block-type="customer_info">
+                <i class="bi bi-person-vcard"></i> Infos client
+            </div>
+        </div>
+        
+        <div class="palette-section">
+            <div class="palette-section-title">Contenu</div>
+            <div class="block-item" draggable="true" data-block-type="section_title">
+                <i class="bi bi-type-h2"></i> Titre section
+            </div>
+            <div class="block-item" draggable="true" data-block-type="lines_table">
+                <i class="bi bi-table"></i> Tableau lignes
+            </div>
+            <div class="block-item" draggable="true" data-block-type="totals">
+                <i class="bi bi-calculator"></i> Totaux
+            </div>
+            <div class="block-item" draggable="true" data-block-type="conditions">
+                <i class="bi bi-card-text"></i> Conditions
+            </div>
+            <div class="block-item" draggable="true" data-block-type="text">
+                <i class="bi bi-text-paragraph"></i> Texte libre
+            </div>
+            <div class="block-item" draggable="true" data-block-type="signature">
+                <i class="bi bi-pen"></i> Signature
+            </div>
+        </div>
+        
+        <div class="palette-section">
+            <div class="palette-section-title">Mise en page</div>
+            <div class="block-item" draggable="true" data-block-type="spacer">
+                <i class="bi bi-arrows-expand"></i> Espacement
+            </div>
+            <div class="block-item" draggable="true" data-block-type="divider">
+                <i class="bi bi-dash-lg"></i> Séparateur
+            </div>
+            <div class="block-item" draggable="true" data-block-type="footer">
+                <i class="bi bi-layout-text-window-reverse"></i> Pied de page
+            </div>
+        </div>
+        
+        <!-- Variables disponibles -->
+        <div class="variables-section">
+            <div class="palette-section-title"><i class="bi bi-braces"></i> Variables essentielles</div>
+            <div class="variable-category">
+                <div class="variable-category-title"><i class="bi bi-building"></i> Organisation</div>
+                <span class="variable-chip required" title="Nom de l'entreprise">nom</span>
+                <span class="variable-chip" title="Adresse">adresse</span>
+                <span class="variable-chip" title="SIRET">siret</span>
+                <span class="variable-chip" title="N° TVA">tva</span>
+            </div>
+            <div class="variable-category">
+                <div class="variable-category-title"><i class="bi bi-person"></i> Client</div>
+                <span class="variable-chip required" title="Nom du client">nom</span>
+                <span class="variable-chip" title="Adresse">adresse</span>
+                <span class="variable-chip" title="Code postal + Ville">ville</span>
+            </div>
+            <div class="variable-category">
+                <div class="variable-category-title"><i class="bi bi-file-text"></i> Document</div>
+                <span class="variable-chip required" title="Numéro du document">numéro</span>
+                <span class="variable-chip required" title="Date">date</span>
+                <span class="variable-chip" title="Échéance">échéance</span>
+            </div>
+            <div class="variable-category">
+                <div class="variable-category-title"><i class="bi bi-table"></i> Lignes & Totaux</div>
+                <span class="variable-chip required" title="Tableau des produits/services">lignes</span>
+                <span class="variable-chip required" title="Total HT">total_ht</span>
+                <span class="variable-chip required" title="TVA">tva</span>
+                <span class="variable-chip required" title="Total TTC">total_ttc</span>
+            </div>
+            <p class="text-muted small mt-2 px-1">
+                <i class="bi bi-info-circle"></i> Les variables jaunes sont <strong>obligatoires</strong> pour générer le document.
+            </p>
+        </div>
+
+        <!-- Templates prédéfinis -->
+        <div class="presets-section">
+            <div class="palette-section-title">Templates prédéfinis</div>
+            {% for key, preset in presets.items %}
+            <div class="preset-card" onclick="loadPreset('{{ key }}')">
+                <h6>{{ preset.name }}</h6>
+                <p>{{ preset.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Canevas A4 -->
+    <div class="canvas-area">
+        <div class="a4-canvas" id="canvas">
+            <div class="canvas-placeholder" id="canvas-placeholder">
+                <i class="bi bi-plus-square-dotted"></i>
+                <span>Glissez des blocs ici</span>
+                <span class="text-muted small">ou choisissez un template prédéfini</span>
+            </div>
+            <div id="blocks-container"></div>
+        </div>
+    </div>
+    
+    <!-- Panneau de propriétés -->
+    <div class="properties-panel">
+        <div class="properties-header">
+            <h6><i class="bi bi-sliders"></i> Propriétés</h6>
+        </div>
+        <div class="properties-body">
+            <div class="no-selection" id="no-selection">
+                <i class="bi bi-cursor"></i>
+                <p>Sélectionnez un bloc pour modifier ses propriétés</p>
+            </div>
+            <div id="properties-form" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+</div><!-- Fin builder-wrapper -->
+
+<!-- Data -->
+<script>
+const TEMPLATE_ID = '{{ template.id|default:"" }}';
+const BLOCK_TYPES = {{ block_types_json|safe }};
+const PRESETS = {{ presets_json|safe }};
+const INITIAL_BLOCKS = {{ initial_blocks_json|safe }};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ========== STATE ==========
+let blocks = [];
+let selectedBlockId = null;
+let blockIdCounter = 0;
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', function() {
+    initDragAndDrop();
+    
+    // Charger les blocs existants
+    if (INITIAL_BLOCKS && INITIAL_BLOCKS.length > 0) {
+        blocks = INITIAL_BLOCKS;
+        blockIdCounter = blocks.length;
+        renderCanvas();
+    }
+    
+    // Orientation change
+    document.getElementById('template-orientation').addEventListener('change', function() {
+        const canvas = document.getElementById('canvas');
+        canvas.classList.toggle('landscape', this.value === 'landscape');
+    });
+});
+
+// ========== DRAG & DROP ==========
+function initDragAndDrop() {
+    // Blocs de la palette
+    document.querySelectorAll('.block-item[draggable]').forEach(item => {
+        item.addEventListener('dragstart', handlePaletteDragStart);
+    });
+    
+    // Canvas drop zone
+    const canvas = document.getElementById('canvas');
+    canvas.addEventListener('dragover', handleCanvasDragOver);
+    canvas.addEventListener('drop', handleCanvasDrop);
+    canvas.addEventListener('dragleave', handleCanvasDragLeave);
+}
+
+function handlePaletteDragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.blockType);
+    e.dataTransfer.setData('source', 'palette');
+}
+
+function handleCanvasDragOver(e) {
+    e.preventDefault();
+    document.getElementById('canvas-placeholder').style.display = 'none';
+    
+    // Highlight drop position
+    const dropTarget = getDropTarget(e);
+    clearDropHighlights();
+    if (dropTarget) {
+        dropTarget.classList.add('drag-over');
+    }
+}
+
+function handleCanvasDragLeave(e) {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+        clearDropHighlights();
+        if (blocks.length === 0) {
+            document.getElementById('canvas-placeholder').style.display = 'flex';
+        }
+    }
+}
+
+function handleCanvasDrop(e) {
+    e.preventDefault();
+    clearDropHighlights();
+    
+    const blockType = e.dataTransfer.getData('text/plain');
+    const source = e.dataTransfer.getData('source');
+    
+    if (source === 'palette') {
+        // Nouveau bloc depuis la palette
+        const newBlock = createBlock(blockType);
+        const dropIndex = getDropIndex(e);
+        blocks.splice(dropIndex, 0, newBlock);
+        renderCanvas();
+        selectBlock(newBlock.id);
+    }
+}
+
+function getDropTarget(e) {
+    const blockElements = document.querySelectorAll('.canvas-block');
+    for (const el of blockElements) {
+        const rect = el.getBoundingClientRect();
+        if (e.clientY < rect.bottom) {
+            return el;
+        }
+    }
+    return null;
+}
+
+function getDropIndex(e) {
+    const blockElements = document.querySelectorAll('.canvas-block');
+    for (let i = 0; i < blockElements.length; i++) {
+        const rect = blockElements[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+            return i;
+        }
+    }
+    return blocks.length;
+}
+
+function clearDropHighlights() {
+    document.querySelectorAll('.canvas-block.drag-over').forEach(el => {
+        el.classList.remove('drag-over');
+    });
+}
+
+// ========== BLOCKS MANAGEMENT ==========
+function createBlock(type) {
+    const typeConfig = BLOCK_TYPES[type] || {};
+    const defaultProps = typeConfig.default_props || {};
+    
+    return {
+        id: `block_${++blockIdCounter}`,
+        type: type,
+        props: JSON.parse(JSON.stringify(defaultProps))
+    };
+}
+
+function selectBlock(blockId) {
+    selectedBlockId = blockId;
+    
+    // Update visual selection
+    document.querySelectorAll('.canvas-block').forEach(el => {
+        el.classList.toggle('selected', el.dataset.blockId === blockId);
+    });
+    
+    // Show properties
+    renderProperties();
+}
+
+function deleteBlock(blockId) {
+    blocks = blocks.filter(b => b.id !== blockId);
+    if (selectedBlockId === blockId) {
+        selectedBlockId = null;
+        renderProperties();
+    }
+    renderCanvas();
+}
+
+function moveBlock(blockId, direction) {
+    const index = blocks.findIndex(b => b.id === blockId);
+    if (index === -1) return;
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= blocks.length) return;
+    
+    [blocks[index], blocks[newIndex]] = [blocks[newIndex], blocks[index]];
+    renderCanvas();
+}
+
+// ========== RENDERING ==========
+function renderCanvas() {
+    const container = document.getElementById('blocks-container');
+    const placeholder = document.getElementById('canvas-placeholder');
+    
+    if (blocks.length === 0) {
+        container.innerHTML = '';
+        placeholder.style.display = 'flex';
+        return;
+    }
+    
+    placeholder.style.display = 'none';
+    container.innerHTML = blocks.map(block => renderBlock(block)).join('');
+    
+    // Add event listeners
+    container.querySelectorAll('.canvas-block').forEach(el => {
+        el.addEventListener('click', (e) => {
+            if (!e.target.closest('.block-delete')) {
+                selectBlock(el.dataset.blockId);
+            }
+        });
+        
+        // Make blocks draggable for reordering
+        el.setAttribute('draggable', 'true');
+        el.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', el.dataset.blockId);
+            e.dataTransfer.setData('source', 'canvas');
+        });
+    });
+    
+    // Re-select if needed
+    if (selectedBlockId) {
+        const selectedEl = container.querySelector(`[data-block-id="${selectedBlockId}"]`);
+        if (selectedEl) selectedEl.classList.add('selected');
+    }
+}
+
+function renderBlock(block) {
+    const typeConfig = BLOCK_TYPES[block.type] || {};
+    const icon = typeConfig.icon || 'bi-square';
+    const name = typeConfig.name || block.type;
+    
+    return `
+        <div class="canvas-block" data-block-id="${block.id}" data-block-type="${block.type}">
+            <div class="block-handle" title="Déplacer"><i class="bi bi-grip-vertical"></i></div>
+            <button class="block-delete" onclick="deleteBlock('${block.id}')" title="Supprimer">
+                <i class="bi bi-x"></i>
+            </button>
+            <div class="block-preview">
+                ${renderBlockPreview(block)}
+            </div>
+        </div>
+    `;
+}
+
+function renderBlockPreview(block) {
+    const p = block.props || {};
+    
+    switch (block.type) {
+        case 'logo':
+            return `<div style="text-align: ${p.alignment || 'left'}">
+                <div style="display: inline-block; width: ${p.size === 'S' ? '80px' : p.size === 'L' ? '180px' : '120px'}; height: 60px; background: #f0f0f0; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-image text-muted"></i> Logo
+                </div>
+            </div>`;
+            
+        case 'title':
+            return `<div class="block-preview-title" style="font-size: ${p.font_size || 28}px; color: ${p.color || '#8B1538'}; text-align: ${p.alignment || 'left'}; font-weight: ${p.bold ? 'bold' : 'normal'}; font-style: ${p.italic ? 'italic' : 'normal'}">
+                ${p.text || 'DOCUMENT'}
+            </div>`;
+            
+        case 'document_info':
+            let infoHtml = '';
+            if (p.show_number !== false) infoHtml += `<div><strong>${p.number_label || 'N°'}</strong> DOC-2024-001</div>`;
+            if (p.show_date !== false) infoHtml += `<div>${p.date_label || 'Date'} : 02/12/2024</div>`;
+            if (p.show_validity) infoHtml += `<div>${p.validity_label || 'Valable jusqu\'au'} : 02/01/2025</div>`;
+            if (p.show_due_date) infoHtml += `<div>${p.due_date_label || 'Échéance'} : 02/01/2025</div>`;
+            return `<div style="text-align: ${p.alignment || 'left'}; font-size: ${p.font_size || 12}px">${infoHtml}</div>`;
+            
+        case 'org_info':
+            return `<div class="block-preview-org" style="text-align: ${p.alignment || 'right'}; font-size: ${p.font_size || 11}px">
+                <div style="font-size: ${p.name_size || 16}px; font-weight: ${p.name_bold ? 'bold' : 'normal'}">Mon Entreprise</div>
+                ${p.show_address !== false ? '<div>123 Rue de la Vigne<br>33000 Bordeaux</div>' : ''}
+                ${p.show_phone !== false ? '<div>Tél : 05 56 00 00 00</div>' : ''}
+                ${p.show_email !== false ? '<div>contact@entreprise.fr</div>' : ''}
+                ${p.show_siret ? '<div>SIRET : 123 456 789 00010</div>' : ''}
+                ${p.show_vat ? '<div>TVA : FR12345678901</div>' : ''}
+            </div>`;
+            
+        case 'customer_info':
+            return `<div class="block-preview-customer" style="background: ${p.background_color || '#f9f9f9'}; border-left-color: ${p.border_left_color || '#d4af37'}; text-align: ${p.alignment || 'left'}; font-size: ${p.font_size || 11}px; padding: ${p.padding || 15}px">
+                <strong>${p.title || 'Client :'}</strong><br>
+                <strong>Nom du client</strong><br>
+                Adresse du client<br>
+                33000 Bordeaux
+                ${p.show_vat !== false ? '<br>TVA : FR00000000000' : ''}
+            </div>`;
+            
+        case 'spacer':
+            return `<div class="block-preview-spacer" style="height: ${p.height || 30}px"></div>`;
+            
+        case 'divider':
+            return `<div class="block-preview-divider" style="margin: ${p.margin_top || 15}px 0 ${p.margin_bottom || 15}px 0">
+                <hr style="border-top-width: ${p.thickness || 1}px; border-top-color: ${p.color || '#ddd'}; width: ${p.width || 100}%">
+            </div>`;
+            
+        case 'section_title':
+            return `<div style="font-size: ${p.font_size || 14}px; font-weight: ${p.bold !== false ? 'bold' : 'normal'}; margin-top: ${p.margin_top || 20}px">
+                ${p.text || 'Titre de section'}
+            </div>`;
+            
+        case 'lines_table':
+            const cols = p.columns || {description: {show: true}, quantity: {show: true}, unit_price: {show: true}, total: {show: true}};
+            let headers = '';
+            let row = '';
+            if (cols.description?.show !== false) { headers += `<th>${cols.description?.label || 'Désignation'}</th>`; row += '<td>Produit exemple</td>'; }
+            if (cols.quantity?.show !== false) { headers += `<th style="text-align:center">${cols.quantity?.label || 'Qté'}</th>`; row += '<td style="text-align:center">2</td>'; }
+            if (cols.unit_price?.show !== false) { headers += `<th style="text-align:right">${cols.unit_price?.label || 'Prix unit. HT'}</th>`; row += '<td style="text-align:right">100,00 €</td>'; }
+            if (cols.total?.show !== false) { headers += `<th style="text-align:right">${cols.total?.label || 'Total HT'}</th>`; row += '<td style="text-align:right">200,00 €</td>'; }
+            return `<table class="block-preview-table" style="font-size: ${p.font_size || 11}px">
+                <thead><tr>${headers}</tr></thead>
+                <tbody><tr>${row}</tr><tr>${row}</tr></tbody>
+            </table>`;
+            
+        case 'totals':
+            return `<div class="block-preview-totals" style="text-align: ${p.alignment || 'right'}; font-size: ${p.font_size || 12}px">
+                <table>
+                    ${p.show_subtotal !== false ? `<tr><td>${p.subtotal_label || 'Total HT'}</td><td style="text-align:right">400,00 €</td></tr>` : ''}
+                    ${p.show_vat !== false ? `<tr><td>${p.vat_label || 'TVA'}</td><td style="text-align:right">80,00 €</td></tr>` : ''}
+                    ${p.show_total !== false ? `<tr class="total-row" style="font-weight: ${p.total_bold ? 'bold' : 'normal'}; font-size: ${p.total_size || 14}px"><td>${p.total_label || 'Total TTC'}</td><td style="text-align:right">480,00 €</td></tr>` : ''}
+                </table>
+            </div>`;
+            
+        case 'conditions':
+            return `<div class="block-preview-conditions" style="background: ${p.background_color || '#f7e7ce'}; border-color: ${p.border_color || '#d4af37'}; font-size: ${p.font_size || 10}px; padding: ${p.padding || 15}px; margin-top: ${p.margin_top || 30}px">
+                ${p.show_title !== false ? `<strong>${p.title || 'Conditions'}</strong><br>` : ''}
+                ${(p.content || 'Conditions de paiement...').replace(/\n/g, '<br>')}
+            </div>`;
+            
+        case 'signature':
+            return `<div class="block-preview-signature" style="margin-top: ${p.margin_top || 40}px; ${p.show_border !== false ? 'border: 1px solid #333;' : ''} padding: 15px">
+                <strong>${p.title || 'Signature du client'}</strong>
+                <p style="margin-top: 10px; color: #666">${p.subtitle || 'Date et signature'}</p>
+                <div style="height: ${p.height || 80}px"></div>
+            </div>`;
+            
+        case 'footer':
+            return `<div class="block-preview-footer" style="text-align: ${p.alignment || 'center'}; font-size: ${p.font_size || 8}pt; color: ${p.color || '#666'}">
+                ${p.content || 'Mon Entreprise - SIRET : 123 456 789 00010 - TVA : FR12345678901'}
+            </div>`;
+            
+        case 'text':
+            return `<div style="font-size: ${p.font_size || 11}px; text-align: ${p.alignment || 'left'}; font-weight: ${p.bold ? 'bold' : 'normal'}; font-style: ${p.italic ? 'italic' : 'normal'}">
+                ${p.content || 'Votre texte ici...'}
+            </div>`;
+            
+        default:
+            return `<div class="text-muted"><i class="bi bi-question-circle"></i> Bloc ${block.type}</div>`;
+    }
+}
+
+// ========== PROPERTIES PANEL ==========
+function renderProperties() {
+    const noSelection = document.getElementById('no-selection');
+    const form = document.getElementById('properties-form');
+    
+    if (!selectedBlockId) {
+        noSelection.style.display = 'block';
+        form.style.display = 'none';
+        return;
+    }
+    
+    const block = blocks.find(b => b.id === selectedBlockId);
+    if (!block) {
+        noSelection.style.display = 'block';
+        form.style.display = 'none';
+        return;
+    }
+    
+    noSelection.style.display = 'none';
+    form.style.display = 'block';
+    form.innerHTML = renderPropertiesForm(block);
+    
+    // Add change listeners
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('change', () => updateBlockProperty(block.id, input));
+        input.addEventListener('input', () => {
+            if (input.type === 'text' || input.type === 'number' || input.tagName === 'TEXTAREA') {
+                updateBlockProperty(block.id, input);
+            }
+        });
+    });
+}
+
+function renderPropertiesForm(block) {
+    const typeConfig = BLOCK_TYPES[block.type] || {};
+    const p = block.props || {};
+    
+    let html = `<div class="property-group">
+        <div class="property-group-title">${typeConfig.name || block.type}</div>
+    </div>`;
+    
+    switch (block.type) {
+        case 'title':
+            html += `
+                ${propText('text', 'Texte', p.text || 'DOCUMENT')}
+                ${propNumber('font_size', 'Taille (px)', p.font_size || 28, 10, 60)}
+                ${propColor('color', 'Couleur', p.color || '#8B1538')}
+                ${propAlignment('alignment', p.alignment || 'left')}
+                ${propCheckbox('bold', 'Gras', p.bold !== false)}
+                ${propCheckbox('italic', 'Italique', p.italic)}
+                ${propSpacing(p)}
+            `;
+            break;
+            
+        case 'document_info':
+            html += `
+                ${propCheckbox('show_number', 'Afficher le numéro', p.show_number !== false)}
+                ${propText('number_label', 'Libellé numéro', p.number_label || 'N°')}
+                ${propCheckbox('show_date', 'Afficher la date', p.show_date !== false)}
+                ${propText('date_label', 'Libellé date', p.date_label || 'Date')}
+                ${propCheckbox('show_validity', 'Afficher validité', p.show_validity)}
+                ${propText('validity_label', 'Libellé validité', p.validity_label || 'Valable jusqu\'au')}
+                ${propCheckbox('show_due_date', 'Afficher échéance', p.show_due_date)}
+                ${propAlignment('alignment', p.alignment || 'left')}
+            `;
+            break;
+            
+        case 'org_info':
+            html += `
+                ${propCheckbox('show_name', 'Nom', p.show_name !== false)}
+                ${propCheckbox('show_address', 'Adresse', p.show_address !== false)}
+                ${propCheckbox('show_phone', 'Téléphone', p.show_phone !== false)}
+                ${propCheckbox('show_email', 'Email', p.show_email !== false)}
+                ${propCheckbox('show_siret', 'SIRET', p.show_siret)}
+                ${propCheckbox('show_vat', 'N° TVA', p.show_vat)}
+                ${propCheckbox('show_website', 'Site web', p.show_website)}
+                ${propAlignment('alignment', p.alignment || 'right')}
+                ${propNumber('font_size', 'Taille texte', p.font_size || 11, 8, 16)}
+            `;
+            break;
+            
+        case 'customer_info':
+            html += `
+                ${propText('title', 'Titre', p.title || 'Client :')}
+                ${propCheckbox('show_name', 'Nom', p.show_name !== false)}
+                ${propCheckbox('show_address', 'Adresse', p.show_address !== false)}
+                ${propCheckbox('show_vat', 'N° TVA', p.show_vat !== false)}
+                ${propColor('background_color', 'Fond', p.background_color || '#f9f9f9')}
+                ${propColor('border_left_color', 'Bordure', p.border_left_color || '#d4af37')}
+                ${propAlignment('alignment', p.alignment || 'left')}
+                ${propSpacing(p)}
+                ${propPadding(p)}
+            `;
+            break;
+            
+        case 'spacer':
+            html += `${propNumber('height', 'Hauteur (px)', p.height || 30, 5, 200)}`;
+            break;
+            
+        case 'divider':
+            html += `
+                ${propNumber('thickness', 'Épaisseur (px)', p.thickness || 1, 1, 10)}
+                ${propColor('color', 'Couleur', p.color || '#ddd')}
+                ${propNumber('width', 'Largeur (%)', p.width || 100, 10, 100)}
+                ${propNumber('margin_top', 'Marge haut', p.margin_top || 15, 0, 50)}
+                ${propNumber('margin_bottom', 'Marge bas', p.margin_bottom || 15, 0, 50)}
+            `;
+            break;
+            
+        case 'section_title':
+            html += `
+                ${propText('text', 'Texte', p.text || 'Titre de section')}
+                ${propNumber('font_size', 'Taille (px)', p.font_size || 14, 10, 24)}
+                ${propCheckbox('bold', 'Gras', p.bold !== false)}
+                ${propNumber('margin_top', 'Marge haut', p.margin_top || 20, 0, 60)}
+            `;
+            break;
+            
+        case 'lines_table':
+            const cols = p.columns || {};
+            html += `
+                <div class="property-group-title">Colonnes</div>
+                ${propCheckbox('columns.description.show', 'Désignation', cols.description?.show !== false)}
+                ${propCheckbox('columns.quantity.show', 'Quantité', cols.quantity?.show !== false)}
+                ${propCheckbox('columns.unit_price.show', 'Prix unitaire', cols.unit_price?.show !== false)}
+                ${propCheckbox('columns.total.show', 'Total', cols.total?.show !== false)}
+                ${propCheckbox('columns.reference.show', 'Référence', cols.reference?.show)}
+                ${propCheckbox('columns.vat_rate.show', 'Taux TVA', cols.vat_rate?.show)}
+                <hr>
+                ${propNumber('font_size', 'Taille texte', p.font_size || 11, 8, 14)}
+                ${propCheckbox('border', 'Bordures', p.border !== false)}
+                ${propCheckbox('striped', 'Lignes alternées', p.striped)}
+            `;
+            break;
+            
+        case 'totals':
+            html += `
+                ${propCheckbox('show_subtotal', 'Total HT', p.show_subtotal !== false)}
+                ${propText('subtotal_label', 'Libellé HT', p.subtotal_label || 'Total HT')}
+                ${propCheckbox('show_vat', 'TVA', p.show_vat !== false)}
+                ${propText('vat_label', 'Libellé TVA', p.vat_label || 'TVA')}
+                ${propCheckbox('show_total', 'Total TTC', p.show_total !== false)}
+                ${propText('total_label', 'Libellé TTC', p.total_label || 'Total TTC')}
+                ${propCheckbox('total_bold', 'Total en gras', p.total_bold !== false)}
+                ${propAlignment('alignment', p.alignment || 'right')}
+            `;
+            break;
+            
+        case 'conditions':
+            html += `
+                ${propCheckbox('show_title', 'Afficher titre', p.show_title !== false)}
+                ${propText('title', 'Titre', p.title || 'Conditions')}
+                ${propTextarea('content', 'Contenu', p.content || '')}
+                ${propColor('background_color', 'Fond', p.background_color || '#f7e7ce')}
+                ${propColor('border_color', 'Bordure', p.border_color || '#d4af37')}
+                ${propNumber('font_size', 'Taille texte', p.font_size || 10, 8, 14)}
+                ${propSpacing(p)}
+                ${propPadding(p)}
+            `;
+            break;
+            
+        case 'signature':
+            html += `
+                ${propText('title', 'Titre', p.title || 'Signature du client')}
+                ${propText('subtitle', 'Sous-titre', p.subtitle || '')}
+                ${propNumber('height', 'Hauteur zone', p.height || 80, 40, 150)}
+                ${propCheckbox('show_border', 'Bordure', p.show_border !== false)}
+            `;
+            break;
+            
+        case 'footer':
+            html += `
+                ${propTextarea('content', 'Contenu personnalisé', p.content || '')}
+                ${propCheckbox('show_name', 'Nom entreprise', p.show_name !== false)}
+                ${propCheckbox('show_siret', 'SIRET', p.show_siret !== false)}
+                ${propCheckbox('show_vat', 'N° TVA', p.show_vat !== false)}
+                ${propCheckbox('show_website', 'Site web', p.show_website)}
+                ${propAlignment('alignment', p.alignment || 'center')}
+                ${propNumber('font_size', 'Taille (pt)', p.font_size || 8, 6, 12)}
+            `;
+            break;
+            
+        case 'text':
+            html += `
+                ${propTextarea('content', 'Texte', p.content || '')}
+                ${propNumber('font_size', 'Taille (px)', p.font_size || 11, 8, 24)}
+                ${propAlignment('alignment', p.alignment || 'left')}
+                ${propCheckbox('bold', 'Gras', p.bold)}
+                ${propCheckbox('italic', 'Italique', p.italic)}
+                ${propSpacing(p)}
+            `;
+            break;
+            
+        case 'logo':
+            html += `
+                ${propSelect('size', 'Taille', p.size || 'M', [['S', 'Petit'], ['M', 'Moyen'], ['L', 'Grand']])}
+                ${propAlignment('alignment', p.alignment || 'left')}
+                ${propNumber('margin_bottom', 'Marge bas', p.margin_bottom || 20, 0, 50)}
+            `;
+            break;
+    }
+    
+    return html;
+}
+
+// Property field helpers
+function propText(name, label, value) {
+    return `<div class="property-row">
+        <label>${label}</label>
+        <input type="text" name="${name}" value="${escapeHtml(value)}">
+    </div>`;
+}
+
+function propNumber(name, label, value, min, max) {
+    return `<div class="property-row">
+        <label>${label}</label>
+        <div class="pixel-input-group">
+            <input type="number" name="${name}" value="${value}" min="${min}" max="${max}">
+            <span>px</span>
+        </div>
+    </div>`;
+}
+
+function propColor(name, label, value) {
+    return `<div class="property-row property-row-inline">
+        <label>${label}</label>
+        <input type="color" name="${name}" value="${value}">
+    </div>`;
+}
+
+function propCheckbox(name, label, checked) {
+    return `<div class="property-row property-row-inline">
+        <label>${label}</label>
+        <input type="checkbox" name="${name}" ${checked ? 'checked' : ''} class="form-check-input">
+    </div>`;
+}
+
+function propSelect(name, label, value, options) {
+    const opts = options.map(([v, l]) => `<option value="${v}" ${v === value ? 'selected' : ''}>${l}</option>`).join('');
+    return `<div class="property-row">
+        <label>${label}</label>
+        <select name="${name}">${opts}</select>
+    </div>`;
+}
+
+function propTextarea(name, label, value) {
+    return `<div class="property-row">
+        <label>${label}</label>
+        <textarea name="${name}" rows="4">${escapeHtml(value)}</textarea>
+        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="openTextEditor('${name}')">
+            <i class="bi bi-braces"></i> Insérer variable
+        </button>
+    </div>`;
+}
+
+function propSpacing(props) {
+    return `
+    <div class="property-group">
+        <div class="property-group-title">Marges (px)</div>
+        <div class="spacing-grid">
+            <div class="property-row">
+                <label>Haut</label>
+                <div class="pixel-input-group">
+                    <input type="number" name="margin_top" value="${props.margin_top || 0}" min="0" max="200">
+                    <span>px</span>
+                </div>
+            </div>
+            <div class="property-row">
+                <label>Bas</label>
+                <div class="pixel-input-group">
+                    <input type="number" name="margin_bottom" value="${props.margin_bottom || 0}" min="0" max="200">
+                    <span>px</span>
+                </div>
+            </div>
+            <div class="property-row">
+                <label>Gauche</label>
+                <div class="pixel-input-group">
+                    <input type="number" name="margin_left" value="${props.margin_left || 0}" min="0" max="200">
+                    <span>px</span>
+                </div>
+            </div>
+            <div class="property-row">
+                <label>Droite</label>
+                <div class="pixel-input-group">
+                    <input type="number" name="margin_right" value="${props.margin_right || 0}" min="0" max="200">
+                    <span>px</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function propPadding(props) {
+    return `
+    <div class="property-group">
+        <div class="property-group-title">Padding intérieur (px)</div>
+        <div class="spacing-grid">
+            <div class="property-row">
+                <label>Haut</label>
+                <div class="pixel-input-group">
+                    <input type="number" name="padding_top" value="${props.padding_top || props.padding || 0}" min="0" max="100">
+                    <span>px</span>
+                </div>
+            </div>
+            <div class="property-row">
+                <label>Bas</label>
+                <div class="pixel-input-group">
+                    <input type="number" name="padding_bottom" value="${props.padding_bottom || props.padding || 0}" min="0" max="100">
+                    <span>px</span>
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function propAlignment(name, value) {
+    return `<div class="property-row">
+        <label>Alignement</label>
+        <div class="btn-group-prop">
+            <button type="button" class="btn btn-sm btn-outline-secondary ${value === 'left' ? 'active' : ''}" onclick="setAlignment('${name}', 'left')">
+                <i class="bi bi-text-left"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary ${value === 'center' ? 'active' : ''}" onclick="setAlignment('${name}', 'center')">
+                <i class="bi bi-text-center"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary ${value === 'right' ? 'active' : ''}" onclick="setAlignment('${name}', 'right')">
+                <i class="bi bi-text-right"></i>
+            </button>
+        </div>
+    </div>`;
+}
+
+function setAlignment(name, value) {
+    const block = blocks.find(b => b.id === selectedBlockId);
+    if (block) {
+        setNestedProperty(block.props, name, value);
+        renderCanvas();
+        renderProperties();
+    }
+}
+
+function updateBlockProperty(blockId, input) {
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) return;
+    
+    const name = input.name;
+    let value;
+    
+    if (input.type === 'checkbox') {
+        value = input.checked;
+    } else if (input.type === 'number') {
+        value = parseFloat(input.value);
+    } else {
+        value = input.value;
+    }
+    
+    setNestedProperty(block.props, name, value);
+    renderCanvas();
+}
+
+function setNestedProperty(obj, path, value) {
+    const parts = path.split('.');
+    let current = obj;
+    
+    for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) {
+            current[parts[i]] = {};
+        }
+        current = current[parts[i]];
+    }
+    
+    current[parts[parts.length - 1]] = value;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ========== PRESETS ==========
+function loadPreset(presetKey) {
+    const preset = PRESETS[presetKey];
+    if (!preset) return;
+    
+    if (blocks.length > 0) {
+        if (!confirm('Cela remplacera les blocs actuels. Continuer ?')) {
+            return;
+        }
+    }
+    
+    // Set document type
+    document.getElementById('template-type').value = preset.document_type || presetKey;
+    document.getElementById('template-name').value = preset.name;
+    
+    // Load blocks
+    blocks = JSON.parse(JSON.stringify(preset.blocks));
+    blockIdCounter = blocks.length;
+    
+    selectedBlockId = null;
+    renderCanvas();
+    renderProperties();
+}
+
+// ========== SAVE & PREVIEW ==========
+function saveTemplate() {
+    const data = {
+        name: document.getElementById('template-name').value,
+        document_type: document.getElementById('template-type').value,
+        orientation: document.getElementById('template-orientation').value,
+        blocks_config: blocks,
+        editor_mode: 'blocks'
+    };
+    
+    const url = TEMPLATE_ID 
+        ? `/clients/templates/${TEMPLATE_ID}/save-blocks/`
+        : '/clients/templates/creer-blocks/';
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            window.location.href = result.redirect_url || '/clients/templates/';
+        } else {
+            alert('Erreur: ' + (result.error || 'Erreur inconnue'));
+        }
+    })
+    .catch(err => {
+        alert('Erreur de sauvegarde: ' + err.message);
+    });
+}
+
+function previewTemplate() {
+    // Open preview in new window
+    const previewWindow = window.open('', '_blank');
+    previewWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Aperçu - ${document.getElementById('template-name').value}</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+                body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 20mm; }
+                @page { size: A4 ${document.getElementById('template-orientation').value}; margin: 20mm; }
+            </style>
+        </head>
+        <body>
+            ${document.getElementById('blocks-container').innerHTML}
+        </body>
+        </html>
+    `);
+    previewWindow.document.close();
+}
+
+// ========== TEXT EDITOR WITH VARIABLES ==========
+let currentTextEditorField = null;
+
+function openTextEditor(fieldName) {
+    currentTextEditorField = fieldName;
+    const textarea = document.querySelector(`textarea[name="${fieldName}"]`);
+    const currentValue = textarea ? textarea.value : '';
+    
+    const modal = document.createElement('div');
+    modal.className = 'text-editor-modal';
+    modal.id = 'textEditorModal';
+    modal.innerHTML = `
+        <div class="text-editor-content">
+            <div class="text-editor-header">
+                <h5><i class="bi bi-text-paragraph"></i> Éditeur de texte</h5>
+                <button type="button" class="btn-close" onclick="closeTextEditor()"></button>
+            </div>
+            <div class="text-editor-body">
+                <textarea id="textEditorContent" rows="8">${escapeHtml(currentValue)}</textarea>
+                <div class="text-editor-variables">
+                    <p class="small text-muted mb-2"><i class="bi bi-info-circle"></i> Cliquez sur une variable pour l'insérer :</p>
+                    <div class="variable-category">
+                        <span class="variable-category-title"><i class="bi bi-building"></i> Organisation</span>
+                        <span class="variable-chip" onclick="insertVar('organization.name')">Nom entreprise</span>
+                        <span class="variable-chip" onclick="insertVar('organization.address')">Adresse</span>
+                        <span class="variable-chip" onclick="insertVar('organization.phone')">Téléphone</span>
+                        <span class="variable-chip" onclick="insertVar('organization.email')">Email</span>
+                    </div>
+                    <div class="variable-category mt-2">
+                        <span class="variable-category-title"><i class="bi bi-person"></i> Client</span>
+                        <span class="variable-chip" onclick="insertVar('customer.legal_name')">Nom client</span>
+                        <span class="variable-chip" onclick="insertVar('customer.billing_address')">Adresse</span>
+                        <span class="variable-chip" onclick="insertVar('customer.billing_city')">Ville</span>
+                    </div>
+                    <div class="variable-category mt-2">
+                        <span class="variable-category-title"><i class="bi bi-file-text"></i> Document</span>
+                        <span class="variable-chip" onclick="insertVar('document.number')">Numéro</span>
+                        <span class="variable-chip" onclick="insertVar('document.date')">Date</span>
+                        <span class="variable-chip" onclick="insertVar('totals.total_ht')">Total HT</span>
+                        <span class="variable-chip" onclick="insertVar('totals.total_ttc')">Total TTC</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-editor-footer">
+                <button type="button" class="btn btn-light" onclick="closeTextEditor()">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="applyTextEditor()">
+                    <i class="bi bi-check-lg"></i> Appliquer
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function insertVar(varName) {
+    const textarea = document.getElementById('textEditorContent');
+    const cursorPos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const textAfter = textarea.value.substring(cursorPos);
+    textarea.value = textBefore + '{{ ' + varName + ' }}' + textAfter;
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = cursorPos + varName.length + 6;
+}
+
+function closeTextEditor() {
+    const modal = document.getElementById('textEditorModal');
+    if (modal) modal.remove();
+    currentTextEditorField = null;
+}
+
+function applyTextEditor() {
+    if (!currentTextEditorField) return;
+    
+    const newValue = document.getElementById('textEditorContent').value;
+    const originalTextarea = document.querySelector(`textarea[name="${currentTextEditorField}"]`);
+    
+    if (originalTextarea) {
+        originalTextarea.value = newValue;
+        // Trigger change event
+        originalTextarea.dispatchEvent(new Event('change'));
+    }
+    
+    closeTextEditor();
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

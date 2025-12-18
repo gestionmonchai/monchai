@@ -1,0 +1,91 @@
+{% load humanize %}
+<table class="table table-hover align-middle mb-0">
+  <thead class="table-light">
+    <tr>
+      <th>Code lot</th>
+      <th>Cuvée</th>
+      <th>Format</th>
+      <th class="text-end">Qté initiale</th>
+      <th class="text-end">Stock dispo</th>
+      <th>Étiquetage</th>
+      <th>Date mise</th>
+      <th>Mise</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for lot in object_list %}
+    <tr>
+      <td>
+        <a href="{% url 'produits:lot_com_detail' lot.id %}" class="fw-medium text-decoration-none">
+          {{ lot.code_lot }}
+        </a>
+      </td>
+      <td>{{ lot.cuvee.name|default:"—" }}</td>
+      <td>{{ lot.format_ml }} mL</td>
+      <td class="text-end">{{ lot.quantite_unites|intcomma }}</td>
+      <td class="text-end fw-semibold {% if lot.stock_disponible == 0 %}text-muted{% elif lot.stock_disponible < 50 %}text-warning{% else %}text-success{% endif %}">
+        {{ lot.stock_disponible|intcomma }}
+      </td>
+      <td>
+        {% if lot.etiquetage == 'etiquete' %}
+          <span class="badge bg-success-subtle text-success">Étiqueté</span>
+        {% elif lot.etiquetage == 'partiel' %}
+          <span class="badge bg-warning-subtle text-warning">Partiel</span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-secondary">Non étiqueté</span>
+        {% endif %}
+      </td>
+      <td>{{ lot.date_mise|date:"d/m/Y"|default:"—" }}</td>
+      <td>
+        {% if lot.mise %}
+          <a href="{% url 'production:mise_detail' lot.mise.id %}" class="text-decoration-none">
+            {{ lot.mise.code_of }}
+          </a>
+        {% else %}
+          <span class="text-muted">Stock initial</span>
+        {% endif %}
+      </td>
+      <td class="text-end">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Étiqueter</a></li>
+            <li><a class="dropdown-item" href="#">Mouvement sortie</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#">Ajustement stock</a></li>
+          </ul>
+        </div>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="9" class="text-center text-muted py-4">
+        <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+        Aucun lot commercial trouvé.<br>
+        <small>Les lots commerciaux sont créés lors des mises en bouteille.</small>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k, v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&laquo;</a>
+    </li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k, v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&raquo;</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

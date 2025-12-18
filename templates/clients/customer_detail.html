@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'commerce/base_commerce.html' %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Mon Chai{% endblock %}
@@ -54,7 +54,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block commerce_content %}
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -80,10 +80,10 @@
                     </div>
                     <div class="text-end">
                         <div class="btn-group" role="group">
-                            <a href="{% url 'ventes:client_edit' customer.id %}" class="btn btn-light">
+                            <a href="{% url 'clients:customer_edit' customer.id %}" class="btn btn-light">
                                 <i class="bi bi-pencil me-1"></i>Modifier
                             </a>
-                            <a href="{% url 'ventes:clients_list' %}" class="btn btn-outline-light">
+                            <a href="{% url 'clients:customers_list' %}" class="btn btn-outline-light">
                                 <i class="bi bi-arrow-left me-1"></i>Retour
                             </a>
                         </div>
@@ -285,7 +285,7 @@
                                 
                                 <hr class="my-2">
                                 
-                                <a href="{% url 'ventes:client_edit' customer.id %}" class="btn btn-primary btn-sm">
+                                <a href="{% url 'clients:customer_edit' customer.id %}" class="btn btn-primary btn-sm">
                                     <i class="bi bi-pencil me-1"></i>Modifier le client
                                 </a>
                             </div>

@@ -23,7 +23,7 @@ class ParcelleOperationType(models.Model):
 
 class ParcelleJournalEntry(models.Model):
     """Ligne de journal en lecture seule (écrite par services/signaux)."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey('accounts.Organization', on_delete=models.CASCADE)
     parcelle = models.ForeignKey('referentiels.Parcelle', on_delete=models.CASCADE, related_name='journal')
 

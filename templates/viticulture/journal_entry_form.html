@@ -1,0 +1,174 @@
+{% extends 'production/base_production.html' %}
+{% load humanize %}
+
+{% block title %}{% if is_edit %}Modifier{% else %}Nouvelle{% endif %} intervention - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 mb-1">
+            <i class="bi bi-pencil-square me-2"></i>
+            {% if is_edit %}Modifier l'intervention{% else %}Nouvelle intervention{% endif %}
+        </h1>
+        <p class="text-muted mb-0">
+            <i class="bi bi-geo-alt me-1"></i>{{ parcelle.nom }}
+        </p>
+    </div>
+    <a href="{% if is_edit %}{% url 'viticulture:journal_entry_detail' pk=entry.pk %}{% else %}{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}{% endif %}" class="btn btn-outline-secondary">
+        <i class="bi bi-x-lg me-1"></i>Annuler
+    </a>
+</div>
+
+<form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+    
+    <div class="row g-4">
+        <!-- Colonne principale -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informations principales</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="op_type" class="form-label">Type d'intervention <span class="text-danger">*</span></label>
+                            <select class="form-select" id="op_type" name="op_type" required>
+                                {% for ot in op_types %}
+                                <option value="{{ ot.code }}" {% if entry.op_type.code == ot.code or form.op_type == ot.code %}selected{% endif %}>
+                                    {{ ot.label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="date" name="date" 
+                                   value="{% if form.date %}{{ form.date }}{% elif entry.date %}{{ entry.date|date:'Y-m-d' }}{% endif %}" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="resume" class="form-label">Résumé <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="resume" name="resume" 
+                                   value="{% if form.resume %}{{ form.resume }}{% elif entry.resume %}{{ entry.resume }}{% endif %}"
+                                   placeholder="Ex: Taille de formation, Traitement anti-mildiou..."
+                                   maxlength="240" required>
+                            <div class="form-text">Description courte de l'intervention (max 240 caractères)</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="notes" class="form-label">Notes détaillées</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4" 
+                                      placeholder="Détails supplémentaires, conditions météo, observations...">{% if form.notes %}{{ form.notes }}{% elif entry.notes %}{{ entry.notes }}{% endif %}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-rulers me-2"></i>Surface et rangs</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="surface_ha" class="form-label">Surface traitée (ha)</label>
+                            <input type="number" step="0.01" class="form-control" id="surface_ha" name="surface_ha" 
+                                   value="{% if form.surface_ha %}{{ form.surface_ha }}{% elif entry.surface_ha %}{{ entry.surface_ha }}{% endif %}"
+                                   placeholder="{{ parcelle.surface|default:'0.00' }}">
+                            <div class="form-text">Surface de la parcelle : {{ parcelle.surface|floatformat:2|default:"Non renseignée" }} ha</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="rangs" class="form-label">Rangs concernés</label>
+                            <input type="text" class="form-control" id="rangs" name="rangs" 
+                                   value="{% if form.rangs %}{{ form.rangs }}{% elif entry.rangs %}{{ entry.rangs }}{% endif %}"
+                                   placeholder="Ex: 1-15, tous, pairs...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Colonne latérale -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-currency-euro me-2"></i>Coûts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="cout_mo_eur" class="form-label">Main d'œuvre (€)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" class="form-control" id="cout_mo_eur" name="cout_mo_eur" 
+                                   value="{% if form.cout_mo_eur %}{{ form.cout_mo_eur }}{% elif entry.cout_mo_eur %}{{ entry.cout_mo_eur }}{% endif %}"
+                                   placeholder="0.00">
+                            <span class="input-group-text">€</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cout_matiere_eur" class="form-label">Matières / Produits (€)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" class="form-control" id="cout_matiere_eur" name="cout_matiere_eur" 
+                                   value="{% if form.cout_matiere_eur %}{{ form.cout_matiere_eur }}{% elif entry.cout_matiere_eur %}{{ entry.cout_matiere_eur }}{% endif %}"
+                                   placeholder="0.00">
+                            <span class="input-group-text">€</span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Total estimé :</span>
+                        <span class="fw-bold text-primary" id="cout-total">
+                            {% if entry.cout_total_eur %}{{ entry.cout_total_eur|floatformat:2 }} €{% else %}— €{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4 bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3"><i class="bi bi-lightbulb me-2"></i>Aide</h6>
+                    <ul class="small text-muted mb-0 ps-3">
+                        <li class="mb-2">Le <strong>résumé</strong> apparaîtra dans les tableaux et timelines.</li>
+                        <li class="mb-2">Les <strong>notes</strong> permettent de détailler l'intervention.</li>
+                        <li>Les <strong>coûts</strong> sont optionnels mais utiles pour le suivi analytique.</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Boutons d'action -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-lg me-1"></i>
+                    {% if is_edit %}Enregistrer les modifications{% else %}Créer l'intervention{% endif %}
+                </button>
+                <a href="{% if is_edit %}{% url 'viticulture:journal_entry_detail' pk=entry.pk %}{% else %}{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}{% endif %}" class="btn btn-outline-secondary">
+                    Annuler
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcul automatique du total
+    const moInput = document.getElementById('cout_mo_eur');
+    const msInput = document.getElementById('cout_matiere_eur');
+    const totalSpan = document.getElementById('cout-total');
+    
+    function updateTotal() {
+        const mo = parseFloat(moInput.value) || 0;
+        const ms = parseFloat(msInput.value) || 0;
+        const total = mo + ms;
+        totalSpan.textContent = total > 0 ? total.toFixed(2) + ' €' : '— €';
+    }
+    
+    if (moInput) moInput.addEventListener('input', updateTotal);
+    if (msInput) msInput.addEventListener('input', updateTotal);
+});
+</script>
+{% endblock %}

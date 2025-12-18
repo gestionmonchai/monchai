@@ -6,32 +6,56 @@
 {# 2. STYLE CSS POUR LA TRANSITION #}
 {% block extra_css %}
 <style>
+    /* ===========================================
+       LAYOUT PRODUCTION - DESKTOP OPTIMISÉ
+       =========================================== */
+    
     /* Transitions douces pour tout changement de dimension/marge */
     .transition-all {
         transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     
+    /* Layout principal aligné (desktop) */
+    @media (min-width: 992px) {
+        #production-layout {
+            padding-top: 0.5rem;
+        }
+        #prodSidebar {
+            width: 240px;
+            flex: 0 0 240px;
+            padding-top: 0;
+        }
+        #prodContent {
+            width: calc(100% - 240px);
+            flex: 0 0 calc(100% - 240px);
+            padding-top: 0;
+        }
+        /* Aligner le haut du sidebar et du contenu */
+        #prodSidebar, #prodContent {
+            margin-top: 0 !important;
+        }
+        /* Réduire padding du sidebar card */
+        #prodSidebar .card {
+            margin-bottom: 0.5rem;
+        }
+        #prodSidebar .card-header {
+            padding: 0.5rem 0.75rem;
+        }
+        #prodSidebar .list-group-item {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
+    }
+    
     /* Styles pour le sidebar rétracté */
     .sidebar-collapsed #prodSidebar {
-        width: 80px !important;
-        flex: 0 0 80px !important;
+        width: 70px !important;
+        flex: 0 0 70px !important;
     }
     
     .sidebar-collapsed #prodContent {
-        width: calc(100% - 80px) !important;
-        flex: 0 0 calc(100% - 80px) !important;
-    }
-
-    /* Réduction de la largeur par défaut du menu (environ 25% de moins que col-lg-3) */
-    @media (min-width: 992px) {
-        #prodSidebar {
-            width: 260px;
-            flex: 0 0 260px;
-        }
-        #prodContent {
-            width: calc(100% - 260px);
-            flex: 0 0 calc(100% - 260px);
-        }
+        width: calc(100% - 70px) !important;
+        flex: 0 0 calc(100% - 70px) !important;
     }
 
     /* Animation des libellés de texte */
@@ -92,67 +116,244 @@
         flex-direction: column;
         gap: 10px;
     }
+    
+    /* ===========================================
+       RESPONSIVE MOBILE
+       =========================================== */
+    
+    @media (max-width: 991.98px) {
+        /* Menu en accordeon horizontal sur mobile */
+        #prodSidebar {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 1;
+            margin-bottom: 0.75rem;
+        }
+        #prodContent {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 2;
+        }
+        #production-layout > .row {
+            flex-direction: column;
+        }
+        /* Menu plus compact sur mobile */
+        #prodSidebar .card {
+            margin-bottom: 0.5rem;
+        }
+        #prodSidebar .card-header {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+        }
+        #prodSidebar .list-group {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        #prodSidebar .list-group.show {
+            max-height: 500px;
+        }
+        #prodSidebar .list-group-item {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        /* Section headers plus discrets */
+        .sidebar-section-header {
+            padding: 0.25rem 1rem !important;
+            font-size: 0.7rem !important;
+        }
+        /* Boutons d'actions empilables */
+        .btn-group {
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+        .btn-group > .btn {
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+        /* KPIs en 2 colonnes sur mobile */
+        .row.g-3 > [class*="col-md-3"] {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+        /* Tableaux scrollables */
+        .table-responsive {
+            font-size: 0.8rem;
+        }
+        .table th, .table td {
+            padding: 0.4rem 0.5rem;
+            white-space: nowrap;
+        }
+        /* Cards plus compacts */
+        .card-body {
+            padding: 0.75rem;
+        }
+        /* Titres réduits */
+        h1.h4, .h4 {
+            font-size: 1.1rem;
+        }
+        /* Formulaires empilables */
+        .row.g-3 > [class*="col-md-"] {
+            margin-bottom: 0.5rem;
+        }
+        /* Masquer textes secondaires */
+        .d-none-mobile {
+            display: none !important;
+        }
+    }
+    
+    @media (max-width: 575.98px) {
+        /* Très petit écran */
+        .row.g-3 > [class*="col-md-3"] {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+        .btn-group > .btn {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.5rem;
+        }
+        /* Header page plus compact */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: stretch !important;
+        }
+        .d-flex.justify-content-between > .btn-group {
+            width: 100%;
+            justify-content: stretch;
+        }
+    }
 </style>
 {% endblock %}
 
 {# 3. ON REDÉFINIT LE BLOC PRINCIPAL POUR LE LAYOUT SIDEBAR #}
 {% block content %}
-<div class="container-fluid px-0" id="production-layout">
-    <div class="row g-0">
+<div class="container-fluid px-2 px-lg-3" id="production-layout">
+    <div class="row g-0 g-lg-2">
         <!-- Sidebar Column -->
-        <div class="col-lg-3 mb-3 mt-4 transition-all" id="prodSidebar">
-            <div class="pe-lg-2 h-100">
+        <div class="transition-all" id="prodSidebar">
+            <div class="pe-lg-2">
                 {% include '_layout/sidebar_production.html' %}
             </div>
         </div>
 
         <!-- Content Column -->
-        <div class="col-lg-9 transition-all" id="prodContent">
-            <div class="d-flex align-items-center mb-2 position-relative">
-                <div class="flex-grow-1">
-                   <!-- Espace pour fil d'ariane ou titre si besoin -->
-                </div>
-            </div>
-            {# Ici on injecte le contenu spécifique de chaque page #}
+        <div class="transition-all" id="prodContent">
+            {# Contenu spécifique de chaque page (titre inclus dans chaque template) #}
             {% block production_content %}{% endblock %}
         </div>
     </div>
 </div>
 
+<!-- Bouton flottant Créer Alerte -->
+<div class="position-fixed bottom-0 end-0 mb-4 me-4 d-flex flex-column gap-2" style="z-index: 1050;">
+    <a href="{% url 'production:alert_create' %}?return={{ request.path|urlencode }}" 
+       class="btn btn-warning shadow-lg rounded-circle d-flex align-items-center justify-content-center"
+       style="width: 50px; height: 50px;"
+       title="Créer une alerte / rappel"
+       data-bs-toggle="tooltip" data-bs-placement="left">
+        <i class="bi bi-bell-fill"></i>
+    </a>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const btnHeader = document.getElementById('btnToggleSidebarFromHeader');
+    const btnDesktop = document.getElementById('btnToggleSidebarDesktop');
+    const btnMobile = document.getElementById('btnToggleSidebarMobile');
     const layout = document.getElementById('production-layout');
+    const sidebar = document.getElementById('prodSidebar');
     
-    // Clé localStorage
     const STORAGE_KEY = 'monchai_prod_sidebar_collapsed';
 
-    function setSidebarState(isCollapsed) {
+    function isMobile() {
+        return window.innerWidth < 992;
+    }
+
+    // === DESKTOP: Collapse/Expand sidebar ===
+    function setSidebarCollapsed(isCollapsed) {
+        if (!layout) return;
         if (isCollapsed) {
             layout.classList.add('sidebar-collapsed');
         } else {
             layout.classList.remove('sidebar-collapsed');
         }
+        // Update chevron
+        const chevron = document.getElementById('desktopChevron');
+        if (chevron) {
+            chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
     }
 
-    // Init state from storage
-    const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
-    if(layout) {
-        setSidebarState(isCollapsed);
+    // Init desktop state
+    if (!isMobile()) {
+        const saved = localStorage.getItem(STORAGE_KEY) === 'true';
+        setSidebarCollapsed(saved);
     }
 
-    function toggleSidebar() {
-        if(!layout) return;
-        const currentlyCollapsed = layout.classList.contains('sidebar-collapsed');
-        const newState = !currentlyCollapsed;
-        setSidebarState(newState);
-        localStorage.setItem(STORAGE_KEY, newState);
+    if (btnDesktop) {
+        btnDesktop.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const isCollapsed = layout.classList.contains('sidebar-collapsed');
+            setSidebarCollapsed(!isCollapsed);
+            localStorage.setItem(STORAGE_KEY, !isCollapsed);
+        });
     }
 
-    // Toggle click from sidebar header
-    if(btnHeader) {
-        btnHeader.addEventListener('click', toggleSidebar);
+    // === MOBILE: Show/Hide menu ===
+    function toggleMobileMenu() {
+        const listGroup = sidebar ? sidebar.querySelector('.list-group') : null;
+        const chevron = document.getElementById('mobileMenuChevron');
+        if (!listGroup) return;
+        
+        const isShown = listGroup.classList.contains('show');
+        if (isShown) {
+            listGroup.classList.remove('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-up');
+                chevron.classList.add('bi-chevron-down');
+            }
+        } else {
+            listGroup.classList.add('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-down');
+                chevron.classList.add('bi-chevron-up');
+            }
+        }
     }
+
+    if (btnMobile) {
+        btnMobile.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileMenu();
+        });
+    }
+
+    // Card header click (mobile only)
+    if (sidebar) {
+        const cardHeader = sidebar.querySelector('.card-header');
+        if (cardHeader) {
+            cardHeader.addEventListener('click', function(e) {
+                if (!isMobile()) return;
+                if (e.target.closest('button') || e.target.closest('a')) return;
+                toggleMobileMenu();
+            });
+        }
+    }
+
+    // Handle resize
+    window.addEventListener('resize', function() {
+        const listGroup = sidebar ? sidebar.querySelector('.list-group') : null;
+        if (!listGroup) return;
+        
+        if (!isMobile()) {
+            listGroup.style.maxHeight = 'none';
+            listGroup.classList.remove('show');
+        } else {
+            listGroup.style.maxHeight = '';
+        }
+    });
 });
 </script>
 {% endblock %}

@@ -14,7 +14,182 @@ from .models_catalog import Product, SKU, InventoryItem
 from apps.viticulture.models import Cuvee
 from decimal import Decimal
 from .models import LotCommercial
-from .forms_catalog import ProductForm, SKUForm
+from .forms_catalog import (
+    ProductForm, SKUForm, 
+    PurchaseArticleForm, SalesArticleForm,
+    BridgePurchaseToSalesForm, BridgeSalesToPurchaseForm
+)
+
+
+@method_decorator(login_required, name='dispatch')
+class PurchaseArticleCreateView(View):
+    """
+    Étape 1 Achat : Création d'un article depuis le menu Achats.
+    """
+    def get(self, request):
+        form = PurchaseArticleForm()
+        return render(request, 'produits/purchase_article_form.html', {
+            'form': form,
+            'page_title': 'Nouvel article d\'achat',
+            'step': 1
+        })
+
+    def post(self, request):
+        form = PurchaseArticleForm(request.POST)
+        if form.is_valid():
+            product = form.save(commit=False)
+            org = getattr(request, 'current_org', None)
+            if not org and hasattr(request.user, 'get_active_membership'):
+                m = request.user.get_active_membership()
+                org = getattr(m, 'organization', None)
+            product.organization = org
+            
+            # Using form.save() to handle Profile creation transactionally if possible
+            # But we need organization set on product before saving.
+            # PurchaseArticleForm.save() does product.save() then profile creation.
+            # So we set organization on the instance before calling form.save()
+            
+            # Re-bind form with instance having org? No, just set it on instance.
+            form.instance.organization = org
+            try:
+                product = form.save()
+                messages.success(request, f"Article \"{product.name}\" créé avec succès.")
+                return redirect('produits:purchase_success', slug=product.slug)
+            except Exception as e:
+                messages.error(request, f"Erreur lors de la création : {e}")
+        
+        return render(request, 'produits/purchase_article_form.html', {
+            'form': form,
+            'page_title': 'Nouvel article d\'achat',
+            'step': 1
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class PurchaseArticleSuccessView(View):
+    """
+    Étape 2 Achat : "Et maintenant ?" - Passerelle vers Vente.
+    """
+    def get(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        return render(request, 'produits/purchase_article_success.html', {
+            'product': product,
+            'page_title': 'Article créé',
+            'step': 2
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class BridgePurchaseToSalesView(View):
+    """
+    Passerelle : Création du profil Vente pour un article Achat existant.
+    """
+    def get(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        form = BridgePurchaseToSalesForm(product=product)
+        return render(request, 'produits/bridge_purchase_to_sales.html', {
+            'form': form,
+            'product': product,
+            'page_title': 'Configurer pour la revente'
+        })
+
+    def post(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        form = BridgePurchaseToSalesForm(request.POST, product=product)
+        if form.is_valid():
+            form.save(product=product)
+            messages.success(request, "Profil de vente activé avec succès.")
+            # Redirect to Sales list or Detail? User request: "l’article apparaît immédiatement dans le menu Ventes"
+            return redirect('produits:product_detail', slug=product.slug)
+        
+        return render(request, 'produits/bridge_purchase_to_sales.html', {
+            'form': form,
+            'product': product,
+            'page_title': 'Configurer pour la revente'
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class SalesArticleCreateView(View):
+    """
+    Étape 1 Vente : Création d'un article depuis le menu Ventes.
+    """
+    def get(self, request):
+        form = SalesArticleForm()
+        return render(request, 'produits/sales_article_form.html', {
+            'form': form,
+            'page_title': 'Nouvel article de vente',
+            'step': 1
+        })
+
+    def post(self, request):
+        form = SalesArticleForm(request.POST)
+        if form.is_valid():
+            org = getattr(request, 'current_org', None)
+            if not org and hasattr(request.user, 'get_active_membership'):
+                m = request.user.get_active_membership()
+                org = getattr(m, 'organization', None)
+            form.instance.organization = org
+            
+            try:
+                product = form.save()
+                messages.success(request, f"Article \"{product.name}\" créé avec succès.")
+                return redirect('produits:sales_success', slug=product.slug)
+            except Exception as e:
+                messages.error(request, f"Erreur lors de la création : {e}")
+        
+        return render(request, 'produits/sales_article_form.html', {
+            'form': form,
+            'page_title': 'Nouvel article de vente',
+            'step': 1
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class SalesArticleSuccessView(View):
+    """
+    Étape 2 Vente : "Source de cet article" - Passerelle vers Achat.
+    """
+    def get(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        # Determine logic based on product properties set in step 1
+        needs_purchase_profile = (product.source_mode in ['negoce_bout', 'negoce_vrac'])
+        
+        return render(request, 'produits/sales_article_success.html', {
+            'product': product,
+            'needs_purchase_profile': needs_purchase_profile,
+            'page_title': 'Article créé',
+            'step': 2
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class BridgeSalesToPurchaseView(View):
+    """
+    Passerelle : Création du profil Achat pour un article Vente existant.
+    """
+    def get(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        form = BridgeSalesToPurchaseForm(product=product)
+        return render(request, 'produits/bridge_sales_to_purchase.html', {
+            'form': form,
+            'product': product,
+            'page_title': 'Configurer l\'approvisionnement'
+        })
+
+    def post(self, request, slug):
+        product = get_object_or_404(Product, slug=slug)
+        form = BridgeSalesToPurchaseForm(request.POST, product=product)
+        if form.is_valid():
+            form.save(product=product)
+            messages.success(request, "Profil d'achat activé avec succès.")
+            return redirect('produits:product_detail', slug=product.slug)
+        
+        return render(request, 'produits/bridge_sales_to_purchase.html', {
+            'form': form,
+            'product': product,
+            'page_title': 'Configurer l\'approvisionnement'
+        })
 
 
 @method_decorator(login_required, name='dispatch')

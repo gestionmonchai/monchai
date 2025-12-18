@@ -1,17 +1,38 @@
 {% extends 'production/base_production.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Vinification - Mon Chai{% endblock %}
+{% block title %}Journal des opérations - Mon Chai{% endblock %}
 
 {% block production_content %}
+<style>
+.cursor-pointer { cursor: pointer; }
+.cursor-pointer:hover { background-color: rgba(0,0,0,0.02); }
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h4 mb-0 fw-bold">Suivi de Vinification</h1>
-        <p class="text-muted small mb-0">Journal des opérations fermentaires</p>
+        <h1 class="h4 mb-0 fw-bold">
+            <i class="bi bi-journal-code me-2 text-primary"></i>Journal des opérations
+        </h1>
+        <p class="text-muted small mb-0">Toutes les opérations de cave : vinification, élevage, stabilisation</p>
     </div>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOpModal">
-        <i class="bi bi-plus-lg me-1"></i> Nouvelle opération
-    </button>
+    <div class="btn-group">
+        <a href="{% url 'production:operation_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Nouvelle opération
+        </a>
+        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Options</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">Opérations rapides</h6></li>
+            <li><a class="dropdown-item" href="{% url 'production:operation_create' %}?type=remontage">🔄 Remontage</a></li>
+            <li><a class="dropdown-item" href="{% url 'production:operation_create' %}?type=pigeage">👊 Pigeage</a></li>
+            <li><a class="dropdown-item" href="{% url 'production:operation_create' %}?type=controle_densite_temp">🌡️ Contrôle densité/T°</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'production:operation_create' %}?type=soutirage">↕️ Soutirage</a></li>
+            <li><a class="dropdown-item" href="{% url 'production:operation_create' %}?type=so2">⚗️ Ajout SO₂</a></li>
+            <li><a class="dropdown-item" href="{% url 'production:operation_create' %}?type=ouillage">💧 Ouillage</a></li>
+        </ul>
+    </div>
 </div>
 
 <!-- Filtres & Recherche -->
@@ -29,27 +50,42 @@
                            hx-include="[name='type']">
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <select name="type" class="form-select" 
                         hx-get="{% url 'production:vinification_table' %}"
                         hx-trigger="change"
                         hx-target="#vinification-table-body"
                         hx-include="[name='q']">
-                    <option value="">Toutes les opérations</option>
-                    <optgroup label="Interventions">
+                    <option value="">🍷 Toutes les opérations</option>
+                    <optgroup label="🍇 Pré-fermentaire">
+                        <option value="pressurage">Pressurage</option>
                         <option value="debourbage">Débourbage</option>
-                        <option value="inoculation_levures">Levurage</option>
+                        <option value="enzymage">Enzymage</option>
+                        <option value="sulfitage_preferm">Sulfitage pré-ferm.</option>
+                    </optgroup>
+                    <optgroup label="🍷 Fermentation alcoolique">
+                        <option value="inoculation_levures">Inoculation levures</option>
+                        <option value="debut_fa">Début FA</option>
                         <option value="chaptalisation">Chaptalisation</option>
-                        <option value="correction">Correction</option>
                         <option value="remontage">Remontage</option>
                         <option value="pigeage">Pigeage</option>
                         <option value="delestage">Délestage</option>
-                        <option value="debut_fa">Début FA</option>
+                        <option value="controle_densite_temp">Contrôle densité/T°</option>
                         <option value="fin_fa">Fin FA</option>
+                        <option value="ecoulage">Écoulage</option>
                     </optgroup>
-                    <optgroup label="Mesures">
-                        <option value="densite">Densité</option>
-                        <option value="temperature">Température</option>
+                    <optgroup label="🧫 FML">
+                        <option value="inoculation_bacteries">Inoculation bactéries</option>
+                        <option value="debut_fml">Début FML</option>
+                        <option value="fin_fml">Fin FML</option>
+                    </optgroup>
+                    <optgroup label="🏺 Élevage">
+                        <option value="soutirage">Soutirage</option>
+                        <option value="ouillage">Ouillage</option>
+                        <option value="batonnage">Bâtonnage</option>
+                        <option value="so2">Ajout SO₂</option>
+                        <option value="collage">Collage</option>
+                        <option value="filtration">Filtration</option>
                     </optgroup>
                 </select>
             </div>
@@ -66,30 +102,42 @@
                     <th class="ps-3 border-0">Date</th>
                     <th class="border-0">Lot</th>
                     <th class="border-0">Opération</th>
-                    <th class="border-0">Détails / Valeur</th>
+                    <th class="border-0">Détails</th>
                     <th class="border-0">Notes</th>
+                    <th class="border-0 text-end pe-3">Actions</th>
                 </tr>
             </thead>
             <tbody id="vinification-table-body">
                 {% for op in operations %}
-                <tr>
+                <tr class="cursor-pointer" onclick="window.location='{% url 'production:operation_detail' op.obj.id %}'">
                     <td class="ps-3 fw-medium text-nowrap">{{ op.date|date:"d/m/Y" }}</td>
                     <td><span class="badge bg-light text-dark border">{{ op.lot.code }}</span></td>
                     <td>
-                        {% if op.source == 'measurement' %}
-                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ op.type_display }}</span>
-                        {% else %}
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ op.type_display }}</span>
-                        {% endif %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                            {{ op.type_icon|default:"📝" }} {{ op.type_display }}
+                        </span>
                     </td>
-                    <td class="font-monospace">{{ op.valeur|default:"-" }}</td>
-                    <td class="small text-muted">{{ op.notes|default:"" }}</td>
+                    <td class="font-monospace small">{{ op.valeur|default:"-" }}</td>
+                    <td class="small text-muted text-truncate" style="max-width: 200px;">{{ op.notes|default:""|truncatewords:8 }}</td>
+                    <td class="text-end pe-3">
+                        <a href="{% url 'production:operation_detail' op.obj.id %}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{% url 'production:alerts_create' %}?operation={{ op.obj.id }}" class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation();" title="Créer alerte">
+                            <i class="bi bi-bell"></i>
+                        </a>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center py-5 text-muted">
+                    <td colspan="6" class="text-center py-5 text-muted">
                         <i class="bi bi-journal-text fs-1 d-block mb-2 opacity-50"></i>
-                        Aucune opération de vinification enregistrée.
+                        Aucune opération enregistrée.
+                        <div class="mt-3">
+                            <a href="{% url 'production:operation_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-1"></i>Créer la première opération
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

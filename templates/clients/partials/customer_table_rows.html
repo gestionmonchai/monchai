@@ -15,7 +15,7 @@
             </div>
             <div>
                 <div class="fw-medium">
-                    <a href="{% url 'ventes:client_detail' customer.id %}" class="text-decoration-none">
+                    <a href="{% url 'clients:customer_detail' customer.id %}" class="text-decoration-none">
                         {{ customer.name }}
                     </a>
                 </div>
@@ -62,12 +62,12 @@
     </td>
     <td>
         <div class="btn-group btn-group-sm" role="group">
-            <a href="{% url 'ventes:client_detail' customer.id %}" 
+            <a href="{% url 'clients:customer_detail' customer.id %}" 
                class="btn btn-outline-primary" title="Voir">
                 <i class="bi bi-eye"></i>
             </a>
             {% if user.get_active_membership.can_edit_data %}
-                <a href="{% url 'ventes:client_edit' customer.id %}" 
+                <a href="{% url 'clients:customer_edit' customer.id %}" 
                    class="btn btn-outline-secondary" title="Modifier">
                     <i class="bi bi-pencil"></i>
                 </a>

@@ -1,26 +1,54 @@
 <!--
 =====================================================================
-SIDEBAR PRODUCTION - REFONTE UX (structure par contextes métier)
+SIDEBAR PRODUCTION - VERSION RATIONALISÉE (10 entrées max)
 =====================================================================
-Structure: Vigne > Récolte > Chai > Conditionnement & Stock
-
-Les opérations suivantes ont été RETIRÉES du menu sidebar
-(elles sont accessibles via la fiche lot technique - timeline) :
-- Encuvages → production:encuvages_list (route conservée)
-- Vinification → production:vinification_home (route conservée)
-- Soutirages → production:soutirages_list (route conservée)
-- Assemblages → production:assemblages_list (route conservée)
+Blocs métier BTSA conservés, entrées fusionnées pour clarté UX.
+Objectif : 8-12 entrées cliquables, pas d'effet "ERP 2003".
 =====================================================================
 -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0 text-primary text-truncate">
-            <i class="bi bi-grid-3x3-gap-fill me-2"></i><span class="sidebar-label">Production</span>
-        </h5>
-        <button class="btn btn-sm btn-link text-decoration-none text-secondary p-0" id="btnToggleSidebarFromHeader" title="Réduire/Déplier le menu">
-            <i class="bi bi-chevron-left transition-all"></i>
-        </button>
+{% load production_tags %}
+{% get_alerts_count as alerts_total %}
+{% get_alerts_urgent_count as alerts_urgent %}
+{% get_overdue_alerts_count as alerts_overdue %}
+{% get_lots_fermentation_count as lots_ferment %}
+{% get_lots_elevage_count as lots_elevage %}
+{% get_lots_total_count as lots_total %}
+
+<div class="card shadow-sm mb-4 border-0">
+    <!-- HEADER PRODUCTION - Style bordeaux -->
+    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, #8B1538 0%, #722f37 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Logo + Titre -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi bi-grid-3x3-gap-fill text-white"></i>
+                </div>
+                <span class="sidebar-label text-white fw-semibold" style="font-size: 0.9rem;">Production</span>
+            </div>
+            
+            <!-- Actions: Alertes + Toggle -->
+            <div class="d-flex align-items-center gap-2">
+                <!-- Badge Alertes -->
+                {% if alerts_total %}
+                <a href="{% url 'production:alerts_list' %}" class="text-decoration-none sidebar-label" title="{{ alerts_total }} alerte{{ alerts_total|pluralize }}{% if alerts_overdue %} ({{ alerts_overdue }} en retard){% endif %}">
+                    <span class="badge rounded-pill {% if alerts_overdue %}bg-danger{% elif alerts_urgent %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}" style="font-size: 0.65rem;">
+                        <i class="bi bi-bell-fill me-1"></i>{{ alerts_total }}
+                    </span>
+                </a>
+                {% endif %}
+                
+                <!-- Bouton Toggle Desktop -->
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block" id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
+                    <i class="bi bi-chevron-left" id="desktopChevron"></i>
+                </button>
+                <!-- Bouton Toggle Mobile -->
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none" id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
+                    <i class="bi bi-chevron-down" id="mobileMenuChevron"></i>
+                </button>
+            </div>
+        </div>
     </div>
+    
     <div class="list-group list-group-flush">
         <!-- VUE D'ENSEMBLE -->
         <a href="{% url 'production:production_home' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'production_home' %}active{% endif %}">
@@ -28,50 +56,82 @@ Les opérations suivantes ont été RETIRÉES du menu sidebar
         </a>
 
         <!-- ========== VIGNE ========== -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-success text-uppercase small py-1 mt-2">
-            <i class="bi bi-geo-alt me-2"></i><span class="sidebar-label">Vigne</span>
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #198754;">
+            <i class="bi bi-tree me-2"></i><span class="sidebar-label">Vigne</span>
         </div>
-        <a href="{% url 'production:parcelles_list' %}" class="list-group-item list-group-item-action {% if 'parcelle' in request.path %}active{% endif %}">
+        <!-- 1. Parcelles -->
+        <a href="{% url 'production:parcelles_list' %}" class="list-group-item list-group-item-action {% if 'parcelles' in request.path or 'encepagement' in request.path %}active{% endif %}">
             <i class="bi bi-map me-2"></i><span class="sidebar-label">Parcelles</span>
         </a>
+        <!-- 2. Journal cultural (fusionne cahier cultural, phyto, maturité) -->
+        <a href="{% url 'production:journal_cultural' %}" class="list-group-item list-group-item-action {% if 'journal-cultural' in request.path or 'cahier' in request.path or 'phyto' in request.path or 'maturite' in request.path %}active{% endif %}">
+            <i class="bi bi-journal-text me-2"></i><span class="sidebar-label">Journal cultural</span>
+        </a>
 
-        <!-- ========== RÉCOLTE ========== -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-warning text-uppercase small py-1 mt-2">
-            <i class="bi bi-basket me-2"></i><span class="sidebar-label">Récolte</span>
+        <!-- ========== VENDANGES ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #c2410c;">
+            <i class="bi bi-basket me-2"></i><span class="sidebar-label">Vendanges</span>
         </div>
+        <!-- 3. Vendanges -->
         <a href="{% url 'production:vendanges_list' %}" class="list-group-item list-group-item-action {% if 'vendange' in request.path %}active{% endif %}">
             <i class="bi bi-clipboard-check me-2"></i><span class="sidebar-label">Vendanges</span>
         </a>
 
-        <!-- ========== CHAI ========== -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-primary text-uppercase small py-1 mt-2">
+        <!-- ========== CHAI (Vinification + Élevage fusionnés) ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #722f37;">
             <i class="bi bi-boxes me-2"></i><span class="sidebar-label">Chai</span>
         </div>
+        <!-- 4. Lots techniques -->
         <a href="{% url 'production:lots_tech_list' %}" class="list-group-item list-group-item-action {% if 'lots-techniques' in request.path %}active{% endif %}">
             <i class="bi bi-box-seam me-2"></i><span class="sidebar-label">Lots techniques</span>
+            {% if lots_total %}<span class="badge bg-secondary bg-opacity-25 text-secondary ms-auto">{{ lots_total }}</span>{% endif %}
         </a>
-        <a href="{% url 'production:lots_elevage_analyses' %}" class="list-group-item list-group-item-action {% if 'analyses' in request.path %}active{% endif %}">
-            <i class="bi bi-droplet me-2"></i><span class="sidebar-label">Analyses</span>
+        <!-- 5. Journal des opérations (NOUVEAU) -->
+        <a href="{% url 'production:vinification_home' %}" class="list-group-item list-group-item-action {% if 'vinification' in request.path %}active{% endif %}">
+            <i class="bi bi-journal-code me-2 text-primary"></i><span class="sidebar-label">Journal opérations</span>
         </a>
-        <a href="{% url 'production:lots_elevage_home' %}" class="list-group-item list-group-item-action {% if 'lots-elevage' in request.path and 'analyses' not in request.path %}active{% endif %}">
-            <i class="bi bi-hourglass-split me-2"></i><span class="sidebar-label">Élevage</span>
-        </a>
+        <!-- 6. Cuves & barriques -->
         <a href="{% url 'production:contenants_list' %}" class="list-group-item list-group-item-action {% if 'contenant' in request.path %}active{% endif %}">
-            <i class="bi bi-archive me-2"></i><span class="sidebar-label">Contenants</span>
+            <i class="bi bi-archive me-2"></i><span class="sidebar-label">Cuves & barriques</span>
+        </a>
+        <!-- 7. Assemblages -->
+        <a href="{% url 'production:assemblages_list' %}" class="list-group-item list-group-item-action {% if 'assemblage' in request.path %}active{% endif %}">
+            <i class="bi bi-layers me-2"></i><span class="sidebar-label">Assemblages</span>
+        </a>
+        <!-- 8. Soutirages -->
+        <a href="{% url 'production:soutirages_list' %}" class="list-group-item list-group-item-action {% if 'soutirage' in request.path %}active{% endif %}">
+            <i class="bi bi-arrow-down-up me-2"></i><span class="sidebar-label">Soutirages</span>
         </a>
 
-        <!-- ========== CONDITIONNEMENT & STOCK ========== -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-info text-uppercase small py-1 mt-2">
-            <i class="bi bi-box2 me-2"></i><span class="sidebar-label">Conditionnement & Stock</span>
+        <!-- ========== ANALYSES ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #be185d;">
+            <i class="bi bi-droplet me-2"></i><span class="sidebar-label">Analyses</span>
         </div>
-        <a href="{% url 'production:dash_conditionnement' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dash_conditionnement' %}active{% endif %}">
-            <i class="bi bi-box2-heart me-2"></i><span class="sidebar-label">Conditionnement</span>
+        <!-- 7. Analyses -->
+        <a href="{% url 'production:analyses_oeno_list' %}" class="list-group-item list-group-item-action {% if 'analyses' in request.path %}active{% endif %}">
+            <i class="bi bi-clipboard-pulse me-2"></i><span class="sidebar-label">Analyses</span>
         </a>
+
+        <!-- ========== CONDITIONNEMENT ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #20c997;">
+            <i class="bi bi-box2 me-2"></i><span class="sidebar-label">Conditionnement</span>
+        </div>
+        <!-- 8. Mises en bouteille -->
         <a href="{% url 'production:mises_list' %}" class="list-group-item list-group-item-action {% if 'mises' in request.path %}active{% endif %}">
-            <i class="bi bi-upc-scan me-2"></i><span class="sidebar-label">Mises (OF)</span>
+            <i class="bi bi-upc-scan me-2"></i><span class="sidebar-label">Mises en bouteille</span>
         </a>
+        <!-- 9. Inventaire -->
         <a href="{% url 'production:inventaire' %}" class="list-group-item list-group-item-action {% if 'inventaire' in request.path %}active{% endif %}">
             <i class="bi bi-clipboard-data me-2"></i><span class="sidebar-label">Inventaire</span>
+        </a>
+
+        <!-- ========== REGISTRES ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #6c757d;">
+            <i class="bi bi-file-earmark-text me-2"></i><span class="sidebar-label">Registres</span>
+        </div>
+        <!-- 10. Registres -->
+        <a href="{% url 'production:registres_home' %}" class="list-group-item list-group-item-action {% if 'registres' in request.path %}active{% endif %}">
+            <i class="bi bi-journal-bookmark me-2"></i><span class="sidebar-label">Registres</span>
         </a>
     </div>
 </div>

@@ -13,16 +13,16 @@ from django.utils import timezone
 
 from apps.accounts.models import Organization
 from apps.stock.models import SKU, Warehouse
+from apps.catalogue.models import Article
 
 User = get_user_model()
 
 
-class BaseSalesModel(models.Model):
+class BaseSalesMixin(models.Model):
     """
-    Modèle de base pour tous les modèles de ventes
-    Fournit UUID, organisation, row_version et timestamps
+    Mixin de base pour tous les modèles de ventes
+    Fournit organisation, row_version et timestamps
     """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
@@ -39,6 +39,16 @@ class BaseSalesModel(models.Model):
         if self.pk:
             self.row_version += 1
         super().save(*args, **kwargs)
+
+
+class BaseSalesModel(BaseSalesMixin):
+    """
+    Modèle de base standard avec UUID
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    class Meta:
+        abstract = True
 
 
 class TaxCode(BaseSalesModel):
@@ -153,10 +163,11 @@ class Customer(BaseSalesModel):
         return bool(self.shipping_address)
 
 
-class PriceList(BaseSalesModel):
+class PriceList(BaseSalesMixin):
     """
     Grille tarifaire - price_list
     Système de prix flexible avec validité
+    Utilise une PK entière (BigAuto) pour des URLs plus conviviales
     """
     name = models.CharField(max_length=100, help_text="Nom de la grille tarifaire")
     currency = models.CharField(max_length=3, default='EUR', help_text="Devise de la grille")
@@ -199,7 +210,7 @@ class PriceList(BaseSalesModel):
 class PriceItem(BaseSalesModel):
     """
     Élément de prix - price_item
-    Prix par SKU avec seuils de quantité et remises
+    Prix par Article avec seuils de quantité et remises
     """
     price_list = models.ForeignKey(
         PriceList,
@@ -207,10 +218,12 @@ class PriceItem(BaseSalesModel):
         related_name='items',
         verbose_name="Grille tarifaire"
     )
-    sku = models.ForeignKey(
-        SKU,
+    article = models.ForeignKey(
+        Article,
         on_delete=models.CASCADE,
-        verbose_name="Produit (SKU)"
+        verbose_name="Article",
+        null=True,
+        blank=True
     )
     unit_price = models.DecimalField(
         max_digits=10,
@@ -234,24 +247,24 @@ class PriceItem(BaseSalesModel):
     class Meta:
         verbose_name = "Élément de prix"
         verbose_name_plural = "Éléments de prix"
-        unique_together = [['price_list', 'sku', 'min_qty']]
-        ordering = ['sku', 'min_qty']
+        # unique_together = [['price_list', 'article', 'min_qty']]
+        ordering = ['article', 'min_qty']
         indexes = [
-            models.Index(fields=['price_list', 'sku', 'min_qty']),
+            models.Index(fields=['price_list', 'article', 'min_qty']),
         ]
 
     def __str__(self):
         qty_info = f" (min {self.min_qty})" if self.min_qty else ""
-        return f"{self.sku.label}: {self.unit_price}€{qty_info}"
+        return f"{self.article.name}: {self.unit_price}€{qty_info}"
 
     def clean(self):
         super().clean()
         
-        # Validation: même organisation pour price_list et sku
-        if self.price_list and self.sku:
-            if self.price_list.organization != self.sku.organization:
+        # Validation: même organisation pour price_list et article
+        if self.price_list and self.article:
+            if self.price_list.organization != self.article.organization:
                 raise ValidationError({
-                    'sku': 'Le produit doit appartenir à la même organisation que la grille tarifaire.'
+                    'article': 'L\'article doit appartenir à la même organisation que la grille tarifaire.'
                 })
 
     @property

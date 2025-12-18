@@ -79,9 +79,9 @@ class PriceItemForm(forms.ModelForm):
     
     class Meta:
         model = PriceItem
-        fields = ['sku', 'unit_price', 'min_qty', 'discount_pct']
+        fields = ['article', 'unit_price', 'min_qty', 'discount_pct']
         widgets = {
-            'sku': forms.Select(attrs={
+            'article': forms.Select(attrs={
                 'class': 'form-select',
             }),
             'unit_price': forms.NumberInput(attrs={
@@ -104,13 +104,13 @@ class PriceItemForm(forms.ModelForm):
             }),
         }
         labels = {
-            'sku': 'Produit (SKU)',
+            'article': 'Article',
             'unit_price': 'Prix unitaire (€)',
             'min_qty': 'Quantité minimum',
             'discount_pct': 'Remise (%)',
         }
         help_texts = {
-            'sku': 'Sélectionnez le produit',
+            'article': 'Sélectionnez l\'article',
             'unit_price': 'Prix unitaire en euros',
             'min_qty': 'Quantité minimum pour appliquer ce prix (laisser vide pour prix par défaut)',
             'discount_pct': 'Remise en pourcentage (0 = pas de remise)',
@@ -121,13 +121,14 @@ class PriceItemForm(forms.ModelForm):
         self.price_list = kwargs.pop('price_list', None)
         super().__init__(*args, **kwargs)
         
-        # Filtrer les SKUs par organisation
+        # Filtrer les Articles par organisation
         if self.organization:
-            from apps.stocks.models import SKU
-            self.fields['sku'].queryset = SKU.objects.filter(
+            from apps.catalogue.models import Article
+            self.fields['article'].queryset = Article.objects.filter(
                 organization=self.organization,
-                is_active=True
-            ).select_related('cuvee', 'unit').order_by('cuvee__name')
+                is_active=True,
+                is_sellable=True
+            ).order_by('name')
 
 
 class PriceListImportForm(forms.Form):

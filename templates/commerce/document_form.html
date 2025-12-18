@@ -1,0 +1,167 @@
+{% extends "commerce/base_commerce.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">{{ page_title }}</h1>
+                <a href="{% if object %}{% url namespace|add:':document_detail' object.id %}{% else %}{% url namespace|add:':dashboard' %}{% endif %}" class="btn btn-outline-secondary">
+                    Annuler
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-4">
+                            <!-- Section Principale -->
+                            <div class="col-md-12">
+                                <h5 class="card-title text-muted mb-3 border-bottom pb-2">Informations générales</h5>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Type de document</label>
+                                    {% render_field form.type class="form-select" %}
+                                    {% if form.type.errors %}<div class="text-danger small">{{ form.type.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">{% if side == 'sale' %}Client{% else %}Fournisseur{% endif %}</label>
+                                    {% render_field form.client class="form-select" %}
+                                    {% if form.client.errors %}<div class="text-danger small">{{ form.client.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">{% if side == 'sale' %}Date d'émission{% else %}Date de commande{% endif %}</label>
+                                    {% render_field form.date_issue class="form-control" %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Date d'échéance</label>
+                                    {% render_field form.date_due class="form-control" %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Référence externe</label>
+                                    {% render_field form.reference class="form-control" placeholder="Réf. commande client..." %}
+                                </div>
+                            </div>
+
+                            <!-- Options Métier -->
+                            <div class="col-md-12">
+                                <h5 class="card-title text-muted mt-4 mb-3 border-bottom pb-2">Mode de vente & Logistique</h5>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">{% if side == 'sale' %}Mode de vente{% else %}Type d'achat{% endif %}</label>
+                                    {% render_field form.sale_mode class="form-select" %}
+                                    <div class="form-text small">Standard = produits finis. Vrac = produits en vrac. Primeur = contrat différé.</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Date de livraison prévue</label>
+                                    {% render_field form.delivery_date_expected class="form-control" %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Adresse de livraison / Lieu de mise à disposition</label>
+                                    {% render_field form.shipping_address class="form-control" rows="2" %}
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="col-md-12">
+                                <h5 class="card-title text-muted mt-4 mb-3 border-bottom pb-2">Notes & Commentaires</h5>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Notes publiques (sur PDF)</label>
+                                    {% render_field form.notes class="form-control" rows="3" %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Notes internes (invisibles client)</label>
+                                    {% render_field form.internal_notes class="form-control" rows="3" %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-5">
+                            <a href="{% if object %}{% url namespace|add:':document_detail' object.id %}{% else %}{% url namespace|add:':dashboard' %}{% endif %}" class="btn btn-light border">Annuler</a>
+                            <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modeSelect = document.getElementById('id_sale_mode');
+    const deliveryDateDiv = document.getElementById('id_delivery_date_expected').closest('.col-md-4');
+    const addressDiv = document.getElementById('id_shipping_address').closest('.col-md-12');
+    
+    function toggleFields() {
+        const mode = modeSelect.value;
+        const isPrimeur = (mode === 'primeur');
+        const isVrac = (mode === 'vrac');
+        const isStandard = (mode === 'standard');
+        
+        // Date de livraison prévue : Surtout utile pour Primeur (futur)
+        if (isPrimeur) {
+            deliveryDateDiv.style.display = 'block';
+        } else {
+            // On peut le laisser visible tout le temps ou le cacher. 
+            // Le user demandait "un toggle Primeur qui ouvre 3 champs".
+            // Pour standard c'est souvent immédiat ou court terme.
+            // On va le laisser visible mais mettre en évidence pour Primeur si besoin.
+            deliveryDateDiv.style.display = 'block'; 
+        }
+        
+        // Adapter les labels ou placeholders si besoin
+        const addressLabel = addressDiv.querySelector('label');
+        if (isVrac) {
+            addressLabel.textContent = "Lieu d'enlèvement / Citerne";
+        } else {
+            addressLabel.textContent = "Adresse de livraison";
+        }
+    }
+    
+    if (modeSelect) {
+        modeSelect.addEventListener('change', toggleFields);
+        toggleFields(); // Init
+    }
+});
+</script>
+{% endblock %}

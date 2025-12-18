@@ -45,7 +45,7 @@
 
 body {
     background: var(--bg-gradient);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--wine-burgundy);
     min-height: 100vh;
     overflow-x: hidden;
@@ -460,6 +460,29 @@ a:hover {
     backdrop-filter: blur(15px);
     box-shadow: 0 4px 20px rgba(139, 21, 56, 0.3);
     border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+}
+
+/* Forcer le header sur une seule ligne */
+.navbar .navbar-collapse {
+    flex-wrap: nowrap;
+}
+
+.navbar .navbar-nav {
+    flex-wrap: nowrap;
+}
+
+.navbar .navbar-nav .nav-link {
+    white-space: nowrap;
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.9rem;
+}
+
+/* Réduire le padding sur écrans moyens */
+@media (min-width: 992px) and (max-width: 1400px) {
+    .navbar .navbar-nav .nav-link {
+        padding: 0.35rem 0.5rem !important;
+        font-size: 0.85rem;
+    }
 }
 
 .navbar-brand {

@@ -1,0 +1,134 @@
+{% extends "commerce/base_commerce.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid py-4 px-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ page_title }}</h1>
+                {% if form.instance.is_buyable and not form.instance.is_sellable or request.GET.buyable %}
+                <a href="{% url 'catalogue:article_list_purchase' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour (Achats)
+                </a>
+                {% elif form.instance.is_sellable and not form.instance.is_buyable or request.GET.sellable %}
+                <a href="{% url 'catalogue:article_list_sales' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour (Ventes)
+                </a>
+                {% else %}
+                <a href="{% url 'catalogue:article_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+                        {% if next_url %}
+                        <input type="hidden" name="next" value="{{ next_url }}">
+                        {% endif %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <h5 class="mb-3 text-muted border-bottom pb-2">Identification</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">Type d'article</label>
+                                {{ form.article_type }}
+                                {{ form.article_type.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Code SKU</label>
+                                {{ form.sku }}
+                                {{ form.sku.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Catégorie</label>
+                                {{ form.category }}
+                                {{ form.category.errors }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Nom de l'article <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                {{ form.name.errors }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description courte</label>
+                                {{ form.description }}
+                                <div class="form-text">Visible sur les devis et factures.</div>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 text-muted border-bottom pb-2">Commercial</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">Prix de vente HT</label>
+                                <div class="input-group">
+                                    {{ form.price_ht }}
+                                    <span class="input-group-text">€</span>
+                                </div>
+                                {{ form.price_ht.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Taux TVA</label>
+                                <div class="input-group">
+                                    {{ form.vat_rate }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                {{ form.vat_rate.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Unité de vente</label>
+                                {{ form.unit }}
+                                {{ form.unit.errors }}
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 text-muted border-bottom pb-2">Paramètres</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.is_buyable }}
+                                    <label class="form-check-label" for="{{ form.is_buyable.id_for_label }}">Achetable (Fournisseurs)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.is_sellable }}
+                                    <label class="form-check-label" for="{{ form.is_sellable.id_for_label }}">Vendable (Clients)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.is_stock_managed }}
+                                    <label class="form-check-label" for="{{ form.is_stock_managed.id_for_label }}">Gérer le stock</label>
+                                </div>
+                                <div class="form-text">Si actif, l'article apparaîtra dans l'inventaire.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Article actif</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a href="javascript:history.back()" class="btn btn-light">Annuler</a>
+                            <button type="submit" class="btn btn-primary px-4">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'production/base_production.html' %}
+{% load humanize %}
+
+{% block title %}{{ entry.op_type.label }} - {{ entry.parcelle.nom }} - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 mb-1">
+            <span class="badge bg-{{ meta.color }} me-2">
+                <i class="bi {{ meta.icon }}"></i>
+            </span>
+            {{ entry.op_type.label }}
+        </h1>
+        <p class="text-muted mb-0">
+            <i class="bi bi-geo-alt me-1"></i>
+            <a href="{% url 'production:parcelle_detail' pk=entry.parcelle.pk %}" class="text-decoration-none">{{ entry.parcelle.nom }}</a>
+            <span class="mx-2">·</span>
+            <i class="bi bi-calendar-event me-1"></i>{{ entry.date|date:"d/m/Y" }}
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'viticulture:journal_entry_update' pk=entry.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash me-1"></i>Supprimer
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Colonne principale -->
+    <div class="col-lg-8">
+        <!-- Détails de l'intervention -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Détails de l'intervention</h5>
+            </div>
+            <div class="card-body">
+                {% if entry.resume %}
+                <div class="mb-4">
+                    <h6 class="text-muted small text-uppercase mb-2">Résumé</h6>
+                    <p class="fs-5 mb-0">{{ entry.resume }}</p>
+                </div>
+                {% endif %}
+                
+                {% if entry.notes %}
+                <div class="mb-4">
+                    <h6 class="text-muted small text-uppercase mb-2">Notes détaillées</h6>
+                    <div class="bg-light rounded p-3">
+                        {{ entry.notes|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row g-3">
+                    {% if entry.surface_ha %}
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Surface traitée</div>
+                            <div class="fs-4 fw-semibold">{{ entry.surface_ha|floatformat:2 }} ha</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if entry.rangs %}
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Rangs concernés</div>
+                            <div class="fs-5 fw-semibold">{{ entry.rangs }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if entry.date_end %}
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <div class="text-muted small">Date de fin</div>
+                            <div class="fs-5 fw-semibold">{{ entry.date_end|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pièces jointes (si présentes) -->
+        {% if entry.attachments %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Pièces jointes</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for att in entry.attachments %}
+                    <div class="col-md-4">
+                        <a href="{{ att.url }}" target="_blank" class="d-block border rounded p-2 text-decoration-none">
+                            <i class="bi bi-file-earmark me-2"></i>{{ att.name|default:"Fichier" }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Colonne latérale -->
+    <div class="col-lg-4">
+        <!-- Coûts -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-currency-euro me-2"></i>Coûts</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">Main d'œuvre</td>
+                            <td class="text-end fw-semibold">
+                                {% if entry.cout_mo_eur %}{{ entry.cout_mo_eur|floatformat:2 }} €{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Matières / Produits</td>
+                            <td class="text-end fw-semibold">
+                                {% if entry.cout_matiere_eur %}{{ entry.cout_matiere_eur|floatformat:2 }} €{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        <tr class="table-light">
+                            <td class="fw-semibold">Total</td>
+                            <td class="text-end fw-bold text-primary">
+                                {% if entry.cout_total_eur %}{{ entry.cout_total_eur|floatformat:2 }} €{% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Informations -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Informations</h5>
+            </div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt class="text-muted small">Parcelle</dt>
+                    <dd class="mb-3">
+                        <a href="{% url 'production:parcelle_detail' pk=entry.parcelle.pk %}" class="text-decoration-none">
+                            <i class="bi bi-geo-alt me-1"></i>{{ entry.parcelle.nom }}
+                        </a>
+                    </dd>
+                    
+                    <dt class="text-muted small">Type d'intervention</dt>
+                    <dd class="mb-3">
+                        <span class="badge bg-{{ meta.color }}">
+                            <i class="bi {{ meta.icon }} me-1"></i>{{ entry.op_type.label }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="text-muted small">Date d'intervention</dt>
+                    <dd class="mb-3">{{ entry.date|date:"l d F Y" }}</dd>
+                    
+                    <dt class="text-muted small">Enregistré le</dt>
+                    <dd class="mb-0">{{ entry.created_at|date:"d/m/Y à H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        {% if source_url %}
+        <!-- Lien vers l'objet source -->
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10">
+                <h5 class="mb-0 text-warning"><i class="bi bi-link-45deg me-2"></i>Lié à un événement</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Cette entrée du journal est liée à un événement enregistré dans Mon Chai.</p>
+                <a href="{{ source_url }}" class="btn btn-warning w-100">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>{{ source_label }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions rapides -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'viticulture:parcelle_journal' pk=entry.parcelle.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-journal-text me-1"></i>Voir le journal de la parcelle
+                    </a>
+                    <a href="{% url 'production:journal_cultural' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list-ul me-1"></i>Retour au journal cultural
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Supprimer cette intervention ?
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Vous êtes sur le point de supprimer :</p>
+                <div class="bg-light rounded p-3 mb-3">
+                    <strong>{{ entry.op_type.label }}</strong><br>
+                    <span class="text-muted">{{ entry.parcelle.nom }} · {{ entry.date|date:"d/m/Y" }}</span>
+                    {% if entry.resume %}
+                    <br><small class="text-muted">{{ entry.resume|truncatewords:15 }}</small>
+                    {% endif %}
+                </div>
+                <p class="mb-0 text-danger small">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    Cette action est irréversible.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{% url 'viticulture:journal_entry_delete' pk=entry.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'production:journal_cultural' %}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

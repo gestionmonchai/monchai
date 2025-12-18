@@ -1,0 +1,169 @@
+{% extends "commerce/base_commerce.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-0">{{ page_title }}</h1>
+        <p class="text-muted">Vue d'ensemble et actions rapides</p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url namespace|add:':quote_create' %}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-plus me-2"></i>Nouveau Devis
+        </a>
+        <a href="{% url namespace|add:':order_create' %}" class="btn btn-primary">
+            <i class="bi bi-cart-plus me-2"></i>Nouvelle Commande
+        </a>
+        {% if side == 'purchase' %}
+        <a href="{% url namespace|add:':invoice_create' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-receipt me-2"></i>Saisir Facture
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- KPIs Cards -->
+<div class="row g-4 mb-5">
+    <!-- Factures à payer/encaisser -->
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="icon-square bg-light text-warning me-3 rounded-3 p-2">
+                        <i class="bi bi-exclamation-circle fs-4"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted text-uppercase fs-7">
+                        {% if side == 'sale' %}À encaisser{% else %}À payer{% endif %}
+                    </h6>
+                </div>
+                <h3 class="card-title mb-0">{{ kpis.unpaid_amount|floatformat:2 }} €</h3>
+                <small class="text-muted">{{ kpis.unpaid_count }} factures</small>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url namespace|add:':invoices_list' %}?status=issued" class="text-decoration-none fs-7">Voir le détail <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Commandes en cours -->
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="icon-square bg-light text-primary me-3 rounded-3 p-2">
+                        <i class="bi bi-cart fs-4"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted text-uppercase fs-7">Commandes en cours</h6>
+                </div>
+                <h3 class="card-title mb-0">{{ kpis.orders_count }}</h3>
+                <small class="text-muted">Validées, à livrer/facturer</small>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url namespace|add:':orders_list' %}?status=validated" class="text-decoration-none fs-7">Voir les commandes <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Devis -->
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="icon-square bg-light text-info me-3 rounded-3 p-2">
+                        <i class="bi bi-file-text fs-4"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted text-uppercase fs-7">Devis en attente</h6>
+                </div>
+                <h3 class="card-title mb-0">{{ kpis.quotes_count }}</h3>
+                <small class="text-muted">Envoyés, en attente de réponse</small>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url namespace|add:':quotes_list' %}?status=sent" class="text-decoration-none fs-7">Voir les devis <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- To-Do List -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-check2-square me-2"></i>À faire</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for todo in todos %}
+                <a href="{{ todo.url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <span class="d-block text-dark fw-medium">{{ todo.label }}</span>
+                    </div>
+                    <span class="badge bg-light text-dark">{{ todo.value }}</span>
+                </a>
+                {% empty %}
+                <div class="list-group-item text-center py-4 text-muted">
+                    <i class="bi bi-emoji-smile fs-4 d-block mb-2"></i>
+                    Rien à signaler pour le moment !
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Récents -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Documents récents</h5>
+                <a href="{% url namespace|add:':orders_list' %}" class="btn btn-sm btn-link">Tout voir</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>Type</th>
+                            <th>N°</th>
+                            <th>Tiers</th>
+                            <th class="text-end">Montant TTC</th>
+                            <th class="text-center">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in recent_docs %}
+                        <tr class="row-click" data-href="{% url namespace|add:':document_detail' doc.id %}">
+                            <td class="ps-4 text-muted">{{ doc.date_issue|date:"d/m/Y" }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ doc.get_type_display }}</span></td>
+                            <td class="fw-medium">{{ doc.number }}</td>
+                            <td>{{ doc.client.name }}</td>
+                            <td class="text-end fw-bold">{{ doc.total_ttc|floatformat:2 }} €</td>
+                            <td class="text-center">
+                                {% if doc.status == 'draft' %}
+                                <span class="badge bg-secondary">Brouillon</span>
+                                {% elif doc.status == 'sent' %}
+                                <span class="badge bg-info text-dark">Envoyé</span>
+                                {% elif doc.status == 'validated' %}
+                                <span class="badge bg-primary">Validé</span>
+                                {% elif doc.status == 'issued' %}
+                                <span class="badge bg-warning text-dark">Émis</span>
+                                {% elif doc.status == 'paid' %}
+                                <span class="badge bg-success">Payé</span>
+                                {% elif doc.status == 'cancelled' %}
+                                <span class="badge bg-danger">Annulé</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">{{ doc.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">Aucun document récent</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

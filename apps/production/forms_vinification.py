@@ -20,18 +20,40 @@ class VinificationOperationForm(forms.Form):
     
     TYPE_CHOICES = [
         ('', '--- Sélectionner ---'),
-        ('debourbage', 'Débourbage'),
-        ('inoculation_levures', 'Inoculation levures'),
-        ('inoculation_bacteries', 'Inoculation bactéries malo'),
-        ('so2', 'Ajout SO₂'),
-        ('chaptalisation', 'Chaptalisation / Enrichissement'),
-        ('correction_acidite', 'Correction acidité'),
-        ('remontage', 'Remontage / Pigeage / Délestage'),
-        ('controle_densite_temp', 'Contrôle Densité / T°'),
-        ('debut_fa', 'Début FA'),
-        ('fin_fa', 'Fin FA'),
-        ('debut_fml', 'Début FML'),
-        ('fin_fml', 'Fin FML'),
+        # Pré-fermentaire
+        ('pressurage', '🍇 Pressurage'),
+        ('debourbage', '🧊 Débourbage'),
+        ('enzymage', '🧪 Enzymage'),
+        ('sulfitage_preferm', '⚗️ Sulfitage pré-fermentaire'),
+        # Fermentation alcoolique
+        ('inoculation_levures', '🦠 Inoculation levures'),
+        ('debut_fa', '▶️ Début FA'),
+        ('chaptalisation', '🍬 Chaptalisation / Enrichissement'),
+        ('remontage', '🔄 Remontage'),
+        ('pigeage', '👊 Pigeage'),
+        ('delestage', '⬇️ Délestage'),
+        ('controle_densite_temp', '🌡️ Contrôle Densité / T°'),
+        ('fin_fa', '⏹️ Fin FA'),
+        ('ecoulage', '🚿 Écoulage'),
+        ('pressurage_marc', '🍷 Pressurage marc'),
+        # Post-FA / FML
+        ('inoculation_bacteries', '🦠 Inoculation bactéries malo'),
+        ('debut_fml', '▶️ Début FML'),
+        ('fin_fml', '⏹️ Fin FML'),
+        # Élevage & stabilisation
+        ('soutirage', '↕️ Soutirage'),
+        ('ouillage', '💧 Ouillage'),
+        ('batonnage', '🥄 Bâtonnage'),
+        ('so2', '⚗️ Ajout SO₂'),
+        ('collage', '🧹 Collage'),
+        ('filtration', '🔬 Filtration'),
+        ('stabilisation_tartrique', '❄️ Stabilisation tartrique'),
+        ('correction_acidite', '⚖️ Correction acidité'),
+        # Analyses & contrôles
+        ('analyse_labo', '🔬 Analyse laboratoire'),
+        ('degustation', '🍷 Dégustation'),
+        # Autres
+        ('autre', '📝 Autre opération'),
     ]
     
     type = forms.ChoiceField(

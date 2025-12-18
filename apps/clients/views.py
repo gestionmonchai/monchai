@@ -20,9 +20,10 @@ import io
 
 @login_required
 @require_membership(role_min='read_only')
-def customers_list(request):
+def customers_list(request, segment_override=None):
     """
     Liste des clients avec recherche et filtres - Style cépages
+    segment_override: Force un segment particulier (ex: 'supplier' pour /achats/fournisseurs/)
     """
     organization = request.current_org
     
@@ -47,9 +48,18 @@ def customers_list(request):
         if vat_number:
             filters['vat_number'] = vat_number
         
-        segment = request.GET.get('segment', '').strip()
-        if segment:
+        # Gestion du segment (Override prioritaire)
+        if segment_override:
+            segment = segment_override
             filters['segment'] = segment
+        else:
+            segment = request.GET.get('segment', '').strip()
+            # STRICT REDIRECT: Si on demande 'supplier' via l'URL générique, on redirige
+            if segment == 'supplier':
+                return redirect('achats:suppliers_list')
+            
+            if segment:
+                filters['segment'] = segment
         
         is_active = request.GET.get('is_active', '').strip()
         if is_active:
@@ -266,7 +276,7 @@ def customer_create(request):
                         pass
                 
                 messages.success(request, f'Client "{customer.name}" créé avec succès.')
-                return redirect('ventes:client_detail', customer_id=customer.id)
+                return redirect('clients:customer_detail', customer_id=customer.id)
                 
         except ValidationError as e:
             for field, errors in e.message_dict.items():
@@ -345,7 +355,7 @@ def customer_edit(request, customer_id):
                         pass
                 
                 messages.success(request, f'Client "{customer.name}" modifié avec succès.')
-                return redirect('ventes:client_detail', customer_id=customer.id)
+                return redirect('clients:customer_detail', customer_id=customer.id)
                 
         except ValidationError as e:
             for field, errors in e.message_dict.items():

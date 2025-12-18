@@ -42,6 +42,7 @@ class Customer(BaseClientModel):
         ('business', 'Professionnel'),
         ('wine_shop', 'Caviste'),
         ('export', 'Export'),
+        ('supplier', 'Fournisseur'),
         ('other', 'Autre'),
     ]
     

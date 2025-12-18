@@ -1,0 +1,109 @@
+{% extends 'commerce/base_commerce.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid py-4 px-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">{{ page_title }}</h1>
+                <a href="{% url 'ventes:article_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Annuler
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0 border-top border-primary border-3">
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Identification -->
+                        <h5 class="mb-3 text-primary border-bottom pb-2">Identification du produit</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label class="form-label">Nom commercial <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                {{ form.name.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Code (SKU/Ref)</label>
+                                {{ form.sku }}
+                                {{ form.sku.errors }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Catégorie</label>
+                                {{ form.category }}
+                                {{ form.category.errors }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type</label>
+                                {{ form.article_type }}
+                                {{ form.article_type.errors }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description commerciale</label>
+                                {{ form.description }}
+                                <div class="form-text">Visible sur les devis et factures clients.</div>
+                            </div>
+                        </div>
+
+                        <!-- Paramètres Vente -->
+                        <h5 class="mb-3 text-primary border-bottom pb-2">Paramètres de vente</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label">Prix de vente (HT)</label>
+                                <div class="input-group">
+                                    {{ form.price_ht }}
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Taux TVA</label>
+                                <div class="input-group">
+                                    {{ form.vat_rate }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Unité de vente</label>
+                                {{ form.unit }}
+                                <div class="form-text">Ex: Bouteille, Carton, Nuitée...</div>
+                            </div>
+                        </div>
+
+                        <!-- Stock -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    {{ form.is_stock_managed }}
+                                    <label class="form-check-label" for="{{ form.is_stock_managed.id_for_label }}">Gérer le stock de ce produit</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden fields for strict workflow -->
+                        <div class="d-none">
+                            {{ form.is_buyable }}
+                            {{ form.is_sellable }}
+                            {{ form.is_active }}
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary px-4 text-white">
+                                Suivant <i class="bi bi-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

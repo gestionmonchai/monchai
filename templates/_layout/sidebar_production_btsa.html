@@ -1,0 +1,114 @@
+<!--
+=====================================================================
+SIDEBAR PRODUCTION - STRUCTURE BTSA / REGISTRES VITICOLES
+=====================================================================
+Organisation selon la chaîne métier viticole :
+1. VIGNE      → Parcelles, cahier cultural, phyto, maturité
+2. VENDANGES  → Réception, encuvages
+3. VINIFICATION → Lots en FA/FML, opérations
+4. ÉLEVAGE    → Lots en élevage, cuves/barriques, assemblages
+5. ANALYSES   → Suivi analytique, alertes
+6. CONDITIONNEMENT → Mises (OF), stocks
+7. REGISTRES  → Exports cahiers de cave, culture, conditionnement
+=====================================================================
+-->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 text-primary text-truncate" style="font-size: 1rem;">
+            <i class="bi bi-grid-3x3-gap-fill me-2"></i><span class="sidebar-label">Production</span>
+        </h5>
+        <button class="btn btn-sm btn-link text-decoration-none text-secondary p-0" id="btnToggleSidebarFromHeader" title="Réduire/Déplier le menu">
+            <i class="bi bi-chevron-left transition-all d-none d-lg-inline"></i>
+            <i class="bi bi-chevron-down d-lg-none" id="mobileMenuChevron"></i>
+        </button>
+    </div>
+    <div class="list-group list-group-flush">
+        <!-- VUE D'ENSEMBLE -->
+        <a href="{% url 'production:production_home' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'production_home' %}active{% endif %}">
+            <i class="bi bi-speedometer2 me-2"></i><span class="sidebar-label">Vue d'ensemble</span>
+        </a>
+
+        <!-- ========== 1. VIGNE ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #198754;">
+            <i class="bi bi-tree me-2"></i><span class="sidebar-label">Vigne</span>
+        </div>
+        <a href="{% url 'production:parcelles_list' %}" class="list-group-item list-group-item-action {% if 'parcelles' in request.path and 'journal' not in request.path %}active{% endif %}">
+            <i class="bi bi-map me-2"></i><span class="sidebar-label">Parcelles</span>
+        </a>
+        <a href="{% url 'production:cahier_cultural' %}" class="list-group-item list-group-item-action {% if 'cahier-cultural' in request.path or 'interventions' in request.path %}active{% endif %}">
+            <i class="bi bi-journal-text me-2"></i><span class="sidebar-label">Cahier cultural</span>
+        </a>
+        <a href="{% url 'production:registre_phyto' %}" class="list-group-item list-group-item-action {% if 'registre-phyto' in request.path %}active{% endif %}">
+            <i class="bi bi-shield-check me-2"></i><span class="sidebar-label">Registre phyto</span>
+        </a>
+        <a href="{% url 'production:suivi_maturite' %}" class="list-group-item list-group-item-action {% if 'maturite' in request.path %}active{% endif %}">
+            <i class="bi bi-graph-up-arrow me-2"></i><span class="sidebar-label">Suivi maturité</span>
+        </a>
+
+        <!-- ========== 2. VENDANGES ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #fd7e14;">
+            <i class="bi bi-basket me-2"></i><span class="sidebar-label">Vendanges</span>
+        </div>
+        <a href="{% url 'production:vendanges_list' %}" class="list-group-item list-group-item-action {% if 'vendange' in request.path %}active{% endif %}">
+            <i class="bi bi-clipboard-check me-2"></i><span class="sidebar-label">Réceptions vendanges</span>
+        </a>
+
+        <!-- ========== 3. VINIFICATION ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #6f42c1;">
+            <i class="bi bi-moisture me-2"></i><span class="sidebar-label">Vinification</span>
+        </div>
+        <a href="{% url 'production:lots_tech_list' %}?scope=vinif" class="list-group-item list-group-item-action {% if 'lots-techniques' in request.path and 'scope=vinif' in request.GET.urlencode %}active{% endif %}">
+            <i class="bi bi-droplet-half me-2"></i><span class="sidebar-label">Lots en fermentation</span>
+        </a>
+        <a href="{% url 'production:encuvages_list' %}" class="list-group-item list-group-item-action {% if 'encuvage' in request.path %}active{% endif %}">
+            <i class="bi bi-box-arrow-in-down me-2"></i><span class="sidebar-label">Encuvages</span>
+        </a>
+        <a href="{% url 'production:vinification_home' %}" class="list-group-item list-group-item-action {% if 'vinification' in request.path %}active{% endif %}">
+            <i class="bi bi-activity me-2"></i><span class="sidebar-label">Opérations de vinif</span>
+        </a>
+
+        <!-- ========== 4. ÉLEVAGE ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #0d6efd;">
+            <i class="bi bi-hourglass-split me-2"></i><span class="sidebar-label">Élevage</span>
+        </div>
+        <a href="{% url 'production:lots_tech_list' %}?scope=elevage" class="list-group-item list-group-item-action {% if 'lots-techniques' in request.path and 'scope=elevage' in request.GET.urlencode %}active{% endif %}">
+            <i class="bi bi-box-seam me-2"></i><span class="sidebar-label">Lots en élevage</span>
+        </a>
+        <a href="{% url 'production:contenants_list' %}" class="list-group-item list-group-item-action {% if 'contenant' in request.path %}active{% endif %}">
+            <i class="bi bi-archive me-2"></i><span class="sidebar-label">Cuves & barriques</span>
+        </a>
+        <a href="{% url 'production:soutirages_list' %}" class="list-group-item list-group-item-action {% if 'soutirage' in request.path %}active{% endif %}">
+            <i class="bi bi-arrow-left-right me-2"></i><span class="sidebar-label">Soutirages</span>
+        </a>
+        <a href="{% url 'production:assemblages_list' %}" class="list-group-item list-group-item-action {% if 'assemblage' in request.path %}active{% endif %}">
+            <i class="bi bi-layers me-2"></i><span class="sidebar-label">Assemblages</span>
+        </a>
+
+        <!-- ========== 5. ANALYSES ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #dc3545;">
+            <i class="bi bi-droplet me-2"></i><span class="sidebar-label">Analyses</span>
+        </div>
+        <a href="{% url 'production:analyses_oeno_list' %}" class="list-group-item list-group-item-action {% if 'analyses' in request.path %}active{% endif %}">
+            <i class="bi bi-clipboard-pulse me-2"></i><span class="sidebar-label">Analyses œnologiques</span>
+        </a>
+
+        <!-- ========== 6. CONDITIONNEMENT & STOCK ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #20c997;">
+            <i class="bi bi-box2 me-2"></i><span class="sidebar-label">Conditionnement</span>
+        </div>
+        <a href="{% url 'production:mises_list' %}" class="list-group-item list-group-item-action {% if 'mises' in request.path %}active{% endif %}">
+            <i class="bi bi-upc-scan me-2"></i><span class="sidebar-label">Mises (OF)</span>
+        </a>
+        <a href="{% url 'production:inventaire' %}" class="list-group-item list-group-item-action {% if 'inventaire' in request.path %}active{% endif %}">
+            <i class="bi bi-clipboard-data me-2"></i><span class="sidebar-label">Inventaire</span>
+        </a>
+
+        <!-- ========== 7. REGISTRES ========== -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #6c757d;">
+            <i class="bi bi-file-earmark-text me-2"></i><span class="sidebar-label">Registres</span>
+        </div>
+        <a href="{% url 'production:registres_home' %}" class="list-group-item list-group-item-action {% if 'registres' in request.path %}active{% endif %}">
+            <i class="bi bi-journal-bookmark me-2"></i><span class="sidebar-label">Exporter les registres</span>
+        </a>
+    </div>
+</div>

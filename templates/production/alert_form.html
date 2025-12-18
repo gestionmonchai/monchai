@@ -1,0 +1,122 @@
+{% extends 'production/base_production.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="bi bi-bell me-2 text-primary"></i>{{ page_title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Titre -->
+                    <div class="mb-3">
+                        <label for="id_title" class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
+                        <input type="text" name="title" id="id_title" class="form-control" 
+                               value="{{ form.title.value|default:'' }}" required
+                               placeholder="Ex: Finaliser le brouillon vendange VND-2024-001">
+                        {% if form.title.errors %}
+                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label fw-semibold">Description</label>
+                        <textarea name="description" id="id_description" class="form-control" rows="3"
+                                  placeholder="Détails optionnels...">{{ form.description.value|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Type -->
+                        <div class="col-md-6 mb-3">
+                            <label for="id_alert_type" class="form-label fw-semibold">Type</label>
+                            <select name="alert_type" id="id_alert_type" class="form-select">
+                                <option value="draft" {% if form.alert_type.value == 'draft' %}selected{% endif %}>🗒️ Brouillon à finaliser</option>
+                                <option value="reminder" {% if form.alert_type.value == 'reminder' or not form.alert_type.value %}selected{% endif %}>🔔 Rappel</option>
+                                <option value="action" {% if form.alert_type.value == 'action' %}selected{% endif %}>⚡ Action à effectuer</option>
+                                <option value="threshold" {% if form.alert_type.value == 'threshold' %}selected{% endif %}>⚠️ Seuil dépassé</option>
+                                <option value="deadline" {% if form.alert_type.value == 'deadline' %}selected{% endif %}>📅 Échéance</option>
+                                <option value="custom" {% if form.alert_type.value == 'custom' %}selected{% endif %}>🏷️ Personnalisé</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Catégorie -->
+                        <div class="col-md-6 mb-3">
+                            <label for="id_category" class="form-label fw-semibold">Catégorie</label>
+                            <select name="category" id="id_category" class="form-select">
+                                <option value="general" {% if form.category.value == 'general' or not form.category.value %}selected{% endif %}>Général</option>
+                                <option value="vendange" {% if form.category.value == 'vendange' %}selected{% endif %}>🍇 Vendanges</option>
+                                <option value="lot" {% if form.category.value == 'lot' %}selected{% endif %}>📦 Lots techniques</option>
+                                <option value="assemblage" {% if form.category.value == 'assemblage' %}selected{% endif %}>🔀 Assemblages</option>
+                                <option value="analyse" {% if form.category.value == 'analyse' %}selected{% endif %}>🧪 Analyses</option>
+                                <option value="contenant" {% if form.category.value == 'contenant' %}selected{% endif %}>🛢️ Contenants</option>
+                                <option value="mise" {% if form.category.value == 'mise' %}selected{% endif %}>🍾 Mises en bouteille</option>
+                                <option value="parcelle" {% if form.category.value == 'parcelle' %}selected{% endif %}>🗺️ Parcelles</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Priorité -->
+                        <div class="col-md-4 mb-3">
+                            <label for="id_priority" class="form-label fw-semibold">Priorité</label>
+                            <select name="priority" id="id_priority" class="form-select">
+                                <option value="low" {% if form.priority.value == 'low' %}selected{% endif %}>Basse</option>
+                                <option value="medium" {% if form.priority.value == 'medium' or not form.priority.value %}selected{% endif %}>Normale</option>
+                                <option value="high" {% if form.priority.value == 'high' %}selected{% endif %}>Haute</option>
+                                <option value="urgent" {% if form.priority.value == 'urgent' %}selected{% endif %}>Urgente</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Date d'échéance -->
+                        <div class="col-md-4 mb-3">
+                            <label for="id_due_date" class="form-label fw-semibold">Date d'échéance</label>
+                            <input type="date" name="due_date" id="id_due_date" class="form-control"
+                                   value="{{ form.due_date.value|date:'Y-m-d'|default:'' }}">
+                        </div>
+                        
+                        <!-- Heure -->
+                        <div class="col-md-4 mb-3">
+                            <label for="id_due_time" class="form-label fw-semibold">Heure</label>
+                            <input type="time" name="due_time" id="id_due_time" class="form-control"
+                                   value="{{ form.due_time.value|time:'H:i'|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    {% if object %}
+                    <!-- Statut (uniquement en édition) -->
+                    <div class="mb-3">
+                        <label for="id_status" class="form-label fw-semibold">Statut</label>
+                        <select name="status" id="id_status" class="form-select">
+                            <option value="active" {% if form.status.value == 'active' %}selected{% endif %}>Active</option>
+                            <option value="snoozed" {% if form.status.value == 'snoozed' %}selected{% endif %}>Reportée</option>
+                            <option value="completed" {% if form.status.value == 'completed' %}selected{% endif %}>Terminée</option>
+                            <option value="dismissed" {% if form.status.value == 'dismissed' %}selected{% endif %}>Ignorée</option>
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'production:alerts_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>{% if object %}Enregistrer{% else %}Créer l'alerte{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

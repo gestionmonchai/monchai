@@ -2,10 +2,42 @@
 {% load widget_tweaks %}
 {% block title %}{% if is_edit %}Modifier la vendange{% else %}Nouvelle vendange{% endif %} - Mon Chai{% endblock %}
 {% block production_content %}
-<h1 class="h4 mb-3">{% if is_edit %}Modifier la vendange {{ vendange.code }}{% else %}Nouvelle vendange{% endif %}</h1>
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}" class="text-decoration-none">Production</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'production:vendanges_list' %}" class="text-decoration-none">Vendanges</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if is_edit %}{{ vendange.code }}{% else %}Nouvelle{% endif %}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">{% if is_edit %}Modifier la vendange {{ vendange.code }}{% else %}Nouvelle vendange{% endif %}</h1>
+    <p class="text-muted mb-0 small">{% if is_edit %}Modifiez les informations de cette réception{% else %}Enregistrez une réception de raisins{% endif %}</p>
+  </div>
+  <a href="{% url 'production:vendanges_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Retour</a>
+</div>
+
 <form method="post" class="">
   {% csrf_token %}
-  {{ form.non_field_errors }}
+  
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger shadow-sm border-danger">
+      <div class="d-flex">
+          <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+          <div>
+              <h6 class="alert-heading fw-bold mb-1">Erreur de validation</h6>
+              <ul class="mb-0 ps-3">
+              {% for error in form.non_field_errors %}
+                  <li>{{ error }}</li>
+              {% endfor %}
+              </ul>
+          </div>
+      </div>
+  </div>
+  {% endif %}
+  
   {% if lignes_formset.non_form_errors %}
   <div class="alert alert-danger">{{ lignes_formset.non_form_errors }}</div>
   {% endif %}
@@ -14,24 +46,39 @@
     <!-- Colonne principale -->
     <div class="col-lg-8">
       <!-- Étape 1 : Infos générales -->
-      <div class="card mb-3">
-        <div class="card-header fw-semibold"><i class="bi bi-1-circle me-2"></i>Infos générales</div>
+      <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold py-3 border-bottom"><i class="bi bi-1-circle me-2 text-primary"></i>Infos générales</div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Parcelle <span class="text-danger">*</span></label>
-              <div class="input-group">
+              <label class="form-label fw-medium">Parcelle <span class="text-danger">*</span></label>
+              <div class="input-group has-validation">
                 {{ form.parcelle|add_class:'form-select' }}
-                <a class="btn btn-outline-secondary" href="/referentiels/parcelles/nouvelle/?next=/production/vendanges/nouveau/" target="_blank" title="Créer">+</a>
+                <a class="btn btn-outline-secondary" href="{% url 'referentiels:parcelle_create' %}?next={% url 'production:vendange_new' %}" target="_blank" title="Créer une parcelle">+</a>
+                {% if form.parcelle.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.parcelle.errors|join:", " }}
+                  </div>
+                {% endif %}
               </div>
             </div>
             <div class="col-md-3">
-              <label class="form-label">{{ form.date.label }} <span class="text-danger">*</span></label>
+              <label class="form-label fw-medium">{{ form.date.label }} <span class="text-danger">*</span></label>
               {{ form.date|add_class:'form-control' }}
+              {% if form.date.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.date.errors|join:", " }}
+                  </div>
+              {% endif %}
             </div>
             <div class="col-md-3">
               {{ form.type_vendange.label_tag }}
               {{ form.type_vendange }}
+              {% if form.type_vendange.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.type_vendange.errors|join:", " }}
+                  </div>
+              {% endif %}
             </div>
           </div>
           <div class="row g-3 mt-1">
@@ -41,17 +88,26 @@
               <div class="form-text text-muted">Optionnel</div>
             </div>
             <div class="col-md-4">
-              <label class="form-label">{{ form.type_recolte.label }}</label>
-              {{ form.type_recolte|add_class:'form-control' }}
-              <datalist id="type_recolte_options">
-                <option value="blanc"></option>
-                <option value="rouge"></option>
-                <option value="rosé"></option>
-              </datalist>
+              <label class="form-label">Type de récolte</label>
+              <!-- Widget manuel pour matcher le design system mais connecté au form -->
+              <select name="type_recolte" class="form-select">
+                <option value="">— Sélectionner —</option>
+                {% with val=form.type_recolte.value|default:form.instance.type_recolte|default:'' %}
+                <option value="blanc" {% if val == 'blanc' %}selected{% endif %}>Blanc</option>
+                <option value="rouge" {% if val == 'rouge' %}selected{% endif %}>Rouge</option>
+                <option value="rose" {% if val == 'rose' or val == 'rosé' %}selected{% endif %}>Rosé</option>
+                <option value="base_effervescente" {% if val == 'base_effervescente' %}selected{% endif %}>Base effervescente</option>
+                {% endwith %}
+              </select>
             </div>
             <div class="col-md-4">
               <label class="form-label">Statut</label>
               {{ form.statut }}
+              {% if form.statut.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.statut.errors|join:", " }}
+                  </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -70,6 +126,27 @@
           </div>
           
           {{ lignes_formset.management_form }}
+          
+          <!-- Template caché pour le JS (empty_form) -->
+          <div id="empty-row-template" style="display:none">
+            <tr class="ligne-row">
+              <td>
+                {{ lignes_formset.empty_form.id }}
+                {{ lignes_formset.empty_form.cepage }}
+              </td>
+              <td>{{ lignes_formset.empty_form.quantite_kg }}</td>
+              <td>{{ lignes_formset.empty_form.rangs_texte }}</td>
+              <td>{{ lignes_formset.empty_form.degre_potentiel }}</td>
+              <td>{{ lignes_formset.empty_form.notes }}</td>
+              <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                </button>
+                <div style="display:none">{{ lignes_formset.empty_form.DELETE }}</div>
+              </td>
+            </tr>
+          </div>
+
           <div class="table-responsive">
             <table class="table table-sm mb-0" id="lignes-table">
               <thead class="table-light">
@@ -88,14 +165,22 @@
                   <td>
                     {{ ligne_form.id }}
                     {{ ligne_form.cepage }}
+                    {% if ligne_form.cepage.errors %}
+                        <div class="invalid-feedback d-block small">{{ ligne_form.cepage.errors|join:", " }}</div>
+                    {% endif %}
                   </td>
-                  <td>{{ ligne_form.quantite_kg }}</td>
+                  <td>
+                      {{ ligne_form.quantite_kg }}
+                      {% if ligne_form.quantite_kg.errors %}
+                        <div class="invalid-feedback d-block small">{{ ligne_form.quantite_kg.errors|join:", " }}</div>
+                      {% endif %}
+                  </td>
                   <td>{{ ligne_form.rangs_texte }}</td>
                   <td>{{ ligne_form.degre_potentiel }}</td>
                   <td>{{ ligne_form.notes }}</td>
                   <td class="text-center">
                     {% if ligne_form.instance.pk %}
-                    <div class="form-check">
+                    <div class="form-check d-flex justify-content-center">
                       {{ ligne_form.DELETE }}
                     </div>
                     {% endif %}
@@ -139,11 +224,11 @@
         </div>
         <div class="tab-pane fade" id="tab-mesures" role="tabpanel">
           <div class="row g-3">
-            <div class="col-md-4">{{ form.degre_potentiel.label_tag }} {{ form.degre_potentiel|add_class:'form-control' }}</div>
             <div class="col-md-4">{{ form.rendement_pct.label_tag }} {{ form.rendement_pct|add_class:'form-control' }}</div>
             <div class="col-md-4">{{ form.volume_mesure_l.label_tag }} {{ form.volume_mesure_l|add_class:'form-control' }}</div>
             <div class="col-md-4">{{ form.prix_raisin_eur_kg.label_tag }} {{ form.prix_raisin_eur_kg|add_class:'form-control' }}</div>
           </div>
+          <p class="text-muted small mt-2"><i class="bi bi-info-circle me-1"></i>Le degré potentiel est renseigné par cépage dans le tableau ci-dessus.</p>
         </div>
         <div class="tab-pane fade" id="tab-notes" role="tabpanel">
           <div class="mb-3">
@@ -177,7 +262,7 @@
             {% if is_edit %}
             <a class="btn btn-outline-secondary" href="{% url 'production:vendange_detail' vendange.pk %}">Annuler</a>
             {% else %}
-            <a class="btn btn-outline-secondary" href="/production/vendanges/">Annuler</a>
+            <a class="btn btn-outline-secondary" href="{% url 'production:vendanges_list' %}">Annuler</a>
             {% endif %}
           </div>
         </div>
@@ -254,42 +339,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ajouter une nouvelle ligne
     if (addLigneBtn && lignesTbody) {
         addLigneBtn.addEventListener('click', function() {
-            // Cloner la première ligne et la vider
-            const firstRow = lignesTbody.querySelector('.ligne-row');
-            if (!firstRow) return;
+            const templateDiv = document.getElementById('empty-row-template');
+            if (!templateDiv) return;
             
-            const newRow = firstRow.cloneNode(true);
+            // Récupérer le HTML du template et remplacer __prefix__
+            let html = templateDiv.innerHTML.replace(/__prefix__/g, formIndex);
             
-            // Mettre à jour les noms et IDs
-            newRow.querySelectorAll('input, select, textarea').forEach(el => {
-                if (el.name) {
-                    el.name = el.name.replace(/-\d+-/, `-${formIndex}-`);
+            // Créer un élément temporaire pour parser le HTML
+            const temp = document.createElement('tbody');
+            temp.innerHTML = html;
+            const newRow = temp.firstElementChild;
+            
+            // Nettoyage visuel (au cas où)
+            if (newRow) {
+                // Initialiser les select si nécessaire
+                newRow.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+                
+                // Ajouter au tableau
+                lignesTbody.appendChild(newRow);
+                
+                // Gestionnaire de suppression pour la nouvelle ligne
+                const removeBtn = newRow.querySelector('.remove-row-btn');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function() {
+                        newRow.remove();
+                        updateTotals();
+                        // On ne décrémente pas formIndex pour éviter les conflits d'ID
+                        // Mais on met à jour TOTAL_FORMS ? Non, Django gère les trous si on ne change pas TOTAL_FORMS, 
+                        // mais ici on ajoute. Il faut incrémenter TOTAL_FORMS.
+                        // Si on supprime, on devrait peut-être marquer DELETE caché ?
+                        // Pour une ligne ajoutée dynamiquement (pas encore sauvée), on peut juste la virer du DOM.
+                    });
                 }
-                if (el.id) {
-                    el.id = el.id.replace(/-\d+-/, `-${formIndex}-`);
-                }
-                // Vider les valeurs
-                if (el.type === 'checkbox') {
-                    el.checked = false;
-                } else if (el.tagName === 'SELECT') {
-                    el.selectedIndex = 0;
-                } else {
-                    el.value = '';
-                }
-            });
-            
-            // Supprimer le champ ID caché (nouvelle ligne)
-            const hiddenId = newRow.querySelector('input[name$="-id"]');
-            if (hiddenId) hiddenId.value = '';
-            
-            // Supprimer la case DELETE pour les nouvelles lignes
-            const deleteCell = newRow.querySelector('td:last-child');
-            if (deleteCell) deleteCell.innerHTML = '';
-            
-            lignesTbody.appendChild(newRow);
-            formIndex++;
-            totalFormsInput.value = formIndex;
+                
+                formIndex++;
+                totalFormsInput.value = formIndex;
+            }
         });
+    }
+
+    // Si le tableau est vide au chargement (ex: bug de données), ajouter une ligne par défaut
+    if (lignesTbody && lignesTbody.children.length === 0) {
+        // Petit délai pour être sûr que tout est chargé
+        setTimeout(() => {
+            if (addLigneBtn) addLigneBtn.click();
+        }, 100);
     }
     
     // Charger les cépages de la parcelle

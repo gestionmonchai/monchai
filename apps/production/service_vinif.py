@@ -32,6 +32,7 @@ def init_from_vendange(
     rendement_base_l_par_kg: Decimal | float | int = Decimal('0.75'),
     effic_pct: Decimal | float | int = Decimal('100'),
     contenant: str = "",
+    contenant_id: str | None = None,  # UUID du contenant de la BDD
     volume_mesure_l: Decimal | float | int | None = None,
     user=None,
     poids_debite_kg: Decimal | float | int | None = None,
@@ -51,15 +52,17 @@ def init_from_vendange(
     """
     with transaction.atomic():
         v = VendangeReception.objects.select_related('cuvee').select_for_update().get(pk=vendange_id)
+        # Récupérer l'organisation
+        v_org_id = getattr(v, 'organization_id', None) or (getattr(getattr(v, 'cuvee', None), 'organization_id', None))
         # Guard: enforce organization if provided
         try:
-            v_org_id = getattr(v, 'organization_id', None) or (getattr(getattr(v, 'cuvee', None), 'organization_id', None))
             if expected_org_id is not None and v_org_id is not None and str(v_org_id) != str(expected_org_id):
                 raise ValueError("Accès interdit: vendange hors organisation courante")
         except Exception:
             pass
-        if not v.cuvee_id:
-            raise ValueError("La vendange n'est pas affectée à une cuvée.")
+        # Cuvée optionnelle - on peut créer un lot sans cuvée
+        # if not v.cuvee_id:
+        #     raise ValueError("La vendange n'est pas affectée à une cuvée.")
 
         # Utiliser le poids débité si fourni, sinon le poids restant (fractionnement), fallback poids total
         try:
@@ -102,15 +105,48 @@ def init_from_vendange(
         except Exception:
             init_status = 'MOUT_ENCUVE'
 
+        # Résoudre le contenant depuis contenant_id ou code
+        contenant_obj = None
+        contenant_code = contenant or ""
+        from .models_containers import Contenant
+        if contenant_id:
+            try:
+                contenant_obj = Contenant.objects.select_for_update().get(pk=contenant_id)
+                contenant_code = contenant_obj.code
+            except Exception:
+                pass  # Fallback sur la chaîne contenant
+        elif contenant_code:
+            # Chercher le contenant par code dans l'organisation
+            try:
+                org_id = v_org_id or expected_org_id
+                if org_id:
+                    contenant_obj = Contenant.objects.select_for_update().filter(
+                        organization_id=org_id, code=contenant_code
+                    ).first()
+            except Exception:
+                pass
+
         lot = LotTechnique.objects.create(
             code=code,
             campagne=campagne,
-            contenant=contenant or "",
+            contenant=contenant_code,
             volume_l=volume_l,
             statut=init_status,
             cuvee_id=v.cuvee_id,
             source=v,
         )
+
+        # Mettre à jour le contenant si résolu depuis la BDD
+        if contenant_obj:
+            try:
+                contenant_obj.lot_courant = lot
+                contenant_obj.volume_occupe_l = (contenant_obj.volume_occupe_l or Decimal('0')) + volume_l
+                if contenant_obj.statut == 'disponible':
+                    contenant_obj.statut = 'occupe'
+                contenant_obj.save(update_fields=['lot_courant', 'volume_occupe_l', 'statut'])
+            except Exception:
+                pass
+
         # Normaliser le volume hL@20°C
         try:
             lot.volume_hl20 = (volume_l / Decimal('100')).quantize(Decimal('0.001'))
@@ -149,7 +185,8 @@ def init_from_vendange(
                 meta={
                     'vendange_id': str(v.id),
                     'rendement_pct': str(effic_pct),
-                    'contenant': contenant or '',
+                    'contenant': contenant_code,
+                    'contenant_id': str(contenant_obj.id) if contenant_obj else '',
                     'poids_debite_kg': str(kg_used),
                     'mode_encuvage': mode_encuvage or '',
                     'lot_type': lot_type or '',
@@ -166,8 +203,8 @@ def init_from_vendange(
             if hasattr(v, 'statut'):
                 v.statut = 'encuvee'
                 updates.append('statut')
-            if hasattr(v, 'contenant') and (contenant or '') != getattr(v, 'contenant', ''):
-                v.contenant = contenant or ''
+            if hasattr(v, 'contenant') and contenant_code and contenant_code != getattr(v, 'contenant', ''):
+                v.contenant = contenant_code
                 updates.append('contenant')
             if hasattr(v, 'rendement_pct') and effic_pct is not None:
                 v.rendement_pct = Decimal(str(effic_pct))

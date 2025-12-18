@@ -18,9 +18,9 @@ User = get_user_model()
 
 
 class BaseStockModel(models.Model):
-    """Modèle de base pour tous les modèles de stock avec UUID et row_version"""
+    """Modèle de base pour tous les modèles de stock avec BigAutoField et row_version"""
     
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id auto-généré par Django (BigAutoField)
     organization = models.ForeignKey(
         Organization, 
         on_delete=models.CASCADE,

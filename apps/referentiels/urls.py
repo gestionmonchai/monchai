@@ -11,6 +11,7 @@ from apps.referentiels.views import (
     referentiels_home,
     # Cépages
     cepage_list, export_cepages, cepage_search_ajax, cepage_detail, cepage_create, cepage_update, cepage_delete,
+    cepage_import_from_reference,
     # Parcelles
     parcelle_list, parcelles_map, export_parcelles, parcelle_search_ajax, parcelle_detail, parcelle_create, parcelle_update, parcelle_delete, parcelles_update_geo,
     parcelle_cepages_api,
@@ -28,6 +29,10 @@ from apps.referentiels.views import (
     import_intake_api, import_preview_api, import_execute_api,
 )
 from . import api_v2
+from .views_produits import (
+    produit_list, produit_search_ajax, produit_create, produit_detail, 
+    produit_update, produit_archive, categorie_create_ajax
+)
 
 app_name = 'referentiels'
 
@@ -39,6 +44,7 @@ urlpatterns = [
     path('cepages/', cepage_list, name='cepage_list'),
     path('cepages/export/', export_cepages, name='export_cepages'),
     path('cepages/search-ajax/', cepage_search_ajax, name='cepage_search_ajax'),
+    path('cepages/import-reference/', cepage_import_from_reference, name='cepage_import_reference'),
     path('cepages/<int:pk>/', cepage_detail, name='cepage_detail'),
     path('cepages/nouveau/', cepage_create, name='cepage_create'),
     path('cepages/<int:pk>/modifier/', cepage_update, name='cepage_update'),
@@ -89,6 +95,15 @@ urlpatterns = [
     path('entrepots/nouveau/', entrepot_create, name='entrepot_create'),
     path('entrepots/<int:pk>/modifier/', entrepot_update, name='entrepot_update'),
     path('entrepots/<int:pk>/supprimer/', entrepot_delete, name='entrepot_delete'),
+    
+    # Produits (base commune) - Nouvelle architecture
+    path('produits/', produit_list, name='produit_list'),
+    path('produits/search-ajax/', produit_search_ajax, name='produit_search_ajax'),
+    path('produits/nouveau/', produit_create, name='produit_create'),
+    path('produits/<int:pk>/', produit_detail, name='produit_detail'),
+    path('produits/<int:pk>/modifier/', produit_update, name='produit_update'),
+    path('produits/<int:pk>/archiver/', produit_archive, name='produit_archive'),
+    path('produits/categories/nouveau/', categorie_create_ajax, name='categorie_create_ajax'),
     
     # Import CSV - Roadmap item 18
     path('import/', import_csv, name='import_csv'),

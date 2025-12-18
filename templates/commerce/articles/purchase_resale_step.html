@@ -1,0 +1,80 @@
+{% extends 'commerce/base_commerce.html' %}
+
+{% block title %}Configuration Revente{% endblock %}
+
+{% block commerce_content %}
+<div class="container-fluid py-4 px-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 border-top border-success border-3">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                            <i class="bi bi-shop fs-2"></i>
+                        </div>
+                        <h4 class="card-title">Une dernière question...</h4>
+                        <p class="text-muted">Vous venez de créer l'article d'achat <strong>{{ object.name }}</strong>.</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4 text-start bg-light p-3 rounded">
+                            <div class="form-check form-switch mb-3">
+                                {{ form.enable_resale }}
+                                <label class="form-check-label fw-bold" for="{{ form.enable_resale.id_for_label }}">
+                                    {{ form.enable_resale.label }}
+                                </label>
+                            </div>
+                            
+                            <div id="resaleFields" class="collapse">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted">Prix de vente HT</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.price_ht }}
+                                            <span class="input-group-text">€</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small text-muted">Taux de TVA</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.vat_rate }}
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg text-white">
+                                Terminer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('{{ form.enable_resale.id_for_label }}');
+    const fields = document.getElementById('resaleFields');
+    
+    function updateVisibility() {
+        if (toggle.checked) {
+            new bootstrap.Collapse(fields, { show: true });
+        } else {
+            new bootstrap.Collapse(fields, { hide: true });
+        }
+    }
+    
+    toggle.addEventListener('change', updateVisibility);
+    // Init state
+    if(toggle.checked) fields.classList.add('show');
+});
+</script>
+{% endblock %}

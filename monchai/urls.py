@@ -36,10 +36,18 @@ urlpatterns = [
     # Apps
     path('onboarding/', include('apps.onboarding.urls')),
     path('catalogue/', include('apps.catalogue.urls')),
-    path('clients/', include('apps.clients.urls')),
+    path('ventes/clients/', include('apps.clients.urls')),
     path('viticulture/', include('apps.viticulture.urls')),
-    # Sales app (grilles tarifaires sous /clients/tarifs/)
-    path('clients/', include('apps.sales.urls')),
+    
+    # New Commerce App (Achats/Ventes unifiés - Refonte URL 2025)
+    # path('commerce/', include('apps.commerce.urls', namespace='commerce')), # DEPRECATED
+    
+    path('achats/', include('apps.commerce.urls_achats', namespace='achats')),
+    path('ventes/', include('apps.commerce.urls_ventes', namespace='ventes')),
+    
+    # Sales app (legacy - integrated into ventes)
+    # path('sales/', include('apps.sales.urls')),
+    
     # Production app (namespaced include)
     path('production/', include(('apps.production.urls', 'production'), namespace='production')),
     # Dashboard placeholder

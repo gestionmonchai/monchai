@@ -1,21 +1,32 @@
 {% extends 'production/base_production.html' %}
 {% block title %}Vendanges - Mon Chai{% endblock %}
 {% block production_content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}" class="text-decoration-none">Production</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Vendanges</li>
+  </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div class="d-flex align-items-center gap-3">
-    <h1 class="h4 mb-0">Vendanges</h1>
+    <div>
+      <h1 class="h4 mb-0">Vendanges</h1>
+      <p class="text-muted mb-0 small d-none d-md-block">Réceptions de raisins et suivi des campagnes</p>
+    </div>
     <!-- View Switcher -->
     <div class="btn-group btn-group-sm" role="group" aria-label="Switch view">
       <button type="button" class="btn btn-outline-primary view-switch-btn active" data-view="table">
-        <i class="bi bi-table me-1"></i>Table
+        <i class="bi bi-table me-1"></i><span class="d-none d-md-inline">Table</span>
       </button>
       <button type="button" class="btn btn-outline-primary view-switch-btn" data-view="kanban">
-        <i class="bi bi-kanban me-1"></i>Kanban
+        <i class="bi bi-kanban me-1"></i><span class="d-none d-md-inline">Kanban</span>
       </button>
     </div>
   </div>
-  <a id="btn-new-vendange" class="btn btn-primary" href="/production/vendanges/nouveau/">
-    <i class="bi bi-plus-lg me-1"></i>Nouvelle vendange
+  <a id="btn-new-vendange" class="btn btn-warning" href="{% url 'production:vendange_new' %}">
+    <i class="bi bi-basket me-1"></i><span class="d-none d-md-inline">Nouvelle </span>vendange
   </a>
 </div>
 

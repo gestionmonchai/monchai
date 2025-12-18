@@ -147,7 +147,7 @@ class DocumentRenderer:
                 
                 # SKU si présent
                 if hasattr(line, 'sku') and line.sku:
-                    line_data['sku_code'] = line.sku.code
+                    line_data['sku_code'] = line.sku.code_barres
                 
                 lines.append(line_data)
         
@@ -185,7 +185,7 @@ class DocumentRenderer:
         }}
         
         body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 10pt;
             line-height: 1.5;
             color: #333;

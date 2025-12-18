@@ -1,0 +1,231 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ operation.get_type_display }} - {{ operation.lot.code }}{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-2">
+                <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}">Production</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'production:vinification_home' %}">Journal opérations</a></li>
+                <li class="breadcrumb-item active">{{ operation.get_type_display }}</li>
+            </ol>
+        </nav>
+        <h1 class="h4 mb-0 fw-bold">
+            <span class="me-2">{{ operation.type_icon }}</span>
+            {{ operation.get_type_display }}
+        </h1>
+        <p class="text-muted mb-0">{{ operation.date|date:"l d F Y" }} • Lot {{ operation.lot.code }}</p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'production:operation_edit' operation.id %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#createAlertModal">
+            <i class="bi bi-bell me-1"></i>Créer alerte
+        </button>
+        <a href="{% url 'production:operation_delete' operation.id %}" class="btn btn-outline-danger"
+           onclick="return confirm('Supprimer cette opération ?');">
+            <i class="bi bi-trash"></i>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Informations principales -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-info-circle me-2 text-primary"></i>Détails de l'opération
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase">Type d'opération</label>
+                        <p class="mb-0 fw-semibold">
+                            <span class="badge bg-primary bg-opacity-10 text-primary fs-6">
+                                {{ operation.type_icon }} {{ operation.get_type_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase">Date</label>
+                        <p class="mb-0 fw-semibold">{{ operation.date|date:"d/m/Y" }}</p>
+                    </div>
+                    
+                    {% if operation.volume_in_l %}
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase">Volume entrée</label>
+                        <p class="mb-0 fw-semibold">{{ operation.volume_in_l }} L</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if operation.volume_out_l %}
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase">Volume sortie</label>
+                        <p class="mb-0 fw-semibold">{{ operation.volume_out_l }} L</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if operation.cout_eur %}
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small text-uppercase">Coût</label>
+                        <p class="mb-0 fw-semibold">{{ operation.cout_eur }} €</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if operation.notes %}
+                    <div class="col-12">
+                        <label class="form-label text-muted small text-uppercase">Notes & observations</label>
+                        <div class="bg-light rounded p-3">
+                            {{ operation.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Données spécifiques par type -->
+        {% if operation.details_json %}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-sliders me-2 text-success"></i>Paramètres spécifiques
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for key, value in operation.details_json.items %}
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small text-uppercase">{{ key|title }}</label>
+                        <p class="mb-0 fw-semibold">{{ value }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar info lot -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-box-seam me-2 text-secondary"></i>Lot concerné
+                </h6>
+            </div>
+            <div class="card-body">
+                <h5 class="fw-bold mb-2">{{ operation.lot.code }}</h5>
+                {% if operation.lot.cuvee %}
+                <p class="mb-1"><span class="text-muted">Cuvée :</span> {{ operation.lot.cuvee }}</p>
+                {% endif %}
+                <p class="mb-1"><span class="text-muted">Volume :</span> {{ operation.lot.volume_l|floatformat:0 }} L</p>
+                <p class="mb-3"><span class="text-muted">Statut :</span> 
+                    <span class="badge bg-secondary">{{ operation.lot.get_status_display }}</span>
+                </p>
+                <a href="{% url 'production:lot_detail' operation.lot.id %}" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="bi bi-eye me-1"></i>Voir le lot
+                </a>
+            </div>
+        </div>
+        
+        <!-- Historique récent du lot -->
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white border-bottom">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-clock-history me-2 text-info"></i>Historique récent
+                </h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for op in recent_operations %}
+                <li class="list-group-item d-flex justify-content-between align-items-center py-2 {% if op.id == operation.id %}bg-light{% endif %}">
+                    <div>
+                        <small class="text-muted">{{ op.date|date:"d/m" }}</small>
+                        <span class="ms-2">{{ op.get_type_display }}</span>
+                    </div>
+                    {% if op.id != operation.id %}
+                    <a href="{% url 'production:operation_detail' op.id %}" class="btn btn-sm btn-link p-0">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    {% else %}
+                    <span class="badge bg-primary">Actuel</span>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted text-center py-3">Aucune autre opération</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Actions rapides -->
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white border-bottom">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-lightning me-2 text-warning"></i>Actions rapides
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'production:operation_create' %}?lot={{ operation.lot.id }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus me-1"></i>Nouvelle opération sur ce lot
+                    </a>
+                    <a href="{% url 'production:alerts_create' %}?lot={{ operation.lot.id }}&return={{ request.path }}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-bell me-1"></i>Programmer un rappel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal création alerte -->
+<div class="modal fade" id="createAlertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bell me-2"></i>Créer une alerte</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'production:alert_from_operation' operation.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Titre de l'alerte</label>
+                        <input type="text" name="title" class="form-control" 
+                               value="Suivi {{ operation.get_type_display }} - {{ operation.lot.code }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea name="description" class="form-control" rows="3">Suite à l'opération de {{ operation.get_type_display|lower }} du {{ operation.date|date:"d/m/Y" }}</textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Priorité</label>
+                            <select name="priority" class="form-select">
+                                <option value="low">Basse</option>
+                                <option value="medium" selected>Moyenne</option>
+                                <option value="high">Haute</option>
+                                <option value="critical">Critique</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Échéance</label>
+                            <input type="date" name="due_date" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-bell me-1"></i>Créer l'alerte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

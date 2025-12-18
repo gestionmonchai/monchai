@@ -114,14 +114,6 @@
             <i class="bi bi-grid-3x3-gap me-2"></i>
             <strong id="cards-count">{{ total_count }}</strong> parcelle(s)
           </div>
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all">
-              <i class="bi bi-check-all me-1"></i>Tout sélectionner
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btn-deselect-all">
-              <i class="bi bi-x-lg me-1"></i>Désélectionner
-            </button>
-          </div>
         </div>
         <div class="card-body">
           <div class="parcelles-grid" id="parcelles-grid">
@@ -173,22 +165,6 @@
 
     <!-- Panneau latéral : Actions -->
     <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3" id="selection-card">
-        <div class="card-header"><h6 class="mb-0"><i class="bi bi-check2-square me-2"></i>Sélection</h6></div>
-        <div class="card-body">
-          <div id="selection-empty" class="text-center text-muted py-3">
-            <i class="bi bi-hand-index d-block fs-3 mb-2"></i>Cliquez sur une parcelle
-          </div>
-          <div id="selection-info" class="d-none">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span><strong id="selection-count">0</strong> sélectionnée(s)</span>
-              <span class="badge bg-primary"><span id="selection-surface">0</span> ha</span>
-            </div>
-            <div id="selection-list" class="small text-muted" style="max-height: 100px; overflow-y: auto;"></div>
-          </div>
-        </div>
-      </div>
-
       <div class="card mb-3" id="actions-card">
         <div class="card-header"><h6 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Actions rapides</h6></div>
         <div class="card-body">
@@ -207,8 +183,8 @@
             </div>
             <hr class="my-3">
             <div class="d-grid gap-2">
+              <a href="#" id="btn-voir-detail" class="btn btn-primary btn-lg w-100 mb-2"><i class="bi bi-arrow-right-circle me-2"></i>Voir la parcelle</a>
               <a href="#" id="btn-vendange" class="btn btn-warning"><i class="bi bi-basket me-2"></i>Faire une vendange</a>
-              <a href="#" id="btn-voir-detail" class="btn btn-outline-secondary"><i class="bi bi-eye me-2"></i>Voir le détail</a>
               <a href="#" id="btn-voir-journal" class="btn btn-outline-secondary"><i class="bi bi-journal-text me-2"></i>Journal parcelle</a>
             </div>
           </div>
@@ -305,17 +281,11 @@ document.addEventListener('DOMContentLoaded', function() {
     viewPanels.forEach(panel => panel.classList.toggle('d-none', panel.getAttribute('data-view') !== viewName));
   }
 
-  // === SELECTION CARTES ===
-  let selectedParcelles = new Map();
-  const selectionEmpty = document.getElementById('selection-empty');
-  const selectionInfo = document.getElementById('selection-info');
-  const selectionCount = document.getElementById('selection-count');
-  const selectionSurface = document.getElementById('selection-surface');
-  const selectionList = document.getElementById('selection-list');
+  // === SELECTION UNIQUE ===
+  let selectedParcelleId = null;
+  let selectedParcelleCard = null;
   const actionsDisabled = document.getElementById('actions-disabled');
   const actionsEnabled = document.getElementById('actions-enabled');
-  const btnSelectAll = document.getElementById('btn-select-all');
-  const btnDeselectAll = document.getElementById('btn-deselect-all');
   const btnVendange = document.getElementById('btn-vendange');
   const btnVoirDetail = document.getElementById('btn-voir-detail');
   const btnVoirJournal = document.getElementById('btn-voir-journal');
@@ -323,83 +293,46 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.parcelle-card').forEach(card => {
     card.addEventListener('click', function() {
       const id = this.dataset.parcelleId;
-      const nom = this.dataset.parcelleNom;
-      const surface = parseFloat(this.dataset.parcelleSurface) || 0;
-      if (selectedParcelles.has(id)) {
-        selectedParcelles.delete(id);
+      
+      // Si on clique sur la même parcelle, la désélectionner
+      if (selectedParcelleId === id) {
         this.classList.remove('selected');
+        selectedParcelleId = null;
+        selectedParcelleCard = null;
       } else {
-        selectedParcelles.set(id, { nom, surface, element: this });
+        // Désélectionner l'ancienne
+        if (selectedParcelleCard) {
+          selectedParcelleCard.classList.remove('selected');
+        }
+        // Sélectionner la nouvelle
         this.classList.add('selected');
+        selectedParcelleId = id;
+        selectedParcelleCard = this;
       }
       updateSelectionUI();
     });
   });
 
   function updateSelectionUI() {
-    const count = selectedParcelles.size;
-    const totalSurface = Array.from(selectedParcelles.values()).reduce((sum, p) => sum + p.surface, 0);
-    
-    if (count === 0) {
-      if (selectionEmpty) selectionEmpty.classList.remove('d-none');
-      if (selectionInfo) selectionInfo.classList.add('d-none');
+    if (!selectedParcelleId) {
       if (actionsDisabled) actionsDisabled.classList.remove('d-none');
       if (actionsEnabled) actionsEnabled.classList.add('d-none');
-      if (btnDeselectAll) btnDeselectAll.classList.add('d-none');
     } else {
-      if (selectionEmpty) selectionEmpty.classList.add('d-none');
-      if (selectionInfo) selectionInfo.classList.remove('d-none');
       if (actionsDisabled) actionsDisabled.classList.add('d-none');
       if (actionsEnabled) actionsEnabled.classList.remove('d-none');
-      if (btnDeselectAll) btnDeselectAll.classList.remove('d-none');
-      if (selectionCount) selectionCount.textContent = count;
-      if (selectionSurface) selectionSurface.textContent = totalSurface.toFixed(2);
-      if (selectionList) selectionList.innerHTML = Array.from(selectedParcelles.values()).map(p => p.nom).join(', ');
       
-      if (count === 1) {
-        const firstId = Array.from(selectedParcelles.keys())[0];
-        if (btnVendange) btnVendange.href = `/production/vendanges/nouveau/?parcelle=${firstId}`;
-        if (btnVoirDetail) { btnVoirDetail.href = `/production/parcelles/${firstId}/`; btnVoirDetail.classList.remove('disabled'); }
-        if (btnVoirJournal) { btnVoirJournal.href = `/viticulture/parcelles/${firstId}/journal/`; btnVoirJournal.classList.remove('disabled'); }
-      } else {
-        if (btnVoirDetail) btnVoirDetail.classList.add('disabled');
-        if (btnVoirJournal) btnVoirJournal.classList.add('disabled');
-      }
+      if (btnVendange) btnVendange.href = `/production/vendanges/nouveau/?parcelle=${selectedParcelleId}`;
+      if (btnVoirDetail) btnVoirDetail.href = `/production/parcelles/${selectedParcelleId}/`;
+      if (btnVoirJournal) btnVoirJournal.href = `/viticulture/parcelles/${selectedParcelleId}/journal/`;
     }
-  }
-
-  if (btnSelectAll) {
-    btnSelectAll.addEventListener('click', function() {
-      document.querySelectorAll('.parcelle-card').forEach(card => {
-        const id = card.dataset.parcelleId;
-        if (!selectedParcelles.has(id)) {
-          selectedParcelles.set(id, { nom: card.dataset.parcelleNom, surface: parseFloat(card.dataset.parcelleSurface) || 0, element: card });
-          card.classList.add('selected');
-        }
-      });
-      updateSelectionUI();
-    });
-  }
-
-  if (btnDeselectAll) {
-    btnDeselectAll.addEventListener('click', function() {
-      selectedParcelles.forEach((val) => val.element.classList.remove('selected'));
-      selectedParcelles.clear();
-      updateSelectionUI();
-    });
   }
 
   // Actions opérations
   document.querySelectorAll('.btn-action').forEach(btn => {
     btn.addEventListener('click', function() {
       const op = this.dataset.op;
-      const ids = Array.from(selectedParcelles.keys());
-      if (ids.length === 0) { alert('Sélectionnez une parcelle'); return; }
-      if (ids.length === 1) {
-        window.location.href = `/viticulture/parcelles/${ids[0]}/operation/${op}/`;
-      } else {
-        alert(`Opération "${op}" sur ${ids.length} parcelles (fonctionnalité groupée à venir)`);
-      }
+      if (!selectedParcelleId) { alert('Sélectionnez une parcelle'); return; }
+      window.location.href = `/viticulture/parcelles/${selectedParcelleId}/operation/${op}/`;
     });
   });
 });

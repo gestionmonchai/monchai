@@ -1,16 +1,27 @@
-{% extends "base.html" %}
+{% extends "production/base_production.html" %}
 {% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
-{% block content %}
+{% block production_content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}" class="text-decoration-none">Production</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'production:parcelles_list' %}" class="text-decoration-none">Parcelles</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="text-decoration-none">{{ parcelle.nom }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ meta.label }}</li>
+  </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="mb-0"><i class="bi bi-clipboard-plus me-2 text-success"></i>{{ meta.label }}</h1>
   <div>
-    <a href="{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}" class="btn btn-outline-secondary me-2">
-      <i class="bi bi-journal-text"></i>
-      Journal de la parcelle
+    <h1 class="h4 mb-0"><i class="bi bi-clipboard-plus me-2 text-success"></i>{{ meta.label }}</h1>
+    <p class="text-muted mb-0 small">Intervention rapide sur {{ parcelle.nom }}</p>
+  </div>
+  <div>
+    <a href="{% url 'viticulture:parcelle_journal' pk=parcelle.pk %}" class="btn btn-outline-secondary btn-sm me-1">
+      <i class="bi bi-journal-text"></i> Journal
     </a>
-    <a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i>
-      Retour à la parcelle
+    <a href="{% url 'referentiels:parcelle_detail' parcelle.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left"></i> Parcelle
     </a>
   </div>
 </div>

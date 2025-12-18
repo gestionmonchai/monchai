@@ -1,0 +1,84 @@
+{% extends 'production/base_production.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }} - Mon Chai{% endblock %}
+
+{% block production_content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Achats</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nouvel article</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h1 class="h4 mb-0"><i class="bi bi-cart-plus me-2 text-primary"></i>Nouvel article d'achat</h1>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Identification</label>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">Nom de l'article <span class="text-danger">*</span></label>
+                                {{ form.name|add_class:"form-control form-control-lg" }}
+                                {{ form.name.errors }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.purchase_unit.id_for_label }}" class="form-label">Unité d'achat <span class="text-danger">*</span></label>
+                                {{ form.purchase_unit|add_class:"form-select" }}
+                                {{ form.purchase_unit.errors }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.tags_input.id_for_label }}" class="form-label">Tags</label>
+                                {{ form.tags_input|add_class:"form-control"|attr:"placeholder:Ex: phyto, bouteille, bouchon" }}
+                                <div class="form-text text-muted">Mots-clés pour retrouver facilement cet article</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Gestion</label>
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    {{ form.stockable|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.stockable.id_for_label }}">
+                                        <strong>Gérer en stock ?</strong>
+                                        <div class="text-muted small">Cochez si vous suivez les quantités en stock pour cet article.</div>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    {{ form.is_consumable|add_class:"form-check-input" }}
+                                    <label class="form-check-label" for="{{ form.is_consumable.id_for_label }}">
+                                        <strong>Consommable ? (Usage interne)</strong>
+                                        <div class="text-muted small">Article destiné à être consommé par l'entreprise (ex: produits d'entretien, fournitures).</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            Créer l'article <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

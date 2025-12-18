@@ -2,30 +2,81 @@
 {% load static %}
 {% block title %}Nouvelle mise — Étape 2{% endblock %}
 {% block production_content %}
-<h1 class="h4 mb-3">Nouvelle mise — Étape 2: Emballage & Planning</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-box-seam me-2 text-primary"></i>Nouvelle mise — Étape 2</h1>
+        <p class="text-muted mb-0">Définissez les formats de bouteilles et quantités</p>
+    </div>
+    <a href="?step=1" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Retour étape 1
+    </a>
+</div>
+
+<!-- Formats depuis le référentiel -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-muted small me-2">Ajouter un format :</span>
+            {% if formats_db %}
+                {% for f in formats_db %}
+                <button type="button" class="btn btn-sm btn-outline-primary add-format-btn" data-format="{{ f.ml }}" data-name="{{ f.nom }} ({{ f.symbole }})" data-unite-id="{{ f.id }}">
+                    <i class="bi bi-plus"></i> {{ f.nom }}
+                </button>
+                {% endfor %}
+            {% else %}
+                <!-- Fallback si pas de formats en BDD -->
+                <button type="button" class="btn btn-sm btn-outline-primary add-format-btn" data-format="375" data-name="Demi (37.5cl)">
+                    <i class="bi bi-plus"></i> Demi 37.5cl
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary add-format-btn" data-format="750" data-name="Bouteille (75cl)">
+                    <i class="bi bi-plus"></i> Bouteille 75cl
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary add-format-btn" data-format="1500" data-name="Magnum (1.5L)">
+                    <i class="bi bi-plus"></i> Magnum 1.5L
+                </button>
+            {% endif %}
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-add-custom">
+                <i class="bi bi-plus"></i> Autre...
+            </button>
+        </div>
+        {% if not formats_db %}
+        <div class="small text-warning mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            <a href="{% url 'referentiels:unites' %}">Créez vos formats de bouteilles</a> dans les référentiels pour les voir ici.
+        </div>
+        {% endif %}
+    </div>
+</div>
 
 <div class="row g-3">
   <div class="col-lg-8">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Formats</span>
-        <div class="btn-group">
-          <button id="btn-add" class="btn btn-sm btn-outline-secondary" type="button">+ Ajouter</button>
-          <button id="btn-preset-75" class="btn btn-sm btn-outline-secondary" type="button">Preset 100% 75cl</button>
-        </div>
+        <span><i class="bi bi-list-ul me-2"></i>Formats sélectionnés</span>
+        <button id="btn-clear-all" class="btn btn-sm btn-outline-danger" type="button">
+            <i class="bi bi-trash me-1"></i>Tout effacer
+        </button>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0" id="tbl-formats">
-            <thead>
+          <table class="table table-hover align-middle mb-0" id="tbl-formats">
+            <thead class="table-light">
               <tr>
-                <th style="width:160px">Format (mL)</th>
-                <th style="width:160px">Quantité (u)</th>
-                <th style="width:160px">Pertes (%)</th>
+                <th style="width:200px">Format</th>
+                <th style="width:150px">Quantité (unités)</th>
+                <th style="width:120px">Volume (L)</th>
+                <th style="width:120px">Pertes (%)</th>
                 <th style="width:60px"></th>
               </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+              <tr id="empty-row">
+                <td colspan="5" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                  Cliquez sur un format ci-dessus pour l'ajouter
+                </td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -73,10 +124,16 @@
 
 <template id="row-tpl">
   <tr>
-    <td><input class="form-control form-control-sm js-fmt" type="number" min="100" step="50" value="750"></td>
+    <td>
+      <div class="d-flex align-items-center gap-2">
+        <input class="form-control form-control-sm js-fmt" type="number" min="100" step="50" value="750" style="width:80px;">
+        <span class="js-name text-muted small">mL</span>
+      </div>
+    </td>
     <td><input class="form-control form-control-sm js-qty" type="number" min="1" step="1" value="1"></td>
-    <td><input class="form-control form-control-sm js-perc" type="number" min="0" max="100" step="0.01" value="0"></td>
-    <td><button class="btn btn-sm btn-outline-danger js-del" type="button">×</button></td>
+    <td class="js-vol text-muted">—</td>
+    <td><input class="form-control form-control-sm js-perc" type="number" min="0" max="100" step="0.1" value="1" style="width:80px;"></td>
+    <td><button class="btn btn-sm btn-outline-danger js-del" type="button"><i class="bi bi-trash"></i></button></td>
   </tr>
 </template>
 
@@ -89,6 +146,7 @@
   const csrftoken = getCookie('csrftoken');
   const tbody = document.querySelector('#tbl-formats tbody');
   const tpl = document.getElementById('row-tpl');
+  const emptyRow = document.getElementById('empty-row');
   const pertesMode = document.getElementById('pertes_mode');
   const pertesGlobal = document.getElementById('pertes_global_l');
   const sumBrut = document.getElementById('sum-brut');
@@ -99,48 +157,122 @@
   const badgeDelta = document.getElementById('badge-delta');
   const sugg = document.getElementById('suggestions');
   const cta = document.getElementById('cta-step3');
+  
+  // Format names
+  const formatNames = {
+    375: 'Demi (37.5cl)',
+    750: 'Bouteille (75cl)',
+    1500: 'Magnum (1.5L)',
+    3000: 'Jéroboam (3L)',
+    5000: 'Mathusalem (5L)',
+    6000: 'Impériale (6L)',
+  };
 
-  function addRow(fmt=750, qty=1, perc=0){
+  function getFormatName(ml) {
+    return formatNames[ml] || ml + ' mL';
+  }
+  
+  function updateRowVolume(tr) {
+    const fmt = parseFloat(tr.querySelector('.js-fmt').value) || 0;
+    const qty = parseInt(tr.querySelector('.js-qty').value) || 0;
+    const volL = (fmt * qty / 1000).toFixed(1);
+    tr.querySelector('.js-vol').textContent = volL + ' L';
+    tr.querySelector('.js-name').textContent = getFormatName(fmt);
+  }
+
+  function addRow(fmt=750, qty=1, perc=1, name=''){
+    // Remove empty row if present
+    if (emptyRow && emptyRow.parentNode) {
+      emptyRow.remove();
+    }
+    
     const node = tpl.content.cloneNode(true);
     const tr = node.querySelector('tr');
     tr.querySelector('.js-fmt').value = fmt;
     tr.querySelector('.js-qty').value = qty;
     tr.querySelector('.js-perc').value = perc;
-    tr.querySelector('.js-del').addEventListener('click', ()=>{ tr.remove(); recalc(); });
-    ['.js-fmt','.js-qty','.js-perc'].forEach(sel=>{
-      tr.querySelector(sel).addEventListener('input', debounce(recalc, 200));
+    tr.querySelector('.js-name').textContent = name || getFormatName(fmt);
+    
+    tr.querySelector('.js-del').addEventListener('click', ()=>{ 
+      tr.remove(); 
+      checkEmpty();
+      recalc(); 
     });
+    
+    ['.js-fmt','.js-qty','.js-perc'].forEach(sel=>{
+      tr.querySelector(sel).addEventListener('input', ()=>{
+        updateRowVolume(tr);
+        debounce(recalc, 200)();
+      });
+    });
+    
     tbody.appendChild(node);
+    updateRowVolume(tr);
+  }
+  
+  function checkEmpty() {
+    const rows = tbody.querySelectorAll('tr:not(#empty-row)');
+    if (rows.length === 0) {
+      const emptyHtml = `<tr id="empty-row">
+        <td colspan="5" class="text-center text-muted py-4">
+          <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+          Cliquez sur un format ci-dessus pour l'ajouter
+        </td>
+      </tr>`;
+      tbody.innerHTML = emptyHtml;
+    }
   }
 
   function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(null,a),ms); } }
 
   async function recalc(){
-    const rows = [...tbody.querySelectorAll('tr')];
-    const fd = new FormData();
-    rows.forEach((tr, i)=>{
-      fd.append(`formats-${i}-format_ml`, tr.querySelector('.js-fmt').value||'0');
-      fd.append(`formats-${i}-quantite_unites`, tr.querySelector('.js-qty').value||'0');
-      fd.append(`formats-${i}-pertes_pct`, tr.querySelector('.js-perc').value||'0');
+    // Ignorer les lignes vides (empty-row)
+    const rows = [...tbody.querySelectorAll('tr:not(#empty-row)')].filter(tr => tr.querySelector('.js-fmt'));
+    
+    // Calcul local du besoin brut
+    let besoinBrut = 0;
+    let besoinNet = 0;
+    rows.forEach(tr => {
+      const fmt = parseFloat(tr.querySelector('.js-fmt').value) || 0;
+      const qty = parseInt(tr.querySelector('.js-qty').value) || 0;
+      const perc = parseFloat(tr.querySelector('.js-perc').value) || 0;
+      const volL = (fmt * qty) / 1000;
+      const pertes = volL * (perc / 100);
+      besoinBrut += volL;
+      besoinNet += volL + pertes;
     });
-    fd.append('pertes_mode', pertesMode.value||'%');
-    fd.append('pertes_global_l', pertesGlobal.value||'0');
-    const resp = await fetch('{% url "production:mise_calc_step2" %}', {
-      method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: fd, credentials: 'same-origin'
-    });
-    const data = await resp.json();
-    sumBrut.textContent = data.besoin_brut_l || '0.000';
-    sumPertes.textContent = data.pertes_l || '0.000';
-    sumNet.textContent = data.besoin_net_l || '0.000';
-    sumVrac.textContent = data.vrac_selectionne_l || '0.000';
-    sumDelta.textContent = data.delta_l || '0.000';
-    sugg.textContent = (data.suggestions||[]).join(' • ');
+    
+    // Récupérer le vrac du step 1
+    const sources = JSON.parse(localStorage.getItem('mise_sources') || '[]');
+    let vracTotal = 0;
+    sources.forEach(s => { vracTotal += parseFloat(s.volume_l) || 0; });
+    
+    const delta = vracTotal - besoinNet;
+    
+    // Mise à jour UI locale (pas besoin d'appel serveur)
+    sumBrut.textContent = besoinBrut.toFixed(1);
+    sumPertes.textContent = (besoinNet - besoinBrut).toFixed(1);
+    sumNet.textContent = besoinNet.toFixed(1);
+    sumVrac.textContent = vracTotal.toFixed(1);
+    sumDelta.textContent = delta.toFixed(1);
+    
     // CTA & badge logic
-    const delta = parseFloat(data.delta_l||'0');
-    badgeDelta.className = 'badge ms-2 ' + (delta<0? 'text-bg-danger' : (delta<=2? 'text-bg-warning':'text-bg-primary'));
-    badgeDelta.textContent = (delta<0? 'Insuffisant' : (delta<=2? 'Ajustement léger' : 'Surplus'));
-    if(delta >= 0){ cta.classList.remove('disabled'); cta.removeAttribute('aria-disabled'); }
-    else { cta.classList.add('disabled'); cta.setAttribute('aria-disabled','true'); }
+    if (rows.length === 0) {
+      badgeDelta.className = 'badge ms-2 text-bg-secondary';
+      badgeDelta.textContent = '—';
+      cta.classList.add('disabled');
+      cta.setAttribute('aria-disabled','true');
+    } else {
+      badgeDelta.className = 'badge ms-2 ' + (delta < 0 ? 'text-bg-danger' : (delta <= 5 ? 'text-bg-success' : 'text-bg-warning'));
+      badgeDelta.textContent = (delta < 0 ? 'Insuffisant' : (delta <= 5 ? 'OK' : 'Surplus'));
+      if (delta >= 0) { 
+        cta.classList.remove('disabled'); 
+        cta.removeAttribute('aria-disabled'); 
+      } else { 
+        cta.classList.add('disabled'); 
+        cta.setAttribute('aria-disabled','true'); 
+      }
+    }
   }
 
   // Ajuster pertes pour coller au vrac
@@ -190,14 +322,83 @@
     recalc();
   });
 
-  document.getElementById('btn-add').addEventListener('click', ()=>{ addRow(); recalc(); });
-  document.getElementById('btn-preset-75').addEventListener('click', ()=>{ tbody.innerHTML=''; addRow(750, 10000, 0); recalc(); });
+  // Boutons de format prédéfinis
+  document.querySelectorAll('.add-format-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fmt = parseInt(btn.dataset.format) || 750;
+      const name = btn.dataset.name || '';
+      addRow(fmt, 1, 1, name);
+      recalc();
+    });
+  });
+  
+  // Bouton format custom
+  document.getElementById('btn-add-custom').addEventListener('click', () => {
+    const ml = prompt('Entrez le format en mL (ex: 500 pour 50cl):', '500');
+    if (ml && parseInt(ml) > 0) {
+      addRow(parseInt(ml), 1, 1);
+      recalc();
+    }
+  });
+  
+  // Tout effacer
+  document.getElementById('btn-clear-all').addEventListener('click', () => {
+    tbody.innerHTML = '';
+    checkEmpty();
+    recalc();
+  });
+  
   pertesMode.addEventListener('change', recalc);
   pertesGlobal.addEventListener('input', debounce(recalc,200));
 
-  // initial
-  addRow();
-  recalc();
+  // Charger le volume vrac du step 1
+  const sources = JSON.parse(localStorage.getItem('mise_sources') || '[]');
+  let vracTotal = 0;
+  sources.forEach(s => { vracTotal += parseFloat(s.volume_l) || 0; });
+  if (vracTotal > 0) {
+    sumVrac.textContent = vracTotal.toFixed(1);
+  }
+  
+  // Sauvegarder formats vers le serveur avant d'aller à step 3
+  cta.addEventListener('click', async function(e){
+    e.preventDefault();
+    
+    // Collecter les formats depuis le tableau
+    const rows = [...tbody.querySelectorAll('tr:not(#empty-row)')].filter(tr => tr.querySelector('.js-fmt'));
+    const formats = rows.map(tr => ({
+      format_ml: parseInt(tr.querySelector('.js-fmt').value) || 750,
+      quantite_unites: parseInt(tr.querySelector('.js-qty').value) || 0,
+      pertes_pct: parseFloat(tr.querySelector('.js-perc').value) || 0,
+      name: tr.querySelector('.js-name')?.textContent || ''
+    }));
+    
+    // Sauvegarder dans la session serveur via AJAX
+    try {
+      const fd = new FormData();
+      fd.append('formats', JSON.stringify(formats));
+      fd.append('sources', JSON.stringify(sources));
+      
+      const resp = await fetch('{% url "production:mise_save_step2" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken},
+        body: fd,
+        credentials: 'same-origin'
+      });
+      
+      if (resp.ok) {
+        window.location.href = '?step=3';
+      } else {
+        alert('Erreur lors de la sauvegarde');
+      }
+    } catch(err) {
+      console.error(err);
+      // Fallback : sauvegarder en localStorage et continuer
+      localStorage.setItem('mise_formats', JSON.stringify(formats));
+      window.location.href = '?step=3';
+    }
+  });
+  
+  // Ne pas ajouter de ligne par défaut - attendre le clic utilisateur
 })();
 </script>
 {% endblock %}

@@ -20,7 +20,8 @@ import json
 from decimal import Decimal
 
 from apps.accounts.decorators import require_membership, require_perm
-from .models import Cepage, Parcelle, ParcelleEncepagement, Unite, Cuvee, Entrepot
+from apps.accounts.models import Organization
+from .models import Cepage, CepageReference, Parcelle, ParcelleEncepagement, Unite, Cuvee, Entrepot
 from apps.viticulture.models import GrapeVariety, Appellation, Vintage, UnitOfMeasure, VineyardPlot, Warehouse
 from .forms import (
     CepageForm, ParcelleForm, UniteForm, CuveeForm, EntrepotForm
@@ -198,93 +199,228 @@ def parcelles_update_geo(request):
 
 @require_membership(role_min='read_only')
 def cepage_list(request):
-    """Liste des cépages avec filtres avancés par champs"""
+    """Liste des cépages avec filtres avancés et référentiel officiel"""
     organization = request.current_org
-    # Par défaut, afficher seulement les cépages actifs
-    cepages = Cepage.objects.filter(organization=organization, is_active=True)
     
-    # Filtres par champs individuels
+    # Onglet actif : 'mes_cepages' ou 'reference'
+    tab = request.GET.get('tab', 'mes_cepages')
+    
+    # Détecter la région de l'organisation (depuis la config ou les parcelles)
+    region_org = organization.region_viticole if hasattr(organization, 'region_viticole') else ''
+    
+    # Si pas de région définie, essayer de la déduire des parcelles avec appellation
+    if not region_org:
+        # Chercher dans les appellations des parcelles
+        from apps.referentiels.models import Parcelle
+        appellations = Parcelle.objects.filter(
+            organization=organization, 
+            appellation__isnull=False
+        ).exclude(appellation='').values_list('appellation', flat=True).distinct()[:5]
+        
+        # Détecter la région à partir des appellations
+        appellation_text = ' '.join(appellations).lower()
+        if 'bordeaux' in appellation_text or 'medoc' in appellation_text or 'saint-emilion' in appellation_text:
+            region_org = 'bordeaux'
+        elif 'bourgogne' in appellation_text or 'chablis' in appellation_text:
+            region_org = 'bourgogne'
+        elif 'alsace' in appellation_text:
+            region_org = 'alsace'
+        elif 'champagne' in appellation_text:
+            region_org = 'champagne'
+        elif 'loire' in appellation_text or 'anjou' in appellation_text or 'touraine' in appellation_text:
+            region_org = 'loire'
+        elif 'rhone' in appellation_text or 'cotes-du-rhone' in appellation_text:
+            region_org = 'rhone'
+        elif 'provence' in appellation_text:
+            region_org = 'provence'
+        elif 'languedoc' in appellation_text or 'roussillon' in appellation_text:
+            region_org = 'languedoc'
+    
+    # Filtres communs
     filters = {}
-    
-    # Filtre par nom
-    nom = request.GET.get('nom', '').strip()
-    if nom:
-        cepages = cepages.filter(nom__icontains=nom)
-        filters['nom'] = nom
-    
-    # Filtre par code
-    code = request.GET.get('code', '').strip()
-    if code:
-        cepages = cepages.filter(code__icontains=code)
-        filters['code'] = code
-    
-    # Filtre par couleur
-    couleur = request.GET.get('couleur', '').strip()
-    if couleur and couleur in ['rouge', 'blanc', 'rose']:
-        cepages = cepages.filter(couleur=couleur)
-        filters['couleur'] = couleur
-    
-    # Filtre par notes
-    notes = request.GET.get('notes', '').strip()
-    if notes:
-        cepages = cepages.filter(notes__icontains=notes)
-        filters['notes'] = notes
-    
-    # Recherche globale (pour compatibilité)
     search = request.GET.get('search', '').strip()
-    if search:
-        cepages = cepages.filter(
-            Q(nom__icontains=search) |
-            Q(code__icontains=search) |
-            Q(notes__icontains=search)
-        )
-        filters['search'] = search
+    couleur = request.GET.get('couleur', '').strip()
+    region_filter = request.GET.get('region', '').strip()
     
-    # Tri
-    sort_by = request.GET.get('sort', 'nom')
-    sort_order = request.GET.get('order', 'asc')
-    
-    valid_sorts = ['nom', 'code', 'couleur', 'created_at', 'updated_at']
-    if sort_by in valid_sorts:
-        order_field = sort_by
-        if sort_order == 'desc':
-            order_field = f'-{order_field}'
-        cepages = cepages.order_by(order_field)
+    if tab == 'reference':
+        # Afficher les cépages de référence
+        cepages_ref = CepageReference.objects.all()
+        
+        # Préfiltre par région si définie
+        if region_filter:
+            cepages_ref = cepages_ref.filter(regions__contains=region_filter)
+            filters['region'] = region_filter
+        elif region_org:
+            # Préfiltre par région de l'organisation par défaut
+            cepages_ref = cepages_ref.filter(regions__contains=region_org)
+            filters['region'] = region_org
+        
+        if search:
+            cepages_ref = cepages_ref.filter(
+                Q(nom__icontains=search) | Q(synonymes__icontains=search)
+            )
+            filters['search'] = search
+        
+        if couleur and couleur in ['rouge', 'blanc', 'rose', 'gris']:
+            cepages_ref = cepages_ref.filter(couleur=couleur)
+            filters['couleur'] = couleur
+        
+        cepages_ref = cepages_ref.order_by('nom')
+        
+        # Cépages déjà importés dans l'organisation (liste pour le template)
+        cepages_org_noms = list(Cepage.objects.filter(
+            organization=organization
+        ).values_list('name_norm', flat=True))
+        
+        # Pagination
+        paginator = Paginator(cepages_ref, 30)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context = {
+            'tab': 'reference',
+            'page_obj': page_obj,
+            'cepages_ref': page_obj,
+            'cepages_org_noms': cepages_org_noms,
+            'filters': filters,
+            'organization': organization,
+            'region_org': region_org,
+            'regions_choices': Organization.REGION_VITICOLE_CHOICES[1:],  # Sans le vide
+            'page_title': 'Référentiel des Cépages',
+            'search': search,
+            'total_reference': CepageReference.objects.count(),
+        }
     else:
-        cepages = cepages.order_by('nom')
-        sort_by = 'nom'
-        sort_order = 'asc'
-    
-    # Pagination
-    paginator = Paginator(cepages, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # Statistiques pour les filtres
-    all_cepages = Cepage.objects.filter(organization=organization)
-    stats = {
-        'total': all_cepages.count(),
-        'filtered': cepages.count(),
-        'couleurs': [
-            {'value': 'rouge', 'label': 'Rouge', 'count': all_cepages.filter(couleur='rouge').count()},
-            {'value': 'blanc', 'label': 'Blanc', 'count': all_cepages.filter(couleur='blanc').count()},
-            {'value': 'rose', 'label': 'Rosé', 'count': all_cepages.filter(couleur='rose').count()},
-        ]
-    }
-    
-    context = {
-        'page_obj': page_obj,
-        'filters': filters,
-        'sort_by': sort_by,
-        'sort_order': sort_order,
-        'stats': stats,
-        'organization': organization,
-        'page_title': 'Cépages',
-        # Compatibilité avec l'ancien template
-        'search': search,
-    }
+        # Afficher les cépages de l'organisation
+        cepages = Cepage.objects.filter(organization=organization, is_active=True)
+        
+        if search:
+            cepages = cepages.filter(
+                Q(nom__icontains=search) |
+                Q(code__icontains=search) |
+                Q(notes__icontains=search)
+            )
+            filters['search'] = search
+        
+        if couleur and couleur in ['rouge', 'blanc', 'rose']:
+            cepages = cepages.filter(couleur=couleur)
+            filters['couleur'] = couleur
+        
+        # Tri
+        sort_by = request.GET.get('sort', 'nom')
+        sort_order = request.GET.get('order', 'asc')
+        valid_sorts = ['nom', 'code', 'couleur', 'created_at', 'updated_at']
+        if sort_by in valid_sorts:
+            order_field = f'-{sort_by}' if sort_order == 'desc' else sort_by
+            cepages = cepages.order_by(order_field)
+        else:
+            cepages = cepages.order_by('nom')
+            sort_by = 'nom'
+            sort_order = 'asc'
+        
+        # Pagination
+        paginator = Paginator(cepages, 20)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # Statistiques
+        all_cepages = Cepage.objects.filter(organization=organization, is_active=True)
+        stats = {
+            'total': all_cepages.count(),
+            'filtered': cepages.count(),
+            'couleurs': [
+                {'value': 'rouge', 'label': 'Rouge', 'count': all_cepages.filter(couleur='rouge').count()},
+                {'value': 'blanc', 'label': 'Blanc', 'count': all_cepages.filter(couleur='blanc').count()},
+                {'value': 'rose', 'label': 'Rosé', 'count': all_cepages.filter(couleur='rose').count()},
+            ]
+        }
+        
+        # Si aucun cépage, préparer l'onboarding avec les cépages de référence
+        cepages_ref_json = []
+        if stats['total'] == 0 and not search:
+            # Charger tous les cépages de référence pour l'onboarding
+            cepages_ref = CepageReference.objects.all().order_by('nom')
+            cepages_ref_json = [
+                {
+                    'id': c.id,
+                    'nom': c.nom,
+                    'couleur': c.couleur,
+                    'regions': c.regions or [],
+                }
+                for c in cepages_ref
+            ]
+        
+        context = {
+            'tab': 'mes_cepages',
+            'page_obj': page_obj,
+            'filters': filters,
+            'sort_by': sort_by,
+            'sort_order': sort_order,
+            'stats': stats,
+            'organization': organization,
+            'region_org': region_org,
+            'regions_choices': Organization.REGION_VITICOLE_CHOICES[1:],
+            'page_title': 'Mes Cépages',
+            'search': search,
+            'total_reference': CepageReference.objects.count(),
+            'cepages_ref_json': json.dumps(cepages_ref_json),
+        }
     
     return render(request, 'referentiels/cepage_list.html', context)
+
+
+@require_membership(role_min='admin')
+def cepage_import_from_reference(request):
+    """Importe un ou plusieurs cépages du référentiel vers l'organisation"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    
+    organization = request.current_org
+    
+    # IDs des cépages de référence à importer
+    try:
+        data = json.loads(request.body)
+        ref_ids = data.get('ids', [])
+    except:
+        ref_ids = request.POST.getlist('ids')
+    
+    if not ref_ids:
+        return JsonResponse({'error': 'Aucun cépage sélectionné'}, status=400)
+    
+    imported = 0
+    skipped = 0
+    errors = []
+    
+    for ref_id in ref_ids:
+        try:
+            ref = CepageReference.objects.get(id=int(ref_id))
+            
+            # Vérifier si déjà existant
+            if Cepage.objects.filter(organization=organization, name_norm=ref.name_norm).exists():
+                skipped += 1
+                continue
+            
+            # Créer le cépage
+            Cepage.objects.create(
+                organization=organization,
+                nom=ref.nom,
+                couleur=ref.couleur if ref.couleur != 'gris' else 'blanc',
+                reference=ref,
+                is_active=True,
+            )
+            imported += 1
+            
+        except CepageReference.DoesNotExist:
+            errors.append(f"Cépage #{ref_id} non trouvé")
+        except Exception as e:
+            errors.append(str(e))
+    
+    return JsonResponse({
+        'success': True,
+        'imported': imported,
+        'skipped': skipped,
+        'errors': errors,
+    })
 
 
 @require_membership(role_min='read_only')
@@ -595,7 +731,7 @@ def cepage_update(request, pk):
 
 
 @require_membership(role_min='admin')
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "DELETE"])
 def cepage_delete(request, pk):
     """Suppression d'un cépage"""
     organization = request.current_org
@@ -603,6 +739,10 @@ def cepage_delete(request, pk):
     
     nom = cepage.nom
     cepage.delete()
+    
+    # Réponse AJAX ou redirect standard
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'message': f'Le cépage "{nom}" a été supprimé.'})
     
     messages.success(request, f'Le cépage "{nom}" a été supprimé avec succès.')
     return redirect('referentiels:cepage_list')
@@ -665,7 +805,7 @@ def parcelle_detail(request, pk):
         vendanges_qs = VendangeReception.objects.filter(
             organization=organization, 
             parcelle=parcelle
-        ).order_by('-date_reception')[:5]
+        ).order_by('-date')[:5]
         vendanges = list(vendanges_qs)
         
         if vendanges:
@@ -688,16 +828,125 @@ def parcelle_detail(request, pk):
     except Exception:
         pass
     
-    # Journal complet des opérations (plus récent au plus ancien)
+    # Journal complet des opérations (combinaison des deux sources)
     operations = []
+    timeline = []
     try:
-        from apps.viticulture.models_parcelle_journal import ParcelleOperation
-        operations = list(ParcelleOperation.objects.filter(
+        from apps.viticulture.models_parcelle_journal import ParcelleJournalEntry
+        from apps.viticulture.models_ops import ParcelleOperation
+        
+        # Source 1: ParcelleJournalEntry
+        journal_entries = ParcelleJournalEntry.objects.filter(
             organization=organization,
             parcelle=parcelle
-        ).order_by('-date_operation')[:15])
-    except Exception:
-        pass
+        ).select_related('op_type').order_by('-date')[:50]
+        
+        for entry in journal_entries:
+            operations.append({
+                'id': str(entry.id),
+                'date': entry.date,
+                'created_at': entry.created_at,
+                'type': entry.op_type.code,
+                'type_label': entry.op_type.label,
+                'resume': entry.resume,
+                'notes': entry.notes,
+                'cout': entry.cout_total_eur,
+                'source': 'journal',
+            })
+            # Timeline - icônes par type d'opération
+            icon_map = {
+                'taille': ('bi-scissors', 'success'),
+                'traitement': ('bi-droplet-fill', 'danger'),
+                'palissage': ('bi-diagram-3', 'info'),
+                'rognage': ('bi-scissors', 'success'),
+                'effeuillage': ('bi-leaf', 'success'),
+                'travail_sol': ('bi-tools', 'secondary'),
+                'fertilisation': ('bi-droplet-half', 'primary'),
+                'irrigation': ('bi-moisture', 'info'),
+                'observation': ('bi-eye', 'secondary'),
+            }
+            icon, color = icon_map.get(entry.op_type.code, ('bi-calendar-event', 'primary'))
+            timeline.append({
+                'date': entry.date,
+                'created_at': entry.created_at,
+                'icon': icon,
+                'color': color,
+                'title': entry.op_type.label,
+                'description': entry.resume or (entry.notes[:100] if entry.notes else ''),
+                'type': 'operation',
+                'url': f'/viticulture/journal/{entry.id}/',
+            })
+        
+        # Source 2: ParcelleOperation (anciennes opérations)
+        existing_keys = set((o['date'], o['type']) for o in operations)
+        
+        ops = ParcelleOperation.objects.filter(
+            organization=organization,
+            parcelle=parcelle
+        ).order_by('-date')[:50]
+        
+        for op in ops:
+            key = (op.date, op.operation_type)
+            if key not in existing_keys:
+                operations.append({
+                    'id': str(op.id),
+                    'date': op.date,
+                    'created_at': op.created_at,
+                    'type': op.operation_type,
+                    'type_label': op.get_operation_type_display(),
+                    'resume': op.label,
+                    'notes': op.notes,
+                    'cout': op.cout_eur,
+                    'source': 'ops',
+                })
+                # Timeline - icônes par type d'opération
+                icon_map2 = {
+                    'taille': ('bi-scissors', 'success'),
+                    'traitement': ('bi-droplet-fill', 'danger'),
+                    'palissage': ('bi-diagram-3', 'info'),
+                    'rognage': ('bi-scissors', 'success'),
+                    'effeuillage': ('bi-leaf', 'success'),
+                    'travail_sol': ('bi-tools', 'secondary'),
+                    'fertilisation': ('bi-droplet-half', 'primary'),
+                    'irrigation': ('bi-moisture', 'info'),
+                    'observation': ('bi-eye', 'secondary'),
+                }
+                icon2, color2 = icon_map2.get(op.operation_type, ('bi-calendar-event', 'primary'))
+                timeline.append({
+                    'date': op.date,
+                    'created_at': op.created_at,
+                    'icon': icon2,
+                    'color': color2,
+                    'title': op.get_operation_type_display(),
+                    'description': op.label or (op.notes[:100] if op.notes else ''),
+                    'type': 'operation',
+                })
+        
+        # Trier par date décroissante
+        operations.sort(key=lambda x: (x['date'], str(x['id'])), reverse=True)
+        operations = operations[:15]
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+    
+    # Ajouter les vendanges à la timeline
+    for v in vendanges:
+        poids = v.poids_total  # Use poids_total property (calculates from lines or uses poids_kg)
+        timeline.append({
+            'date': v.date,
+            'created_at': getattr(v, 'created_at', v.date),
+            'icon': 'bi-basket-fill',
+            'color': 'warning',
+            'title': f'Vendange {v.code or ""}',
+            'description': f"{poids} kg • {v.get_type_recolte_display()}" if poids else v.get_type_recolte_display(),
+            'type': 'vendange',
+            'url': f'/production/vendanges/{v.pk}/',
+        })
+    
+    # Trier la timeline par date décroissante
+    timeline.sort(key=lambda x: (x['date'], str(x.get('created_at', ''))), reverse=True)
+    timeline = timeline[:20]
     
     # Calculs métier
     surface_m2 = int(parcelle.surface * 10000) if parcelle.surface else 0
@@ -727,6 +976,8 @@ def parcelle_detail(request, pk):
         'rendement_moyen': rendement_moyen,
         # Journal
         'operations': operations,
+        # Timeline
+        'timeline': timeline,
         # Calculs
         'surface_m2': surface_m2,
         'estimation_bouteilles': estimation_bouteilles,
@@ -933,30 +1184,88 @@ def parcelle_delete(request, pk):
 @require_perm('parcelles', 'edit')
 @require_http_methods(["GET", "POST"])
 def encepagement_add(request, parcelle_pk):
-    """Ajouter un encépagement à une parcelle"""
-    from .forms import ParcelleEncepagementForm
+    """Page de gestion complète des encépagements d'une parcelle"""
+    from decimal import Decimal, InvalidOperation
     
     organization = request.current_org
     parcelle = get_object_or_404(Parcelle, pk=parcelle_pk, organization=organization)
+    cepages = Cepage.objects.filter(organization=organization).order_by('nom')
     
     if request.method == 'POST':
-        form = ParcelleEncepagementForm(request.POST, organization=organization, parcelle=parcelle)
-        if form.is_valid():
-            encepagement = form.save(commit=False)
-            encepagement.parcelle = parcelle
-            encepagement.save()
-            messages.success(request, f'Encépagement "{encepagement.cepage.nom}" ajouté avec succès.')
-            return redirect('referentiels:parcelle_detail', pk=parcelle.pk)
-    else:
-        form = ParcelleEncepagementForm(organization=organization, parcelle=parcelle)
+        # Traitement des suppressions
+        delete_ids = request.POST.get('delete_ids', '').strip()
+        if delete_ids:
+            for del_id in delete_ids.split(','):
+                if del_id.strip():
+                    try:
+                        ParcelleEncepagement.objects.filter(pk=int(del_id), parcelle=parcelle).delete()
+                    except (ValueError, ParcelleEncepagement.DoesNotExist):
+                        pass
+        
+        # Traitement des encépagements existants (mise à jour)
+        for enc in parcelle.encepagements.all():
+            prefix = f'enc_{enc.pk}_'
+            cepage_id = request.POST.get(f'{prefix}cepage')
+            pct = request.POST.get(f'{prefix}pct')
+            
+            if cepage_id and pct:
+                try:
+                    enc.cepage_id = int(cepage_id)
+                    enc.pourcentage = Decimal(pct.replace(',', '.'))
+                    enc.rang_debut = int(request.POST.get(f'{prefix}rang_debut') or 0) or None
+                    enc.rang_fin = int(request.POST.get(f'{prefix}rang_fin') or 0) or None
+                    enc.annee_plantation = int(request.POST.get(f'{prefix}annee') or 0) or None
+                    enc.porte_greffe = request.POST.get(f'{prefix}porte_greffe', '').strip()
+                    enc.densite_pieds_ha = int(request.POST.get(f'{prefix}densite') or 0) or None
+                    enc.notes = request.POST.get(f'{prefix}notes', '').strip()
+                    enc.save()
+                except (ValueError, InvalidOperation):
+                    pass
+        
+        # Traitement des nouveaux encépagements
+        new_index = 0
+        while True:
+            prefix = f'new_{new_index}_'
+            cepage_id = request.POST.get(f'{prefix}cepage')
+            pct = request.POST.get(f'{prefix}pct')
+            
+            if not cepage_id:
+                break
+            
+            if cepage_id and pct:
+                try:
+                    ParcelleEncepagement.objects.create(
+                        parcelle=parcelle,
+                        cepage_id=int(cepage_id),
+                        pourcentage=Decimal(pct.replace(',', '.')),
+                        rang_debut=int(request.POST.get(f'{prefix}rang_debut') or 0) or None,
+                        rang_fin=int(request.POST.get(f'{prefix}rang_fin') or 0) or None,
+                        annee_plantation=int(request.POST.get(f'{prefix}annee') or 0) or None,
+                        porte_greffe=request.POST.get(f'{prefix}porte_greffe', '').strip(),
+                        densite_pieds_ha=int(request.POST.get(f'{prefix}densite') or 0) or None,
+                        notes=request.POST.get(f'{prefix}notes', '').strip(),
+                    )
+                except (ValueError, InvalidOperation):
+                    pass
+            
+            new_index += 1
+        
+        messages.success(request, 'L\'encépagement a été mis à jour avec succès.')
+        return redirect('production:parcelle_detail', pk=parcelle.pk)
+    
+    # GET: Afficher la page de gestion
+    encepagements = parcelle.encepagements.select_related('cepage').all()
+    total_pourcentage = sum(e.pourcentage for e in encepagements) if encepagements else Decimal('0')
     
     context = {
-        'form': form,
         'parcelle': parcelle,
+        'encepagements': encepagements,
+        'cepages': cepages,
+        'total_pourcentage': total_pourcentage,
         'organization': organization,
-        'page_title': f'Ajouter un encépagement - {parcelle.nom}',
+        'page_title': f'Encépagement - {parcelle.nom}',
     }
-    return render(request, 'referentiels/encepagement_form.html', context)
+    return render(request, 'referentiels/encepagement_manage.html', context)
 
 
 @require_perm('parcelles', 'edit')

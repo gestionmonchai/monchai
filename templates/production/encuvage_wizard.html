@@ -19,47 +19,38 @@
   </nav>
 </div>
 
-{% if not vendange.cuvee %}
-  <div class="alert alert-warning mb-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <div>
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <strong>Cuvée non affectée.</strong> Sélectionnez ou créez une cuvée avant l'encuvage.
-      </div>
-    </div>
-    <form method="post" action="{% url 'production:vendange_affecter_cuvee' vendange.id %}" class="d-flex gap-2 align-items-end">
-      {% csrf_token %}
-      <div class="flex-grow-1">
-        <label class="form-label small mb-1">Affecter une cuvée existante</label>
-        <select name="cuvee_id" class="form-select form-select-sm">
-          <option value="">— Sélectionner une cuvée —</option>
-          {% for c in cuvees %}
-            <option value="{{ c.id }}">{{ c.nom }}{% if c.code %} ({{ c.code }}){% endif %}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit" class="btn btn-warning btn-sm">
-        <i class="bi bi-check me-1"></i>Affecter
-      </button>
-      <span class="text-muted">ou</span>
-      <a class="btn btn-outline-primary btn-sm" href="{% url 'produits:cuvee_new' %}">
-        <i class="bi bi-plus me-1"></i>Créer
-      </a>
-    </form>
-  </div>
-{% endif %}
-
-<div class="card mb-4">
+<div class="card mb-4 border-primary border-opacity-25">
   <div class="card-body">
     <div class="row g-3">
-      <div class="col-md-3"><strong>Date vendange</strong><div>{{ vendange.date }}</div></div>
-      <div class="col-md-3"><strong>Parcelle</strong><div>{{ vendange.parcelle }}</div></div>
-      <div class="col-md-3"><strong>Poids total (kg)</strong><div>{{ vendange.poids_kg }}</div></div>
-      <div class="col-md-3"><strong>Cuvée</strong><div>{% if vendange.cuvee %}{{ vendange.cuvee.nom }}{% else %}<span class="text-danger">Non affectée</span>{% endif %}</div></div>
+      <div class="col-md-3">
+        <div class="small text-muted text-uppercase">Date vendange</div>
+        <div class="fw-medium">{{ vendange.date|date:"d/m/Y" }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="small text-muted text-uppercase">Parcelle</div>
+        <div class="fw-medium">{{ vendange.parcelle.nom }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="small text-muted text-uppercase">Poids total</div>
+        <div class="fw-medium">{{ vendange.poids_kg|floatformat:0 }} kg</div>
+      </div>
+      <div class="col-md-3">
+        <div class="small text-muted text-uppercase">Cuvée source</div>
+        <div class="fw-medium">
+            {% if vendange.cuvee %}
+                {{ vendange.cuvee.nom }}
+            {% else %}
+                <span class="badge bg-warning text-dark">À définir</span>
+            {% endif %}
+        </div>
+      </div>
     </div>
   </div>
-  <div class="card-footer">
-    <div class="small text-muted">Restant disponible: <strong id="kg-restant-label">{{ defaults.kg_restant }}</strong> kg (débités cumulés: {{ defaults.kg_debites_cumules }})</div>
+  <div class="card-footer bg-light">
+    <div class="small text-muted d-flex justify-content-between">
+        <span>Restant disponible: <strong id="kg-restant-label">{{ defaults.kg_restant }}</strong> kg</span>
+        <span>(Déjà débités: {{ defaults.kg_debites_cumules }} kg)</span>
+    </div>
   </div>
  </div>
 
@@ -67,135 +58,177 @@
   {% csrf_token %}
   <div class="row g-3">
     <div class="col-lg-8">
-      <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span class="fw-semibold">Entrées / volumes</span>
+      <div class="card mb-3 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
+          <span class="fw-bold text-primary"><i class="bi bi-box-arrow-in-right me-2"></i>Configuration du lot</span>
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" role="switch" id="toggle-advanced">
-            <label class="form-check-label" for="toggle-advanced">Mode avancé</label>
+            <label class="form-check-label small" for="toggle-advanced">Avancé</label>
           </div>
         </div>
         <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label">Kg débités</label>
-              <input type="number" step="0.01" min="0" class="form-control" name="poids_debite_kg" id="kg-debites" value="{{ defaults.kg_restant }}" placeholder="ex: {{ defaults.kg_restant }}">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Part de la vendange (%)</label>
-              <input type="number" step="0.01" min="0" max="100" class="form-control" name="part_pct" id="part-pct" placeholder="ex: 50.00">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Volume mesuré (L) — prioritaire</label>
-              <input type="number" step="0.01" min="0" class="form-control" name="volume_mesure_l" id="vol-mesure" placeholder="ex: 680.00">
-            </div>
-            <div class="col-md-3 adv-only">
-              <label class="form-label">Rdt base (L/kg)</label>
-              <input type="number" step="0.0001" min="0" class="form-control" name="rendement_base" id="rdt-base" value="{{ defaults.rendement_base }}">
-            </div>
-            <div class="col-md-3 adv-only">
-              <label class="form-label">Efficacité (%)</label>
-              <input type="number" step="0.01" min="0" class="form-control" name="effic_pct" id="effic-pct" value="{{ defaults.effic_pct }}">
+          
+          <!-- Section Cuvée (optionnelle) -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-12">
+                <label class="form-label fw-bold">Cuvée de destination <span class="text-muted small">(optionnel)</span></label>
+                <div class="input-group">
+                    <select name="cuvee_id" class="form-select">
+                        <option value="">— Sans cuvée pour l'instant —</option>
+                        {% for c in cuvees %}
+                        <option value="{{ c.id }}" {% if vendange.cuvee_id == c.id %}selected{% endif %}>
+                            {{ c.nom }}{% if c.code %} ({{ c.code }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <a href="{% url 'produits:cuvee_new' %}?next={{ request.path }}" class="btn btn-outline-secondary" title="Créer une nouvelle cuvée">
+                        <i class="bi bi-plus-lg"></i>
+                    </a>
+                </div>
+                <div class="form-text text-muted"><i class="bi bi-info-circle me-1"></i>Vous pourrez affecter une cuvée plus tard si besoin.</div>
             </div>
           </div>
-          <div class="row g-3 mt-2">
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Kg à encuver</label>
+              <div class="input-group">
+                  <input type="number" step="0.01" min="0" class="form-control fw-bold" name="poids_debite_kg" id="kg-debites" value="{{ defaults.kg_restant }}" placeholder="{{ defaults.kg_restant }}">
+                  <span class="input-group-text">kg</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Ou Part (%)</label>
+              <div class="input-group">
+                  <input type="number" step="0.01" min="0" max="100" class="form-control" name="part_pct" id="part-pct" placeholder="100">
+                  <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Volume obtenu (L)</label>
+              <div class="input-group">
+                  <input type="number" step="0.01" min="0" class="form-control" name="volume_mesure_l" id="vol-mesure" placeholder="Auto">
+                  <span class="input-group-text">L</span>
+              </div>
+              <div class="form-text small">Laisser vide pour calculer via rendement</div>
+            </div>
+            
+            <div class="col-md-6 adv-only">
+              <label class="form-label text-muted small">Rendement théorique (L/kg)</label>
+              <input type="number" step="0.0001" min="0" class="form-control form-control-sm" name="rendement_base" id="rdt-base" value="{{ defaults.rendement_base }}">
+            </div>
+            <div class="col-md-6 adv-only">
+              <label class="form-label text-muted small">Efficacité extraction (%)</label>
+              <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="effic_pct" id="effic-pct" value="{{ defaults.effic_pct }}">
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="row g-3">
             <div class="col-md-8">
-              <label class="form-label">Contenant</label>
+              <label class="form-label fw-bold">Contenant de réception <span class="text-danger">*</span></label>
               <div class="input-group">
                 <select class="form-select" id="container-select">
-                  <option value="">— Sélectionner —</option>
+                  <option value="">— Choisir ou saisir —</option>
                   {% if contenants %}
-                    <optgroup label="Référentiel">
+                    <optgroup label="Disponibles (Chai)">
                       {% for c in contenants %}
                         <option value="{{ c.code }}" data-free="{{ c.free }}" data-cap="{{ c.cap }}" data-type="{{ c.type }}">
-                          {{ c.code }} — {{ c.type }} (libre: {{ c.free }} L / utile: {{ c.cap }} L)
+                          {{ c.code }} (Libre: {{ c.free }} L)
                         </option>
                       {% endfor %}
                     </optgroup>
                   {% endif %}
-                  {% if containers %}
-                    <optgroup label="Historique">
-                      {% for c in containers %}
-                        <option value="{{ c }}">{{ c }}</option>
-                      {% endfor %}
-                    </optgroup>
-                  {% endif %}
-                  <option value="__free__">Autre…</option>
+                  <option value="__free__">Saisie manuelle...</option>
                 </select>
-                <input type="text" class="form-control" name="contenant" id="container-input" placeholder="Cuve Inox 1">
+                <input type="text" class="form-control" name="contenant" id="container-input" placeholder="Code cuve (ex: C12)" required>
               </div>
-              <div id="container-capacity" class="small text-muted mt-2"></div>
-              <div id="container-warning" class="alert alert-warning mt-2 d-none"></div>
+              <div id="container-capacity" class="small text-muted mt-1"></div>
+              <div id="container-warning" class="alert alert-warning mt-2 py-2 small d-none"></div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="card mb-3 adv-only">
-        <div class="card-header fw-semibold">Paramètres vinification</div>
+        <div class="card-header fw-semibold bg-white py-3">Options techniques</div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label d-block">Mode encuvage</label>
-              <div class="d-flex gap-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mode_encuvage" id="mode-erafle" value="erafle">
-                  <label class="form-check-label" for="mode-erafle">Éraflé</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mode_encuvage" id="mode-foule" value="foule">
-                  <label class="form-check-label" for="mode-foule">Foulé</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mode_encuvage" id="mode-pressurage" value="pressurage_direct">
-                  <label class="form-check-label" for="mode-pressurage">Pressurage direct</label>
-                </div>
+              <div class="btn-group w-100" role="group">
+                  <input type="radio" class="btn-check" name="mode_encuvage" id="mode-erafle" value="erafle" checked>
+                  <label class="btn btn-outline-secondary" for="mode-erafle">Éraflé</label>
+
+                  <input type="radio" class="btn-check" name="mode_encuvage" id="mode-foule" value="foule">
+                  <label class="btn btn-outline-secondary" for="mode-foule">Foulé</label>
+
+                  <input type="radio" class="btn-check" name="mode_encuvage" id="mode-pressurage" value="pressurage_direct">
+                  <label class="btn btn-outline-secondary" for="mode-pressurage">Pres. Direct</label>
               </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Type de lot généré</label>
+              <label class="form-label">Type de lot</label>
               <select name="lot_type" id="lot-type" class="form-select">
-                <option value="">— Optionnel —</option>
+                <option value="mout_encuve" selected>Moût en cuvaison</option>
                 <option value="vin_de_goutte">Vin de goutte</option>
                 <option value="vin_de_presse">Vin de presse</option>
                 <option value="mout_mute">Moût muté</option>
               </select>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label">Température (°C)</label>
-              <input type="number" step="0.1" class="form-control" name="temperature_c" id="temp-c" placeholder="ex: 16.5">
+              <input type="number" step="0.1" class="form-control" name="temperature_c" id="temp-c" placeholder="ex: 18.5">
             </div>
             <div class="col-12">
-              <label class="form-label">Notes d'encuvage</label>
-              <textarea class="form-control" name="notes" id="notes" rows="3" placeholder="Observations spécifiques"></textarea>
+              <label class="form-label">Notes / Observations</label>
+              <textarea class="form-control" name="notes" id="notes" rows="2" placeholder="Intrants, état sanitaire, SO2..."></textarea>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="d-flex justify-content-between">
-        <a href="/production/vendanges/{{ vendange.id }}/" class="btn btn-outline-secondary">Retour</a>
-        <button type="submit" class="btn btn-primary" {% if not vendange.cuvee %}disabled{% endif %}>Créer le lot technique</button>
+      <div class="d-flex justify-content-between mt-4">
+        <a href="/production/vendanges/{{ vendange.id }}/" class="btn btn-outline-secondary px-4">Annuler</a>
+        <button type="submit" class="btn btn-primary px-4 py-2 fw-bold shadow-sm">
+            <i class="bi bi-check-lg me-2"></i>Valider l'encuvage
+        </button>
       </div>
     </div>
 
+    <!-- Sidebar Résumé -->
     <div class="col-lg-4">
-      <div class="card">
-        <div class="card-header fw-semibold">Résumé (live)</div>
+      <div class="card shadow-sm border-0 bg-primary text-white mb-3" style="background: linear-gradient(145deg, #8b1e3f, #6a102d);">
+        <div class="card-body text-center py-4">
+            <div class="small opacity-75 text-uppercase mb-1">Volume estimé</div>
+            <div class="display-4 fw-bold mb-0"><span id="sum-vol">0</span> <span class="fs-4">L</span></div>
+            <div class="small mt-2 opacity-75">Rendement: <span id="sum-lkg">-</span> L/kg</div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header fw-semibold bg-light">Détails de l'opération</div>
         <div class="card-body">
-          <div class="mb-2"><strong>Kg débités</strong><div id="sum-kg">—</div></div>
-          <div class="mb-2"><strong>Volume utilisé</strong><div id="sum-vol">—</div></div>
-          <div class="mb-2"><strong>Rendement effectif (L/kg)</strong><div id="sum-lkg">—</div></div>
-          <div class="mb-2 d-flex align-items-center gap-2">
-            <div><strong>Efficacité</strong></div>
-            <div id="sum-effic" class="badge text-bg-secondary">—</div>
-          </div>
-          <hr>
-          <div class="mb-2"><strong>Cuvée</strong><div>{% if vendange.cuvee %}{{ vendange.cuvee.nom }}{% else %}<span class="text-danger">Non affectée</span>{% endif %}</div></div>
-          <div class="mb-2"><strong>Contenant</strong><div id="sum-contenant">—</div></div>
-          <div class="mb-2"><strong>Coût matière estimé</strong><div id="sum-cost">—</div></div>
-          <div class="small text-muted">Restant après débit: <span id="sum-restant">—</span> kg</div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between px-0">
+                <span>Poids débité</span>
+                <strong id="sum-kg">—</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+                <span>Reste sur vendange</span>
+                <span class="text-muted"><span id="sum-restant">—</span> kg</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+                <span>Contenant</span>
+                <strong id="sum-contenant" class="text-truncate" style="max-width: 150px;">—</strong>
+            </li>
+            <li class="list-group-item d-flex justify-content-between px-0">
+                <span>Coût matière (est.)</span>
+                <strong id="sum-cost">—</strong>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

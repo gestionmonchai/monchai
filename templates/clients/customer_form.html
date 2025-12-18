@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'commerce/base_commerce.html' %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Mon Chai{% endblock %}
@@ -41,7 +41,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block commerce_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     {% if customer %}
         <!-- Header commun pour modification -->
@@ -52,7 +52,7 @@
             <nav class="flex mb-4" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
-                        <a href="{% url 'ventes:clients_list' %}" class="text-gray-700 hover:text-blue-600">
+                        <a href="{% url 'clients:customers_list' %}" class="text-gray-700 hover:text-blue-600">
                             Clients
                         </a>
                     </li>
@@ -73,7 +73,7 @@
                     <p class="text-gray-600 mt-1">Créer un nouveau client</p>
                 </div>
                 <div class="flex space-x-3">
-                    <a href="{% url 'ventes:clients_list' %}" 
+                    <a href="{% url 'clients:customers_list' %}" 
                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                         Retour à la liste
                     </a>
@@ -265,7 +265,7 @@
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="d-flex justify-content-between">
-                                    <a href="{% url 'ventes:clients_list' %}" class="btn btn-outline-secondary">
+                                    <a href="{% url 'clients:customers_list' %}" class="btn btn-outline-secondary">
                                         <i class="bi bi-x-circle me-1"></i>Annuler
                                     </a>
                                     <button type="submit" class="btn btn-primary" id="submitBtn">

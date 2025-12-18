@@ -1,169 +1,584 @@
 {% extends 'production/base_production.html' %}
 {% load static %}
-{% block title %}Fiche contenant - Mon Chai{% endblock %}
+
+{% block title %}{{ contenant.code }} - Mon Chai{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    :root {
+        --primary-color: #8b1e3f;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+    }
+
+    /* --- Badge Types --- */
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .type-badge.cuve { background: #e3f2fd; color: #0d47a1; }
+    .type-badge.barrique { background: #fff3e0; color: #e65100; }
+    .type-badge.autre { background: #f1f5f9; color: #475569; }
+
+    /* --- Spec Cards --- */
+    .spec-card {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1rem;
+        height: 100%;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .spec-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+    }
+    .spec-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #1e293b;
+    }
+    .spec-value.empty { color: #94a3b8; font-style: italic; }
+
+    /* --- Onglets & Header --- */
+    .nav-tabs {
+        border-bottom: 1px solid var(--border-color);
+    }
+    .nav-link {
+        color: #64748b;
+        font-weight: 500;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 0.75rem 1.25rem;
+    }
+    .nav-link:hover {
+        color: #334155;
+        border-color: transparent;
+    }
+    .nav-link.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+        background: transparent;
+    }
+    
+    /* --- Section Header in Specs --- */
+    .specs-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--primary-color);
+        margin: 1.5rem 0 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* --- Circular Progress --- */
+    .progress-circle {
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        background: conic-gradient(var(--primary-color) var(--pct), #f1f5f9 0);
+        display: grid;
+        place-items: center;
+        margin: 0 auto;
+        position: relative;
+    }
+    .progress-circle::after {
+        content: "";
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #fff;
+        position: absolute;
+    }
+    .progress-circle .pct {
+        position: relative;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
 {% block production_content %}
-<h1 class="h4 mb-3 d-flex align-items-center gap-3">
-  <span>Contenant {{ contenant.code }}</span>
-  <span class="badge text-bg-secondary">{{ contenant.get_type_display }}</span>
-  <span class="badge text-bg-light">Statut: {{ contenant.get_statut_display }}</span>
-  {% if contenant.localisation %}<span class="badge text-bg-info">{{ contenant.localisation }}</span>{% endif %}
-</h1>
 
-<ul class="nav nav-tabs mb-3" id="tabsContenant" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="tab-resume-tab" data-bs-toggle="tab" data-bs-target="#tab-resume" type="button" role="tab">Résumé</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="tab-occupation-tab" data-bs-toggle="tab" data-bs-target="#tab-occupation" type="button" role="tab">Occupation actuelle</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="tab-mouvements-tab" data-bs-toggle="tab" data-bs-target="#tab-mouvements" type="button" role="tab">Historique mouvements</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="tab-maintenance-tab" data-bs-toggle="tab" data-bs-target="#tab-maintenance" type="button" role="tab">Maintenance / HACCP</button>
-  </li>
-</ul>
-
-<div class="tab-content" id="tabsContenantContent">
-  <!-- Résumé -->
-  <div class="tab-pane fade show active" id="tab-resume" role="tabpanel">
-    <div class="row g-3 mb-3">
-      <div class="col-lg-8">
-        <div class="card mb-3">
-          <div class="card-header fw-semibold">Capacités & état</div>
-          <div class="card-body">
-            <div class="row g-3 align-items-center">
-              <div class="col-md-4">
-                <div class="text-center">
-                  <div class="progress-circle" style="--pct: {{ occupancy_pct|default:'0' }}%">
-                    <div class="pct">{{ occupancy_pct|floatformat:0 }}%</div>
-                  </div>
-                  <div class="small text-muted mt-2">Taux d'occupation</div>
-                </div>
-              </div>
-              <div class="col-md-8">
-                <div class="row g-3">
-                  <div class="col-md-6"><strong>Capacité nominale</strong><div>{{ contenant.capacite_l }} L</div></div>
-                  <div class="col-md-6"><strong>Capacité utile</strong><div>{{ contenant.capacite_utile_l|default:contenant.capacite_l }} L</div></div>
-                  <div class="col-md-6"><strong>Occupé</strong><div>{{ contenant.volume_occupe_l }} L</div></div>
-                  <div class="col-md-6"><strong>Libre</strong><div>{{ free_capacity_l }} L</div></div>
-                  <div class="col-md-6"><strong>Thermo-régulé</strong><div>{% if contenant.thermo_regule %}Oui{% else %}Non{% endif %}</div></div>
-                  <div class="col-md-6"><strong>Temp. cible</strong><div>{{ contenant.temperature_cible|default:'—' }} {% if contenant.temperature_cible %}°C{% endif %}</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
+<!-- En-tête Fiche -->
+<div class="d-flex justify-content-between align-items-start mb-4 pb-3 border-bottom">
+    <div>
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <h1 class="h2 fw-bold text-dark mb-0">{{ contenant.code }}</h1>
+            <span class="type-badge {% if contenant.is_cuve %}cuve{% elif contenant.is_barrique_or_foudre %}barrique{% else %}autre{% endif %}">
+                <i class="bi {% if contenant.is_cuve %}bi-box{% elif contenant.is_barrique_or_foudre %}bi-archive{% else %}bi-question-circle{% endif %} me-1"></i>
+                {{ contenant.get_type_display }}
+            </span>
+            <span class="badge {% if contenant.statut == 'disponible' %}bg-success{% elif contenant.statut == 'occupe' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                {{ contenant.get_statut_display }}
+            </span>
         </div>
-
-        <div class="card mb-3">
-          <div class="card-header fw-semibold">Lot & localisation</div>
-          <div class="card-body row g-3">
-            <div class="col-md-4"><strong>Lot courant</strong><div>{% if contenant.lot_courant %}<a href="/production/lots-techniques/{{ contenant.lot_courant.id }}/">{{ contenant.lot_courant.code }}</a>{% else %}—{% endif %}</div></div>
-            <div class="col-md-4"><strong>Localisation</strong><div>{{ contenant.localisation|default:'—' }}</div></div>
-            <div class="col-md-4"><strong>Organisation</strong><div>{{ contenant.organization|default:'—' }}</div></div>
-          </div>
+        <div class="text-muted d-flex align-items-center gap-3">
+            {% if contenant.label %}
+                <span><i class="bi bi-tag me-1"></i>{{ contenant.label }}</span>
+            {% endif %}
+            <span><i class="bi bi-geo-alt me-1"></i>{{ contenant.localisation|default:'Sans localisation' }}</span>
         </div>
-      </div>
-
-      <div class="col-lg-4">
-        <div class="card mb-3">
-          <div class="card-header fw-semibold">Actions</div>
-          <div class="card-body d-grid gap-2">
-            <a href="/production/contenants/{{ contenant.id }}/edit/" class="btn btn-outline-primary">Modifier</a>
-            <form method="post" action="/production/contenants/{{ contenant.id }}/occupancy/recalc/">
-              {% csrf_token %}
-              <button class="btn btn-outline-secondary w-100" type="submit">Recalculer occupation</button>
-            </form>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Occupation actuelle -->
-  <div class="tab-pane fade" id="tab-occupation" role="tabpanel">
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Affectation du lot</div>
-      <div class="card-body">
-        <form method="post" action="/production/contenants/{{ contenant.id }}/actions/affecter-lot/" class="row g-3">
-          {% csrf_token %}
-          <div class="col-md-6">
-            <label class="form-label">Lot</label>
-            <select name="lot_id" class="form-select" required>
-              <option value="">— Sélectionner —</option>
-              {% for lot in lots %}
-                <option value="{{ lot.id }}">{{ lot.code }} — {{ lot.volume_l }} L</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Volume (L)</label>
-            <input type="number" step="0.01" min="0" name="volume_l" class="form-control" placeholder="0">
-          </div>
-          <div class="col-md-3 align-self-end">
-            <button class="btn btn-primary" type="submit">Affecter</button>
-          </div>
-        </form>
-        <hr>
-        <div class="d-flex gap-2">
-          <form method="post" action="/production/contenants/{{ contenant.id }}/actions/vidange/">{% csrf_token %}<button class="btn btn-outline-danger" type="submit">Vidange</button></form>
-          <form method="post" action="/production/contenants/{{ contenant.id }}/actions/nettoyage/">{% csrf_token %}<button class="btn btn-outline-secondary" type="submit">Nettoyage</button></form>
+    <!-- Boutons d'action -->
+    <div class="d-flex gap-2">
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle px-4" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-lightning-charge me-2"></i>Actions
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                <li><h6 class="dropdown-header text-uppercase small fw-bold text-muted">Opérations</h6></li>
+                <li>
+                    <form method="post" action="{% url 'production:contenants_nettoyage' contenant.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="dropdown-item" type="submit"><i class="bi bi-droplet me-2 text-info"></i>Enregistrer nettoyage</button>
+                    </form>
+                </li>
+                <li>
+                    <form method="post" action="{% url 'production:contenants_recalc' contenant.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="dropdown-item" type="submit"><i class="bi bi-arrow-repeat me-2 text-secondary"></i>Recalculer occupation</button>
+                    </form>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'production:contenants_edit' contenant.id %}"><i class="bi bi-pencil me-2"></i>Modifier la fiche</a></li>
+            </ul>
         </div>
-      </div>
+        <a href="{% url 'production:contenants_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+        </a>
     </div>
-  </div>
-
-  <!-- Historique mouvements -->
-  <div class="tab-pane fade" id="tab-mouvements" role="tabpanel">
-    <div class="card">
-      <div class="card-header fw-semibold">Derniers mouvements du lot courant</div>
-      <div class="card-body">
-        {% if mouvements %}
-        <div class="table-responsive">
-          <table class="table table-sm align-middle">
-            <thead><tr><th>Date</th><th>Type</th><th class="text-end">Volume (L)</th><th>Note</th></tr></thead>
-            <tbody>
-              {% for m in mouvements %}
-              <tr>
-                <td>{{ m.date }}</td>
-                <td>{{ m.get_type_display }}</td>
-                <td class="text-end">{{ m.volume_l }}</td>
-                <td>{{ m.meta.note|default:'—' }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <div class="text-end">
-          {% if contenant.lot_courant %}<a href="/production/lots-techniques/{{ contenant.lot_courant.id }}/mouvements/export/" class="btn btn-sm btn-outline-secondary">Export CSV</a>{% endif %}
-        </div>
-        {% else %}
-          <div class="text-muted">Aucun mouvement disponible.</div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <!-- Maintenance / HACCP -->
-  <div class="tab-pane fade" id="tab-maintenance" role="tabpanel">
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Suivi sanitaire</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3"><strong>Dernier nettoyage</strong><div>{{ contenant.date_dernier_nettoyage|default:'—' }}</div></div>
-          <div class="col-md-3"><strong>Prochain nettoyage</strong><div>{{ next_nettoyage|default:'—' }}</div></div>
-          <div class="col-md-3"><strong>Dernier ouillage</strong><div>{{ contenant.date_dernier_ouillage|default:'—' }}</div></div>
-          <div class="col-md-3"><strong>Prochain ouillage</strong><div>{{ next_ouillage|default:'—' }}</div></div>
-          <div class="col-12"><strong>Notes sanitaires</strong><div>{{ contenant.note_sanitaire|linebreaks }}</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 
-<style>
-.progress-circle { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#8b1e3f var(--pct), #f1f5f9 0); display: grid; place-items: center; margin: 0 auto; position: relative; }
-.progress-circle::after { content: ""; width: 110px; height: 110px; border-radius: 50%; background: #fff; position: absolute; }
-.progress-circle .pct { position: relative; font-weight: 700; }
-</style>
+<!-- Navigation Onglets -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-resume" type="button">
+            <i class="bi bi-speedometer2 me-2"></i>Résumé
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-specs" type="button">
+            <i class="bi bi-sliders me-2"></i>Caractéristiques
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-occupation" type="button">
+            <i class="bi bi-droplet-half me-2"></i>Occupation
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mouvements" type="button">
+            <i class="bi bi-arrow-left-right me-2"></i>Mouvements
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-maintenance" type="button">
+            <i class="bi bi-tools me-2"></i>Maintenance
+        </button>
+    </li>
+</ul>
+
+<!-- Contenu Onglets -->
+<div class="tab-content">
+    
+    <!-- 1. RÉSUMÉ -->
+    <div class="tab-pane fade show active" id="tab-resume">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Carte Occupation -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-bottom py-3">
+                        <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-pie-chart me-2 text-primary"></i>Capacités & Occupation</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row align-items-center g-4">
+                            <div class="col-md-4 text-center border-end">
+                                <div class="progress-circle" style="--pct: {{ occupancy_pct|default:'0' }}%">
+                                    <div class="pct">{{ occupancy_pct|floatformat:0 }}%</div>
+                                </div>
+                                <div class="text-muted small mt-2 fw-medium text-uppercase">Taux d'occupation</div>
+                            </div>
+                            <div class="col-md-8 ps-md-4">
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="spec-label">Capacité Nominale</div>
+                                        <div class="fs-5 fw-bold">{{ contenant.capacite_l|floatformat:0 }} <span class="fs-6 text-muted fw-normal">L</span></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="spec-label">Capacité Utile</div>
+                                        <div class="fs-5 fw-bold">{{ contenant.capacite_utile_l|default:contenant.capacite_l|floatformat:0 }} <span class="fs-6 text-muted fw-normal">L</span></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="spec-label text-primary">Volume Occupé</div>
+                                        <div class="fs-5 fw-bold text-primary">{{ contenant.volume_occupe_l|floatformat:0 }} <span class="fs-6 fw-normal">L</span></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="spec-label text-success">Volume Libre</div>
+                                        <div class="fs-5 fw-bold text-success">{{ free_capacity_l|floatformat:0 }} <span class="fs-6 fw-normal">L</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lot en place -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-bottom py-3">
+                        <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-box-seam me-2 text-primary"></i>Contenu actuel</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if contenant.lot_courant %}
+                        <div class="d-flex justify-content-between align-items-center p-3 border rounded bg-light">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-primary">Lot</span>
+                                    <a href="/production/lots-techniques/{{ contenant.lot_courant.id }}/" class="fw-bold text-dark text-decoration-none fs-5">
+                                        {{ contenant.lot_courant.code }}
+                                    </a>
+                                </div>
+                                <div class="text-muted small">
+                                    {% if contenant.lot_courant.cuvee %}{{ contenant.lot_courant.cuvee.nom }}{% endif %}
+                                    {% if contenant.lot_courant.millesime %} · {{ contenant.lot_courant.millesime }}{% endif %}
+                                </div>
+                            </div>
+                            <a href="/production/lots-techniques/{{ contenant.lot_courant.id }}/" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                Voir le lot
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-6 d-block mb-2 opacity-50"></i>
+                            <span>Aucun lot affecté (contenant vide)</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Résumé -->
+            <div class="col-lg-4">
+                <!-- Widget Spec Rapide -->
+                {% if contenant.is_cuve %}
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-thermometer-half me-2"></i>Thermorégulation</h6>
+                        {% if contenant.thermo_regule %}
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                <span class="fw-medium">Équipée</span>
+                            </div>
+                            <div class="small text-muted bg-light p-2 rounded">
+                                <strong>Type:</strong> {{ contenant.get_type_thermoregulation_display|default:'—' }}<br>
+                                <strong>Plage:</strong> {{ contenant.temperature_range_display }}
+                            </div>
+                        {% else %}
+                            <span class="text-muted"><i class="bi bi-x-circle me-1"></i>Non équipée</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif contenant.is_barrique_or_foudre %}
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-warning text-dark"><i class="bi bi-tree me-2"></i>Bois & Élevage</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li class="mb-2 d-flex justify-content-between">
+                                <span class="text-muted">Origine:</span>
+                                <span class="fw-medium">{{ contenant.get_origine_bois_display|default:'—' }}</span>
+                            </li>
+                            <li class="mb-2 d-flex justify-content-between">
+                                <span class="text-muted">Chauffe:</span>
+                                <span class="fw-medium">{{ contenant.get_type_chauffe_display|default:'—' }}</span>
+                            </li>
+                            <li class="d-flex justify-content-between">
+                                <span class="text-muted">Statut:</span>
+                                <span class="badge bg-warning text-dark">{{ contenant.get_statut_barrique_display|default:'—' }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CARACTÉRISTIQUES -->
+    <div class="tab-pane fade" id="tab-specs">
+        <div class="row g-5">
+            <div class="col-md-6">
+                <div class="specs-section-title"><i class="bi bi-info-circle me-2"></i>Informations Générales</div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="spec-card">
+                            <div class="spec-label">Code</div>
+                            <div class="spec-value">{{ contenant.code }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="spec-card">
+                            <div class="spec-label">Type</div>
+                            <div class="spec-value">{{ contenant.get_type_display }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="spec-card">
+                            <div class="spec-label">Capacité Nominale</div>
+                            <div class="spec-value">{{ contenant.capacite_l|floatformat:0 }} L</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="spec-card">
+                            <div class="spec-label">Capacité Utile</div>
+                            <div class="spec-value">{{ contenant.capacite_utile_l|default:contenant.capacite_l|floatformat:0 }} L</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="spec-card">
+                            <div class="spec-label">Localisation</div>
+                            <div class="spec-value {% if not contenant.localisation %}empty{% endif %}">{{ contenant.localisation|default:'Non renseignée' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                {% if contenant.is_cuve %}
+                    <div class="specs-section-title"><i class="bi bi-thermometer-half me-2"></i>Thermorégulation</div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Équipement</div>
+                                <div class="spec-value">
+                                    {% if contenant.thermo_regule %}<span class="text-success">Oui</span>{% else %}<span class="text-muted">Non</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Système</div>
+                                <div class="spec-value {% if not contenant.type_thermoregulation %}empty{% endif %}">{{ contenant.get_type_thermoregulation_display|default:'—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Temp. Min</div>
+                                <div class="spec-value">{{ contenant.temperature_min|default:'—' }} °C</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Temp. Max</div>
+                                <div class="spec-value">{{ contenant.temperature_max|default:'—' }} °C</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="spec-card">
+                                <div class="spec-label">Forme</div>
+                                <div class="spec-value">{{ contenant.get_forme_display|default:'Non renseignée' }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% elif contenant.is_barrique_or_foudre %}
+                    <div class="specs-section-title"><i class="bi bi-tree me-2"></i>Bois & Élevage</div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Essence</div>
+                                <div class="spec-value">{{ contenant.get_origine_bois_display|default:'—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Grain</div>
+                                <div class="spec-value">{{ contenant.get_grain_bois_display|default:'—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Chauffe</div>
+                                <div class="spec-value">{{ contenant.get_type_chauffe_display|default:'—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Statut</div>
+                                <div class="spec-value">{{ contenant.get_statut_barrique_display|default:'—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Mise en service</div>
+                                <div class="spec-value">{{ contenant.annee_mise_service|default:'—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="spec-card">
+                                <div class="spec-label">Tonnelier</div>
+                                <div class="spec-value">{{ contenant.tonnelier|default:'—' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. OCCUPATION (ACTIONS) -->
+    <div class="tab-pane fade" id="tab-occupation">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-arrow-left-right me-2"></i>Mouvements rapides</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Affecter un lot (Remplissage)</h6>
+                        <form method="post" action="/production/contenants/{{ contenant.id }}/actions/affecter-lot/" class="row g-3 align-items-end">
+                            {% csrf_token %}
+                            <div class="col-md-6">
+                                <label class="form-label small">Lot source</label>
+                                <select name="lot_id" class="form-select" required>
+                                    <option value="">— Choisir un lot —</option>
+                                    {% for lot in lots %}
+                                        <option value="{{ lot.id }}">{{ lot.code }} ({{ lot.volume_l }} L)</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Volume (L)</label>
+                                <input type="number" step="0.01" min="0" name="volume_l" class="form-control" placeholder="0">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary w-100" type="submit"><i class="bi bi-box-arrow-in-down me-1"></i>Affecter</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-lg-5 border-start ps-lg-4">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Actions directes</h6>
+                        <div class="d-grid gap-2">
+                            <form method="post" action="/production/contenants/{{ contenant.id }}/actions/vidange/">
+                                {% csrf_token %}
+                                <button class="btn btn-outline-danger w-100 text-start" type="submit">
+                                    <i class="bi bi-trash me-2"></i>Vidanger complètement
+                                </button>
+                            </form>
+                            <form method="post" action="/production/contenants/{{ contenant.id }}/actions/nettoyage/">
+                                {% csrf_token %}
+                                <button class="btn btn-outline-info w-100 text-start" type="submit">
+                                    <i class="bi bi-droplet me-2"></i>Enregistrer nettoyage
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. MOUVEMENTS -->
+    <div class="tab-pane fade" id="tab-mouvements">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">Historique lot courant</h5>
+                {% if contenant.lot_courant %}
+                    <a href="/production/lots-techniques/{{ contenant.lot_courant.id }}/mouvements/export/" class="btn btn-sm btn-light border">Export CSV</a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if mouvements %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Type</th>
+                                <th class="text-end">Volume (L)</th>
+                                <th class="pe-4">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in mouvements %}
+                            <tr>
+                                <td class="ps-4">{{ m.date|date:"d/m/Y" }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ m.get_type_display }}</span></td>
+                                <td class="text-end font-monospace">{{ m.volume_l }}</td>
+                                <td class="pe-4 text-muted small">{{ m.meta.note|default:'—' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-clock-history display-6 mb-3 d-block opacity-50"></i>
+                        Aucun mouvement enregistré pour ce lot.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. MAINTENANCE -->
+    <div class="tab-pane fade" id="tab-maintenance">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-4 text-dark">Calendrier Sanitaire</h6>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                <span class="text-muted">Dernier Nettoyage</span>
+                                <span class="fw-medium">{{ contenant.date_dernier_nettoyage|default:'—' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                <span class="text-muted">Prochain Nettoyage</span>
+                                <span class="badge bg-soft-primary text-primary">{{ next_nettoyage|default:'—' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                <span class="text-muted">Dernier Ouillage</span>
+                                <span class="fw-medium">{{ contenant.date_dernier_ouillage|default:'—' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Prochain Ouillage</span>
+                                <span class="badge bg-soft-warning text-warning">{{ next_ouillage|default:'—' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3 text-dark">Notes & Observations</h6>
+                        <div class="bg-light p-3 rounded" style="min-height: 150px;">
+                            {% if contenant.note_sanitaire %}
+                                {{ contenant.note_sanitaire|linebreaks }}
+                            {% else %}
+                                <em class="text-muted">Aucune note sanitaire enregistrée.</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
 {% endblock %}

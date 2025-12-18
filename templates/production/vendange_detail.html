@@ -1,159 +1,280 @@
 {% extends 'production/base_production.html' %}
-{% block title %}Fiche vendange - Mon Chai{% endblock %}
+{% load humanize %}
+
+{% block title %}Fiche vendange {{ vendange.code }} - Mon Chai{% endblock %}
+
 {% block production_content %}
-<div class="d-flex justify-content-between align-items-start mb-3">
-  <h1 class="h4 mb-0 d-flex align-items-center gap-3 flex-wrap">
-    <span>Fiche vendange</span>
-    {% if vendange.code %}<span class="badge bg-light text-dark">{{ vendange.code }}</span>{% endif %}
-    {% if vendange.statut %}
-      <span class="badge {% if vendange.statut == 'brouillon' %}bg-secondary{% elif vendange.statut == 'receptionnee' %}bg-primary{% elif vendange.statut == 'encuvee' %}bg-success{% else %}bg-info{% endif %}">
-        {{ vendange.get_statut_display }}
-      </span>
+<!-- Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'production:production_home' %}" class="text-decoration-none text-muted">Production</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'production:vendanges_list' %}" class="text-decoration-none text-muted">Vendanges</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ vendange.code }}</li>
+  </ol>
+</nav>
+
+<!-- Hero Header -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="card-body p-4 position-relative">
+        <div class="row align-items-center g-4">
+            <!-- Icone et Titre -->
+            <div class="col-md-5">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-light p-3 rounded-circle text-primary">
+                        <i class="bi bi-basket3-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h1 class="h3 fw-bold mb-0 text-dark">{{ vendange.code|default:"Nouvelle Vendange" }}</h1>
+                            {% if vendange.statut == 'receptionnee' %}
+                                <span class="badge rounded-pill bg-warning text-dark"><i class="bi bi-inbox me-1"></i>Réceptionnée</span>
+                            {% elif vendange.statut == 'encuvee' %}
+                                <span class="badge rounded-pill bg-success"><i class="bi bi-check-circle me-1"></i>Encuvée</span>
+                            {% elif vendange.statut == 'brouillon' %}
+                                <span class="badge rounded-pill bg-secondary"><i class="bi bi-pencil me-1"></i>Brouillon</span>
+                            {% else %}
+                                <span class="badge rounded-pill bg-light text-dark border">{{ vendange.get_statut_display }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted d-flex align-items-center gap-3">
+                            <span><i class="bi bi-calendar-event me-1"></i>{{ vendange.date|date:"l d F Y" }}</span>
+                            {% if vendange.campagne %}
+                                <span class="badge bg-light border text-secondary">{{ vendange.campagne }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- KPIs Header -->
+            <div class="col-md-7">
+                <div class="d-flex justify-content-md-end gap-4 text-md-end">
+                    <div class="px-3 border-start">
+                        <div class="small text-muted text-uppercase fw-bold mb-1">Parcelle</div>
+                        <div class="fw-semibold text-truncate" style="max-width: 150px;" title="{{ vendange.parcelle }}">{{ vendange.parcelle }}</div>
+                    </div>
+                    <div class="px-3 border-start">
+                        <div class="small text-muted text-uppercase fw-bold mb-1">Poids Reçu</div>
+                        <div class="fs-4 fw-bold text-primary">{{ vendange.poids_total|floatformat:0|intcomma }} <small class="fs-6 text-muted fw-normal">kg</small></div>
+                    </div>
+                    {% if vendange.degre_potentiel %}
+                    <div class="px-3 border-start">
+                        <div class="small text-muted text-uppercase fw-bold mb-1">Degré</div>
+                        <div class="fs-4 fw-bold text-dark">{{ vendange.degre_potentiel }}<small class="fs-6 text-muted fw-normal">°</small></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ProgressBar Encuvage -->
+    {% if vendange.poids_total > 0 %}
+        {% widthratio vendange.kg_debites_cumules vendange.poids_total 100 as ratio %}
+        <div class="progress" style="height: 4px; border-radius: 0;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ ratio }}%"></div>
+        </div>
     {% endif %}
-    {% if vendange.campagne %}<span class="badge bg-light text-dark">{{ vendange.campagne }}</span>{% endif %}
-    {% if vendange.cuvee %}
-      <span class="badge bg-warning text-dark"><i class="bi bi-cup-straw me-1"></i>{{ vendange.cuvee.nom }}</span>
-    {% endif %}
-  </h1>
-  <a href="{% url 'production:vendange_update' vendange.pk %}" class="btn btn-outline-primary">
-    <i class="bi bi-pencil me-1"></i>Modifier
-  </a>
 </div>
 
-<div class="row g-3 mb-3">
+<div class="row g-4">
+  <!-- Colonne Gauche : Détails Métier -->
   <div class="col-lg-8">
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Identité & contexte</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3"><strong>Date</strong><div>{{ vendange.date }}</div></div>
-          <div class="col-md-4"><strong>Parcelle</strong><div>{{ vendange.parcelle }}</div></div>
-          <div class="col-md-3"><strong>Type vendange</strong><div>{{ vendange.get_type_vendange_display }}</div></div>
-          <div class="col-md-2"><strong>Type récolte</strong><div>{{ vendange.get_type_recolte_display }}</div></div>
+    
+    <!-- Carte Cépages / Lignes -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title h6 fw-bold mb-0 text-primary"><i class="bi bi-pie-chart me-2"></i>Composition de la vendange</h5>
+            <span class="badge bg-light text-dark border">{{ vendange.get_type_recolte_display }} / {{ vendange.get_type_vendange_display }}</span>
         </div>
-      </div>
+        <div class="card-body p-0">
+            {% if vendange.lignes.exists %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-3">Cépage</th>
+                            <th class="text-end">Quantité</th>
+                            <th>Rangs</th>
+                            <th>Degré</th>
+                            <th class="pe-3">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in vendange.lignes.all %}
+                        <tr>
+                            <td class="ps-3 fw-medium">{{ ligne.cepage.nom }}</td>
+                            <td class="text-end fw-bold font-monospace">{{ ligne.quantite_kg|floatformat:0 }} kg</td>
+                            <td class="small text-muted">{% if ligne.rangs_texte %}{{ ligne.rangs_texte }}{% elif ligne.rang_debut %}{{ ligne.rang_debut }}-{{ ligne.rang_fin }}{% else %}—{% endif %}</td>
+                            <td>{% if ligne.degre_potentiel %}<span class="badge bg-light text-dark border">{{ ligne.degre_potentiel }}°</span>{% else %}—{% endif %}</td>
+                            <td class="pe-3 small text-muted fst-italic">{{ ligne.notes|default:""|truncatechars:30 }}</td>
+                        </tr>
+                        {% endfor %}
+                        <!-- Total row -->
+                        <tr class="bg-light fw-bold">
+                            <td class="ps-3">TOTAL</td>
+                            <td class="text-end text-primary">{{ vendange.poids_total|floatformat:0 }} kg</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center text-muted">
+                <i class="bi bi-info-circle display-6 d-block mb-2 text-secondary opacity-50"></i>
+                <p class="mb-0">Aucun détail de ligne (cépages) enregistré.</p>
+                {% if vendange.cepage %}
+                    <div class="mt-2 p-2 bg-light rounded d-inline-block border">
+                        Cépage unique déclaré : <strong>{{ vendange.cepage.nom }}</strong> ({{ vendange.poids_kg|default:0 }} kg)
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
     </div>
 
-    <!-- Répartition par cépage -->
-    <div class="card mb-3">
-      <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-pie-chart me-2"></i>Répartition par cépage</span>
-        <span class="badge bg-primary">Total: {{ vendange.poids_total|default:"0" }} kg</span>
-      </div>
-      <div class="card-body p-0">
-        {% if vendange.lignes.exists %}
-        <table class="table table-sm mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Cépage</th>
-              <th>Quantité (kg)</th>
-              <th>Rangs</th>
-              <th>Degré</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for ligne in vendange.lignes.all %}
-            <tr>
-              <td><strong>{{ ligne.cepage.nom }}</strong></td>
-              <td>{{ ligne.quantite_kg }} kg</td>
-              <td>{% if ligne.rangs_texte %}{{ ligne.rangs_texte }}{% elif ligne.rang_debut and ligne.rang_fin %}{{ ligne.rang_debut }}-{{ ligne.rang_fin }}{% else %}—{% endif %}</td>
-              <td>{{ ligne.degre_potentiel|default:"-" }}°</td>
-              <td class="text-muted small">{{ ligne.notes|default:"-"|truncatechars:50 }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <div class="p-3 text-center text-muted">
-          <i class="bi bi-info-circle me-1"></i>Aucune répartition définie.
-          {% if vendange.cepage %}Cépage unique : <strong>{{ vendange.cepage.nom }}</strong> — {{ vendange.poids_kg|default:"0" }} kg{% endif %}
+    <!-- Carte Qualité / Sanitaire -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title h6 fw-bold mb-0 text-success"><i class="bi bi-heart-pulse me-2"></i>Qualité & Sanitaire</h5>
         </div>
-        {% endif %}
-      </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-6 border-end">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-3">Conditions de réception</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Température</span>
+                        <span class="fw-medium">{% if vendange.temperature_c %}{{ vendange.temperature_c }}°C{% else %}<span class="text-muted">—</span>{% endif %}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tri effectué</span>
+                        <span class="fw-medium">{% if vendange.tri %}<span class="text-success"><i class="bi bi-check-lg"></i> Oui</span>{% else %}Non{% endif %}</span>
+                    </div>
+                    {% if vendange.tri_notes %}
+                    <div class="mt-2 p-2 bg-light rounded small text-muted border-start border-3 border-warning">
+                        {{ vendange.tri_notes }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-uppercase text-muted small fw-bold mb-3">État sanitaire</h6>
+                    <div class="mb-2">
+                        <span class="badge bg-light text-dark border">{{ vendange.etat_sanitaire|default:"Non renseigné" }}</span>
+                    </div>
+                    {% if vendange.etat_sanitaire_notes %}
+                        <p class="small text-muted mb-0">{{ vendange.etat_sanitaire_notes }}</p>
+                    {% else %}
+                        <span class="small text-muted fst-italic">Aucune observation particulière.</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Réception & tri</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3"><strong>Température (°C)</strong><div>{{ vendange.temperature_c|default:'-' }}</div></div>
-          <div class="col-md-3"><strong>Tri</strong><div>{% if vendange.tri %}Oui{% else %}Non{% endif %}</div></div>
-          <div class="col-md-6"><strong>Notes tri</strong><div>{{ vendange.tri_notes|default:'-' }}</div></div>
-          <div class="col-md-6"><strong>Bennes / Palox</strong><div>{{ vendange.bennes_palox|default:'-' }}</div></div>
-          <div class="col-md-3"><strong>État sanitaire</strong><div>{{ vendange.etat_sanitaire|default:'-' }}</div></div>
-          <div class="col-md-9"><strong>Notes sanitaires</strong><div>{{ vendange.etat_sanitaire_notes|default:'-' }}</div></div>
+    <!-- Notes libres -->
+    {% if vendange.notes %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h6 class="text-uppercase text-muted small fw-bold mb-2"><i class="bi bi-sticky me-2"></i>Notes & Observations</h6>
+            <div class="text-dark bg-light p-3 rounded border-start border-4 border-primary">
+                {{ vendange.notes|linebreaks }}
+            </div>
         </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Mesures & volumes</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3"><strong>Poids total (kg)</strong><div class="fs-5 text-primary fw-bold">{{ vendange.poids_total|default:'0' }}</div></div>
-          <div class="col-md-3"><strong>Kg débités</strong><div>{{ vendange.kg_debites_cumules|default:'0' }}</div></div>
-          <div class="col-md-3"><strong>Kg restant</strong><div class="text-success fw-bold">{{ vendange.kg_restant|default:'0' }}</div></div>
-          <div class="col-md-3"><strong>Degré potentiel</strong><div>{{ vendange.degre_potentiel|default:'-' }}°</div></div>
-          <div class="col-md-3"><strong>Rendement (%)</strong><div>{{ vendange.rendement_pct|default:'-' }}</div></div>
-          <div class="col-md-3"><strong>Volume mesuré (L)</strong><div>{{ vendange.volume_mesure_l|default:'-' }}</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Coûts</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3"><strong>Prix raisin (€/kg)</strong><div>{{ vendange.prix_raisin_eur_kg|default:'-' }}</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Notes</div>
-      <div class="card-body">{{ vendange.notes|linebreaks }}</div>
-    </div>
-  </div>
-  <div class="col-lg-4">
-    {% if next_step %}
-    <div class="card mb-3">
-      <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-          <div class="small text-muted">Prochaine étape</div>
-          <div class="fw-semibold">{{ next_step.label }}</div>
-        </div>
-        <a href="{{ next_step.url }}" class="btn btn-primary">Continuer</a>
-      </div>
     </div>
     {% endif %}
-    <div class="card mb-3" id="affectation-cuvee">
-      <div class="card-header fw-semibold">Affectation Cuvée</div>
-      <div class="card-body">
-        <form method="post" action="/production/vendanges/{{ vendange.id }}/affecter-cuvee/">
-          {% csrf_token %}
-          <div class="mb-2">
-            <select class="form-select" name="cuvee_id" required>
-              <option value="">— Sélectionner une cuvée —</option>
-              {% for c in cuvees %}
-                <option value="{{ c.id }}" {% if vendange.cuvee and vendange.cuvee.id == c.id %}selected{% endif %}>{{ c.nom }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <button class="btn btn-outline-primary w-100" type="submit">Affecter la cuvée</button>
-        </form>
-      </div>
+
+  </div>
+
+  <!-- Colonne Droite : Actions & Contexte -->
+  <div class="col-lg-4">
+    
+    <!-- Actions Principales -->
+    <div class="card border-0 shadow-sm mb-4 bg-primary text-white">
+        <div class="card-body">
+            <h5 class="card-title h6 fw-bold mb-3"><i class="bi bi-lightning-charge me-2"></i>Actions</h5>
+            <div class="d-grid gap-2">
+                {% if vendange.statut != 'close' %}
+                    <a href="{% url 'production:vendange_update' vendange.id %}" class="btn btn-light fw-medium text-primary">
+                        <i class="bi bi-pencil me-2"></i>Modifier la fiche
+                    </a>
+                {% endif %}
+                
+                {% if vendange.statut == 'receptionnee' or vendange.statut == 'brouillon' %}
+                    <a href="{% url 'production:vendange_encuvage' vendange.id %}" class="btn btn-warning fw-bold text-dark mt-2">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Lancer l'encuvage
+                    </a>
+                {% endif %}
+                
+                {% if vendange.statut == 'encuvee' and lot_technique %}
+                    <a href="{% url 'production:lot_tech_detail' lot_technique.id %}" class="btn btn-outline-light mt-2">
+                        <i class="bi bi-box-seam me-2"></i>Voir le lot technique
+                    </a>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    <div class="card">
-      <div class="card-header fw-semibold">Actions</div>
-      <div class="card-body d-grid gap-2">
-        <a id="btn-create-encuvage" href="/production/vendanges/{{ vendange.id }}/encuvage/" class="btn btn-success">Encuvage / Pressurage</a>
-        {% if lot_technique %}
-          <a href="/production/lots-techniques/{{ lot_technique.id }}/" class="btn btn-outline-primary">Voir le lot technique</a>
-        {% endif %}
-        <a href="/production/mises/nouveau/?step=1" class="btn btn-outline-secondary">Planifier une mise</a>
-      </div>
+
+    <!-- Carte Destination (Cuvée) -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom fw-bold">
+            <i class="bi bi-signpost-split me-2 text-secondary"></i>Destination
+        </div>
+        <div class="card-body">
+            {% if vendange.cuvee %}
+                <div class="d-flex align-items-center p-3 border rounded bg-light mb-3">
+                    <div class="me-3 fs-3 text-warning"><i class="bi bi-tag-fill"></i></div>
+                    <div>
+                        <div class="small text-muted text-uppercase">Cuvée affectée</div>
+                        <div class="fw-bold fs-5">{{ vendange.cuvee.nom }}</div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning border-warning d-flex align-items-center mb-3">
+                    <i class="bi bi-exclamation-circle me-3 fs-4"></i>
+                    <div>
+                        <strong>Non affectée</strong><br>
+                        <small>Cette vendange n'est liée à aucune cuvée.</small>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Formulaire rapide affectation -->
+            <form method="post" action="{% url 'production:vendange_affecter_cuvee' vendange.id %}">
+                {% csrf_token %}
+                <label class="form-label small text-muted">Changer la cuvée</label>
+                <div class="input-group">
+                    <select class="form-select form-select-sm" name="cuvee_id" required>
+                        <option value="">Choisir...</option>
+                        {% for c in cuvees %}
+                            <option value="{{ c.id }}" {% if vendange.cuvee_id == c.id %}selected{% endif %}>{{ c.nom }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">OK</button>
+                </div>
+            </form>
+        </div>
     </div>
+
+    <!-- Carte Technique & Logistique -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom fw-bold">
+            <i class="bi bi-sliders me-2 text-secondary"></i>Logistique
+        </div>
+        <div class="card-body small">
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <span class="text-muted">Bennes / Palox</span>
+                <span class="fw-medium text-end">{{ vendange.bennes_palox|default:"—" }}</span>
+            </div>
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <span class="text-muted">Contenant Cible</span>
+                <span class="fw-medium text-end">{{ vendange.contenant|default:"—" }}</span>
+            </div>
+            <div class="d-flex justify-content-between pt-2">
+                <span class="text-muted">Prix Achat Raisin</span>
+                <span class="fw-medium text-end">{% if vendange.prix_raisin_eur_kg %}{{ vendange.prix_raisin_eur_kg }} €/kg{% else %}—{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}

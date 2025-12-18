@@ -1,0 +1,176 @@
+{% extends "commerce/base_commerce.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block commerce_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 mb-0">{{ page_title }}</h1>
+    <div class="btn-group">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-plus-lg me-2"></i>Nouveau
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url namespace|add:':quote_create' %}">Devis / Demande</a></li>
+            <li><a class="dropdown-item" href="{% url namespace|add:':order_create' %}">Commande</a></li>
+            <li><a class="dropdown-item" href="{% url namespace|add:':delivery_create' %}">Livraison / Réception</a></li>
+            <li><a class="dropdown-item" href="{% url namespace|add:':invoice_create' %}">Facture</a></li>
+            <li><a class="dropdown-item" href="{% url namespace|add:':credit_note_create' %}">Avoir</a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body bg-light rounded-3">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Recherche</label>
+                <input type="text" name="q" class="form-control" placeholder="N°, Client, Réf..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Type</label>
+                <select name="type" class="form-select">
+                    <option value="">Tous les types</option>
+                    {% for code, label in type_choices %}
+                    <option value="{{ code }}" {% if request.GET.type == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Statut</label>
+                <select name="status" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    {% for code, label in status_choices %}
+                    <option value="{{ code }}" {% if request.GET.status == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary w-100">Filtrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Date</th>
+                    <th>N°</th>
+                    <th>Type</th>
+                    <th>Tiers</th>
+                    <th>Réf. Externe</th>
+                    <th class="text-end">Montant HT</th>
+                    <th class="text-end">Montant TTC</th>
+                    <th class="text-center">Statut</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr class="row-click" data-href="{% url namespace|add:':document_detail' doc.id %}">
+                    <td class="ps-4 text-nowrap">{{ doc.date_issue|date:"d/m/Y" }}</td>
+                    <td class="fw-medium">{{ doc.number }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ doc.get_type_display }}</span>
+                        {% if doc.sale_mode != 'standard' %}
+                        <span class="badge bg-info-subtle text-info-emphasis ms-1">{{ doc.get_sale_mode_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ doc.client.name }}</td>
+                    <td class="text-muted small">{{ doc.reference|default:"-" }}</td>
+                    <td class="text-end text-muted">{{ doc.total_ht|floatformat:2 }} €</td>
+                    <td class="text-end fw-bold">{{ doc.total_ttc|floatformat:2 }} €</td>
+                    <td class="text-center">
+                        {% if doc.status == 'draft' %}
+                        <span class="badge bg-secondary">Brouillon</span>
+                        {% elif doc.status == 'sent' %}
+                        <span class="badge bg-info text-dark">Envoyé</span>
+                        {% elif doc.status == 'validated' %}
+                        <span class="badge bg-primary">Validé</span>
+                        {% elif doc.status == 'executed' %}
+                        <span class="badge bg-dark">Livré</span>
+                        {% elif doc.status == 'issued' %}
+                        <span class="badge bg-warning text-dark">Émis</span>
+                        {% elif doc.status == 'paid' %}
+                        <span class="badge bg-success">Payé</span>
+                        {% elif doc.status == 'cancelled' %}
+                        <span class="badge bg-danger">Annulé</span>
+                        {% else %}
+                        <span class="badge bg-light text-dark">{{ doc.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="dropdown" onclick="event.stopPropagation()">
+                            <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><a class="dropdown-item" href="{% url namespace|add:':document_detail' doc.id %}"><i class="bi bi-eye me-2"></i>Voir</a></li>
+                                {% if doc.status == 'draft' %}
+                                <li><a class="dropdown-item" href="{% url namespace|add:':document_update' doc.id %}"><i class="bi bi-pencil me-2"></i>Modifier</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                {% if doc.type == 'quote' and doc.status == 'sent' %}
+                                <li>
+                                    <form action="{% url namespace|add:':document_transform' doc.id 'order' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button class="dropdown-item"><i class="bi bi-check-circle me-2"></i>Transformer en Commande</button>
+                                    </form>
+                                </li>
+                                {% elif doc.type == 'order' and doc.status == 'validated' %}
+                                <li>
+                                    <form action="{% url namespace|add:':document_transform' doc.id 'delivery' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button class="dropdown-item"><i class="bi bi-truck me-2"></i>Générer BL</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form action="{% url namespace|add:':document_transform' doc.id 'invoice' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button class="dropdown-item"><i class="bi bi-receipt me-2"></i>Générer Facture</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <div class="mb-3"><i class="bi bi-inbox fs-1"></i></div>
+                        Aucun document trouvé
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="card-footer bg-white py-3">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link border-0" href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}&type={{ request.GET.type }}&status={{ request.GET.status }}">Précédent</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item disabled">
+                    <span class="page-link border-0 text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link border-0" href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}&type={{ request.GET.type }}&status={{ request.GET.status }}">Suivant</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

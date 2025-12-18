@@ -1,0 +1,224 @@
+{% extends 'production/base_production.html' %}
+{% block title %}Analyses œnologiques - Mon Chai{% endblock %}
+
+{% block production_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-1">Analyses œnologiques</h1>
+    <p class="text-muted mb-0">Suivi des analyses de laboratoire sur vos lots en élevage</p>
+  </div>
+  <div class="btn-group">
+    <a href="{% url 'production:lots_elevage_home' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Retour Lots & Élevage
+    </a>
+    <a href="{% url 'production:analyse_oeno_new' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Nouvelle analyse
+    </a>
+  </div>
+</div>
+
+<!-- KPIs rapides -->
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="small text-muted">Total analyses</div>
+      <div class="fs-4">{{ kpis.total|default:"0" }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="small text-muted">Alertes</div>
+      <div class="fs-4 text-danger">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ kpis.alertes|default:"0" }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="small text-muted">À surveiller</div>
+      <div class="fs-4 text-warning">
+        <i class="bi bi-eye-fill me-1"></i>{{ kpis.surveillance|default:"0" }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3">
+      <div class="small text-muted">Validées</div>
+      <div class="fs-4 text-success">
+        <i class="bi bi-check-circle-fill me-1"></i>{{ kpis.validees|default:"0" }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+          <i class="bi bi-chevron-down"></i> Avancé
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="clear-filters">
+          <i class="bi bi-x-circle"></i> Effacer
+        </button>
+      </div>
+    </div>
+    
+    <form id="analyses-filter-form"
+          hx-get="{% url 'production:analyses_oeno_table' %}"
+          hx-target="#analyses-table"
+          hx-swap="innerHTML"
+          hx-trigger="change, keyup delay:300ms from:input[type=text], keyup delay:300ms from:input[type=search]">
+      
+      <!-- Recherche rapide -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="position-relative">
+            <input type="text" name="q" id="quick-search" 
+                   placeholder="Recherche (lot, cuvée, notes...)" 
+                   class="form-control pe-5" autocomplete="off"
+                   value="{{ request.GET.q|default:'' }}">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+              <i class="bi bi-search text-muted" id="search-icon"></i>
+              <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                <span class="visually-hidden">Recherche...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select name="type_analyse" class="form-select">
+            <option value="">Tous les types</option>
+            <option value="complete">Analyse complète</option>
+            <option value="so2">Contrôle SO₂</option>
+            <option value="pre_mise">Pré-mise</option>
+            <option value="microbiologique">Microbiologique</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check mt-2">
+            <input type="checkbox" name="alerte_only" id="alerte_only" class="form-check-input" value="true">
+            <label for="alerte_only" class="form-check-label text-danger">
+              <i class="bi bi-exclamation-triangle me-1"></i>Alertes uniquement
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Filtres avancés -->
+      <div id="advanced-filters" class="collapse">
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-2">
+            <label class="form-label">Campagne</label>
+            <select name="campagne" class="form-select">
+              <option value="">Toutes</option>
+              {% for c in campagnes %}
+                <option value="{{ c }}">{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Statut</label>
+            <select name="statut" class="form-select">
+              <option value="">Tous</option>
+              <option value="planifiee">Planifiée</option>
+              <option value="prelevement">Prélèvement effectué</option>
+              <option value="attente_resultats">En attente résultats</option>
+              <option value="resultats_saisis">Résultats saisis</option>
+              <option value="validee">Validée</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Niveau alerte</label>
+            <select name="niveau_alerte" class="form-select">
+              <option value="">Tous</option>
+              <option value="ok">OK</option>
+              <option value="surveillance">À surveiller</option>
+              <option value="alerte">Alerte</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Du</label>
+            <input type="date" name="date_start" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Au</label>
+            <input type="date" name="date_end" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tri</label>
+            <select name="sort" class="form-select">
+              <option value="date_desc">Date ↓</option>
+              <option value="date_asc">Date ↑</option>
+              <option value="type">Type</option>
+              <option value="alerte">Alertes d'abord</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tableau HTMX -->
+<div id="analyses-table"
+     hx-get="{% url 'production:analyses_oeno_table' %}"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+  <div class="text-center text-muted py-5">
+    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+    Chargement des analyses...
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const advBtn = document.getElementById('toggle-advanced-search');
+  const clearBtn = document.getElementById('clear-filters');
+  const adv = document.getElementById('advanced-filters');
+  const quick = document.getElementById('quick-search');
+  const spinner = document.getElementById('search-spinner');
+  const icon = document.getElementById('search-icon');
+  const form = document.getElementById('analyses-filter-form');
+
+  function setLoading(isLoading) {
+    if (isLoading) {
+      spinner.classList.remove('d-none');
+      icon.classList.add('d-none');
+    } else {
+      spinner.classList.add('d-none');
+      icon.classList.remove('d-none');
+    }
+  }
+
+  if (advBtn && adv) {
+    advBtn.addEventListener('click', function() {
+      adv.classList.toggle('show');
+      const i = advBtn.querySelector('i');
+      if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    });
+  }
+
+  if (clearBtn && form) {
+    clearBtn.addEventListener('click', function() {
+      form.reset();
+      form.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  if (quick) {
+    quick.addEventListener('input', function() { setLoading(true); });
+  }
+
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target && evt.target.id === 'analyses-table') {
+      setLoading(false);
+    }
+  });
+});
+</script>
+{% endblock %}

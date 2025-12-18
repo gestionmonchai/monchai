@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 urlpatterns = [
     # New domain mounts
     path('', include(('apps.produits.urls', 'produits'), namespace='produits')),
-    path('', include(('apps.ventes.urls', 'ventes'), namespace='ventes')),
+    # path('', include(('apps.ventes.urls', 'ventes'), namespace='ventes')), # Removed to avoid duplicate namespace warning (already in monchai.urls)
     path('stocks/', include(('apps.stock.urls', 'stock'), namespace='stock')),
     path('drm/', include(('apps.drm.urls', 'drm'), namespace='drm')),
     path('referentiels/', include(('apps.referentiels.urls', 'referentiels'), namespace='referentiels')),
@@ -62,13 +62,13 @@ urlpatterns = [
             RedirectView.as_view(url='/production/lots-techniques/', permanent=True)),
 
     # Clients (legacy) → Ventes/Clients
-    re_path(r'^clients/?$', RedirectView.as_view(url='/ventes/clients/', permanent=True)),
-    re_path(r'^clients/nouveau/?$', RedirectView.as_view(url='/ventes/clients/nouveau/', permanent=True)),
-    re_path(r'^clients/(?P<cid>[0-9a-f\-]{36})/?$',
-            RedirectView.as_view(url='/ventes/clients/%(cid)s/', permanent=True)),
-    re_path(r'^clients/(?P<cid>[0-9a-f\-]{36})/modifier/?$',
-            RedirectView.as_view(url='/ventes/clients/%(cid)s/', permanent=True)),
-    re_path(r'^clients/tarifs/?$', RedirectView.as_view(url='/ventes/tarifs/', permanent=True)),
+    # re_path(r'^clients/?$', RedirectView.as_view(url='/ventes/clients/', permanent=True)),
+    # re_path(r'^clients/nouveau/?$', RedirectView.as_view(url='/ventes/clients/nouveau/', permanent=True)),
+    # re_path(r'^clients/(?P<cid>[0-9a-f\-]{36})/?$',
+    #         RedirectView.as_view(url='/ventes/clients/%(cid)s/', permanent=True)),
+    # re_path(r'^clients/(?P<cid>[0-9a-f\-]{36})/modifier/?$',
+    #         RedirectView.as_view(url='/ventes/clients/%(cid)s/', permanent=True)),
+    re_path(r'^clients/tarifs/?$', RedirectView.as_view(url='/sales/tarifs/', permanent=True)),
     re_path(r'^clients/conditions/?$', RedirectView.as_view(url='/ventes/conditions/', permanent=True)),
 
     # Legacy redirects: old /stock/* → new /stocks/* and DRM paths

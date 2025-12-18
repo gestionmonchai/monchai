@@ -210,3 +210,176 @@ class MouvementLot(models.Model):
     
     def __str__(self):
         return f"{self.lot.numero_lot} - {self.get_type_mouvement_display()} ({self.date_mouvement.strftime('%d/%m/%Y')})"
+
+
+# --- NOUVEAUX MODÈLES CATALOGUE GÉNÉRIQUE (ARTICLES) ---
+
+class ArticleCategory(models.Model):
+    """Catégorie d'articles (Vin, Miel, Oenotourisme...)"""
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='article_categories')
+    name = models.CharField("Nom", max_length=100)
+    description = models.TextField("Description", blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Catégorie d'article"
+        verbose_name_plural = "Catégories d'articles"
+        ordering = ['name']
+        unique_together = ['organization', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class ArticleTag(models.Model):
+    """Tags pour filtrer et organiser les produits"""
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='article_tags')
+    name = models.CharField("Nom", max_length=50)
+    
+    class Meta:
+        verbose_name = "Tag produit"
+        verbose_name_plural = "Tags produits"
+        ordering = ['name']
+        unique_together = ['organization', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class Article(models.Model):
+    """
+    Concept unique d'Article commercialisable.
+    Le 'type' détermine le comportement métier.
+    """
+    TYPE_PRODUCT = 'product'     # Stock simple (Miel, Verres)
+    TYPE_TRACEABLE = 'traceable' # Stock par Batch (Vin)
+    TYPE_SERVICE = 'service'     # Non stocké (Prestation)
+    TYPE_STAY = 'stay'           # Capacité/Calendrier (Nuitée)
+    TYPE_PACK = 'pack'           # Composition (Coffret)
+    
+    TYPE_CHOICES = [
+        (TYPE_PRODUCT, 'Produit stockable'),
+        (TYPE_TRACEABLE, 'Produit traçable (Vin/Lot)'),
+        (TYPE_SERVICE, 'Service / Prestation'),
+        (TYPE_STAY, 'Nuitée / Hébergement'),
+        (TYPE_PACK, 'Pack / Bundle'),
+    ]
+
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='articles')
+    category = models.ForeignKey(ArticleCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='articles', verbose_name="Catégorie")
+    tags = models.ManyToManyField(ArticleTag, blank=True, related_name='articles', verbose_name="Tags")
+    
+    # Identification
+    article_type = models.CharField("Type d'article", max_length=20, choices=TYPE_CHOICES, default=TYPE_PRODUCT)
+    name = models.CharField("Désignation", max_length=200)
+    sku = models.CharField("Code article (SKU)", max_length=50, blank=True, help_text="Référence unique interne")
+    description = models.TextField("Description courte", blank=True, help_text="Pour devis/factures")
+    
+    # Commercial
+    price_ht = models.DecimalField("Prix de vente HT", max_digits=10, decimal_places=2, default=0)
+    purchase_price = models.DecimalField("Prix d'achat HT", max_digits=10, decimal_places=2, default=0, help_text="Prix d'achat de référence (PA HT)")
+    vat_rate = models.DecimalField("Taux de TVA (%)", max_digits=5, decimal_places=2, default=20.0)
+    unit = models.CharField("Unité de vente", max_length=20, default="PCE", help_text="PCE, L, KG, NUIT, PERS...")
+    
+    # Comportement
+    is_stock_managed = models.BooleanField("Gestion de stock", default=True, help_text="Si actif, le système suit les quantités.")
+    is_buyable = models.BooleanField("Achetable", default=True, help_text="Peut être acheté (Fournisseurs)")
+    is_sellable = models.BooleanField("Vendable", default=True, help_text="Peut être vendu (Clients)")
+    is_active = models.BooleanField("Actif", default=True)
+    
+    # Douane & Régie
+    hs_code = models.CharField("Code Douanier (HS)", max_length=20, blank=True, help_text="Code nomenclature pour export")
+    origin_country = models.CharField("Pays d'origine", max_length=100, blank=True, default="France")
+    alcohol_degree = models.DecimalField("Degré d'alcool (%)", max_digits=4, decimal_places=2, null=True, blank=True)
+    net_volume = models.DecimalField("Volume net (L)", max_digits=10, decimal_places=4, null=True, blank=True, help_text="Volume en litres pour la régie")
+    customs_notes = models.TextField("Notes douanières", blank=True)
+    
+    # Métadonnées
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Médias & Dégustation
+    image = models.ImageField("Photo produit", upload_to='products/', blank=True, null=True)
+    tasting_notes = models.TextField("Notes de dégustation", blank=True, help_text="Fiche de dégustation, arômes, accords mets-vins...")
+
+    class Meta:
+        verbose_name = "Article"
+        verbose_name_plural = "Articles"
+        ordering = ['category', 'name']
+        unique_together = ['organization', 'sku'] # SKU unique par org
+
+    def __str__(self):
+        return f"[{self.sku}] {self.name}" if self.sku else self.name
+
+    @property
+    def price_ttc(self):
+        return self.price_ht * (1 + self.vat_rate / 100)
+
+
+class ArticleStock(models.Model):
+    """
+    État du stock actuel pour un article à un endroit donné.
+    Si article traçable, on sépare par numéro de lot (batch).
+    """
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='stocks')
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='stock_lines')
+    location = models.ForeignKey(Entrepot, on_delete=models.PROTECT, related_name='article_stocks', verbose_name="Emplacement")
+    
+    # Traçabilité optionnelle
+    batch_number = models.CharField("Numéro de lot/batch", max_length=50, blank=True, default="", help_text="Vide pour produits non traçables")
+    
+    # Quantité
+    quantity = models.DecimalField("Quantité en stock", max_digits=12, decimal_places=2, default=0)
+    
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ligne de stock"
+        verbose_name_plural = "Stock"
+        unique_together = ['article', 'location', 'batch_number']
+        ordering = ['article', 'batch_number']
+
+    def __str__(self):
+        if self.batch_number:
+            return f"{self.article.name} [{self.batch_number}] : {self.quantity} {self.article.unit}"
+        return f"{self.article.name} : {self.quantity} {self.article.unit}"
+
+
+class StockMovement(models.Model):
+    """
+    Journal des mouvements de stock (Grand Livre).
+    """
+    MOVE_IN = 'in'         # Achat, Production
+    MOVE_OUT = 'out'       # Vente, Perte, Don
+    MOVE_ADJUST = 'adjust' # Inventaire
+    
+    MOVE_CHOICES = [
+        (MOVE_IN, 'Entrée'),
+        (MOVE_OUT, 'Sortie'),
+        (MOVE_ADJUST, 'Ajustement'),
+    ]
+
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='stock_movements')
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='movements')
+    location = models.ForeignKey(Entrepot, on_delete=models.PROTECT, related_name='movements', verbose_name="Emplacement")
+    
+    movement_type = models.CharField("Type", max_length=10, choices=MOVE_CHOICES)
+    quantity = models.DecimalField("Quantité", max_digits=12, decimal_places=2, help_text="Positif pour entrée, Négatif pour sortie (géré par logique métier)")
+    
+    batch_number = models.CharField("Lot/Batch", max_length=50, blank=True, default="")
+    
+    date = models.DateTimeField("Date", auto_now_add=True) # Ou editable=True si on veut antidater
+    reference = models.CharField("Référence", max_length=100, blank=True, help_text="Ex: Facture #123, Prod #456")
+    notes = models.TextField("Notes", blank=True)
+    
+    created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Mouvement de stock"
+        verbose_name_plural = "Mouvements de stock"
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.get_movement_type_display()} {self.quantity} {self.article.name}"

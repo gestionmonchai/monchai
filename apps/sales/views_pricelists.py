@@ -16,7 +16,9 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 
 from apps.accounts.decorators import require_membership
-from apps.stock.models import SKU
+# from apps.stock.models import SKU  <-- Removed
+# from apps.viticulture.models import Cuvee <-- Removed
+from apps.catalogue.models import Article, ArticleCategory
 from .models import PriceList, PriceItem
 from .forms_pricelists import PriceListForm, PriceItemForm, PriceListImportForm
 
@@ -93,7 +95,7 @@ def pricelist_create(request):
             pricelist.organization = org
             pricelist.save()
             messages.success(request, f'Grille tarifaire "{pricelist.name}" créée avec succès.')
-            return redirect('sales:pricelist_detail', pk=pricelist.pk)
+            return redirect('ventes:pricelist_detail', pk=pricelist.pk)
     else:
         # Date par défaut : aujourd'hui
         initial = {'valid_from': timezone.now().date()}
@@ -119,27 +121,27 @@ def pricelist_detail(request, pk):
         .prefetch_related(
             Prefetch(
                 'items',
-                queryset=PriceItem.objects.select_related('sku__cuvee', 'sku__unit')
-                .order_by('sku__cuvee__name', 'min_qty')
+                queryset=PriceItem.objects.select_related('article', 'article__category')
+                .order_by('article__name', 'min_qty')
             )
         ),
         pk=pk
     )
     
-    # Grouper les items par SKU pour affichage hiérarchique
-    items_by_sku = {}
+    # Grouper les items par Article pour affichage hiérarchique
+    items_by_article = {}
     for item in pricelist.items.all():
-        sku_id = item.sku.id
-        if sku_id not in items_by_sku:
-            items_by_sku[sku_id] = {
-                'sku': item.sku,
+        article_id = item.article.id
+        if article_id not in items_by_article:
+            items_by_article[article_id] = {
+                'article': item.article,
                 'items': []
             }
-        items_by_sku[sku_id]['items'].append(item)
+        items_by_article[article_id]['items'].append(item)
     
     context = {
         'pricelist': pricelist,
-        'items_by_sku': items_by_sku,
+        'items_by_article': items_by_article,
     }
     
     return render(request, 'sales/pricelist_detail.html', context)
@@ -157,7 +159,7 @@ def pricelist_edit(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f'Grille tarifaire "{pricelist.name}" modifiée avec succès.')
-            return redirect('sales:pricelist_detail', pk=pricelist.pk)
+            return redirect('ventes:pricelist_detail', pk=pricelist.pk)
     else:
         form = PriceListForm(instance=pricelist, organization=org)
     
@@ -183,7 +185,7 @@ def pricelist_delete(request, pk):
     pricelist.delete()
     
     messages.success(request, f'Grille tarifaire "{name}" supprimée avec succès.')
-    return redirect('sales:pricelist_list')
+    return redirect('ventes:pricelist_list')
 
 
 # ═══════════════════════════════════════════════
@@ -204,27 +206,47 @@ def pricelist_grid_edit(request, pk):
         pk=pk
     )
     
-    # Tous les SKUs de l'organisation
-    skus = SKU.objects.filter(organization=org, is_active=True)\
-        .select_related('cuvee', 'unit')\
-        .order_by('cuvee__name', 'unit__code')
+    # Tous les Articles vendables de l'organisation
+    articles = Article.objects.filter(organization=org, is_active=True, is_sellable=True)\
+        .select_related('category')\
+        .order_by('category__name', 'name')
     
+    # Données pour les filtres
+    category_ids = articles.values_list('category_id', flat=True).distinct()
+    filter_categories = ArticleCategory.objects.filter(id__in=category_ids).order_by('name')
+    
+    # Types d'articles
+    type_choices = dict(Article.TYPE_CHOICES)
+    filter_types = []
+    
+    # Récupérer les types utilisés
+    used_types = set(articles.values_list('article_type', flat=True).distinct())
+            
+    # Construire la liste filtrée avec labels
+    for type_code in used_types:
+        if type_code in type_choices:
+            filter_types.append({
+                'code': type_code,
+                'label': type_choices[type_code]
+            })
+    filter_types.sort(key=lambda x: x['label'])
+
     # Items existants
     existing_items = {
-        (item.sku_id, item.min_qty or 0): item
-        for item in pricelist.items.select_related('sku').all()
+        (item.article_id, item.min_qty or 0): item
+        for item in pricelist.items.select_related('article').all()
     }
     
     # Construire la grille
     grid_data = []
-    for sku in skus:
-        # Chercher les items existants pour ce SKU
-        item_unit = existing_items.get((sku.id, 0))
-        item_carton6 = existing_items.get((sku.id, 6))
-        item_carton12 = existing_items.get((sku.id, 12))
+    for article in articles:
+        # Chercher les items existants pour cet article
+        item_unit = existing_items.get((article.id, 0))
+        item_carton6 = existing_items.get((article.id, 6))
+        item_carton12 = existing_items.get((article.id, 12))
         
         grid_data.append({
-            'sku': sku,
+            'article': article,
             'item_unit': item_unit,
             'item_carton6': item_carton6,
             'item_carton12': item_carton12,
@@ -233,6 +255,8 @@ def pricelist_grid_edit(request, pk):
     context = {
         'pricelist': pricelist,
         'grid_data': grid_data,
+        'filter_categories': filter_categories,
+        'filter_types': filter_types,
     }
     
     return render(request, 'sales/pricelist_grid_edit.html', context)
@@ -286,16 +310,16 @@ def pricelist_import(request, pk):
                             errors.append(f"Ligne {row_num}: Erreur de format - {e}")
                             continue
                         
-                        # Chercher le SKU
+                        # Chercher l'Article
                         try:
-                            sku = SKU.objects.get(code=sku_code, organization=org)
-                        except SKU.DoesNotExist:
-                            errors.append(f"Ligne {row_num}: SKU '{sku_code}' introuvable")
+                            article = Article.objects.get(sku=sku_code, organization=org)
+                        except Article.DoesNotExist:
+                            errors.append(f"Ligne {row_num}: Article avec code '{sku_code}' introuvable")
                             continue
                         
                         preview_data.append({
                             'row_num': row_num,
-                            'sku': sku,
+                            'article': article,
                             'sku_code': sku_code,
                             'unit_price': unit_price_decimal,
                             'min_qty': min_qty_int,
@@ -308,9 +332,9 @@ def pricelist_import(request, pk):
                 # Stocker en session pour confirmation
                 request.session['import_preview_data'] = [
                     {
-                        'sku_id': str(item['sku'].id),
+                        'article_id': str(item['article'].id),
                         'sku_code': item['sku_code'],
-                        'sku_label': item['sku'].label,
+                        'article_name': item['article'].name,
                         'unit_price': str(item['unit_price']),
                         'min_qty': item['min_qty'],
                         'discount_pct': str(item['discount_pct']),
@@ -320,7 +344,7 @@ def pricelist_import(request, pk):
                 request.session['import_errors'] = errors
                 request.session['import_pricelist_id'] = str(pricelist.id)
                 
-                return redirect('sales:pricelist_import_preview', pk=pricelist.pk)
+                return redirect('ventes:pricelist_import_preview', pk=pricelist.pk)
             
             except Exception as e:
                 messages.error(request, f'Erreur lors de la lecture du fichier : {e}')
@@ -351,7 +375,7 @@ def pricelist_import_preview(request, pk):
     
     if not preview_data and not errors:
         messages.warning(request, 'Aucune donnée à importer.')
-        return redirect('sales:pricelist_import', pk=pricelist.pk)
+        return redirect('ventes:pricelist_import', pk=pricelist.pk)
     
     context = {
         'pricelist': pricelist,
@@ -379,7 +403,7 @@ def pricelist_import_confirm(request, pk):
     
     if not preview_data:
         messages.error(request, 'Aucune donnée à importer.')
-        return redirect('sales:pricelist_import', pk=pricelist.pk)
+        return redirect('ventes:pricelist_import', pk=pricelist.pk)
     
     # Mode d'import
     import_mode = request.POST.get('mode', 'replace')  # replace ou merge
@@ -394,7 +418,7 @@ def pricelist_import_confirm(request, pk):
     updated_count = 0
     
     for item_data in preview_data:
-        sku_id = item_data['sku_id']
+        article_id = item_data['article_id']
         unit_price = Decimal(item_data['unit_price'])
         min_qty = item_data['min_qty']
         discount_pct = Decimal(item_data['discount_pct'])
@@ -402,7 +426,7 @@ def pricelist_import_confirm(request, pk):
         # Vérifier si existe déjà (mode merge)
         existing_item = PriceItem.objects.filter(
             price_list=pricelist,
-            sku_id=sku_id,
+            article_id=article_id,
             min_qty=min_qty if min_qty > 0 else None
         ).first()
         
@@ -416,7 +440,7 @@ def pricelist_import_confirm(request, pk):
             # Créer
             PriceItem.objects.create(
                 price_list=pricelist,
-                sku_id=sku_id,
+                article_id=article_id,
                 unit_price=unit_price,
                 min_qty=min_qty if min_qty > 0 else None,
                 discount_pct=discount_pct,
@@ -434,7 +458,7 @@ def pricelist_import_confirm(request, pk):
         f'Import terminé : {created_count} prix créés, {updated_count} prix mis à jour.'
     )
     
-    return redirect('sales:pricelist_detail', pk=pricelist.pk)
+    return redirect('ventes:pricelist_detail', pk=pricelist.pk)
 
 
 # ═══════════════════════════════════════════════
@@ -498,13 +522,13 @@ def pricelist_items_api(request, pk):
     
     if request.method == 'GET':
         # Retourner tous les items
-        items = pricelist.items.select_related('sku').all()
+        items = pricelist.items.select_related('article').all()
         
         results = [
             {
                 'id': str(item.id),
-                'sku_id': str(item.sku.id),
-                'sku_code': item.sku.code,
+                'article_id': str(item.article.id),
+                'article_name': item.article.name,
                 'unit_price': str(item.unit_price),
                 'min_qty': item.min_qty,
                 'discount_pct': str(item.discount_pct),
@@ -518,18 +542,18 @@ def pricelist_items_api(request, pk):
         # Créer/Mettre à jour un item
         try:
             data = json.loads(request.body)
-            sku_id = data.get('sku_id')
+            article_id = data.get('article_id') or data.get('sku_id') # Fallback for old frontend code
             unit_price = Decimal(data.get('unit_price', '0'))
             min_qty = data.get('min_qty')
             discount_pct = Decimal(data.get('discount_pct', '0'))
             
-            # Vérifier le SKU
-            sku = get_object_or_404(SKU, id=sku_id, organization=org)
+            # Vérifier l'Article
+            article = get_object_or_404(Article, id=article_id, organization=org)
             
             # Créer ou mettre à jour
             item, created = PriceItem.objects.update_or_create(
                 price_list=pricelist,
-                sku=sku,
+                article=article,
                 min_qty=min_qty if min_qty else None,
                 defaults={
                     'unit_price': unit_price,
@@ -543,7 +567,7 @@ def pricelist_items_api(request, pk):
                 'created': created,
                 'item': {
                     'id': str(item.id),
-                    'sku_id': str(item.sku.id),
+                    'article_id': str(item.article.id),
                     'unit_price': str(item.unit_price),
                     'min_qty': item.min_qty,
                     'discount_pct': str(item.discount_pct),
