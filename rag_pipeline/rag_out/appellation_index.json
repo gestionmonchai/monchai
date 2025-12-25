@@ -1,0 +1,105 @@
+{
+  "generated_at": "2025-12-23T18:05:53.806729",
+  "total_appellations": 19,
+  "total_docs": 29,
+  "appellations": {
+    "cotes de duras": [
+      "2-cdc-aopcotes-de-duras-v20241203"
+    ],
+    "anjou": [
+      "3-1-cdc-anjou-cabernetd-anjou-rosed-anjou-pno"
+    ],
+    "marmandais": [
+      "agrt1419239d-cotes-du-marmandais-cdc"
+    ],
+    "corse": [
+      "agrt17a-cdc-vin-corse-vprov"
+    ],
+    "montlouis": [
+      "agrt2009868a-cdc-montlouis-sur-loire-vdef"
+    ],
+    "pacherenc": [
+      "agrt2327554a-cdc-pacherenc-du-vb",
+      "cdc-pacherenc-du-vic-bilh"
+    ],
+    "alsace": [
+      "aoc-alsace-grands-crus-cahier-des-charges",
+      "pno-cdc-alsace-cn240911",
+      "pnocdcalsace"
+    ],
+    "somm43": [
+      "aoc-somm43-24102011"
+    ],
+    "languedoc": [
+      "cdc-aoc-languedoc-agrt2405848a",
+      "pno2023aoplanguedoc",
+      "pno2025cdcaoplanguedoc"
+    ],
+    "cotes de provence": [
+      "cdc-aop-cotes-de-provence",
+      "cdcpnocotesdeprovencepierrefeu",
+      "pno2023aopcotesdeprovence"
+    ],
+    "bordeaux": [
+      "cdc-bordeaux",
+      "cdcbordeauxsuperieur-pno2023"
+    ],
+    "savoie": [
+      "cdc-savoie-pnocn210211"
+    ],
+    "clairette": [
+      "modif-2024-5-cdc-aop-clairettededie"
+    ],
+    "tursan": [
+      "pno-cdc-aovdqs-aoc-tursan"
+    ],
+    "pno2019cdcigpalpesmaritimes": [
+      "pno2019cdcigpalpesmaritimes"
+    ],
+    "cotes du rhone": [
+      "pno2023aopcotesdurhone",
+      "pnocdc-cotes-du-rhone"
+    ],
+    "champagne": [
+      "pnocdcaoc-champagne-20190619"
+    ],
+    "moselle": [
+      "pnocdcaocmoselle"
+    ],
+    "bourgogne": [
+      "pnocdcbourgogne",
+      "pnocdcbourgognealigote"
+    ]
+  },
+  "doc_to_appellation": {
+    "2-cdc-aopcotes-de-duras-v20241203": "cotes de duras",
+    "3-1-cdc-anjou-cabernetd-anjou-rosed-anjou-pno": "anjou",
+    "agrt1419239d-cotes-du-marmandais-cdc": "marmandais",
+    "agrt17a-cdc-vin-corse-vprov": "corse",
+    "agrt2009868a-cdc-montlouis-sur-loire-vdef": "montlouis",
+    "agrt2327554a-cdc-pacherenc-du-vb": "pacherenc",
+    "aoc-alsace-grands-crus-cahier-des-charges": "alsace",
+    "aoc-somm43-24102011": "somm43",
+    "cdc-pacherenc-du-vic-bilh": "pacherenc",
+    "cdc-aoc-languedoc-agrt2405848a": "languedoc",
+    "cdc-aop-cotes-de-provence": "cotes de provence",
+    "cdc-bordeaux": "bordeaux",
+    "cdc-savoie-pnocn210211": "savoie",
+    "cdcbordeauxsuperieur-pno2023": "bordeaux",
+    "cdcpnocotesdeprovencepierrefeu": "cotes de provence",
+    "modif-2024-5-cdc-aop-clairettededie": "clairette",
+    "pno-cdc-alsace-cn240911": "alsace",
+    "pno-cdc-aovdqs-aoc-tursan": "tursan",
+    "pno2019cdcigpalpesmaritimes": "pno2019cdcigpalpesmaritimes",
+    "pno2023aopcotesdeprovence": "cotes de provence",
+    "pno2023aopcotesdurhone": "cotes du rhone",
+    "pno2023aoplanguedoc": "languedoc",
+    "pno2025cdcaoplanguedoc": "languedoc",
+    "pnocdc-cotes-du-rhone": "cotes du rhone",
+    "pnocdcalsace": "alsace",
+    "pnocdcaoc-champagne-20190619": "champagne",
+    "pnocdcaocmoselle": "moselle",
+    "pnocdcbourgogne": "bourgogne",
+    "pnocdcbourgognealigote": "bourgogne"
+  }
+}

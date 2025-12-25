@@ -1,5 +1,6 @@
 {% extends 'production/base_production.html' %}
 {% load i18n humanize %}
+{% load smart_tags %}
 
 {% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
 
@@ -821,6 +822,71 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Widget Météo -->
+            {% if weather_forecasts %}
+            <div class="section-card mb-3">
+                <div class="section-header">
+                    <h5><i class="bi bi-cloud-sun me-2"></i>Météo 3 jours</h5>
+                    <a href="#" class="btn btn-sm btn-link text-muted" title="Rafraîchir" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+                <div class="section-body">
+                    <div class="d-flex justify-content-between text-center">
+                        {% for f in weather_forecasts %}
+                        <div class="weather-day">
+                            <div class="small text-muted">{{ f.date|date:"D" }}</div>
+                            <div class="my-1">
+                                {% if f.icon == 'sun' %}<i class="bi bi-sun text-warning fs-4"></i>
+                                {% elif f.icon == 'cloud-sun' %}<i class="bi bi-cloud-sun text-secondary fs-4"></i>
+                                {% elif f.icon == 'cloud' %}<i class="bi bi-cloud text-secondary fs-4"></i>
+                                {% elif f.icon == 'cloud-rain' %}<i class="bi bi-cloud-rain text-primary fs-4"></i>
+                                {% elif f.icon == 'cloud-lightning-rain' %}<i class="bi bi-cloud-lightning-rain text-danger fs-4"></i>
+                                {% elif f.icon == 'snow' %}<i class="bi bi-snow text-info fs-4"></i>
+                                {% else %}<i class="bi bi-cloud fs-4"></i>{% endif %}
+                            </div>
+                            <div class="small">
+                                <span class="text-primary">{{ f.temp_min|floatformat:0 }}°</span>
+                                <span class="text-danger">{{ f.temp_max|floatformat:0 }}°</span>
+                            </div>
+                            {% if f.precipitation_mm > 0 %}
+                            <div class="small text-primary">
+                                <i class="bi bi-droplet-fill"></i>{{ f.precipitation_mm|floatformat:0 }}mm
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if weather_alerts %}
+                    <hr class="my-2">
+                    <div class="weather-alerts">
+                        {% for alert in weather_alerts %}
+                        <div class="alert alert-{{ alert.type|default:'warning' }} py-1 px-2 mb-1 small d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <div>
+                                <strong>{{ alert.title }}</strong>
+                                {% if alert.message %}<br>{{ alert.message }}{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% elif parcelle.latitude and parcelle.longitude %}
+            <div class="section-card mb-3">
+                <div class="section-header">
+                    <h5><i class="bi bi-cloud-sun me-2"></i>Météo</h5>
+                </div>
+                <div class="section-body text-center text-muted small">
+                    <i class="bi bi-cloud-slash fs-3 d-block mb-2"></i>
+                    Données météo non disponibles
+                    <br><small>Vérifiez la connexion internet</small>
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Carte -->
             {% if parcelle.geojson or parcelle.latitude and parcelle.longitude %}

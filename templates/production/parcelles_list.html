@@ -106,8 +106,7 @@
 <!-- CARDS/INTERVENTIONS VIEW -->
 <div class="view-panel d-none" data-view="cards">
   <div class="row">
-    <!-- Colonne principale : grille des parcelles -->
-    <div class="col-lg-8 col-xl-9">
+    <div class="col-12">
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
           <div>
@@ -120,8 +119,19 @@
             {% for p in parcelles %}
             <div class="parcelle-card" 
                  data-parcelle-id="{{ p.pk }}"
-                 data-parcelle-nom="{{ p.nom }}"
-                 data-parcelle-surface="{{ p.surface }}">
+                 data-nom="{{ p.nom|escape }}"
+                 data-lieu="{{ p.lieu_dit|default:''|escape }}"
+                 data-commune="{{ p.commune|default:''|escape }}"
+                 data-appellation="{{ p.appellation|default:''|escape }}"
+                 data-surface="{{ p.surface|default:0|floatformat:'2' }}"
+                 data-lat="{{ p.latitude|default:'' }}"
+                 data-lon="{{ p.longitude|default:'' }}"
+                 data-weather-url="{% url 'production:parcelle_weather_preview' p.id %}"
+                 data-events-url="{% url 'production:parcelle_events_preview' p.id %}"
+                 data-composition-url="{% url 'production:parcelle_composition_preview' p.id %}"
+                 data-certifications="{% if p.tags %}{{ p.tags|join:',' }}{% endif %}"
+                 data-detail-url="{% url 'production:parcelle_detail' p.id %}"
+                 data-encepagement='{{ p.get_encepagement_preview_json|escapejs }}'>
               <div class="parcelle-card-header">
                 <span class="parcelle-name">{{ p.nom }}</span>
                 <div class="parcelle-select-indicator"><i class="bi bi-check-lg"></i></div>
@@ -162,35 +172,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Panneau latéral : Actions -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card mb-3" id="actions-card">
-        <div class="card-header"><h6 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Actions rapides</h6></div>
-        <div class="card-body">
-          <div id="actions-disabled" class="text-center text-muted py-3">
-            <i class="bi bi-arrow-left-circle d-block fs-3 mb-2"></i>Sélectionnez une parcelle
-          </div>
-          <div id="actions-enabled" class="d-none">
-            <div class="d-grid gap-2">
-              <button type="button" class="btn btn-outline-success btn-action" data-op="traitement"><i class="bi bi-droplet me-2"></i>Traitement phyto</button>
-              <button type="button" class="btn btn-outline-success btn-action" data-op="taille"><i class="bi bi-scissors me-2"></i>Taille</button>
-              <button type="button" class="btn btn-outline-success btn-action" data-op="travail_sol"><i class="bi bi-tools me-2"></i>Travail du sol</button>
-              <button type="button" class="btn btn-outline-success btn-action" data-op="palissage"><i class="bi bi-diagram-3 me-2"></i>Palissage / Liage</button>
-              <button type="button" class="btn btn-outline-success btn-action" data-op="effeuillage"><i class="bi bi-leaf me-2"></i>Effeuillage</button>
-              <button type="button" class="btn btn-outline-success btn-action" data-op="fertilisation"><i class="bi bi-droplet me-2"></i>Fertilisation</button>
-              <button type="button" class="btn btn-outline-secondary btn-action" data-op="autre"><i class="bi bi-tools me-2"></i>Autre</button>
-            </div>
-            <hr class="my-3">
-            <div class="d-grid gap-2">
-              <a href="#" id="btn-voir-detail" class="btn btn-primary btn-lg w-100 mb-2"><i class="bi bi-arrow-right-circle me-2"></i>Voir la parcelle</a>
-              <a href="#" id="btn-vendange" class="btn btn-warning"><i class="bi bi-basket me-2"></i>Faire une vendange</a>
-              <a href="#" id="btn-voir-journal" class="btn btn-outline-secondary"><i class="bi bi-journal-text me-2"></i>Journal parcelle</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -210,10 +191,324 @@
 .parcelle-badges .badge { font-size: 0.7rem; padding: 0.25rem 0.4rem; }
 .parcelle-cepages .badge { font-size: 0.65rem; padding: 0.2rem 0.35rem; }
 .bg-purple { background-color: #6f42c1 !important; }
-#actions-card .btn-action { text-align: left; padding: 0.5rem 0.75rem; }
-@media (max-width: 992px) { .parcelles-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
-@media (max-width: 576px) { .parcelles-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; } .parcelle-card { padding: 0.75rem; } }
+
+/* Preview sidebar */
+.parcelle-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(34, 18, 24, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1040;
+}
+.parcelle-preview-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.parcelle-preview-sidebar {
+  position: fixed;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  right: -420px;
+  width: 420px;
+  background: radial-gradient(circle at 20% 20%, rgba(247, 231, 206, 0.8) 0%, #fff 45%, #fdf8f3 100%);
+  border-radius: 24px 0 0 24px;
+  box-shadow: -25px 0 60px rgba(114, 47, 55, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.parcelle-preview-sidebar.open { right: 0; }
+.parcelle-preview-header {
+  padding: 1.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.6);
+}
+.parcelle-preview-header h2 { font-size: 1.6rem; font-weight: 700; color: #61242f; }
+.parcelle-preview-badge {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(97, 36, 47, 0.12);
+  color: #61242f;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.parcelle-preview-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.parcelle-preview-stat {
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(97, 36, 47, 0.12);
+  border-radius: 16px;
+  padding: 0.85rem;
+  text-align: center;
+}
+.parcelle-preview-stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #9c7d6f;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.2rem;
+}
+.parcelle-preview-stat-value { font-size: 1.15rem; font-weight: 700; color: #412126; }
+.parcelle-preview-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.parcelle-preview-section {
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(97, 36, 47, 0.08);
+  border-radius: 18px;
+  padding: 1.15rem;
+}
+.parcelle-preview-section h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a17b5c;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+.parcelle-preview-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.parcelle-info-commune,
+.parcelle-info-appellation,
+.parcelle-info-certifications { margin: 0; }
+.parcelle-preview-info-row:last-child { border-bottom: none; }
+.composition-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.composition-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(97, 36, 47, 0.06);
+  border: 1px solid rgba(97, 36, 47, 0.08);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+}
+.composition-item-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: #4b2c32;
+}
+.composition-item-meta {
+  font-size: 0.7rem;
+  color: #a17b5c;
+}
+.composition-item-pct {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #61242f;
+  background: rgba(97, 36, 47, 0.12);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+.composition-empty {
+  color: #9c7d6f;
+}
+.parcelle-preview-timeline {
+  border-left: 2px solid rgba(97, 36, 47, 0.1);
+  padding-left: 1rem;
+}
+.parcelle-preview-timeline-item {
+  position: relative;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.75rem;
+}
+.parcelle-preview-timeline-item:last-child { margin-bottom: 0; }
+.parcelle-preview-timeline-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(114,47,55,0.08);
+  color: var(--wine-burgundy, #722f37);
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.parcelle-preview-timeline-content {
+  flex: 1;
+}
+.parcelle-preview-timeline-content .badge {
+  font-size: 0.7rem;
+}
+.parcelle-preview-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(97, 36, 47, 0.08);
+  background: rgba(255,255,255,0.9);
+}
+.parcelle-preview-footer a {
+  display: block;
+  text-align: center;
+  background: linear-gradient(120deg, var(--wine-burgundy, #722f37), #4b0e1e);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.9rem 1.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 15px 30px rgba(75,14,30,0.35);
+}
+
+.weather-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.weather-days {
+  display: flex;
+  gap: 0.5rem;
+}
+.weather-day {
+  flex: 1;
+  text-align: center;
+  padding: 0.65rem;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(97,36,47,0.1);
+  border-radius: 12px;
+}
+.weather-day-icon i {
+  font-size: 1.4rem;
+}
+.weather-day-temp {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.weather-day-temp .temp-max {
+  color: #611026;
+  margin-right: 0.2rem;
+}
+.weather-day-temp .temp-min {
+  color: #94a3b8;
+}
+.weather-day-rain {
+  font-size: 0.75rem;
+}
+.weather-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.weather-alert {
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+.weather-alert-warning {
+  background: rgba(250,204,21,0.2);
+  border: 1px solid rgba(250,204,21,0.5);
+}
+.weather-alert-info {
+  background: rgba(14,165,233,0.2);
+  border: 1px solid rgba(14,165,233,0.4);
+}
+.weather-loading {
+  opacity: 0.6;
+}
+
+@media (max-width: 992px) {
+  .parcelles-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .parcelle-preview-sidebar {
+    width: 100%;
+    right: -100%;
+    border-radius: 0;
+    top: 0;
+    bottom: 0;
+  }
+}
+@media (max-width: 576px) {
+  .parcelles-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .parcelle-card { padding: 0.75rem; }
+  .parcelle-preview-stats { grid-template-columns: 1fr; }
+}
 </style>
+
+<div class="parcelle-preview-overlay" id="parcelle-preview-overlay" onclick="closeParcellePreview()"></div>
+<aside class="parcelle-preview-sidebar" id="parcelle-preview-sidebar">
+  <div class="parcelle-preview-header">
+    <div class="d-flex justify-content-between">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <h2 id="parcelle-preview-title">Sélectionnez une parcelle</h2>
+          <span class="parcelle-preview-badge" id="parcelle-preview-badge">—</span>
+        </div>
+        <p class="text-muted mb-0" id="parcelle-preview-location">Cliquez sur une parcelle pour prévisualiser.</p>
+      </div>
+      <button class="btn btn-sm btn-light" onclick="closeParcellePreview()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="parcelle-preview-stats mt-3">
+      <div class="parcelle-preview-stat">
+        <div class="parcelle-preview-stat-label">Surface</div>
+        <div class="parcelle-preview-stat-value" id="parcelle-preview-surface">—</div>
+      </div>
+      <div class="parcelle-preview-stat">
+        <div class="parcelle-preview-stat-label">Commune</div>
+        <div class="parcelle-preview-stat-value" id="parcelle-preview-commune">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="parcelle-preview-body">
+    <section class="parcelle-preview-section">
+      <h3><i class="bi bi-info-circle"></i> Fiche parcelle</h3>
+      <div class="parcelle-preview-info-row">
+        <span>Commune</span><strong id="parcelle-info-commune">—</strong>
+      </div>
+      <div class="parcelle-preview-info-row">
+        <span>Certifications</span>
+        <div class="text-end small" id="parcelle-info-certifications">—</div>
+      </div>
+    </section>
+    <section class="parcelle-preview-section">
+      <h3><i class="bi bi-pie-chart-fill"></i> Encépagement actuel</h3>
+      <div id="parcelle-preview-composition" class="composition-list text-muted small">
+        Sélectionnez une parcelle pour afficher sa composition.
+      </div>
+    </section>
+    <section class="parcelle-preview-section">
+      <h3><i class="bi bi-cloud-sun"></i> Météo locale</h3>
+      <div id="parcelle-preview-weather" class="weather-preview-placeholder text-muted small">
+        Sélectionnez une parcelle pour afficher la météo.
+      </div>
+    </section>
+    <section class="parcelle-preview-section">
+      <h3><i class="bi bi-calendar-week"></i> Derniers évènements</h3>
+      <div class="parcelle-preview-timeline" id="parcelle-preview-timeline">
+        <div class="parcelle-preview-timeline-item text-muted small">
+          Sélectionnez une parcelle pour consulter ses derniers évènements.
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="parcelle-preview-footer">
+    <a href="#" id="parcelle-preview-link">Voir la fiche complète</a>
+  </div>
+</aside>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -283,57 +578,250 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === SELECTION UNIQUE ===
   let selectedParcelleId = null;
-  let selectedParcelleCard = null;
-  const actionsDisabled = document.getElementById('actions-disabled');
-  const actionsEnabled = document.getElementById('actions-enabled');
-  const btnVendange = document.getElementById('btn-vendange');
-  const btnVoirDetail = document.getElementById('btn-voir-detail');
-  const btnVoirJournal = document.getElementById('btn-voir-journal');
+  const previewOverlay = document.getElementById('parcelle-preview-overlay');
+  const previewSidebar = document.getElementById('parcelle-preview-sidebar');
 
-  document.querySelectorAll('.parcelle-card').forEach(card => {
-    card.addEventListener('click', function() {
-      const id = this.dataset.parcelleId;
-      
-      // Si on clique sur la même parcelle, la désélectionner
-      if (selectedParcelleId === id) {
-        this.classList.remove('selected');
-        selectedParcelleId = null;
-        selectedParcelleCard = null;
-      } else {
-        // Désélectionner l'ancienne
-        if (selectedParcelleCard) {
-          selectedParcelleCard.classList.remove('selected');
+  const weatherContainer = document.getElementById('parcelle-preview-weather');
+  const weatherEndpointCache = new Map();
+  const eventsContainer = document.getElementById('parcelle-preview-timeline');
+  const eventsEndpointCache = new Map();
+
+  async function fetchWeather(url, lat, lon) {
+    if (!lat || !lon || !url) {
+      return { html: `<div class="text-muted small">Renseignez les coordonnées GPS ou l'adresse dans le module carte pour afficher la météo.</div>` };
+    }
+    const cacheKey = `${url}|${lat}|${lon}`;
+    if (weatherEndpointCache.has(cacheKey)) {
+      return weatherEndpointCache.get(cacheKey);
+    }
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
         }
-        // Sélectionner la nouvelle
-        this.classList.add('selected');
-        selectedParcelleId = id;
-        selectedParcelleCard = this;
-      }
-      updateSelectionUI();
-    });
-  });
-
-  function updateSelectionUI() {
-    if (!selectedParcelleId) {
-      if (actionsDisabled) actionsDisabled.classList.remove('d-none');
-      if (actionsEnabled) actionsEnabled.classList.add('d-none');
-    } else {
-      if (actionsDisabled) actionsDisabled.classList.add('d-none');
-      if (actionsEnabled) actionsEnabled.classList.remove('d-none');
-      
-      if (btnVendange) btnVendange.href = `/production/vendanges/nouveau/?parcelle=${selectedParcelleId}`;
-      if (btnVoirDetail) btnVoirDetail.href = `/production/parcelles/${selectedParcelleId}/`;
-      if (btnVoirJournal) btnVoirJournal.href = `/viticulture/parcelles/${selectedParcelleId}/journal/`;
+      });
+      if (!response.ok) throw new Error('Weather fetch error');
+      const data = await response.json();
+      weatherEndpointCache.set(cacheKey, data);
+      return data;
+    } catch (error) {
+      return { html: `<div class="text-danger small">Impossible de récupérer la météo.</div>` };
     }
   }
 
-  // Actions opérations
-  document.querySelectorAll('.btn-action').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const op = this.dataset.op;
-      if (!selectedParcelleId) { alert('Sélectionnez une parcelle'); return; }
-      window.location.href = `/viticulture/parcelles/${selectedParcelleId}/operation/${op}/`;
+  async function fetchEvents(url) {
+    if (!url) {
+      return { html: `<div class="parcelle-preview-timeline-item text-muted small">Aucun évènement disponible.</div>` };
+    }
+    if (eventsEndpointCache.has(url)) {
+      return eventsEndpointCache.get(url);
+    }
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      if (!response.ok) throw new Error('Events fetch error');
+      const data = await response.json();
+      eventsEndpointCache.set(url, data);
+      return data;
+    } catch (error) {
+      return { html: `<div class="parcelle-preview-timeline-item text-danger small">Impossible de récupérer les évènements.</div>` };
+    }
+  }
+
+  async function openParcellePreview(data) {
+    if (!data) return;
+    selectedParcelleId = data.id;
+
+    document.getElementById('parcelle-preview-title').textContent = data.nom || 'Parcelle';
+    document.getElementById('parcelle-preview-badge').textContent = data.certifications && data.certifications.length ? data.certifications.join(' / ') : 'Standard';
+    document.getElementById('parcelle-preview-location').textContent = data.commune || '—';
+    document.getElementById('parcelle-preview-surface').textContent = data.surface ? `${parseFloat(data.surface).toFixed(2)} ha` : '—';
+    document.getElementById('parcelle-preview-commune').textContent = data.commune || '—';
+
+    document.getElementById('parcelle-info-commune').textContent = data.commune || '—';
+    document.getElementById('parcelle-info-certifications').textContent = data.certifications && data.certifications.length ? data.certifications.join(', ') : '—';
+
+    document.getElementById('parcelle-preview-link').href = data.detailUrl || '#';
+
+    document.querySelectorAll('.parcelle-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.parcelleId === data.id);
     });
+    document.querySelectorAll('.parcelle-row').forEach(row => {
+      row.classList.toggle('table-active', row.dataset.id === data.id);
+    });
+
+    previewOverlay.classList.add('open');
+    previewSidebar.classList.add('open');
+
+    renderCompositionSection(data.compositionUrl, data.detailUrl, data.encepagement);
+
+    if (weatherContainer) {
+      weatherContainer.innerHTML = '<div class="weather-loading text-muted small">Chargement météo…</div>';
+      const weatherData = await fetchWeather(data.weatherUrl, data.lat, data.lon);
+      weatherContainer.innerHTML = weatherData.html || '<div class="text-muted small">Aucune donnée météo.</div>';
+    }
+
+    if (eventsContainer) {
+      eventsContainer.innerHTML = '<div class="parcelle-preview-timeline-item text-muted small">Chargement des évènements…</div>';
+      const eventsData = await fetchEvents(data.eventsUrl);
+      eventsContainer.innerHTML = eventsData.html || '<div class="parcelle-preview-timeline-item text-muted small">Aucun évènement trouvé.</div>';
+    }
+  }
+
+  function closeParcellePreview() {
+    selectedParcelleId = null;
+    previewOverlay.classList.remove('open');
+    previewSidebar.classList.remove('open');
+    document.querySelectorAll('.parcelle-card').forEach(card => card.classList.remove('selected'));
+    document.querySelectorAll('.parcelle-row').forEach(row => row.classList.remove('table-active'));
+  }
+
+  window.closeParcellePreview = closeParcellePreview;
+
+  function getRowData(row) {
+    if (!row) return null;
+    const certifications = row.dataset.certifications ? row.dataset.certifications.split(',').filter(Boolean) : [];
+    return {
+      id: row.dataset.id,
+      nom: row.dataset.nom,
+      lieu: row.dataset.lieu,
+      commune: row.dataset.commune,
+      appellation: row.dataset.appellation,
+      surface: row.dataset.surface,
+      lat: row.dataset.lat,
+      lon: row.dataset.lon,
+      detailUrl: row.dataset.detailUrl,
+      weatherUrl: row.dataset.weatherUrl,
+      eventsUrl: row.dataset.eventsUrl,
+      compositionUrl: row.dataset.compositionUrl,
+      certifications,
+      encepagement: parseEncepagement(row.dataset.encepagement)
+    };
+  }
+
+  function getCardData(card) {
+    if (!card) return null;
+    const certifications = card.dataset.certifications ? card.dataset.certifications.split(',').filter(Boolean) : [];
+    return {
+      id: card.dataset.parcelleId,
+      nom: card.dataset.nom,
+      lieu: card.dataset.lieu,
+      commune: card.dataset.commune,
+      appellation: card.dataset.appellation,
+      surface: card.dataset.surface,
+      lat: card.dataset.lat,
+      lon: card.dataset.lon,
+      detailUrl: card.dataset.detailUrl,
+      weatherUrl: card.dataset.weatherUrl,
+      eventsUrl: card.dataset.eventsUrl,
+      compositionUrl: card.dataset.compositionUrl,
+      certifications,
+      encepagement: parseEncepagement(card.dataset.encepagement)
+    };
+  }
+
+  function attachTableRowHandlers() {
+    document.querySelectorAll('.parcelle-row').forEach(row => {
+      row.addEventListener('click', function(e) {
+        e.preventDefault();
+        const data = getRowData(this);
+        openParcellePreview(data);
+      });
+    });
+  }
+
+  function attachCardHandlers() {
+    document.querySelectorAll('.parcelle-card').forEach(card => {
+      card.addEventListener('click', function() {
+        const data = getCardData(this);
+        openParcellePreview(data);
+      });
+    });
+  }
+
+  const compositionContainer = document.getElementById('parcelle-preview-composition');
+  const htmlEntityDecoder = document.createElement('textarea');
+
+  function parseEncepagement(raw) {
+    if (!raw) return [];
+    try {
+      htmlEntityDecoder.innerHTML = raw;
+      const decoded = htmlEntityDecoder.value || raw;
+      const parsed = JSON.parse(decoded);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function buildCompositionHtml(items, detailUrl) {
+    if (!items || !items.length) {
+      return `
+        <div class="composition-empty">Aucun encépagement renseigné.</div>
+        ${detailUrl ? `<a href="${detailUrl}" class="btn btn-sm btn-outline-primary mt-2" target="_blank" rel="noopener">Définir les cépages</a>` : ''}
+      `;
+    }
+    const maxItems = 4;
+    const content = items.slice(0, maxItems).map(item => {
+      const cepage = item.cepage || 'Cépage';
+      const pct = item.pct !== undefined && item.pct !== null ? `${parseFloat(item.pct).toFixed(0)}%` : '—';
+      const year = item.annee ? `<span class="composition-item-meta">Planté en ${item.annee}</span>` : '';
+      return `
+        <div class="composition-item">
+          <div class="composition-item-info">
+            <strong>${cepage}</strong>
+            ${year || '<span class="composition-item-meta">Bloc viticole</span>'}
+          </div>
+          <div class="composition-item-pct">${pct}</div>
+        </div>
+      `;
+    }).join('');
+    const extra = items.length > maxItems ? `<div class="text-muted small mt-1">+${items.length - maxItems} bloc(s) supplémentaire(s)</div>` : '';
+    return content + extra;
+  }
+
+  async function renderCompositionSection(endpoint, detailUrl, fallbackItems = []) {
+    if (!compositionContainer) return;
+    if (!endpoint) {
+      compositionContainer.innerHTML = buildCompositionHtml(fallbackItems, detailUrl);
+      return;
+    }
+    if (fallbackItems && fallbackItems.length) {
+      compositionContainer.innerHTML = buildCompositionHtml(fallbackItems, detailUrl);
+    } else {
+      compositionContainer.innerHTML = '<div class="text-muted small">Chargement de la composition…</div>';
+    }
+    try {
+      const response = await fetch(endpoint, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+      });
+      if (!response.ok) throw new Error('Composition fetch error');
+      const data = await response.json();
+      compositionContainer.innerHTML = data.html || buildCompositionHtml(fallbackItems, detailUrl);
+    } catch (error) {
+      compositionContainer.innerHTML = fallbackItems && fallbackItems.length
+        ? buildCompositionHtml(fallbackItems, detailUrl)
+        : '<div class="composition-empty text-danger">Impossible de charger la composition.</div>';
+    }
+  }
+
+  attachTableRowHandlers();
+  attachCardHandlers();
+
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target && evt.target.id === 'parcelles-table-content') {
+      attachTableRowHandlers();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeParcellePreview();
+    }
   });
 });
 </script>

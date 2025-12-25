@@ -1,0 +1,279 @@
+{% extends '_layout/base_list_view.html' %}
+{% load static %}
+
+{# ===========================================
+   LISTE DES PARCELLES - Nouveau Design MonChai
+   =========================================== #}
+
+{% block sidebar_title %}Référentiels{% endblock %}
+
+{% block sidebar_sections %}
+<div class="px-4 mt-4 mb-1 text-xs font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-1" style="color: var(--sidebar-green);">Vignoble</div>
+<a href="{% url 'production:parcelles_list_v2' %}" class="block px-4 py-1.5 text-sm font-bold text-brand-red bg-red-50 ml-2 border-l-2 border-brand-red rounded-r">
+    <i class="bi bi-geo-alt me-2"></i>Parcelles
+</a>
+<a href="{% url 'referentiels:cepage_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">
+    <i class="bi bi-tree me-2"></i>Cépages
+</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-1" style="color: var(--sidebar-orange);">Cave</div>
+<a href="{% url 'referentiels:cuvee_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">
+    <i class="bi bi-cup-straw me-2"></i>Cuvées
+</a>
+<a href="{% url 'referentiels:unite_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">
+    <i class="bi bi-box me-2"></i>Unités
+</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold uppercase tracking-wide border-b border-gray-100 pb-1 text-purple-700">Commerce</div>
+<a href="{% url 'clients:customers_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">
+    <i class="bi bi-people me-2"></i>Clients
+</a>
+{% endblock %}
+
+{% block page_title %}Parcelles{% endblock %}
+{% block page_subtitle %}Vignoble • {{ organization.name }}{% endblock %}
+
+{% block toolbar_filters %}
+<div class="mc-filter-pills">
+    <button type="button" class="mc-filter-pill active" data-filter="all">Tout</button>
+    <button type="button" class="mc-filter-pill" data-filter="rouge">Rouges</button>
+    <button type="button" class="mc-filter-pill" data-filter="blanc">Blancs</button>
+    <button type="button" class="mc-filter-pill" data-filter="bio">Bio</button>
+</div>
+{% endblock %}
+
+{% block action_label %}Nouvelle Parcelle{% endblock %}
+{% block action_onclick %}window.location.href='{% url "production:parcelle_new" %}'{% endblock %}
+
+{% block grid_content %}
+{% for p in parcelles %}
+<div class="mc-card parcelle-card" 
+     data-id="{{ p.id }}" 
+     data-filter="{% if p.certification_bio %}bio{% else %}standard{% endif %}"
+     onclick="selectParcelle({{ p.id }})">
+    
+    <div class="mc-card-header">
+        <span class="mc-card-code">{{ p.nom }}</span>
+        {% if p.certification_bio %}
+        <span class="mc-card-badge mc-badge-green">BIO</span>
+        {% endif %}
+    </div>
+    
+    <div class="mc-card-body">
+        <h4 class="mc-card-title">{{ p.lieu_dit|default:"—" }}</h4>
+        <p class="mc-card-subtitle">{{ p.commune|default:"" }}</p>
+        
+        <div class="mc-card-stats mt-3">
+            <div class="d-flex justify-content-between small">
+                <span><i class="bi bi-rulers"></i> {{ p.surface_ha|floatformat:2 }} ha</span>
+                {% if p.appellation %}
+                <span class="text-muted">{{ p.appellation.nom|truncatechars:15 }}</span>
+                {% endif %}
+            </div>
+            {% if p.cepage_principal %}
+            <div class="mt-2">
+                <span class="badge bg-light text-dark">{{ p.cepage_principal.nom }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="mc-empty-state" style="grid-column: 1 / -1;">
+    <i class="bi bi-geo-alt"></i>
+    <p>Aucune parcelle enregistrée</p>
+    <a href="{% url 'referentiels:parcelle_create' %}" class="mc-btn-primary mt-3">
+        <i class="bi bi-plus-lg"></i> Créer une parcelle
+    </a>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block table_headers %}
+<th>Nom</th>
+<th>Lieu-dit</th>
+<th>Surface</th>
+<th>Cépage</th>
+<th>Appellation</th>
+<th>Bio</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for p in parcelles %}
+<tr data-id="{{ p.id }}" 
+    data-filter="{% if p.certification_bio %}bio{% else %}standard{% endif %}"
+    onclick="selectParcelle({{ p.id }})">
+    <td><strong>{{ p.nom }}</strong></td>
+    <td>{{ p.lieu_dit|default:"—" }}</td>
+    <td>{{ p.surface_ha|floatformat:2 }} ha</td>
+    <td>{{ p.cepage_principal.nom|default:"—" }}</td>
+    <td>{{ p.appellation.nom|default:"—" }}</td>
+    <td>
+        {% if p.certification_bio %}
+        <span class="badge bg-success">Bio</span>
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block preview_stats %}
+<div class="mc-preview-stat">
+    <div class="mc-preview-stat-label">Surface</div>
+    <div class="mc-preview-stat-value" id="stat-surface">—</div>
+</div>
+<div class="mc-preview-stat">
+    <div class="mc-preview-stat-label">Plants</div>
+    <div class="mc-preview-stat-value" id="stat-plants">—</div>
+</div>
+<div class="mc-preview-stat">
+    <div class="mc-preview-stat-label">Âge</div>
+    <div class="mc-preview-stat-value" id="stat-age">—</div>
+</div>
+{% endblock %}
+
+{% block preview_quick_actions %}
+<div class="mc-quick-actions">
+    <div class="mc-quick-actions-title">
+        <i class="bi bi-lightning-fill"></i> Actions Rapides
+    </div>
+    <div class="mc-quick-actions-grid">
+        <button type="button" class="mc-quick-action-btn" onclick="actionVendange()">
+            <i class="bi bi-basket"></i> Vendange
+        </button>
+        <button type="button" class="mc-quick-action-btn" onclick="actionTravaux()">
+            <i class="bi bi-tools"></i> Travaux
+        </button>
+        <button type="button" class="mc-quick-action-btn" onclick="actionCarte()">
+            <i class="bi bi-map"></i> Carte
+        </button>
+        <button type="button" class="mc-quick-action-btn" onclick="actionModifier()">
+            <i class="bi bi-pencil"></i> Modifier
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block preview_sections %}
+<div class="mc-preview-section">
+    <h3 class="mc-preview-section-title">Encépagement</h3>
+    <div id="preview-encepagement" class="bg-white border rounded p-3">
+        <p class="text-muted small mb-0">Sélectionnez une parcelle</p>
+    </div>
+</div>
+
+<div class="mc-preview-section">
+    <h3 class="mc-preview-section-title">Dernières vendanges</h3>
+    <div class="mc-timeline" id="preview-timeline">
+        <div class="mc-timeline-item muted">
+            <div class="mc-timeline-date">—</div>
+            <div class="mc-timeline-title">Aucune vendange</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block list_view_css %}
+<style>
+.parcelle-card {
+    min-height: 180px;
+}
+.parcelle-card .mc-card-header {
+    background: linear-gradient(135deg, #22c55e22 0%, transparent 100%);
+}
+</style>
+{% endblock %}
+
+{% block list_view_js %}
+<script>
+const parcellesData = {
+    {% for p in parcelles %}
+    {{ p.id }}: {
+        id: {{ p.id }},
+        nom: "{{ p.nom|escapejs }}",
+        lieuDit: "{{ p.lieu_dit|default:''|escapejs }}",
+        commune: "{{ p.commune|default:''|escapejs }}",
+        surface: "{{ p.surface_ha|default:0|floatformat:'2' }}",
+        cepage: "{{ p.cepage_principal.nom|default:''|escapejs }}",
+        appellation: "{{ p.appellation.nom|default:''|escapejs }}",
+        bio: {{ p.certification_bio|yesno:"true,false" }},
+        detailUrl: "{% url 'referentiels:parcelle_detail' p.id %}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+function selectParcelle(id) {
+    const data = parcellesData[id];
+    if (!data) return;
+    
+    document.getElementById('preview-title').innerHTML = `
+        ${data.nom}
+        ${data.bio ? '<span class="badge mc-badge-green ms-2">BIO</span>' : ''}
+    `;
+    document.getElementById('preview-subtitle').textContent = data.lieuDit || data.commune || '—';
+    
+    const surfaceValue = Number(data.surface);
+    document.getElementById('stat-surface').textContent = isNaN(surfaceValue) ? '—' : `${surfaceValue.toFixed(2)} ha`;
+    document.getElementById('stat-plants').textContent = '—';
+    document.getElementById('stat-age').textContent = '—';
+    
+    const encepDiv = document.getElementById('preview-encepagement');
+    if (data.cepage) {
+        encepDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-medium">${data.cepage}</span>
+                <span class="badge bg-light text-dark">Principal</span>
+            </div>
+        `;
+    } else {
+        encepDiv.innerHTML = '<p class="text-muted small mb-0">Non renseigné</p>';
+    }
+    
+    document.getElementById('preview-detail-link').href = data.detailUrl;
+    
+    selectItem(id, {
+        title: data.nom,
+        subtitle: data.lieuDit || data.commune,
+        detailUrl: data.detailUrl
+    });
+}
+
+function onFilterChange(filter) {
+    const cards = document.querySelectorAll('.mc-card[data-filter]');
+    const rows = document.querySelectorAll('.mc-table tbody tr[data-filter]');
+    
+    [...cards, ...rows].forEach(el => {
+        if (filter === 'all' || el.dataset.filter === filter) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
+
+function actionVendange() {
+    if (!selectedItemId) return;
+    window.location.href = `/production/vendanges/nouveau/?parcelle=${selectedItemId}`;
+}
+
+function actionTravaux() {
+    if (!selectedItemId) return;
+    window.location.href = `/production/travaux/nouveau/?parcelle=${selectedItemId}`;
+}
+
+function actionCarte() {
+    if (!selectedItemId) return;
+    const data = parcellesData[selectedItemId];
+    if (data) {
+        window.location.href = `${data.detailUrl}#carte`;
+    }
+}
+
+function actionModifier() {
+    if (!selectedItemId) return;
+    window.location.href = `/referentiels/parcelles/${selectedItemId}/edit/`;
+}
+</script>
+{% endblock %}

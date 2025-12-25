@@ -960,6 +960,31 @@ def parcelle_detail(request, pk):
         if ages:
             age_moyen = sum(ages) // len(ages)
     
+    # Données météo (si coordonnées disponibles)
+    weather_forecasts = []
+    weather_alerts = []
+    if parcelle.latitude and parcelle.longitude:
+        try:
+            from apps.ai.smart_suggestions import WeatherService
+            weather_forecasts = WeatherService.get_forecast(
+                float(parcelle.latitude), 
+                float(parcelle.longitude), 
+                days=3
+            )
+            # Générer les alertes météo
+            nudges = WeatherService.get_parcelle_alerts(parcelle)
+            weather_alerts = [
+                {
+                    'title': n.title,
+                    'message': n.message,
+                    'type': 'warning' if n.nudge_type.value in ['warning', 'alert'] else 'info',
+                }
+                for n in nudges
+            ]
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).debug(f"Weather fetch error: {e}")
+    
     context = {
         'parcelle': parcelle,
         'organization': organization,
@@ -981,6 +1006,9 @@ def parcelle_detail(request, pk):
         # Calculs
         'surface_m2': surface_m2,
         'estimation_bouteilles': estimation_bouteilles,
+        # Météo
+        'weather_forecasts': weather_forecasts,
+        'weather_alerts': weather_alerts,
     }
     
     return render(request, 'referentiels/parcelle_detail.html', context)

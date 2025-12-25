@@ -89,6 +89,10 @@ urlpatterns = [
 
     # Parcelles (alias vers vues Référentiels)
     path('parcelles/', prod_views.ParcelleListView.as_view(), name='parcelles_list'),
+    path('parcelles/<int:pk>/weather-preview/', prod_views.parcelle_weather_preview, name='parcelle_weather_preview'),
+    path('parcelles/<int:pk>/events-preview/', prod_views.parcelle_events_preview, name='parcelle_events_preview'),
+    path('parcelles/<int:pk>/composition-preview/', prod_views.parcelle_composition_preview, name='parcelle_composition_preview'),
+    path('parcelles/v2/', prod_views.ParcelleListViewV2.as_view(), name='parcelles_list_v2'),
     path('parcelles/table/', prod_views.ParcelleTableView.as_view(), name='parcelles_table'),
     path('parcelles/nouveau/', ref_parcelle_create, name='parcelle_new'),
     path('parcelles/<int:pk>/', ref_parcelle_detail, name='parcelle_detail'),
@@ -114,9 +118,10 @@ urlpatterns = [
     path('vendanges/<int:pk>/encuvage/', prod_views.EncuvageWizardView.as_view(), name='vendange_encuvage'),
 
     # Lots techniques
-    # path('lots-techniques/', prod_views.LotTechniqueListView.as_view(), name='lots_tech_list'), # Legacy
-    path('lots-techniques/', VueCuveeView.as_view(), name='lots_tech_list'),
+    path('lots-techniques/', prod_views.LotTechniqueListView.as_view(), name='lots_tech_list'),
+    path('lots-techniques/vue-cuvee/', VueCuveeView.as_view(), name='lots_tech_list_vue_cuvee'),
     path('lots-techniques/liste/', prod_views.LotTechniqueListView.as_view(), name='lots_tech_list_legacy'),
+    path('lots-techniques/v2/', prod_views.LotTechniqueListViewV2.as_view(), name='lots_tech_list_v2'),
     
     path('lots-techniques/table/', prod_views.LotTechniqueTableView.as_view(), name='lots_tech_table'),
     path('lots-techniques/nouveau/', prod_views.LotTechniqueCreateView.as_view(), name='lot_tech_new'),
@@ -148,6 +153,7 @@ urlpatterns = [
     path('lots-elevage/analyses/legacy/table/', prod_views.AnalysesTableView.as_view(), name='lots_elevage_analyses_table'),
     # Contenants (top-level)
     path('contenants/', cont_views.ContenantListView.as_view(), name='contenants_list'),
+    path('contenants/v2/', cont_views.ContenantListViewV2.as_view(), name='contenants_list_v2'),
     path('contenants/nouveau/', cont_views.ContenantCreateView.as_view(), name='contenants_new'),
     path('contenants/<int:pk>/', cont_views.ContenantDetailView.as_view(), name='contenants_detail'),
     path('contenants/<int:pk>/edit/', cont_views.ContenantUpdateView.as_view(), name='contenants_edit'),

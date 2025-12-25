@@ -1,0 +1,48 @@
+{% load smart_tags %}
+{# Affiche un nudge individuel #}
+<div class="nudge d-flex align-items-start gap-2 p-2 rounded-2 mb-2 {{ nudge.type|nudge_bg }}" 
+     data-nudge-type="{{ nudge.type }}"
+     data-nudge-priority="{{ nudge.priority|default:0 }}">
+    
+    {# Icône #}
+    <div class="nudge-icon flex-shrink-0">
+        {% if nudge.type == 'sparkle' %}
+        <span class="sparkle-icon">✨</span>
+        {% else %}
+        <i class="{{ nudge.icon }} {{ nudge.type|nudge_color }}" style="font-size: 1.1rem;"></i>
+        {% endif %}
+    </div>
+    
+    {# Contenu #}
+    <div class="nudge-content flex-grow-1">
+        <div class="nudge-title fw-semibold small {{ nudge.type|nudge_color }}">
+            {{ nudge.title }}
+        </div>
+        <div class="nudge-message text-muted small">
+            {{ nudge.message }}
+        </div>
+        
+        {# Action #}
+        {% if nudge.action_url or nudge.action_label %}
+        <div class="nudge-action mt-1">
+            {% if nudge.action_url %}
+            <a href="{{ nudge.action_url }}" class="btn btn-sm btn-outline-{{ nudge.type|default:'secondary' }} py-0 px-2" style="font-size: 0.75rem;">
+                {{ nudge.action_label|default:"Voir" }}
+                <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% else %}
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 nudge-action-btn" 
+                    style="font-size: 0.75rem;"
+                    data-action="{{ nudge.action_label }}">
+                {{ nudge.action_label }}
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    
+    {# Fermer #}
+    <button type="button" class="btn-close btn-close-sm flex-shrink-0" 
+            aria-label="Fermer"
+            onclick="this.closest('.nudge').remove()"></button>
+</div>

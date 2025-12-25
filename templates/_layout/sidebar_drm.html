@@ -1,0 +1,70 @@
+{% load static %}
+<div class="card shadow-sm mb-4 border-0">
+    <!-- HEADER DRM - Orange -->
+    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, #fd7e14 0%, #dc6b12 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Logo + Titre -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi bi-file-earmark-text text-white"></i>
+                </div>
+                <span class="sidebar-label text-white fw-semibold" style="font-size: 0.9rem;">DRM</span>
+            </div>
+            
+            <!-- Actions: Toggle -->
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block" id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
+                    <i class="bi bi-chevron-left" id="desktopChevron"></i>
+                </button>
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none" id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
+                    <i class="bi bi-chevron-down" id="mobileMenuChevron"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="list-group list-group-flush">
+
+        <!-- Tableau de bord -->
+        <a href="/drm/" class="list-group-item list-group-item-action {% if request.path == '/drm/' %}active{% endif %}">
+            <i class="bi bi-speedometer2 me-2"></i><span class="sidebar-label">Tableau de bord</span>
+        </a>
+
+        <!-- Déclarations -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #fd7e14;">
+            <span class="sidebar-label">Déclarations</span>
+        </div>
+        
+        <a href="/drm/brouillon/" class="list-group-item list-group-item-action {% if 'brouillon' in request.path %}active{% endif %}">
+            <i class="bi bi-pencil-square me-2"></i><span class="sidebar-label">Brouillon du mois</span>
+        </a>
+        <a href="/drm/historique/" class="list-group-item list-group-item-action {% if 'historique' in request.path %}active{% endif %}">
+            <i class="bi bi-clock-history me-2"></i><span class="sidebar-label">Historique DRM</span>
+        </a>
+
+        <!-- Référentiels DRM -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #fd7e14;">
+            <span class="sidebar-label">Référentiels</span>
+        </div>
+        
+        <a href="/drm/crd/" class="list-group-item list-group-item-action {% if 'crd' in request.path %}active{% endif %}">
+            <i class="bi bi-upc me-2"></i><span class="sidebar-label">CRD (Capsules)</span>
+        </a>
+        <a href="/drm/inao/" class="list-group-item list-group-item-action {% if 'inao' in request.path %}active{% endif %}">
+            <i class="bi bi-tag me-2"></i><span class="sidebar-label">Codes INAO</span>
+        </a>
+
+        <!-- Documents -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #fd7e14;">
+            <span class="sidebar-label">Documents</span>
+        </div>
+        
+        <a href="/drm/dae/" class="list-group-item list-group-item-action {% if 'dae' in request.path %}active{% endif %}">
+            <i class="bi bi-file-earmark me-2"></i><span class="sidebar-label">DAE</span>
+        </a>
+        <a href="/drm/dsa/" class="list-group-item list-group-item-action {% if 'dsa' in request.path %}active{% endif %}">
+            <i class="bi bi-file-earmark-text me-2"></i><span class="sidebar-label">DSA</span>
+        </a>
+
+    </div>
+</div>

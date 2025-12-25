@@ -1,0 +1,9 @@
+{
+  "doc_id": "cahier-des-charges-aoc-clairette-du-languedoc",
+  "source_file": "Cahier-des-charges-AOC-CLAIRETTE-DU-LANGUEDOC.pdf",
+  "sha256": "bf32c350408f2c3b693756dc38e6621f12f66252e33105eb624c964a9c171444",
+  "pages": 10,
+  "status": "FAIL",
+  "error": "Texte quasi vide après extraction (scan image probable)",
+  "processed_at": "2025-12-23T18:02:00.414510"
+}

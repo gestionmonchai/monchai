@@ -75,11 +75,11 @@ def init_from_vendange(
                 except Exception:
                     # fallback sur total - cumul
                     cum = Decimal(str(getattr(v, 'kg_debites_cumules', 0) or 0))
-                    tot = Decimal(str(getattr(v, 'poids_kg', 0) or 0))
+                    tot = Decimal(str(getattr(v, 'poids_total', getattr(v, 'poids_kg', 0)) or 0))
                     rem = tot - cum
                     kg_used = rem if rem > 0 else tot
         except Exception:
-            kg_used = Decimal(str(getattr(v, 'poids_kg', 0) or 0))
+            kg_used = Decimal(str(getattr(v, 'poids_total', getattr(v, 'poids_kg', 0)) or 0))
 
         if volume_mesure_l is not None:
             volume_l = Decimal(str(volume_mesure_l)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
@@ -215,7 +215,7 @@ def init_from_vendange(
             # Incrémenter les kg débités cumulés (protégé par select_for_update)
             try:
                 if hasattr(v, 'kg_debites_cumules'):
-                    tot = Decimal(str(getattr(v, 'poids_kg', 0) or 0))
+                    tot = Decimal(str(getattr(v, 'poids_total', getattr(v, 'poids_kg', 0)) or 0))
                     cur = Decimal(str(getattr(v, 'kg_debites_cumules', 0) or 0))
                     new_val = cur + (kg_used or Decimal('0'))
                     if tot and new_val > tot:

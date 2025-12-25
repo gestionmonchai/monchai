@@ -1,0 +1,61 @@
+{% load static %}
+{#
+=====================================================================
+SIDEBAR BASE - Template de sidebar réutilisable
+=====================================================================
+Structure standardisée pour toutes les sidebars (ventes, production, 
+achats, compta, etc.). Personnaliser via les variables et blocks.
+
+Variables requises:
+    - sidebar_title: Titre affiché (ex: "Ventes", "Production")
+    - sidebar_icon: Icône Bootstrap (ex: "bi-graph-up-arrow")
+    - sidebar_color: Couleur du header (ex: "#0d6efd", "#722f37")
+
+Variables optionnelles:
+    - sidebar_gradient_end: Couleur fin du gradient (défaut: plus foncé)
+    - sidebar_accent_color: Couleur d'accent pour items actifs
+
+Blocks disponibles:
+    - sidebar_header_actions: Actions dans le header (badges, boutons)
+    - sidebar_quick_actions: Boutons d'action rapide sous le header
+    - sidebar_nav_items: Items de navigation
+=====================================================================
+#}
+
+<div class="card sidebar-card shadow-sm mb-4 border-0" style="--sidebar-accent-color: {{ sidebar_accent_color|default:sidebar_color }};">
+    <!-- HEADER -->
+    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, {{ sidebar_color }} 0%, {{ sidebar_gradient_end|default:sidebar_color }} 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Logo + Titre -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi {{ sidebar_icon }} text-white"></i>
+                </div>
+                <span class="sidebar-label text-white fw-semibold" style="font-size: 0.9rem;">{{ sidebar_title }}</span>
+            </div>
+            
+            <!-- Actions header -->
+            <div class="d-flex align-items-center gap-2">
+                {% block sidebar_header_actions %}{% endblock %}
+                
+                <!-- Toggle buttons -->
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block" id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
+                    <i class="bi bi-chevron-left sidebar-toggle-icon"></i>
+                </button>
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none" id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
+                    <i class="bi bi-chevron-down" id="mobileMenuChevron"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions (optionnel) -->
+    {% block sidebar_quick_actions %}{% endblock %}
+    
+    <!-- Navigation -->
+    <div class="list-group list-group-flush">
+        {% block sidebar_nav_items %}
+        <!-- Navigation items go here -->
+        {% endblock %}
+    </div>
+</div>

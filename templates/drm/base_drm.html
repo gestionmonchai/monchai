@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block local_nav %}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ===========================================
+       LAYOUT SIDEBAR - CSS STANDARDISÉ
+       Identique à base_commerce.html pour cohérence
+       =========================================== */
+    
+    .transition-all {
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    @media (min-width: 992px) {
+        #drm-layout {
+            padding-top: 0.5rem;
+        }
+        #drmSidebar {
+            width: 240px;
+            flex: 0 0 240px;
+            padding-top: 0;
+        }
+        #drmMain {
+            width: calc(100% - 240px);
+            flex: 0 0 calc(100% - 240px);
+            padding-top: 0;
+        }
+        #drmSidebar, #drmMain {
+            margin-top: 0 !important;
+        }
+        #drmSidebar .card {
+            margin-bottom: 0.5rem;
+        }
+        #drmSidebar .card-header {
+            padding: 0.5rem 0.75rem;
+        }
+        #drmSidebar .list-group-item {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
+    }
+    
+    /* Sidebar Collapsed */
+    .sidebar-collapsed #drmSidebar {
+        width: 70px !important;
+        flex: 0 0 70px !important;
+    }
+    .sidebar-collapsed #drmMain {
+        width: calc(100% - 70px) !important;
+        flex: 0 0 calc(100% - 70px) !important;
+    }
+
+    .sidebar-label {
+        display: inline-block;
+        opacity: 1;
+        transform: translateX(0);
+        transition: opacity 0.2s ease-in-out, transform 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .sidebar-collapsed .sidebar-label {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        transform: translateX(10px);
+    }
+
+    /* Section headers */
+    .sidebar-section-header {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: auto;
+        opacity: 1;
+    }
+    .sidebar-collapsed .sidebar-section-header {
+        height: 0;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 0;
+        border: none;
+    }
+
+    /* Icons centered when collapsed */
+    .sidebar-collapsed .list-group-item {
+        text-align: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .sidebar-collapsed .list-group-item i {
+        margin-right: 0 !important;
+        font-size: 1.2rem;
+    }
+    
+    /* Chevron rotation */
+    .bi-chevron-left {
+        transition: transform 0.4s ease;
+    }
+    .sidebar-collapsed .bi-chevron-left {
+        transform: rotate(180deg);
+    }
+    
+    /* Mobile styles */
+    @media (max-width: 991.98px) {
+        #drmSidebar {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 1;
+            margin-bottom: 0.75rem;
+        }
+        #drmMain {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 2;
+        }
+        #drm-layout > .row {
+            flex-direction: column;
+        }
+        #drmSidebar .list-group {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        #drmSidebar .list-group.show {
+            max-height: 800px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 px-lg-3" id="drm-layout">
+    <div class="row g-0 g-lg-2">
+        <!-- Sidebar -->
+        <div class="transition-all" id="drmSidebar">
+            <div class="pe-lg-2">
+                {% include '_layout/sidebar_drm.html' %}
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="transition-all" id="drmMain">
+            {% block drm_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnDesktop = document.getElementById('btnToggleSidebarDesktop');
+    const btnMobile = document.getElementById('btnToggleSidebarMobile');
+    const layout = document.getElementById('drm-layout');
+    const sidebar = document.getElementById('drmSidebar');
+    
+    const STORAGE_KEY = 'monchai_drm_sidebar_collapsed';
+
+    function isMobile() {
+        return window.innerWidth < 992;
+    }
+
+    function setSidebarCollapsed(isCollapsed) {
+        if (!layout) return;
+        if (isCollapsed) {
+            layout.classList.add('sidebar-collapsed');
+        } else {
+            layout.classList.remove('sidebar-collapsed');
+        }
+        const chevron = document.getElementById('desktopChevron');
+        if (chevron) {
+            chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    if (!isMobile()) {
+        const saved = localStorage.getItem(STORAGE_KEY) === 'true';
+        setSidebarCollapsed(saved);
+    }
+
+    if (btnDesktop) {
+        btnDesktop.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const isCollapsed = layout.classList.contains('sidebar-collapsed');
+            setSidebarCollapsed(!isCollapsed);
+            localStorage.setItem(STORAGE_KEY, !isCollapsed);
+        });
+    }
+
+    function toggleMobileMenu() {
+        const listGroup = sidebar ? sidebar.querySelector('.list-group') : null;
+        const chevron = document.getElementById('mobileMenuChevron');
+        if (!listGroup) return;
+        
+        const isShown = listGroup.classList.contains('show');
+        if (isShown) {
+            listGroup.classList.remove('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-up');
+                chevron.classList.add('bi-chevron-down');
+            }
+        } else {
+            listGroup.classList.add('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-down');
+                chevron.classList.add('bi-chevron-up');
+            }
+        }
+    }
+
+    if (btnMobile) {
+        btnMobile.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileMenu();
+        });
+    }
+
+    if (sidebar) {
+        const cardHeader = sidebar.querySelector('.card-header');
+        if (cardHeader) {
+            cardHeader.addEventListener('click', function(e) {
+                if (!isMobile()) return;
+                if (e.target.closest('button') || e.target.closest('a')) return;
+                toggleMobileMenu();
+            });
+        }
+    }
+
+    window.addEventListener('resize', function() {
+        const listGroup = sidebar ? sidebar.querySelector('.list-group') : null;
+        if (!listGroup) return;
+        
+        if (!isMobile()) {
+            listGroup.style.maxHeight = 'none';
+            listGroup.classList.remove('show');
+        } else {
+            listGroup.style.maxHeight = '';
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

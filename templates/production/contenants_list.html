@@ -5,13 +5,23 @@
 
 {% block extra_css %}
 {{ block.super }}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     :root {
-        --wine-color: #720e1e;
-        --wine-light: #fce4ec;
+        --wine-color: var(--wine-burgundy, #8B2E3F);
+        --wine-light: var(--wine-champagne, #f7e7ce);
         --tank-border: #cbd5e1;
         --tank-bg: #f8fafc;
+        --brand-red: var(--wine-burgundy, #8B2E3F);
+        --brand-gold: var(--wine-gold, #d4af37);
+        --sidebar-soft: rgba(255, 255, 255, 0.7);
+        --sidebar-shadow: rgba(139, 21, 56, 0.18);
+        --preview-card-bg: rgba(255, 255, 255, 0.92);
+        --preview-border: rgba(139, 21, 56, 0.12);
     }
+    .bg-brand-red { background-color: var(--brand-red); }
+    .text-brand-red { color: var(--brand-red); }
     
     /* --- Tank Visual Card --- */
     .tank-card {
@@ -124,6 +134,269 @@
         color: #0f172a;
         border-color: #cbd5e1;
     }
+    
+
+    .action-btn-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .action-btn:hover {
+        background: #fff;
+        border-color: #cbd5e1;
+        color: var(--brand-red);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        text-decoration: none;
+    }
+    .action-btn i {
+        margin-right: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    /* Section Headers */
+    .sidebar-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    .sidebar-section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e2e8f0;
+        margin-left: 0.75rem;
+    }
+    
+    /* Timeline */
+    .timeline-item {
+        position: relative;
+        padding-left: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    .timeline-line {
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+    }
+    .timeline-item:last-child .timeline-line {
+        display: none;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: 0;
+        top: 6px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid #cbd5e1;
+        z-index: 1;
+    }
+    .timeline-content {
+        font-size: 0.9rem;
+        color: #334155;
+    }
+    .timeline-date {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Footer */
+    .preview-footer {
+        padding: 1.5rem;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+    
+    .btn-brand {
+        background-color: var(--brand-red);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        width: 100%;
+        transition: background-color 0.2s;
+    }
+    .btn-brand:hover {
+        background-color: #720e1e; /* Darker shade */
+        color: white;
+    }
+    
+    .tank-card.selected {
+        box-shadow: 0 0 0 3px var(--brand-red);
+        border-color: var(--brand-red);
+    }
+
+    /* Preview sidebar (inline copy) */
+    .preview-sidebar {
+        position: fixed;
+        top: 1rem;
+        bottom: 1rem;
+        right: -460px;
+        width: 460px;
+        background: radial-gradient(circle at 20% 20%, rgba(247, 231, 206, 0.7) 0%, #fff 45%, #fdf8f3 100%);
+        border-left: none;
+        border-radius: 24px 0 0 24px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        box-shadow: -25px 0 60px rgba(139, 21, 56, 0.18);
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        overflow: hidden;
+    }
+    .preview-sidebar.open { right: 0; }
+    .preview-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(25, 15, 20, 0.15);
+        z-index: 1999;
+        display: none;
+        transition: opacity 0.3s ease;
+    }
+    .preview-overlay.open { display: block; }
+    .preview-header {
+        background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(247,231,206,0.8));
+        padding: 1.75rem 1.75rem 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.4);
+    }
+    .preview-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2a1a1f;
+    }
+    .preview-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    .preview-stat-card {
+        background: rgba(255,255,255,0.92);
+        border: 1px solid rgba(139, 21, 56, 0.12);
+        border-radius: 14px;
+        padding: 0.85rem;
+        text-align: center;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+        backdrop-filter: blur(6px);
+    }
+    .preview-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .preview-quick-actions {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(64, 6, 22, 0.9));
+        color: white;
+        border-radius: 18px;
+        padding: 1.25rem;
+        box-shadow: 0 20px 35px rgba(34, 6, 11, 0.45);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .preview-quick-actions h3 {
+        text-transform: uppercase;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .preview-action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+    }
+    .preview-quick-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.65rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.95);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .preview-section h3 {
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        color: rgba(42, 26, 31, 0.55);
+        font-weight: 700;
+        margin-bottom: 0.6rem;
+    }
+    .preview-card {
+        background: rgba(255,255,255,0.92);
+        border: 1px solid rgba(139, 21, 56, 0.12);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+    }
+    .preview-timeline {
+        border-left: 2px solid rgba(42, 26, 31, 0.08);
+        padding-left: 1rem;
+    }
+    .preview-footer {
+        background: rgba(255,255,255,0.9);
+        padding: 1.5rem;
+        border-top: 1px solid rgba(139, 21, 56, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+    }
+    .preview-footer-link {
+        display: block;
+        text-align: center;
+        background: linear-gradient(120deg, var(--brand-red), #611026);
+        border-radius: 999px;
+        padding: 0.9rem 1.5rem;
+        font-weight: 600;
+        color: #fff;
+        text-decoration: none;
+        box-shadow: 0 15px 30px rgba(97,16,38,0.35);
+    }
+    @media (max-width: 1024px) {
+        .preview-sidebar { width: 100%; right: -100%; border-radius: 0; top: 0; bottom: 0; }
+        .preview-sidebar.open { right: 0; }
+    }
 </style>
 {% endblock %}
 
@@ -234,7 +507,7 @@
     <div id="grid-view" class="row g-4">
         {% for c in contenants %}
         <div class="col-xxl-3 col-lg-4 col-sm-6">
-            <div class="tank-card h-100">
+            <div class="tank-card h-100" data-contenant-id="{{ c.id }}" onclick="openPreview({{ c.id }})" style="cursor: pointer;">
                 <!-- Visualisation -->
                 <div class="tank-visual-container">
                     <div class="tank-badge-status">
@@ -283,7 +556,7 @@
                 <!-- Info Corps -->
                 <div class="tank-card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <a href="{% url 'production:contenants_detail' c.id %}" class="h5 mb-0 text-decoration-none fw-bold text-dark stretched-link">{{ c.code }}</a>
+                        <div class="h5 mb-0 fw-bold text-dark">{{ c.code }}</div>
                         <span class="badge bg-light text-dark border">{{ c.get_type_display }}</span>
                     </div>
                     <div class="small text-muted mb-3">
@@ -334,8 +607,8 @@
                 </thead>
                 <tbody>
                   {% for c in contenants %}
-                  <tr>
-                    <td class="ps-3 fw-bold"><a href="{% url 'production:contenants_detail' c.id %}" class="text-dark text-decoration-none">{{ c.code }}</a></td>
+                  <tr data-contenant-id="{{ c.id }}" onclick="openPreview({{ c.id }})" style="cursor: pointer;">
+                    <td class="ps-3 fw-bold"><a href="{% url 'production:contenants_detail' c.id %}" class="text-dark text-decoration-none" onclick="event.stopPropagation()">{{ c.code }}</a></td>
                     <td>{{ c.get_type_display }}</td>
                     <td class="text-end text-muted">{{ c.capacite_utile_effective_l|floatformat:0 }}</td>
                     <td class="text-end fw-bold">{{ c.volume_occupe_l|floatformat:0 }}</td>
@@ -395,7 +668,189 @@
 </nav>
 {% endif %}
 
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()"></div>
+<aside class="preview-sidebar" id="preview-sidebar">
+    <div class="preview-header">
+        <div class="flex justify-between items-start">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <h2 class="text-xl font-bold text-gray-800" id="preview-title">Cuve</h2>
+                    <span class="text-xs bg-brand-red text-white px-2 py-0.5 rounded" id="preview-type">Inox</span>
+                </div>
+                <p class="text-sm text-gray-500" id="preview-lot">Lot: —</p>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600 text-xl" onclick="closePreview()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="preview-stats">
+            <div class="preview-stat-card">
+                <div class="preview-stat-label">Volume</div>
+                <div class="preview-stat-value text-brand-red" id="stat-volume">— HL</div>
+            </div>
+            <div class="preview-stat-card">
+                <div class="preview-stat-label">Degré</div>
+                <div class="preview-stat-value" id="stat-degre">—%</div>
+            </div>
+            <div class="preview-stat-card">
+                <div class="preview-stat-label">SO₂ total</div>
+                <div class="preview-stat-value" id="stat-so2">—</div>
+            </div>
+        </div>
+    </div>
+    <div class="preview-body">
+        <section class="preview-quick-actions">
+            <h3><i class="fas fa-bolt text-yellow-400"></i> Actions rapides</h3>
+            <div class="preview-action-grid">
+                <button onclick="actionAnalyse()" class="preview-quick-action"><i class="fas fa-flask"></i>Analyse</button>
+                <button onclick="actionSoutirage()" class="preview-quick-action"><i class="fas fa-random"></i>Soutirage</button>
+                <button onclick="actionAjout()" class="preview-quick-action"><i class="fas fa-plus"></i>Ajout</button>
+                <button onclick="actionRenommer()" class="preview-quick-action"><i class="fas fa-tag"></i>Renommer</button>
+            </div>
+        </section>
+        <section class="preview-section">
+            <h3>Composition (Traçabilité)</h3>
+            <div class="preview-card" id="preview-composition">
+                <p class="text-sm text-gray-400">Aucun lot affecté</p>
+            </div>
+        </section>
+        <section class="preview-section">
+            <h3>Historique récent</h3>
+            <div class="preview-timeline" id="preview-timeline">
+                <div class="preview-timeline-item">
+                    <p class="text-xs text-gray-400">—</p>
+                    <p class="text-sm font-medium text-gray-500">Aucune opération récente</p>
+                </div>
+            </div>
+            <button class="text-xs text-brand-red font-medium mt-3 hover:underline" id="btn-voir-historique">Voir tout l'historique</button>
+        </section>
+    </div>
+    <div class="preview-footer">
+        <a href="#" class="preview-footer-link" id="preview-detail-link">Voir la fiche complète</a>
+    </div>
+</aside>
+
 <script>
+// Données des contenants
+const contenantsData = {
+    {% for c in contenants %}
+    "{{ c.id }}": {
+        "id": {{ c.id }},
+        "code": "{{ c.code|escapejs }}",
+        "type": "{{ c.get_type_display|escapejs }}",
+        "capacite": {{ c.capacite_utile_effective_l|default:0|stringformat:"f" }},
+        "volume": {{ c.volume_occupe_l|default:0|stringformat:"f" }},
+        "occupancy": {{ c.occupancy_ratio|default:0|stringformat:"f" }},
+        "localisation": "{{ c.localisation|default:''|escapejs }}",
+        "statut": "{{ c.get_statut_display|escapejs }}",
+        "lot": {% if c.lot_courant %}{ 
+            "code": "{{ c.lot_courant.code|escapejs }}", 
+            "cuvee": "{{ c.lot_courant.cuvee.nom|default:'—'|escapejs }}",
+            "tav": "{{ c.lot_courant.analytics_json.tav|default:'—'|escapejs }}",
+            "so2": "{{ c.lot_courant.analytics_json.so2_total|default:'—'|escapejs }}"
+        }{% else %}null{% endif %},
+        "detailUrl": "{% url 'production:contenants_detail' c.id %}",
+        "editUrl": "{% url 'production:contenants_edit' c.id %}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+let selectedContenantId = null;
+
+// Ouvrir la sidebar de preview
+function openPreview(id) {
+    console.log("Opening preview for", id);
+    const data = contenantsData[id];
+    if (!data) {
+        console.error("No data found for id", id);
+        return;
+    }
+    
+    selectedContenantId = id;
+    
+    // Marquer la carte sélectionnée
+    document.querySelectorAll('.tank-card').forEach(card => card.classList.remove('selected'));
+    const selectedCard = document.querySelector(`.tank-card[data-contenant-id="${id}"]`);
+    if (selectedCard) selectedCard.classList.add('selected');
+    
+    // Mettre à jour le contenu
+    document.getElementById('preview-title').textContent = `Cuve ${data.code}`;
+    document.getElementById('preview-type').textContent = data.type;
+    document.getElementById('preview-lot').textContent = data.lot ? `Lot: ${data.lot.code}` : 'Vide';
+    
+    // Stats
+    const volumeHL = (data.volume / 100).toFixed(1);
+    document.getElementById('stat-volume').textContent = `${volumeHL} HL`;
+    
+    if (data.lot) {
+        const tav = data.lot.tav !== '—' && data.lot.tav !== '' ? data.lot.tav : '—';
+        const so2 = data.lot.so2 !== '—' && data.lot.so2 !== '' ? data.lot.so2 : '—';
+        document.getElementById('stat-degre').textContent = tav !== '—' ? `${tav}%` : '—%';
+        document.getElementById('stat-so2').textContent = so2;
+    } else {
+        document.getElementById('stat-degre').textContent = '—%';
+        document.getElementById('stat-so2').textContent = '—';
+    }
+    
+    // Composition
+    const compoDiv = document.getElementById('preview-composition');
+    if (data.lot) {
+        compoDiv.innerHTML = `
+            <div class="flex justify-between text-xs mb-1">
+                <span class="font-medium text-gray-700">${data.lot.cuvee}</span>
+                <span>100%</span>
+            </div>
+            <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="width: 100%; background-color: var(--brand-red);"></div>
+            </div>
+        `;
+    } else {
+        compoDiv.innerHTML = '<p class="text-sm text-gray-400">Contenant vide</p>';
+    }
+    
+    // Liens
+    document.getElementById('preview-detail-link').href = data.detailUrl;
+    document.getElementById('btn-voir-historique').onclick = () => window.location.href = data.detailUrl + '#historique';
+    
+    // Ouvrir
+    const sidebar = document.getElementById('preview-sidebar');
+    const overlay = document.getElementById('preview-overlay');
+    
+    if (sidebar) sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+}
+
+// Fermer la sidebar
+function closePreview() {
+    document.getElementById('preview-sidebar').classList.remove('open');
+    document.getElementById('preview-overlay').classList.remove('open');
+    document.querySelectorAll('.tank-card').forEach(card => card.classList.remove('selected'));
+    selectedContenantId = null;
+}
+
+// Actions rapides
+function actionAnalyse() {
+    if (selectedContenantId) {
+        window.location.href = `/production/lots-elevage/analyses/nouvelle/?contenant=${selectedContenantId}`;
+    }
+}
+function actionSoutirage() {
+    if (selectedContenantId) {
+        alert('Soutirage - Fonctionnalité à venir');
+    }
+}
+function actionAjout() {
+    if (selectedContenantId) {
+        alert('Ajout - Fonctionnalité à venir');
+    }
+}
+function actionRenommer() {
+    if (selectedContenantId) {
+        const data = contenantsData[selectedContenantId];
+        window.location.href = data.editUrl;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const btnGrid = document.getElementById('btn-view-grid');
     const btnList = document.getElementById('btn-view-list');
@@ -427,6 +882,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedMode) {
         setView(savedMode);
     }
+    
+    // Fermer avec Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closePreview();
+    });
 });
 </script>
 

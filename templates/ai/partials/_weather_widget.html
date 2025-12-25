@@ -1,0 +1,41 @@
+{# Widget météo pour parcelle #}
+{% if forecasts %}
+<div class="weather-widget card border-0 shadow-sm mb-3">
+    <div class="card-header bg-gradient py-2" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+        <div class="d-flex align-items-center justify-content-between">
+            <span class="text-white fw-semibold small">
+                <i class="bi bi-cloud-sun me-1"></i>
+                Météo {% if parcelle_name %}{{ parcelle_name }}{% endif %}
+            </span>
+            <small class="text-white-50">3 jours</small>
+        </div>
+    </div>
+    
+    <div class="card-body p-2">
+        <div class="d-flex justify-content-between">
+            {% for forecast in forecasts %}
+            <div class="weather-day text-center flex-fill {% if not forloop.last %}border-end{% endif %} px-2">
+                <div class="text-muted small fw-medium">{{ forecast.date }}</div>
+                <div class="my-1">
+                    <i class="{{ forecast.icon }} fs-4 
+                       {% if 'rain' in forecast.icon %}text-primary
+                       {% elif 'sun' in forecast.icon %}text-warning
+                       {% elif 'snow' in forecast.icon %}text-info
+                       {% elif 'lightning' in forecast.icon %}text-danger
+                       {% else %}text-secondary{% endif %}"></i>
+                </div>
+                <div class="small">
+                    <span class="fw-bold">{{ forecast.temp_max|floatformat:0 }}°</span>
+                    <span class="text-muted">{{ forecast.temp_min|floatformat:0 }}°</span>
+                </div>
+                {% if forecast.precipitation_mm > 0 %}
+                <div class="small text-primary">
+                    <i class="bi bi-droplet-fill"></i> {{ forecast.precipitation_mm|floatformat:0 }}mm
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}

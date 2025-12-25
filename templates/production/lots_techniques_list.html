@@ -1,5 +1,375 @@
 {% extends 'production/base_production.html' %}
 {% block title %}Lots Techniques - Mon Chai{% endblock %}
+{% block extra_css %}
+  {{ block.super }}
+  {% include '_components/preview_sidebar.html' with include_only_css=True %}
+  <style>
+    :root {
+      --lot-dark: #5A1E29;
+      --lot-burgundy: #8B2E3F;
+      --lot-gold: #E5B350;
+      --lot-soft: #F3EFE6;
+    }
+    .lot-row.selected {
+      background: rgba(237, 242, 255, 0.9);
+      box-shadow: inset 3px 0 0 #214e9b;
+    }
+    .lot-sidebar {
+      background: #fff;
+      border-radius: 24px 0 0 24px;
+      border: 1px solid rgba(13, 27, 62, 0.08);
+      box-shadow: -25px 0 60px rgba(17, 23, 39, 0.2);
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .lot-panel-header {
+      padding: 1.5rem 1.75rem;
+      border-bottom: 1px solid rgba(91, 95, 125, 0.08);
+      background: linear-gradient(135deg, rgba(90, 30, 41, 0.08), rgba(233, 229, 218, 0.6));
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .lot-panel-eyebrow {
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: rgba(39, 46, 75, 0.6);
+      font-weight: 600;
+    }
+    .lot-panel-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1d2438;
+      margin-bottom: 0.15rem;
+    }
+    .lot-panel-meta {
+      color: rgba(35, 42, 71, 0.65);
+      font-size: 0.9rem;
+    }
+    .lot-panel-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .lot-header-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid rgba(19, 31, 55, 0.1);
+      background: #fff;
+      color: #1d2438;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .lot-header-btn:hover {
+      background: #1d2438;
+      color: #fff;
+    }
+    .lot-panel-body {
+      padding: 1.5rem 1.75rem;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .lot-selected-card {
+      border-left: 4px solid var(--lot-dark);
+      border-radius: 18px;
+      border: 1px solid rgba(73, 32, 45, 0.08);
+      padding: 1.25rem;
+      background: #fff;
+      box-shadow: 0 18px 40px rgba(11, 14, 32, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .lot-selected-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+    .lot-status-pill {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-weight: 700;
+      background: rgba(33, 37, 41, 0.08);
+      color: #222;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .lot-code-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .lot-code-row span:first-child {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1c1f2b;
+    }
+    .lot-chip {
+      background: #f7f7fb;
+      color: #6366f1;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 0.5rem;
+      font-size: 0.75rem;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    .lot-progress-bar {
+      background: rgba(15, 23, 42, 0.08);
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.35rem;
+    }
+    .lot-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--lot-dark), var(--lot-burgundy));
+      border-radius: inherit;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+    .lot-progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.4rem;
+      font-size: 0.82rem;
+      color: #475467;
+      font-weight: 600;
+    }
+    .lot-volume-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .lot-volume-grid p {
+      text-transform: uppercase;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: rgba(15, 23, 42, 0.45);
+      margin-bottom: 0.2rem;
+      font-weight: 600;
+    }
+    .lot-volume-grid strong {
+      font-size: 1.15rem;
+      color: #111;
+    }
+    .lot-task {
+      margin-top: 1rem;
+      padding: 0.9rem 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(229, 179, 80, 0.35);
+      background: rgba(229, 179, 80, 0.08);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+    }
+    .lot-task button {
+      background: #fff;
+      border: 1px solid rgba(229, 179, 80, 0.7);
+      color: var(--lot-dark);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      transition: background 0.2s ease;
+    }
+    .lot-task button:hover {
+      background: var(--lot-dark);
+      color: #fff;
+      border-color: transparent;
+    }
+    .lot-section h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6c6f85;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+    .lot-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    .lot-quick-btn {
+      border-radius: 12px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      padding: 0.85rem;
+      background: #f8fafc;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1d2438;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: flex-start;
+      transition: transform 0.2s ease, border 0.2s ease;
+    }
+    .lot-quick-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(26, 85, 255, 0.3);
+    }
+    .lot-analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+    .lot-analytics-card {
+      border-radius: 14px;
+      padding: 0.8rem;
+      border: 1px solid rgba(15, 23, 42, 0.07);
+      background: #f9fafb;
+      text-align: center;
+    }
+    .lot-analytics-card .label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      color: #9ca3af;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+    }
+    .lot-analytics-card .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #111927;
+    }
+    .lot-analytics-card .sub {
+      font-size: 0.7rem;
+      color: #16a34a;
+      font-weight: 600;
+    }
+    .lot-stock-card {
+      border-radius: 16px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      padding: 1rem;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .lot-stock-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .lot-stock-row-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0f172a;
+    }
+    .lot-stock-meta {
+      flex: 1;
+    }
+    .lot-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+    .lot-bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #0ea5e9, #2563eb);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .lot-alerts {
+      border-radius: 18px;
+      border: 1px solid rgba(220, 38, 38, 0.12);
+      background: rgba(248, 113, 113, 0.06);
+      padding: 1rem;
+    }
+    .lot-alert-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0.75rem;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid rgba(220, 38, 38, 0.1);
+      font-size: 0.85rem;
+      color: #7f1d1d;
+      font-weight: 600;
+    }
+    .lot-panel-footer {
+      padding: 1.25rem 1.75rem;
+      border-top: 1px solid rgba(15, 23, 42, 0.08);
+      background: #f8fafc;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    .lot-panel-footer button,
+    .lot-panel-footer a {
+      border-radius: 12px;
+      font-weight: 700;
+      padding: 0.85rem;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      text-decoration: none;
+      transition: transform 0.2s ease;
+    }
+    .lot-panel-footer button {
+      background: var(--lot-dark);
+      color: #fff;
+    }
+    .lot-panel-footer button:hover {
+      transform: translateY(-1px);
+      color: #fff;
+    }
+    .lot-panel-footer a {
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.15);
+      color: #1f2937;
+    }
+    .lot-panel-footer a:hover {
+      transform: translateY(-1px);
+    }
+    @media (max-width: 1024px) {
+      .lot-panel-header,
+      .lot-panel-body,
+      .lot-panel-footer {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+      .lot-analytics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 640px) {
+      .lot-analytics-grid,
+      .lot-quick-grid,
+      .lot-volume-grid,
+      .lot-panel-footer {
+        grid-template-columns: 1fr;
+      }
+      .lot-panel-actions {
+        gap: 0.25rem;
+      }
+    }
+  </style>
+{% endblock %}
 {% block production_content %}
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-3">
@@ -146,8 +516,169 @@
   </div>
 </div>
 
+<div class="preview-overlay" id="lot-preview-overlay" onclick="closeLotPreview()"></div>
+<aside class="preview-sidebar lot-sidebar" id="lot-preview-sidebar">
+  <div class="lot-panel-header">
+    <div>
+      <div class="lot-panel-eyebrow" id="lot-header-eyebrow">Chai & Élevage</div>
+      <div class="lot-panel-title" id="lot-header-title">Sélectionnez un lot</div>
+      <div class="lot-panel-meta text-muted" id="lot-header-meta">Cliquez sur un lot pour afficher son aperçu détaillé.</div>
+    </div>
+    <div class="lot-panel-actions">
+      <button type="button" class="lot-header-btn" id="lot-header-open" title="Ouvrir le lot" disabled>
+        <i class="bi bi-box-arrow-up-right"></i>
+      </button>
+      <button type="button" class="lot-header-btn" onclick="closeLotPreview()" title="Fermer">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+  <div class="lot-panel-body">
+    <div class="lot-selected-card">
+      <div class="lot-selected-head">
+        <div>
+          <div class="lot-panel-eyebrow">Lot sélectionné</div>
+          <div class="lot-code-row">
+            <span id="lot-selected-code">—</span>
+            <span class="lot-chip" id="lot-selected-contenant">—</span>
+          </div>
+        </div>
+        <span class="lot-status-pill" id="lot-selected-status">En cours</span>
+      </div>
+      <div class="lot-progress-bar">
+        <div class="lot-progress-fill" id="lot-progress-fill"></div>
+      </div>
+      <div class="lot-progress-info">
+        <span id="lot-progress-volume">Volume utilisé —</span>
+        <span id="lot-progress-capacity">Capacité —</span>
+      </div>
+      <div class="lot-volume-grid">
+        <div>
+          <p>Volume total</p>
+          <strong id="lot-selected-volume">— L</strong>
+        </div>
+        <div>
+          <p>Volume (hL)</p>
+          <strong id="lot-selected-volume-hl">— hL</strong>
+        </div>
+      </div>
+      <div class="lot-volume-grid">
+        <div>
+          <p>Cuvée</p>
+          <strong id="lot-selected-cuvee">—</strong>
+        </div>
+        <div>
+          <p>Créé le</p>
+          <strong id="lot-selected-created">—</strong>
+        </div>
+      </div>
+      <div class="lot-task" id="lot-task-block" style="display:none;">
+        <div class="lot-task-text" id="lot-task-label">
+          À faire
+        </div>
+        <button type="button" id="lot-task-action">Valider</button>
+      </div>
+    </div>
+
+    <div class="lot-section">
+      <h3><i class="bi bi-activity"></i> Dernières analyses</h3>
+      <div class="lot-analytics-grid">
+        <div class="lot-analytics-card">
+          <div class="label">Degré</div>
+          <div class="value" id="lot-analytics-degre">—</div>
+          <div class="sub" id="lot-analytics-degre-sub">° potentiel</div>
+        </div>
+        <div class="lot-analytics-card">
+          <div class="label">pH</div>
+          <div class="value" id="lot-analytics-ph">—</div>
+          <div class="sub" id="lot-analytics-ph-sub">Stable</div>
+        </div>
+        <div class="lot-analytics-card">
+          <div class="label">SO₂ total</div>
+          <div class="value text-danger" id="lot-analytics-so2">—</div>
+          <div class="sub" id="lot-analytics-so2-sub">mg/L</div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-link px-0 fw-semibold text-decoration-none" id="lot-analytics-new">
+        + Saisir une nouvelle analyse
+      </button>
+    </div>
+
+    <div class="lot-section">
+      <h3><i class="bi bi-lightning-charge"></i> Actions rapides</h3>
+      <div class="lot-quick-grid">
+        <button type="button" class="lot-quick-btn" id="lot-action-detail">
+          <i class="bi bi-eye"></i> Voir la fiche
+        </button>
+        <button type="button" class="lot-quick-btn" id="lot-action-soutirage">
+          <i class="bi bi-droplet-half"></i> Soutirage
+        </button>
+        <button type="button" class="lot-quick-btn" id="lot-action-analyse">
+          <i class="bi bi-graph-up"></i> Nouvelle analyse
+        </button>
+        <button type="button" class="lot-quick-btn" id="lot-action-mouvement">
+          <i class="bi bi-arrows-move"></i> Mouvement vrac
+        </button>
+      </div>
+    </div>
+
+    <div class="lot-section">
+      <h3><i class="bi bi-warehouse"></i> Stock en chai</h3>
+      <div class="lot-stock-card">
+        <div class="lot-stock-row">
+          <div class="lot-stock-row-icon">
+            <i class="bi bi-cup-straw"></i>
+          </div>
+          <div class="lot-stock-meta">
+            <div class="d-flex justify-content-between text-uppercase small fw-semibold mb-1">
+              <span>Volume en cuve</span>
+              <span id="lot-stock-volume">—</span>
+            </div>
+            <div class="lot-bar">
+              <div class="lot-bar-fill" id="lot-stock-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+        <div class="lot-stock-row">
+          <div class="lot-stock-row-icon">
+            <i class="bi bi-inboxes"></i>
+          </div>
+          <div class="lot-stock-meta">
+            <div class="d-flex justify-content-between text-uppercase small fw-semibold mb-1">
+              <span>Capacité restante</span>
+              <span id="lot-stock-free">—</span>
+            </div>
+            <div class="lot-bar">
+              <div class="lot-bar-fill" id="lot-stock-free-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lot-section">
+      <h3><i class="bi bi-bell"></i> Alertes actives</h3>
+      <div class="lot-alerts" id="lot-alerts-block" style="display:none;">
+        <div class="lot-alert-item">
+          <span id="lot-alert-text">Aucune alerte</span>
+          <i class="bi bi-chevron-right text-muted"></i>
+        </div>
+      </div>
+      <div class="text-muted small" id="lot-alerts-empty">Aucune alerte détectée</div>
+    </div>
+  </div>
+  <div class="lot-panel-footer">
+    <button type="button" id="lot-footer-move">
+      <i class="bi bi-random"></i> Mouvement
+    </button>
+    <a href="{% url 'production:lot_tech_new' %}" id="lot-footer-create">
+      <i class="bi bi-plus-lg"></i> Créer un lot
+    </a>
+  </div>
+</aside>
+
 <style>
-.cuvee-card { transition: all 0.2s; }
+.view-panel { transition: opacity 0.2s; }
 .cuvee-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .lot-mini-card { 
   padding: 0.5rem;
@@ -163,10 +694,14 @@
   transform: translateX(4px);
 }
 .status-badge-sm { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
-</style>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
+  .preview-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  </style>
+{% endblock %}
+{% block extra_js %}
+  <script>
+    function initLotSidebarPreview() {
     const advBtn = document.getElementById('toggle-advanced-search');
     const clearBtn = document.getElementById('clear-filters');
     const adv = document.getElementById('advanced-filters');
@@ -211,7 +746,7 @@
         const meta = document.getElementById('lots-table-meta');
         if (meta && info) {
           const total = meta.getAttribute('data-total') || '0';
-          info.textContent = total + ' lot' + (parseInt(total) > 1 ? 's' : '');
+          info.textContent = total + ' lot' + (parseInt(total, 10) > 1 ? 's' : '');
         }
       }
     });
@@ -251,8 +786,6 @@
 
     function loadByCuveeView() {
       const container = document.getElementById('lots-by-cuvee');
-      
-      // Fetch all lots with cuvee info
       fetch('{% url "production:lots_tech_table" %}?format=json&sort=cuvee')
         .then(response => response.json())
         .then(data => {
@@ -269,7 +802,6 @@
     }
 
     function renderByCuveeView(lots, container) {
-      // Group lots by cuvee
       const byCuvee = {};
       lots.forEach(lot => {
         const cuveeId = lot.cuvee_id || 'sans_cuvee';
@@ -292,7 +824,6 @@
         byCuvee[cuveeId].statusCounts[status] = (byCuvee[cuveeId].statusCounts[status] || 0) + 1;
       });
 
-      // Render cuvee cards
       container.innerHTML = '';
       Object.values(byCuvee).forEach(cuvee => {
         const card = createCuveeCard(cuvee);
@@ -358,6 +889,213 @@
       };
       return colors[statut] || 'secondary';
     }
-  });
-</script>
+    const formatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+    let selectedLotRow = null;
+
+    const lotSidebar = document.getElementById('lot-preview-sidebar');
+    const lotOverlay = document.getElementById('lot-preview-overlay');
+    const headerTitle = document.getElementById('lot-header-title');
+    const headerMeta = document.getElementById('lot-header-meta');
+    const headerOpenBtn = document.getElementById('lot-header-open');
+
+    const selectedCode = document.getElementById('lot-selected-code');
+    const selectedContenant = document.getElementById('lot-selected-contenant');
+    const selectedStatus = document.getElementById('lot-selected-status');
+    const selectedVolume = document.getElementById('lot-selected-volume');
+    const selectedVolumeHl = document.getElementById('lot-selected-volume-hl');
+    const selectedCuvee = document.getElementById('lot-selected-cuvee');
+    const selectedCreated = document.getElementById('lot-selected-created');
+    const progressFill = document.getElementById('lot-progress-fill');
+    const progressVolume = document.getElementById('lot-progress-volume');
+    const progressCapacity = document.getElementById('lot-progress-capacity');
+
+    const taskBlock = document.getElementById('lot-task-block');
+    const taskLabel = document.getElementById('lot-task-label');
+    const taskAction = document.getElementById('lot-task-action');
+
+    const analyticsDegre = document.getElementById('lot-analytics-degre');
+    const analyticsPh = document.getElementById('lot-analytics-ph');
+    const analyticsSo2 = document.getElementById('lot-analytics-so2');
+    const analyticsNewBtn = document.getElementById('lot-analytics-new');
+
+    const actionDetail = document.getElementById('lot-action-detail');
+    const actionSoutirage = document.getElementById('lot-action-soutirage');
+    const actionAnalyse = document.getElementById('lot-action-analyse');
+    const actionMouvement = document.getElementById('lot-action-mouvement');
+    const footerMove = document.getElementById('lot-footer-move');
+
+    const stockVolume = document.getElementById('lot-stock-volume');
+    const stockVolumeBar = document.getElementById('lot-stock-bar-fill');
+    const stockFree = document.getElementById('lot-stock-free');
+    const stockFreeBar = document.getElementById('lot-stock-free-bar');
+
+    const alertsBlock = document.getElementById('lot-alerts-block');
+    const alertsText = document.getElementById('lot-alert-text');
+    const alertsEmpty = document.getElementById('lot-alerts-empty');
+
+    function formatValue(value, suffix) {
+      const num = parseFloat(value);
+      if (isNaN(num)) return '—';
+      return `${formatter.format(num)}${suffix ? ' ' + suffix : ''}`;
+    }
+
+    function setButtonAction(btn, url) {
+      if (!btn) return;
+      if (url && url !== '#') {
+        btn.disabled = false;
+        btn.classList.remove('disabled');
+        btn.onclick = () => window.location = url;
+      } else {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.onclick = null;
+      }
+    }
+
+    function setStatusPill(statusCode, statusLabel) {
+      selectedStatus.textContent = statusLabel || '—';
+      selectedStatus.className = 'lot-status-pill';
+
+      if (!statusCode) return;
+      if (statusCode.startsWith('MOUT')) {
+        selectedStatus.style.background = 'rgba(253, 224, 71, 0.25)';
+        selectedStatus.style.color = '#92400e';
+      } else if (statusCode.startsWith('VIN')) {
+        selectedStatus.style.background = 'rgba(16, 185, 129, 0.15)';
+        selectedStatus.style.color = '#065f46';
+      } else if (statusCode === 'epuise') {
+        selectedStatus.style.background = 'rgba(15, 23, 42, 0.2)';
+        selectedStatus.style.color = '#0f172a';
+      } else {
+        selectedStatus.style.background = 'rgba(59, 130, 246, 0.15)';
+        selectedStatus.style.color = '#1e3a8a';
+      }
+    }
+
+    function updateProgress(volume, capacity) {
+      if (capacity > 0) {
+        const ratio = Math.min(100, (volume / capacity) * 100);
+        progressFill.style.width = `${ratio}%`;
+        progressVolume.textContent = `${formatValue(volume, 'L')} utilisés`;
+        progressCapacity.textContent = `${formatValue(capacity, 'L')} capacité`;
+      } else {
+        progressFill.style.width = '100%';
+        progressVolume.textContent = `${formatValue(volume, 'L')} en stock`;
+        progressCapacity.textContent = 'Capacité —';
+      }
+    }
+
+    function updateStock(volume, capacity) {
+      stockVolume.textContent = formatValue(volume, 'L');
+      const capacitySafe = capacity > 0 ? capacity : volume || 1;
+      const ratio = Math.min(100, (volume / capacitySafe) * 100);
+      stockVolumeBar.style.width = `${ratio}%`;
+
+      if (capacity > 0) {
+        const remaining = Math.max(capacity - volume, 0);
+        stockFree.textContent = `${formatValue(remaining, 'L')} libres`;
+        const freeRatio = Math.min(100, (remaining / capacity) * 100);
+        stockFreeBar.style.width = `${freeRatio}%`;
+      } else {
+        stockFree.textContent = '—';
+        stockFreeBar.style.width = '0%';
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      return dateStr;
+    }
+
+    window.openLotPreview = function(event, row) {
+      if (event && event.target && event.target.closest('a, button')) {
+        return;
+      }
+      if (!row) return;
+      const data = row.dataset;
+      if (selectedLotRow) selectedLotRow.classList.remove('selected');
+      row.classList.add('selected');
+      selectedLotRow = row;
+
+      const code = data.code || 'Lot technique';
+      const detailUrl = data.detailUrl || '#';
+      headerTitle.textContent = code;
+      headerMeta.textContent = data.cuvee ? `${data.cuvee} · Campagne ${data.campagne || '—'}` : `Campagne ${data.campagne || '—'}`;
+      headerOpenBtn.disabled = detailUrl === '#';
+      headerOpenBtn.classList.toggle('disabled', detailUrl === '#');
+      headerOpenBtn.onclick = detailUrl === '#' ? null : () => window.location = detailUrl;
+
+      selectedCode.textContent = code;
+      selectedContenant.textContent = data.contenant || '—';
+      selectedCuvee.textContent = data.cuvee || '—';
+      selectedCreated.textContent = formatDate(data.created);
+      selectedVolume.textContent = formatValue(data.volume, 'L');
+      selectedVolumeHl.textContent = formatValue(data.volumeHl, 'hL');
+
+      setStatusPill(data.statut, data.statutLabel);
+
+      const volume = parseFloat(data.volume || 0);
+      const capacity = parseFloat(data.capacity || 0);
+      updateProgress(volume, capacity);
+      updateStock(volume, capacity);
+
+      if (data.task) {
+        taskBlock.style.display = 'flex';
+        taskLabel.textContent = data.task;
+        if (data.taskAction) {
+          taskAction.style.display = '';
+          taskAction.onclick = () => window.location = data.taskAction;
+        } else {
+          taskAction.style.display = 'none';
+        }
+      } else {
+        taskBlock.style.display = 'none';
+      }
+
+      analyticsDegre.textContent = data.degre ? `${data.degre}°` : '—';
+      analyticsPh.textContent = data.ph || '—';
+      analyticsSo2.textContent = data.so2 ? `${data.so2} mg/L` : '—';
+      analyticsNewBtn.onclick = () => window.location = `${detailUrl}#analyses`;
+
+      setButtonAction(actionDetail, detailUrl);
+      setButtonAction(actionSoutirage, `${detailUrl}#soutirage`);
+      setButtonAction(actionAnalyse, `${detailUrl}#analyses`);
+      setButtonAction(actionMouvement, `${detailUrl}#mouvements`);
+      setButtonAction(footerMove, `${detailUrl}#mouvements`);
+
+      if (data.alert) {
+        alertsBlock.style.display = 'block';
+        alertsText.textContent = data.alert;
+        alertsEmpty.style.display = 'none';
+      } else {
+        alertsBlock.style.display = 'none';
+        alertsEmpty.style.display = 'block';
+      }
+
+      lotSidebar.classList.add('open');
+      lotOverlay.classList.add('open');
+    };
+
+    window.closeLotPreview = function(silent) {
+      if (!silent && selectedLotRow) {
+        selectedLotRow.classList.remove('selected');
+        selectedLotRow = null;
+      }
+      lotSidebar.classList.remove('open');
+      lotOverlay.classList.remove('open');
+    };
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeLotPreview();
+      }
+    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initLotSidebarPreview);
+    } else {
+      initLotSidebarPreview();
+    }
+  </script>
 {% endblock %}

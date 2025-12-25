@@ -1,0 +1,5629 @@
+{
+  "doc_id": "pno2019cdcigpalpesmaritimes",
+  "generated_at": "2025-12-23T18:04:51.250127",
+  "total_tokens": 666,
+  "metier_tokens": [
+    "geographique",
+    "inao",
+    "cepages",
+    "rouges",
+    "blancs",
+    "roses",
+    "titre",
+    "alcoometrique",
+    "volumique",
+    "acquis",
+    "rouge",
+    "cepage",
+    "grenache",
+    "cinsault",
+    "rose",
+    "recolte",
+    "vinification",
+    "communes",
+    "blanc",
+    "cabernet",
+    "sauvignon",
+    "carignan",
+    "chardonnay",
+    "chenin",
+    "fer",
+    "gamay",
+    "gewurztraminer",
+    "merlot",
+    "mourvedre",
+    "muscadelle",
+    "pinot",
+    "riesling",
+    "semillon",
+    "syrah",
+    "tannat",
+    "rendement",
+    "hectare",
+    "hectolitres",
+    "commune",
+    "controle",
+    "sucres",
+    "organisme"
+  ],
+  "boilerplate_tokens": [
+    "national",
+    "inao",
+    "qualite",
+    "origine",
+    "institut",
+    "tsa",
+    "montreuil",
+    "cedex",
+    "mel"
+  ],
+  "index": {
+    "cahier": [
+      {
+        "page": 1,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "charges": [
+      {
+        "page": 1,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "igp": [
+      {
+        "page": 2,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 1,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "alpes": [
+      {
+        "page": 2,
+        "count": 8,
+        "score": 3.0
+      },
+      {
+        "page": 4,
+        "count": 7,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 6,
+        "score": 3.0
+      },
+      {
+        "page": 1,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "maritmes": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "nationa": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "indications": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "protegees": [
+      {
+        "page": 1,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "cidres": [
+      {
+        "page": 1,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "avril": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "geographique": [
+      {
+        "page": 4,
+        "count": 7,
+        "score": 10.0
+      },
+      {
+        "page": 2,
+        "count": 6,
+        "score": 10.0
+      },
+      {
+        "page": 3,
+        "count": 6,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 3,
+        "score": 10.0
+      },
+      {
+        "page": 6,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 1,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "protegee": [
+      {
+        "page": 2,
+        "count": 6,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 4,
+        "score": 1.0
+      },
+      {
+        "page": 3,
+        "count": 3,
+        "score": 1.0
+      },
+      {
+        "page": 1,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "maritimes": [
+      {
+        "page": 2,
+        "count": 7,
+        "score": 3.0
+      },
+      {
+        "page": 4,
+        "count": 5,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 4,
+        "score": 3.0
+      },
+      {
+        "page": 1,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "national": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": -5.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "indica": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "tions": [
+      {
+        "page": 1,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "inao": [
+      {
+        "page": 8,
+        "count": 3,
+        "score": 10.0
+      },
+      {
+        "page": 1,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "vins": [
+      {
+        "page": 6,
+        "count": 12,
+        "score": 0.0
+      },
+      {
+        "page": 2,
+        "count": 10,
+        "score": 0.0
+      },
+      {
+        "page": 5,
+        "count": 9,
+        "score": 0.0
+      },
+      {
+        "page": 3,
+        "count": 6,
+        "score": 0.0
+      },
+      {
+        "page": 4,
+        "count": 5,
+        "score": 0.0
+      },
+      {
+        "page": 7,
+        "count": 5,
+        "score": 0.0
+      }
+    ],
+    "ndication": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "modifie": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "product": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "indication": [
+      {
+        "page": 2,
+        "count": 5,
+        "score": 0.0
+      },
+      {
+        "page": 4,
+        "count": 4,
+        "score": 0.0
+      },
+      {
+        "page": 3,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "cepages": [
+      {
+        "page": 5,
+        "count": 5,
+        "score": 10.0
+      },
+      {
+        "page": 2,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "men": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "primeur": [
+      {
+        "page": 2,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "couleurs": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "tranquilles": [
+      {
+        "page": 2,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "mousseux": [
+      {
+        "page": 6,
+        "count": 3,
+        "score": 3.0
+      },
+      {
+        "page": 2,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "qualite": [
+      {
+        "page": 2,
+        "count": 2,
+        "score": -5.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": -5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": -5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": -5.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "rouges": [
+      {
+        "page": 2,
+        "count": 4,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 6,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "blancs": [
+      {
+        "page": 2,
+        "count": 3,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 6,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "roses": [
+      {
+        "page": 2,
+        "count": 3,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 6,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "reservees": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "ana": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "lytiques": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "specifiques": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "presentent": [
+      {
+        "page": 2,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "titre": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "alcoometrique": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "volumique": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "acquis": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "organoleptiques": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "tanniques": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "races": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "puissants": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "robe": [
+      {
+        "page": 2,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "rouge": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "rubis": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "grenat": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "profonde": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "reflets": [
+      {
+        "page": 2,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "violaces": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "epices": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "puissante": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "vre": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "cepage": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "brachet": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "apportee": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "grenache": [
+      {
+        "page": 5,
+        "count": 3,
+        "score": 10.0
+      },
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "cinsault": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "rose": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 2,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "lumineuse": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "saumones": [
+      {
+        "page": 2,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "complexes": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "elegants": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "caracteris": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "agrumes": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "allient": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "fruite": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "vivacite": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "jaune": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "pale": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "verts": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "brillante": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "limpide": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "bulle": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "fine": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "elegante": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "reable": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "utilises": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "cuvee": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "zone": [
+      {
+        "page": 3,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "recolte": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "vinification": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "beneficiant": [
+      {
+        "page": 3,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "communes": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "immediat": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "arrondissements": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "limitrophes": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "var": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "arrondissement": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "draguignan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "de-haute": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "provence": [
+      {
+        "page": 4,
+        "count": 5,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "barcelonnette": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "castellane": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "classes": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "varietes": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "cuve": [
+      {
+        "page": 7,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "suivante": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "alicante": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "henri": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "bouschet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "aligote": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "altesse": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "aramon": [
+      {
+        "page": 3,
+        "count": 3,
+        "score": 3.0
+      }
+    ],
+    "aranel": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "arbane": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "arinarnoa": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "arriloba": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "arrouya": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "artaban": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "aubin": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "vert": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "aubun": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "auxerrois": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "bachet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "barbaroux": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "baroque": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "beclan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "bequignol": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "biancu": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gentile": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "blanc": [
+      {
+        "page": 3,
+        "count": 6,
+        "score": 10.0
+      },
+      {
+        "page": 4,
+        "count": 6,
+        "score": 10.0
+      }
+    ],
+    "dame": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "bouchales": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "bouillet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "bouquettraube": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "bourboulenc": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "bouteillan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "rachet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "brun": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "argente": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "fourca": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "cabernet": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "sauvignon": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "caladoc": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "calitor": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "camaralet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "lasseube": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "carcajolo": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "carignan": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "carmenere": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "castets": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "cesar": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "chardonnay": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "chasan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "chatus": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "chenanson": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "chenin": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "clairette": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "clarin": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "claverie": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "codivarta": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "colombard": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "corbeau": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "cot": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "couderc": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "noir": [
+      {
+        "page": 4,
+        "count": 5,
+        "score": 0.0
+      },
+      {
+        "page": 3,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "counoise": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "courbu": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "couston": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "crouchen": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "duras": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "durif": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "egiodola": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ekigaina": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "elb": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ling": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "etraire": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "dui": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "fer": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "feunate": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "floreal": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "folignan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "folle": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "blanche": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "fuella": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "nera": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "furmint": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gamaret": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gamay": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "bouze": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gascon": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "genovese": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gewurztraminer": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "goldriesling": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gouget": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "graisse": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gramon": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "grassen": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "grenac": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gringet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "grolleau": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "gros": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "manseng": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 3.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "joubertin": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "jurancon": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "knipperle": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "lauzet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "liliorila": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "listan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "lledoner": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "pelut": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "macabeu": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "mancin": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "marechal": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "och": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "marsanne": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "marselan": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "mauzac": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "mayorquin": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "melon": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "merille": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "merlot": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "meslier": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "francois": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "meunier": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "milgranet": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "molette": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mollard": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "monarch": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mondeuse": [
+      {
+        "page": 3,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "monerac": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "montils": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mor": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "rastel": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mourvaison": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mourvedre": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "mouyssagues": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "muller": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "thurgau": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "muresconu": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "muscadelle": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "muscadin": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "muscaris": [
+      {
+        "page": 3,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "muscat": [
+      {
+        "page": 4,
+        "count": 4,
+        "score": 1.0
+      },
+      {
+        "page": 3,
+        "count": 3,
+        "score": 1.0
+      }
+    ],
+    "petits": [
+      {
+        "page": 3,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "grains": [
+      {
+        "page": 3,
+        "count": 3,
+        "score": 1.0
+      }
+    ],
+    "alexandrie": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "cendre": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "hambourg": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "ottonel": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "negret": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "banhars": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "negrette": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "nielluccio": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "fleurien": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "oberlin": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ondenc": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "orbois": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "pagadebiti": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "pascal": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "perdea": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "persan": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "petit": [
+      {
+        "page": 4,
+        "count": 4,
+        "score": 1.0
+      }
+    ],
+    "verdot": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "picardan": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "pineau": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "aunis": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "not": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "pinot": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "gris": [
+      {
+        "page": 4,
+        "count": 6,
+        "score": 0.0
+      }
+    ],
+    "piquepoul": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 3.0
+      }
+    ],
+    "plant": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "brunel": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "portan": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "portugais": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "bleu": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "precoce": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 3.0
+      }
+    ],
+    "bousquet": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "malingre": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "prior": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "prunelard": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "raffiat": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "moncade": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "riesling": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "riminese": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "rivairenc": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 3.0
+      }
+    ],
+    "roublot": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "roussanne": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "roussette": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ayze": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "sacy": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "saint": [
+      {
+        "page": 4,
+        "count": 6,
+        "score": 0.0
+      }
+    ],
+    "come": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "macaire": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "pierre": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "dore": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "sciaccarello": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "segalin": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "seinoir": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "sele": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "semebat": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "semillon": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "servanin": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "solaris": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "soreli": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "souvignier": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "sylvaner": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "syrah": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "tannat": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "tempranillo": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "teoulier": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "terret": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 3.0
+      }
+    ],
+    "tibouren": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "tourbat": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "tressot": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ugni": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "valdiguie": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "varousset": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "velteliner": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "verdesse": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "vermentino": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "vidoc": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "villard": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "viognier": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "voltis": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "rendement": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 10.0
+      },
+      {
+        "page": 7,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "production": [
+      {
+        "page": 4,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "hectare": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "hectolitres": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "lies": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "bourbes": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "eventuels": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "destine": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "distillation": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "industriel": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "exceder": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "specificite": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "france": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "azur": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "bordure": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "mediterranee": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "zon": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "couvre": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "departement": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "frontalier": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "italie": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "caracterisee": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "extreme": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "variabilite": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "paysages": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "climats": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "tures": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "passant": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "kilometres": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "environnement": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "littoral": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "voire": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "insulaire": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "iles": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "lerins": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "haute": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "montagne": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "agricole": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "trouve": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "localisee": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "bande": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "littorale": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "concurrence": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "fonciere": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "remontant": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "montagnes": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "coteaux": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 0.0
+      },
+      {
+        "page": 5,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "mieux": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "exposes": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "territoires": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "cotoie": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "traditionnellement": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "olivier": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "orientees": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "productions": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "florales": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "maraicheres": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "vignoble": [
+      {
+        "page": 4,
+        "count": 4,
+        "score": 0.0
+      },
+      {
+        "page": 5,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "etendu": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "revendiques": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "fragmente": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ilots": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "importants": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "nice": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "jeannet": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "paul-de-vence": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "reparti": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "petites": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "convient": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "noter": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "commune": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "cotoient": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "appellati": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "origine": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": -5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": -5.0
+      },
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "bellet": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "moines": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "abbaye": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "ile": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "honorat": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "large": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "cannes": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "alpine": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "revolution": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "pliocene": [
+      {
+        "page": 4,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "naissance": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "mer": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 1.0
+      },
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "basculement": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 5.0
+      }
+    ],
+    "depots": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "sedimentaires": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "resultent": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "couronnes": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "epaisseurs": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "conglomerats": [
+      {
+        "page": 4,
+        "count": 3,
+        "score": 3.0
+      }
+    ],
+    "dits": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "delta": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mettent": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "altitude": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "escarpes": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "etaient": [
+      {
+        "page": 4,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "sols": [
+      {
+        "page": 5,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "issus": [
+      {
+        "page": 5,
+        "count": 4,
+        "score": 0.0
+      }
+    ],
+    "constitues": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "poudingues": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "silico": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "galets": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "roules": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "massifs": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "alpins": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "voisins": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "notable": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "dolomitiques": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "argilo": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "riches": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "magnesium": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "implante": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "aller": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "presque": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "orientes": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "rarement": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "plateaux": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "sommet": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "respectant": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "expositions": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "soigneusement": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ctionnees": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "vignes": [
+      {
+        "page": 5,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "enracinent": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "etroites": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "banquettes": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "faconnees": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "homme": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "restanques": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "constituees": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "melanges": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "sable": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "grossier": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "clair": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "poudingue": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "veines": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "argileuses": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "pluvi": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "ometrie": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "annuelle": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "heures": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "fondamentale": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "caracterisation": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "regnant": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "vents": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "soumet": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "descendent": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "durant": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "nuit": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "matinee": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "brise": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "vient": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "journee": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "economique": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "repose": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "necessite": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "pouvoir": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "implanter": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "elaborer": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "originaux": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "satisfaire": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "marches": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "particularites": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "volont": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "vignerons": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "braquet": [
+      {
+        "page": 5,
+        "count": 3,
+        "score": 5.0
+      }
+    ],
+    "interessantes": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "aptitudes": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "vieilliss": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ement": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "trouvera": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "commun": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "reste": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "partir": [
+      {
+        "page": 5,
+        "count": 5,
+        "score": 0.0
+      }
+    ],
+    "domaines": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "elaborent": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "revelent": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "floraux": [
+      {
+        "page": 5,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "fruitees": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "cinsaul": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "designe": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "rolle": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "d'agrumes": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "montrer": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "aptitude": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "vieillir": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "d'autres": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "entrer": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "composition": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "mou": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "rvedre": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "rappellent": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "causal": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "ecificite": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "fortement": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "changeants": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "contrastes": [
+      {
+        "page": 5,
+        "count": 2,
+        "score": 5.0
+      }
+    ],
+    "mediterraneen": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "cumule": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "provencal": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "certaines": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "influen": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "septentrionales": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "soleil": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "froid": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "saisissants": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ubac": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "adret": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "influencent": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "autant": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "oliviers": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "hommes": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "drainants": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "vegetatif": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "preservant": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "degats": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "orages": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "estivaux": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "ensoleille": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "maturation": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      },
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "preservation": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "maladies": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "cryptogamiques": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "contribue": [
+      {
+        "page": 5,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "caracteristique": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "processus": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "lent": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "indispensable": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "elegance": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "puissant": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "tannique": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "imp": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "lantation": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "favorisee": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "suffisamment": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "eloignes": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "decourager": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "invasions": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "barbares": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "neanmoins": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "assez": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "proches": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "permettre": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "echanges": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "commerciaux": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "malgre": [
+      {
+        "page": 6,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "cultures": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "illet": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "fut": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "lucrative": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "seconde": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "guerre": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "mondiale": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "redeveloppa": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "progressivement": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "opiniatrete": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "familles": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "conserver": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "anciens": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "adaptes": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "quinzaine": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "familiales": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "defendent": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "encore": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "produisent": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "environ": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "tranquil": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "statut": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "produites": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "otegee": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "developper": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "ait": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "remarquable": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "demonstration": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "gamme": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "valorisee": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "reputation": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "soient": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "attestee": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "sante": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "commercialisee": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "regional": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "clientele": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "touristique": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "prix": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "valorisants": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "natio": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "nal": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "exportation": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "logo": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "l'union": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "europeenne": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "figure": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "remplacee": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "traditionnelle": [
+      {
+        "page": 6,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "exigences": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "nationales": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "communautaires": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "conforme": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "prevues": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "reglementation": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "vigueur": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "structu": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "relles": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "valuation": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "controle": [
+      {
+        "page": 7,
+        "count": 12,
+        "score": 10.0
+      },
+      {
+        "page": 8,
+        "count": 2,
+        "score": 10.0
+      }
+    ],
+    "documentaire": [
+      {
+        "page": 7,
+        "count": 5,
+        "score": 0.0
+      }
+    ],
+    "automatique": [
+      {
+        "page": 7,
+        "count": 3,
+        "score": 5.0
+      }
+    ],
+    "cas": [
+      {
+        "page": 7,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "anomalie": [
+      {
+        "page": 7,
+        "count": 3,
+        "score": 5.0
+      }
+    ],
+    "ter": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "rain": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "produits": [
+      {
+        "page": 7,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "tav": [
+      {
+        "page": 7,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "volatile": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "sucres": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "anhydride": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "sulfureux": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "examen": [
+      {
+        "page": 7,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "organoleptique": [
+      {
+        "page": 7,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "conditi": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "onnes": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "interne": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "commercialisation": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "vinificateurs": [
+      {
+        "page": 7,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "autorite": [
+      {
+        "page": 8,
+        "count": 2,
+        "score": 3.0
+      }
+    ],
+    "chargee": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "competente": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "designee": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "institut": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "coordonnees": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "rue": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 3.0
+      }
+    ],
+    "rol": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "tanguy": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "tsa": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "montreuil": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "cedex": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "standard": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ],
+    "mel": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": -5.0
+      }
+    ],
+    "organisme": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 10.0
+      }
+    ],
+    "bas": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "d'inspection": [
+      {
+        "page": 8,
+        "count": 2,
+        "score": 1.0
+      }
+    ],
+    "realises": [
+      {
+        "page": 8,
+        "count": 3,
+        "score": 0.0
+      }
+    ],
+    "contr": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 1.0
+      }
+    ],
+    "oles": [
+      {
+        "page": 8,
+        "count": 1,
+        "score": 5.0
+      }
+    ]
+  }
+}

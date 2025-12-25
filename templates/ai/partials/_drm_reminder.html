@@ -1,0 +1,32 @@
+{# Rappel DRM pour le header #}
+{% if drm %}
+<div class="drm-reminder d-inline-flex align-items-center">
+    {% if drm.is_overdue %}
+    {# DRM en retard - alerte rouge #}
+    <a href="/drm/brouillon/?period={{ drm.period }}" 
+       class="btn btn-sm btn-danger d-flex align-items-center gap-1 py-1"
+       title="DRM {{ drm.period_display }} en retard">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span class="d-none d-lg-inline">DRM en retard</span>
+    </a>
+    
+    {% elif drm.is_urgent %}
+    {# DRM urgente - warning orange #}
+    <a href="/drm/brouillon/?period={{ drm.period }}" 
+       class="btn btn-sm btn-warning d-flex align-items-center gap-1 py-1"
+       title="DRM {{ drm.period_display }} - J-{{ drm.days_remaining }}">
+        <i class="bi bi-clock-history"></i>
+        <span class="d-none d-lg-inline">J-{{ drm.days_remaining }} DRM</span>
+    </a>
+    
+    {% elif drm.days_remaining <= 7 %}
+    {# DRM proche - info discret #}
+    <a href="/drm/brouillon/?period={{ drm.period }}" 
+       class="btn btn-sm btn-link text-muted d-flex align-items-center gap-1 py-1"
+       title="DRM {{ drm.period_display }} dans {{ drm.days_remaining }} jours">
+        <i class="bi bi-calendar-check"></i>
+        <span class="d-none d-xl-inline small">DRM J-{{ drm.days_remaining }}</span>
+    </a>
+    {% endif %}
+</div>
+{% endif %}

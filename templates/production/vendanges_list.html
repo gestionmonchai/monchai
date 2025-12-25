@@ -1,5 +1,45 @@
 {% extends 'production/base_production.html' %}
 {% block title %}Vendanges - Mon Chai{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+{% include '_components/preview_sidebar.html' with include_only_css=True %}
+<style>
+  .vendange-sidebar .preview-header h2 {
+    color: #5a1e29;
+  }
+  .vendange-sidebar .preview-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .vendange-sidebar .preview-stat-card:nth-child(1) {
+    border-top: 3px solid rgba(90, 30, 41, 0.35);
+  }
+  .vendange-sidebar .preview-stat-card:nth-child(2) {
+    border-top: 3px solid rgba(229, 179, 80, 0.5);
+  }
+  .vendange-sidebar .preview-stat-card:nth-child(3) {
+    border-top: 3px solid rgba(103, 201, 151, 0.5);
+  }
+  .vendange-sidebar .preview-quick-actions {
+    background: linear-gradient(135deg, #8b1e3f 0%, #511024 100%);
+  }
+  .vendange-sidebar .preview-quick-action {
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.1);
+  }
+  .vendange-sidebar .preview-quick-action i {
+    color: #f7d7a1;
+  }
+  .vendange-sidebar .preview-alert {
+    border-left: 4px solid rgba(255, 124, 69, 0.8);
+    background: rgba(255, 204, 188, 0.4);
+  }
+  .vendange-row.selected {
+    background: rgba(255, 245, 240, 0.8);
+    box-shadow: inset 3px 0 0 #8b2e3f;
+  }
+</style>
+{% endblock %}
+
 {% block production_content %}
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-3">
@@ -190,6 +230,105 @@
   </div>
 </div>
 
+<div class="preview-overlay" id="vendange-preview-overlay" onclick="closeVendangePreview()"></div>
+<aside class="preview-sidebar vendange-sidebar" id="vendange-preview-sidebar">
+  <div class="preview-header">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <h2 class="h4 fw-bold mb-0" id="preview-v-code">Vendange</h2>
+          <span class="badge rounded-pill text-bg-secondary" id="preview-v-status">Statut</span>
+        </div>
+        <small class="text-muted" id="preview-v-date">—</small>
+      </div>
+      <button class="btn btn-outline-light text-dark border-0" type="button" onclick="closeVendangePreview()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="preview-stats mt-3">
+      <div class="preview-stat-card">
+        <div class="preview-stat-label">Poids total</div>
+        <div class="preview-stat-value" id="preview-v-poids">— kg</div>
+      </div>
+      <div class="preview-stat-card">
+        <div class="preview-stat-label">Déjà encuvé</div>
+        <div class="preview-stat-value" id="preview-v-encuve">— kg</div>
+      </div>
+      <div class="preview-stat-card">
+        <div class="preview-stat-label">Reste</div>
+        <div class="preview-stat-value" id="preview-v-restant">— kg</div>
+      </div>
+    </div>
+  </div>
+  <div class="preview-body">
+    <section class="preview-quick-actions">
+      <h3><i class="bi bi-bolt-fill text-warning"></i> Actions rapides</h3>
+      <div class="preview-action-grid">
+        <button type="button" class="preview-quick-action" id="preview-btn-encuvage">
+          <i class="bi bi-box-arrow-in-right"></i>
+          Lancer encuvage
+        </button>
+        <button type="button" class="preview-quick-action" id="preview-btn-fiche">
+          <i class="bi bi-eye"></i>
+          Ouvrir la fiche
+        </button>
+        <button type="button" class="preview-quick-action" id="preview-btn-cuvee">
+          <i class="bi bi-tag"></i>
+          Affecter cuvée
+        </button>
+        <button type="button" class="preview-quick-action" id="preview-btn-cloture">
+          <i class="bi bi-archive"></i>
+          Clôturer
+        </button>
+      </div>
+    </section>
+    <section class="preview-section">
+      <h3>Détails vendange</h3>
+      <div class="preview-card">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Parcelle</span>
+          <strong id="preview-v-parcelle">—</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Cuvée</span>
+          <strong id="preview-v-cuvee">—</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Degré potentiel</span>
+          <strong id="preview-v-degre">—</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small">Contenant cible</span>
+          <strong id="preview-v-contenant">—</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted small">Température</span>
+          <strong id="preview-v-temperature">—</strong>
+        </div>
+      </div>
+      <div class="preview-card preview-alert mt-3" id="preview-v-alert" style="display:none;">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-octagon-fill text-danger"></i>
+          <div>
+            <div class="fw-bold text-danger mb-0">Reste à encuver</div>
+            <small class="text-muted" id="preview-v-alert-text"></small>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="preview-footer">
+    <div class="d-grid gap-2">
+      <a href="#" class="preview-footer-link" id="preview-v-detail-link">
+        <i class="bi bi-eye me-2"></i> Voir la fiche complète
+      </a>
+      <a href="#" class="btn btn-outline-primary" id="preview-v-encuvage-link">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Aller à l'encuvage
+      </a>
+    </div>
+  </div>
+</aside>
+
 <style>
 .view-panel { transition: opacity 0.2s; }
 /* Kanban Board */
@@ -370,6 +509,108 @@
           const total = meta.getAttribute('data-total') || '0';
           info.textContent = total + ' vendange' + (parseInt(total) > 1 ? 's' : '');
         }
+        if (selectedVendangeRow) {
+          selectedVendangeRow.classList.remove('selected');
+          selectedVendangeRow = null;
+        }
+        closeVendangePreview(true);
+      }
+    });
+
+    const formatter = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+    const sidebar = document.getElementById('vendange-preview-sidebar');
+    const overlay = document.getElementById('vendange-preview-overlay');
+    const weightLabel = document.getElementById('preview-v-poids');
+    const encuveLabel = document.getElementById('preview-v-encuve');
+    const restantLabel = document.getElementById('preview-v-restant');
+    const statusBadge = document.getElementById('preview-v-status');
+    const alertBox = document.getElementById('preview-v-alert');
+    const alertText = document.getElementById('preview-v-alert-text');
+    let selectedVendangeRow = null;
+
+    function formatKg(value) {
+      const num = parseFloat(value || 0);
+      if (isNaN(num)) return '— kg';
+      return `${formatter.format(num)} kg`;
+    }
+
+    window.openVendangePreview = function(event, row) {
+      if (event && event.target && event.target.closest('a, button')) {
+        return;
+      }
+      if (!row) return;
+      const data = row.dataset;
+      if (selectedVendangeRow) selectedVendangeRow.classList.remove('selected');
+      row.classList.add('selected');
+      selectedVendangeRow = row;
+
+      document.getElementById('preview-v-code').textContent = data.code || 'Vendange';
+      document.getElementById('preview-v-date').textContent = data.date || '—';
+      document.getElementById('preview-v-parcelle').textContent = data.parcelle || '—';
+      document.getElementById('preview-v-cuvee').textContent = data.cuvee || '—';
+      document.getElementById('preview-v-degre').textContent = data.degre && data.degre !== '—' ? `${data.degre} °` : '—';
+      document.getElementById('preview-v-contenant').textContent = data.contenant || '—';
+      document.getElementById('preview-v-temperature').textContent = data.temperature && data.temperature !== '—' ? `${data.temperature} °C` : '—';
+
+      weightLabel.textContent = formatKg(data.poids);
+      encuveLabel.textContent = formatKg(data.encuves);
+      restantLabel.textContent = formatKg(data.restant);
+
+      statusBadge.textContent = data.statutLabel || '—';
+      statusBadge.className = 'badge rounded-pill';
+      if (data.statut === 'encuvee') {
+        statusBadge.classList.add('bg-success');
+      } else if (data.statut === 'receptionnee') {
+        statusBadge.classList.add('bg-warning', 'text-dark');
+      } else if (data.statut === 'close') {
+        statusBadge.classList.add('bg-dark');
+      } else {
+        statusBadge.classList.add('bg-secondary');
+      }
+
+      const restant = parseFloat(data.restant || 0);
+      if (!isNaN(restant) && restant > 0) {
+        alertBox.style.display = 'block';
+        alertText.textContent = `Encore ${formatter.format(restant)} kg à encuver`;
+      } else {
+        alertBox.style.display = 'none';
+      }
+
+      const detailBtn = document.getElementById('preview-btn-fiche');
+      const encuvageBtn = document.getElementById('preview-btn-encuvage');
+      const cuveeBtn = document.getElementById('preview-btn-cuvee');
+      const closeBtn = document.getElementById('preview-btn-cloture');
+      const detailLink = document.getElementById('preview-v-detail-link');
+      const encuvageLink = document.getElementById('preview-v-encuvage-link');
+
+      const detailUrl = data.detailUrl || '#';
+      const encuvageUrl = data.encuvageUrl || '#';
+      detailLink.href = detailUrl;
+      encuvageLink.href = encuvageUrl;
+
+      detailBtn.onclick = () => window.location = detailUrl;
+      encuvageBtn.onclick = () => window.location = encuvageUrl;
+      cuveeBtn.onclick = () => window.location = `${detailUrl}#affectation-cuvee`;
+      closeBtn.onclick = () => window.location = `${detailUrl}?action=close`;
+
+      sidebar.classList.add('open');
+      overlay.classList.add('open');
+    };
+
+    window.closeVendangePreview = function(silent) {
+      if (!silent) {
+        if (selectedVendangeRow) {
+          selectedVendangeRow.classList.remove('selected');
+          selectedVendangeRow = null;
+        }
+      }
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    };
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeVendangePreview();
       }
     });
   });

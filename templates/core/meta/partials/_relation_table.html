@@ -1,0 +1,100 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Tableau d'une relation (HTMX)
+=====================================================
+Utilisé pour le chargement/filtrage HTMX des relations.
+Variable attendue: relation (dict avec items, list_fields, etc.)
+=====================================================
+-->
+
+{% if relation.items %}
+<table class="relation-table">
+    <thead>
+        <tr>
+            {% for field in relation.list_fields %}
+            <th>{{ field.label|default:field }}</th>
+            {% endfor %}
+            <th style="width: 80px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in relation.items %}
+        <tr>
+            {% for field in relation.list_fields %}
+            <td>
+                {% if field == '__str__' %}
+                    {% if relation.detail_url_name %}
+                    <a href="{% url relation.detail_url_name item.pk %}">{{ item }}</a>
+                    {% else %}
+                    {{ item }}
+                    {% endif %}
+                {% else %}
+                    {% with value=item|getattr:field %}
+                    {% if value %}{{ value }}{% else %}-{% endif %}
+                    {% endwith %}
+                {% endif %}
+            </td>
+            {% endfor %}
+            <td>
+                <div class="relation-actions">
+                    {% if relation.detail_url_name %}
+                    <a href="{% url relation.detail_url_name item.pk %}" class="btn btn-sm btn-outline-secondary" title="Voir">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% if relation.page.has_other_pages %}
+<div class="relation-pagination">
+    <nav>
+        <ul class="pagination pagination-sm mb-0">
+            {% if relation.page.has_previous %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?mode=relations&page_{{ relation.name }}={{ relation.page.previous_page_number }}"
+                   hx-get="?mode=relations&page_{{ relation.name }}={{ relation.page.previous_page_number }}"
+                   hx-target="#relation-{{ relation.name }}-content"
+                   hx-swap="innerHTML">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item disabled">
+                <span class="page-link">{{ relation.page.number }}/{{ relation.paginator.num_pages }}</span>
+            </li>
+            
+            {% if relation.page.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?mode=relations&page_{{ relation.name }}={{ relation.page.next_page_number }}"
+                   hx-get="?mode=relations&page_{{ relation.name }}={{ relation.page.next_page_number }}"
+                   hx-target="#relation-{{ relation.name }}-content"
+                   hx-swap="innerHTML">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<div class="relation-empty">
+    <i class="bi bi-inbox"></i>
+    <p>Aucun élément</p>
+    {% if relation.can_create and relation.create_url %}
+    <a href="{{ relation.create_url }}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-plus-lg me-1"></i>Créer
+    </a>
+    {% endif %}
+</div>
+{% endif %}

@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'referentiels/base_referentiels.html' %}
 {% load static %}
 
 {% block title %}Entrepôts - {{ organization.name }}{% endblock %}
 
-{% block content %}
+{% block referentiels_content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,10 +11,6 @@
                 <i class="bi bi-building me-2 text-secondary"></i>Entrepôts
             </h1>
             <div class="d-flex align-items-center">
-                <a href="{% url 'referentiels:home' %}" class="btn btn-outline-secondary me-2">
-                    <i class="bi bi-arrow-left"></i> Référentiels
-                </a>
-                
                 <!-- Boutons Import/Export -->
                 {% include 'components/import_export_buttons.html' with entity_type='entrepot' entity_name='Entrepôts' %}
                 

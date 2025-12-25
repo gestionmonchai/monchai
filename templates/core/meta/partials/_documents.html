@@ -1,0 +1,272 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Vue DOCUMENTS - Pièces jointes
+=====================================================
+Liste des documents avec filtres, recherche et upload.
+=====================================================
+-->
+
+<div class="meta-documents">
+    <!-- Header -->
+    <div class="meta-content-header">
+        <h2 class="meta-content-title">
+            <i class="bi bi-folder me-2"></i>Documents
+            {% if documents_page.paginator.count %}
+            <span class="badge bg-secondary ms-2">{{ documents_page.paginator.count }}</span>
+            {% endif %}
+        </h2>
+        
+        {% if can_upload %}
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="bi bi-upload me-1"></i>Ajouter
+        </button>
+        {% endif %}
+    </div>
+    
+    <div class="meta-content-body p-0">
+        <!-- Filtres -->
+        <div class="documents-filters">
+            <div class="documents-search">
+                <i class="bi bi-search"></i>
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       placeholder="Rechercher..."
+                       value="{{ documents_search }}"
+                       hx-get="?mode=documents"
+                       hx-trigger="keyup changed delay:300ms"
+                       hx-target="#documents-list"
+                       hx-include="[name='category']"
+                       name="q">
+            </div>
+            
+            <div class="documents-category-filter">
+                <select name="category" 
+                        class="form-select form-select-sm"
+                        hx-get="?mode=documents"
+                        hx-trigger="change"
+                        hx-target="#documents-list"
+                        hx-include="[name='q']">
+                    <option value="">Toutes catégories</option>
+                    {% for code, label in document_categories %}
+                    <option value="{{ code }}" {% if current_category == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <!-- Liste des documents -->
+        <div id="documents-list">
+            {% if documents %}
+            <div class="documents-grid">
+                {% for doc in documents %}
+                <div class="document-card">
+                    <div class="document-icon">
+                        {% if doc.file_type == 'pdf' %}
+                        <i class="bi bi-file-pdf text-danger"></i>
+                        {% elif doc.file_type == 'image' %}
+                        <i class="bi bi-file-image text-primary"></i>
+                        {% elif doc.file_type == 'spreadsheet' %}
+                        <i class="bi bi-file-excel text-success"></i>
+                        {% elif doc.file_type == 'text' %}
+                        <i class="bi bi-file-text text-secondary"></i>
+                        {% else %}
+                        <i class="bi bi-file-earmark text-muted"></i>
+                        {% endif %}
+                    </div>
+                    <div class="document-info">
+                        <h4 class="document-title">{{ doc.title|truncatechars:30 }}</h4>
+                        <div class="document-meta">
+                            <span class="document-category">{{ doc.get_category_display }}</span>
+                            <span class="document-date">{{ doc.created_at|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                    <div class="document-actions">
+                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Télécharger">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" title="Supprimer">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if documents_page.has_other_pages %}
+            <div class="documents-pagination">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if documents_page.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" 
+                               href="?mode=documents&page={{ documents_page.previous_page_number }}"
+                               hx-get="?mode=documents&page={{ documents_page.previous_page_number }}"
+                               hx-target="#documents-list">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="page-item disabled">
+                            <span class="page-link">{{ documents_page.number }}/{{ documents_page.paginator.num_pages }}</span>
+                        </li>
+                        {% if documents_page.has_next %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?mode=documents&page={{ documents_page.next_page_number }}"
+                               hx-get="?mode=documents&page={{ documents_page.next_page_number }}"
+                               hx-target="#documents-list">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="documents-empty">
+                <i class="bi bi-folder-x"></i>
+                <p>Aucun document</p>
+                {% if can_upload %}
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="bi bi-upload me-1"></i>Ajouter un document
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Documents styles */
+.documents-filters {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+}
+
+.documents-search {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+}
+
+.documents-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+.documents-search input {
+    padding-left: 2rem;
+}
+
+.documents-category-filter {
+    min-width: 150px;
+}
+
+/* Grid */
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.document-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    transition: all 0.15s ease;
+}
+
+.document-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.document-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border-radius: 0.375rem;
+    flex-shrink: 0;
+}
+
+.document-icon i {
+    font-size: 1.25rem;
+}
+
+.document-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.document-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+    margin: 0 0 0.25rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.document-meta {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.document-category {
+    background: #e5e7eb;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+}
+
+.document-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.document-actions .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Empty */
+.documents-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+}
+
+.documents-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* Pagination */
+.documents-pagination {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+</style>

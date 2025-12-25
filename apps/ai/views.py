@@ -14,8 +14,25 @@ from .ollama_client import ollama_generate, OllamaError
 from .router import resolve_page_effective, BASES
 from .intents import intent_for
 from .rag import rag_engine
+from .rag_duras import retrieve_duras_context
+from .docs_loader import docs_loader, search_help, get_contextual_help
 
 logger = logging.getLogger('ai.help')
+STRICT_DIRECTIVES = (
+    "DIRECTIVES POUR QUESTIONS TECHNIQUES:\n"
+    "- Réponds UNIQUEMENT avec les informations du CONTEXTE DOCUMENTAIRE ci-dessus.\n"
+    "- Si l'info n'est pas dans le contexte, dis : \"Je ne trouve pas cette information dans les documents disponibles.\"\n"
+    "- Cite tes sources : [DOCUMENT: ...]\n"
+    "- N'invente jamais de chiffres ou règles.\n"
+)
+
+
+def _clamp_answer(text: str) -> str:
+    """Limit assistant responses to HELP_MAX_RESPONSE_CHARS."""
+    max_chars = int(getattr(settings, 'HELP_MAX_RESPONSE_CHARS', 0) or 0)
+    if max_chars and text and len(text) > max_chars:
+        return text[:max_chars].rstrip() + "…"
+    return text
 
 
 @csrf_exempt  # TODO: sécuriser CSRF pour production si nécessaire
@@ -170,32 +187,77 @@ def help_assistant(request: HttpRequest):
     if doc_snippets:
         doc_snippets = doc_snippets[:max_docs]
 
+    # Retrieve RAG snippets and merge with contextual hints for better grounding
+    rag_docs = ''
+    duras_docs = ''
+    help_docs = ''
+    
+    # Try docs_loader first (documentation exhaustive)
+    try:
+        help_docs = search_help(message or '', url_value)
+    except Exception:
+        help_docs = ''
+    
+    # Try Duras-specific RAG
+    try:
+        duras_docs = retrieve_duras_context(message or '', limit_chars=max_docs)
+    except Exception:
+        duras_docs = ''
+    
+    # Only use general RAG if other sources didn't return enough
+    if not help_docs and (not duras_docs or '[DURAS::FACT::' not in duras_docs):
+        try:
+            rag_docs = rag_engine.retrieve(message or '')
+        except Exception:
+            rag_docs = ''
+    
+    merged_docs = []
+    if help_docs:
+        merged_docs.append("DOCUMENTATION MONCHAI:\n" + help_docs[:max_docs])
+    if duras_docs:
+        merged_docs.append("CONTEXTE DURAS:\n" + duras_docs[:max_docs])
+    if rag_docs:
+        merged_docs.append("CONTEXTE DOCUMENTAIRE:\n" + rag_docs[:max_docs])
+    if merged_docs:
+        kn_section = "\n\n".join(merged_docs)
+        doc_snippets = f"{doc_snippets}\n\n{kn_section}" if doc_snippets else kn_section
+
+    # Detect if question is conversational vs technical
+    # Only greetings/thanks are conversational, everything else gets context
+    conversational_only = ['bonjour', 'salut', 'merci', 'bonsoir', 'hello', 'hi', 'ok', 'oui', 'non', 'bye']
+    is_conversational = message.lower().strip() in conversational_only
+    
     if unrestricted:
         # Minimal prompt: plain question only (terminal-like chat)
         prompt_text = message
     else:
         parts = []
-        parts.append(f"PAGE_URL: {url_value}")
-        parts.append(f"PAGE_EFFECTIVE: {eff_value}")
-        parts.append("")
         parts.append(f"QUESTION: {message}")
         parts.append("")
-        parts.append("PAGE_HINTS:")
-        parts.append(page_hints or "N/A")
-        parts.append("")
-        parts.append("DOC_SNIPPETS:")
-        parts.append(doc_snippets or "N/A")
-        parts.append("")
-        parts.append("INTENT_MATCH:")
-        parts.append(intent_match or "N/A")
-        parts.append("")
-        parts.append("INTENT_STEPS:")
+        
+        # Only add context for technical questions
+        if not is_conversational and doc_snippets and doc_snippets != "N/A":
+            parts.append("CONTEXTE DOCUMENTAIRE:")
+            parts.append(doc_snippets)
+            parts.append("")
+            parts.append(STRICT_DIRECTIVES)
+            parts.append("")
+        
+        if page_hints and page_hints != "N/A":
+            parts.append("PAGE_HINTS:")
+            parts.append(page_hints)
+            parts.append("")
+        
+        if intent_match and intent_match != "N/A":
+            parts.append("INTENT_MATCH:")
+            parts.append(intent_match)
+            parts.append("")
+        
         if intent_steps_list:
+            parts.append("INTENT_STEPS:")
             parts.extend([f"- {s}" for s in intent_steps_list][:6])
-        else:
-            parts.append("N/A")
-        parts.append("")
-        parts.append(f"SEE_ALSO: {see_also}")
+            parts.append("")
+        
         prompt_text = "\n".join(parts)
 
     # Cache lookup (per mode + message + page + intent + model)
@@ -234,6 +296,7 @@ def help_assistant(request: HttpRequest):
         # Sanitize and extract RESPONSES section if present
         answer = answer.replace('<|assistant|>', '').replace('<|user|>', '').replace('[CONTRAINDICE]', '').strip()
         answer = _extract_responses_only(answer)
+        answer = _clamp_answer(answer)
         resp = {'answer': answer, 'page_effective': eff_value}
         try:
             logger.info("help_assistant ok model=%s ms=%d unrestricted=%s", str(model_name), dur_ms, str(unrestricted))
@@ -242,7 +305,7 @@ def help_assistant(request: HttpRequest):
         cache.set(ckey, resp, cache_ttl)
         return JsonResponse(resp)
     except OllamaError:
-        text = _degraded_text(eff_value, intent_steps_list, see_also or eff_value)
+        text = _clamp_answer(_degraded_text(eff_value, intent_steps_list, see_also or eff_value))
         resp = {'answer': text, 'page_effective': eff_value, 'degraded': True}
         try:
             logger.warning("help_assistant degraded (ollama) model=%s", str(model_name))
@@ -251,7 +314,7 @@ def help_assistant(request: HttpRequest):
         cache.set(ckey, resp, cache_ttl)
         return JsonResponse(resp, status=200)
     except Exception:
-        text = _degraded_text(eff_value, intent_steps_list, see_also or eff_value)
+        text = _clamp_answer(_degraded_text(eff_value, intent_steps_list, see_also or eff_value))
         resp = {'answer': text, 'page_effective': eff_value, 'degraded': True}
         try:
             logger.warning("help_assistant degraded (error) model=%s", str(model_name))
@@ -314,10 +377,32 @@ def help_query(request: HttpRequest):
     see_also = intent.get('see_also') if intent else ''
 
     # RAG: Retrieve doc snippets
-    rag_docs = rag_engine.retrieve(question)
+    max_docs = int(getattr(settings, 'HELP_MAX_DOCS_CHARS', 600))
+    
+    # Try docs_loader first (documentation exhaustive)
+    try:
+        help_docs = search_help(question or '', page_effective)
+    except Exception:
+        help_docs = ''
+    
+    try:
+        rag_docs = rag_engine.retrieve(question)
+    except Exception:
+        rag_docs = ''
+    try:
+        duras_docs = retrieve_duras_context(question, limit_chars=max_docs)
+    except Exception:
+        duras_docs = ''
+    
+    merged_docs = []
+    if help_docs:
+        merged_docs.append("DOCUMENTATION MONCHAI:\n" + help_docs[:max_docs])
     if rag_docs:
-        # If we have specific docs, they might be more useful than intents for general Q&A
-        pass
+        merged_docs.append(rag_docs[:max_docs])
+    if duras_docs:
+        merged_docs.append(duras_docs[:max_docs])
+    if merged_docs:
+        rag_docs = "\n\n".join(merged_docs)[:max_docs * 2]  # Augmente la limite pour la doc
 
     def module_from_effective(url: str) -> str:
         for name, base in BASES.items():
@@ -401,39 +486,34 @@ def help_query(request: HttpRequest):
             body.append(f"Voir aussi : {see}")
         return "\n".join(body)
 
+    # Detect if question is conversational vs technical
+    # Only greetings/thanks are conversational, everything else gets context
+    conversational_only = ['bonjour', 'salut', 'merci', 'bonsoir', 'hello', 'hi', 'ok', 'oui', 'non', 'bye']
+    is_conversational = question.lower().strip() in conversational_only
+    
     # Compose prompt
     if unrestricted:
-        # En mode 'unrestricted' mais 'helpful', on injecte quand même le contexte s'il est pertinent
         parts = []
         if history_text:
-            parts.append("HISTORIQUE CONVERSATION:")
+            parts.append("HISTORIQUE:")
             parts.append(history_text)
             parts.append("")
-        if rag_docs:
+        parts.append(f"QUESTION: {question}")
+        parts.append("")
+        
+        # Only add strict context for technical questions
+        if not is_conversational and rag_docs and rag_docs != "N/A":
             parts.append("CONTEXTE DOCUMENTAIRE:")
             parts.append(rag_docs)
             parts.append("")
-        parts.append(question)
-        prompt = "\n".join(parts)
-    else:
-        parts = [
-            f"PAGE_URL: {page_url}",
-            f"PAGE_EFFECTIVE: {page_effective}",
-            "HISTORIQUE CONVERSATION:",
-            history_text or "N/A",
-            "",
-            f"QUESTION: {question}",
-            "",
-            "DOC_SNIPPETS:",  # RAG injection point
-            rag_docs or "N/A",
-            "",
-            "INTENT_STEPS:",
-        ]
+            parts.append(STRICT_DIRECTIVES)
+            parts.append("")
+        
         if intent_steps:
+            parts.append("SUGGESTIONS:")
             parts.extend([f"- {s}" for s in intent_steps][:6])
-        else:
-            parts.append("N/A")
-        parts.extend(["", f"SEE_ALSO: {see_also}"])
+            parts.append("")
+        
         prompt = "\n".join(parts)
 
     # Cache lookup (per mode + question + effective page + model)
@@ -481,6 +561,7 @@ def help_query(request: HttpRequest):
                 pass
             return s
         text = _extract_responses_only(text)
+        text = _clamp_answer(text)
         resp = {
             'text': text,
             'page_effective': page_effective,
@@ -494,7 +575,7 @@ def help_query(request: HttpRequest):
         return JsonResponse(resp)
     except OllamaError:
         # Degraded mode: return actionable fallback instead of 502
-        text = degraded_answer()
+        text = _clamp_answer(degraded_answer())
         resp = {
             'text': text,
             'page_effective': page_effective,
@@ -509,7 +590,7 @@ def help_query(request: HttpRequest):
         return JsonResponse(resp, status=200)
     except Exception:
         # Unknown error: still try to help with degraded mode
-        text = degraded_answer()
+        text = _clamp_answer(degraded_answer())
         resp = {
             'text': text,
             'page_effective': page_effective,

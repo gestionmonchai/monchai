@@ -1,0 +1,128 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Vue CARTE - Affichage géographique
+=====================================================
+Pour objets avec coordonnées GPS ou GeoJSON.
+=====================================================
+-->
+
+<div class="meta-carte">
+    <div class="meta-content-header">
+        <h2 class="meta-content-title">
+            <i class="bi bi-geo-alt me-2"></i>Carte
+        </h2>
+    </div>
+    
+    <div class="meta-content-body p-0">
+        {% if has_coordinates or geojson %}
+        <div id="map-container" class="carte-map">
+            <!-- Carte Leaflet -->
+            <div id="meta-map" style="height: 400px; width: 100%;"></div>
+        </div>
+        
+        <div class="carte-info">
+            {% if latitude and longitude %}
+            <div class="carte-coords">
+                <i class="bi bi-crosshair"></i>
+                <span>{{ latitude }}, {{ longitude }}</span>
+                <a href="https://www.google.com/maps?q={{ latitude }},{{ longitude }}" 
+                   target="_blank" 
+                   class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="bi bi-box-arrow-up-right"></i> Google Maps
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if latitude and longitude %}
+            const lat = {{ latitude }};
+            const lng = {{ longitude }};
+            
+            const map = L.map('meta-map').setView([lat, lng], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            
+            // Marqueur
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup('{{ object }}')
+                .openPopup();
+            
+            {% if geojson %}
+            // GeoJSON si disponible
+            try {
+                const geojsonData = {{ geojson|safe }};
+                if (geojsonData) {
+                    const geojsonLayer = L.geoJSON(geojsonData, {
+                        style: {
+                            color: '#722f37',
+                            weight: 2,
+                            fillOpacity: 0.2
+                        }
+                    }).addTo(map);
+                    map.fitBounds(geojsonLayer.getBounds());
+                }
+            } catch (e) {
+                console.log('GeoJSON non disponible');
+            }
+            {% endif %}
+            {% endif %}
+        });
+        </script>
+        {% else %}
+        <div class="carte-empty">
+            <i class="bi bi-geo-alt-fill"></i>
+            <p>Aucune coordonnée GPS disponible</p>
+            <p class="text-muted small">Ajoutez les coordonnées dans la fiche pour afficher la carte</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.carte-map {
+    min-height: 400px;
+    background: #f3f4f6;
+}
+
+.carte-info {
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+}
+
+.carte-coords {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.carte-coords i {
+    color: #722f37;
+}
+
+.carte-empty {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: #9ca3af;
+}
+
+.carte-empty i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+#meta-map {
+    z-index: 1;
+}
+</style>

@@ -1,0 +1,244 @@
+{% extends "core/meta/base_meta_detail.html" %}
+{% load static %}
+
+{% block meta_icon %}geo-alt{% endblock %}
+{% block meta_title %}{{ parcelle.nom }}{% endblock %}
+{% block meta_subtitle %}Parcelle · {{ parcelle.surface }} ha · {{ parcelle.commune|default:"Commune non renseignée" }}{% endblock %}
+
+{% block meta_content %}
+<div class="meta-fiche">
+    <div class="meta-content-header">
+        <h2 class="meta-content-title">
+            <i class="bi bi-card-text me-2"></i>Fiche parcelle
+        </h2>
+        <a href="{% url 'referentiels:parcelle_edit' parcelle.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+    </div>
+    
+    <div class="meta-content-body">
+        <!-- Informations générales -->
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">Informations générales</h3>
+            <div class="fiche-grid">
+                <div class="fiche-field">
+                    <span class="fiche-label">Nom</span>
+                    <span class="fiche-value">{{ parcelle.nom }}</span>
+                </div>
+                <div class="fiche-field">
+                    <span class="fiche-label">Surface</span>
+                    <span class="fiche-value">{{ parcelle.surface }} ha</span>
+                </div>
+                <div class="fiche-field">
+                    <span class="fiche-label">Commune</span>
+                    <span class="fiche-value">{{ parcelle.commune|default:"-" }}</span>
+                </div>
+                <div class="fiche-field">
+                    <span class="fiche-label">Lieu-dit</span>
+                    <span class="fiche-value">{{ parcelle.lieu_dit|default:"-" }}</span>
+                </div>
+                <div class="fiche-field">
+                    <span class="fiche-label">Appellation</span>
+                    <span class="fiche-value">{{ parcelle.appellation|default:"-" }}</span>
+                </div>
+                <div class="fiche-field">
+                    <span class="fiche-label">Couleur</span>
+                    <span class="fiche-value">{{ parcelle.get_couleur_display|default:"-" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Références cadastrales -->
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">Références cadastrales</h3>
+            <div class="fiche-grid">
+                <div class="fiche-field">
+                    <span class="fiche-label">Référence cadastrale</span>
+                    <span class="fiche-value">{{ parcelle.cadastre|default:"-" }}</span>
+                </div>
+                <div class="fiche-field">
+                    <span class="fiche-label">Numéro INAO</span>
+                    <span class="fiche-value">{{ parcelle.numero_inao|default:"-" }}</span>
+                </div>
+                {% if parcelle.latitude and parcelle.longitude %}
+                <div class="fiche-field">
+                    <span class="fiche-label">Coordonnées GPS</span>
+                    <span class="fiche-value">{{ parcelle.latitude }}, {{ parcelle.longitude }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Encépagement -->
+        {% if encepagements %}
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">
+                Encépagement
+                <span class="badge bg-secondary ms-2">{{ parcelle.get_encepagement_total_percent }}%</span>
+            </h3>
+            <div class="encepagement-list">
+                {% for enc in encepagements %}
+                <div class="encepagement-item">
+                    <div class="encepagement-cepage">
+                        <span class="encepagement-name">{{ enc.cepage.nom }}</span>
+                        {% if enc.annee_plantation %}
+                        <span class="encepagement-age text-muted">({{ enc.age_vignes }} ans)</span>
+                        {% endif %}
+                    </div>
+                    <div class="encepagement-details">
+                        <span class="encepagement-pct badge bg-primary">{{ enc.pourcentage }}%</span>
+                        <span class="encepagement-surface text-muted">{{ enc.surface_ha }} ha</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Certifications -->
+        {% if certifications %}
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">Certifications</h3>
+            <div class="certifications-list">
+                {% for cert in certifications %}
+                <span class="badge bg-success me-1">{{ cert }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Alertes -->
+        {% if alerts %}
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">
+                <i class="bi bi-exclamation-triangle text-warning me-1"></i>Alertes
+            </h3>
+            <div class="fiche-alerts">
+                {% for alert in alerts %}
+                <div class="fiche-alert fiche-alert-{{ alert.level }}">
+                    <i class="bi bi-{{ alert.icon }}"></i>
+                    <span>{{ alert.message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Notes -->
+        {% if parcelle.notes %}
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">Notes</h3>
+            <p class="text-muted">{{ parcelle.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.fiche-section {
+    margin-bottom: 1.5rem;
+}
+.fiche-section:last-child {
+    margin-bottom: 0;
+}
+.fiche-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+.fiche-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.fiche-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.fiche-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+.fiche-value {
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+/* Encépagement */
+.encepagement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.encepagement-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+}
+.encepagement-cepage {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.encepagement-name {
+    font-weight: 500;
+}
+.encepagement-age {
+    font-size: 0.8rem;
+}
+.encepagement-details {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.encepagement-surface {
+    font-size: 0.8rem;
+}
+
+/* Alerts */
+.fiche-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.fiche-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+.fiche-alert-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+.fiche-alert-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+</style>
+{% endblock %}
+
+{% block meta_quick_actions %}
+<a href="{% url 'referentiels:parcelle_edit' parcelle.pk %}" class="meta-quick-action">
+    <i class="bi bi-pencil"></i> Modifier
+</a>
+<a href="{% url 'production:vendange_new' %}?parcelle={{ parcelle.pk }}" class="meta-quick-action">
+    <i class="bi bi-basket"></i> Saisir vendange
+</a>
+<a href="{% url 'production:journal_cultural' %}?parcelle={{ parcelle.pk }}" class="meta-quick-action">
+    <i class="bi bi-journal-text"></i> Journal cultural
+</a>
+{% endblock %}

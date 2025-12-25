@@ -1,0 +1,131 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Liste des événements timeline (HTMX)
+=====================================================
+Utilisé pour le chargement/filtrage HTMX de la timeline.
+=====================================================
+-->
+
+{% if timeline_events %}
+<ul class="timeline-list">
+    {% for event in timeline_events %}
+    <li class="timeline-item {% if event.is_pinned %}timeline-pinned{% endif %}" data-event-type="{{ event.event_type }}">
+        <div class="timeline-marker type-{{ event.event_type }}">
+            {% if event.event_type == 'operation' %}
+            <i class="bi bi-gear"></i>
+            {% elif event.event_type == 'document' %}
+            <i class="bi bi-file-earmark"></i>
+            {% elif event.event_type == 'status' %}
+            <i class="bi bi-arrow-repeat"></i>
+            {% elif event.event_type == 'note' %}
+            <i class="bi bi-sticky"></i>
+            {% elif event.event_type == 'link' %}
+            <i class="bi bi-link-45deg"></i>
+            {% elif event.event_type == 'creation' %}
+            <i class="bi bi-plus-circle"></i>
+            {% elif event.event_type == 'modification' %}
+            <i class="bi bi-pencil"></i>
+            {% elif event.event_type == 'alert' %}
+            <i class="bi bi-exclamation-triangle"></i>
+            {% elif event.event_type == 'analysis' %}
+            <i class="bi bi-clipboard-pulse"></i>
+            {% elif event.event_type == 'movement' %}
+            <i class="bi bi-arrow-left-right"></i>
+            {% else %}
+            <i class="bi bi-circle"></i>
+            {% endif %}
+        </div>
+        
+        <div class="timeline-body">
+            <div class="timeline-header">
+                <h4 class="timeline-title">
+                    {% if event.get_source_url %}
+                    <a href="{{ event.get_source_url }}">{{ event.title }}</a>
+                    {% else %}
+                    {{ event.title }}
+                    {% endif %}
+                </h4>
+                <span class="timeline-date">
+                    {{ event.created_at|date:"d/m/Y" }}
+                    <span class="d-none d-sm-inline">{{ event.created_at|time:"H:i" }}</span>
+                </span>
+            </div>
+            
+            {% if event.summary %}
+            <p class="timeline-summary">{{ event.summary|truncatechars:150 }}</p>
+            {% endif %}
+            
+            <div class="timeline-meta">
+                <span>
+                    <i class="bi bi-tag"></i>
+                    {{ event.get_event_type_display }}
+                </span>
+                {% if event.created_by %}
+                <span>
+                    <i class="bi bi-person"></i>
+                    {{ event.created_by.get_full_name|default:event.created_by.email }}
+                </span>
+                {% endif %}
+                {% if event.is_pinned %}
+                <span class="text-warning">
+                    <i class="bi bi-pin-fill"></i>
+                    Épinglé
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- Pagination -->
+{% if timeline_page.has_other_pages %}
+<div class="timeline-pagination">
+    <nav aria-label="Pagination timeline">
+        <ul class="pagination pagination-sm mb-0">
+            {% if timeline_page.has_previous %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?mode=timeline&page={{ timeline_page.previous_page_number }}"
+                   hx-get="?mode=timeline&page={{ timeline_page.previous_page_number }}"
+                   hx-target="#timeline-list"
+                   hx-swap="innerHTML">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item disabled">
+                <span class="page-link">
+                    {{ timeline_page.number }} / {{ timeline_page.paginator.num_pages }}
+                </span>
+            </li>
+            
+            {% if timeline_page.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?mode=timeline&page={{ timeline_page.next_page_number }}"
+                   hx-get="?mode=timeline&page={{ timeline_page.next_page_number }}"
+                   hx-target="#timeline-list"
+                   hx-swap="innerHTML">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
+{% else %}
+<div class="timeline-empty">
+    <i class="bi bi-inbox"></i>
+    <p>Aucun événement enregistré</p>
+    {% if can_add_event %}
+    <button class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-plus-lg me-1"></i>Ajouter le premier événement
+    </button>
+    {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,29 @@
+{% if events %}
+<div class="parcelle-events-list">
+  {% for event in events %}
+  <div class="parcelle-preview-timeline-item">
+    <div class="parcelle-preview-timeline-icon {{ event.color }}">
+      <i class="bi {{ event.icon }}"></i>
+    </div>
+    <div class="parcelle-preview-timeline-content">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="fw-semibold">{{ event.title }}</div>
+          {% if event.description %}
+          <div class="text-muted small">{{ event.description }}</div>
+          {% endif %}
+        </div>
+        <span class="text-muted small">{{ event.date_display }}</span>
+      </div>
+      {% if event.meta %}
+      <div class="badge bg-light text-muted mt-1">{{ event.meta }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="parcelle-preview-timeline-item text-muted small">
+  Aucun évènement trouvé.
+</div>
+{% endif %}

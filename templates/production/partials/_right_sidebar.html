@@ -1,0 +1,410 @@
+<!--
+=====================================================================
+SIDEBAR DROITE PRODUCTION - ACTIONS CONTEXTUELLES + TIMELINE
+=====================================================================
+Affiche les actions possibles sur l'objet consulté + timeline des événements.
+Priorise les actions si fiche individuelle, sinon affiche timeline globale.
+=====================================================================
+Variables attendues :
+- primary_object (object, optional) - L'objet principal consulté
+- primary_object_type (str) - Type: lot, parcelle, cuve, vendange...
+- primary_object_edit_url (str, optional)
+- actions_context (list of dict: {label, url, icon, color})
+- timelapse_events (list)
+- timelapse_scope_label (str)
+=====================================================================
+-->
+
+<div class="right-sidebar-production">
+    <!-- ========== ACTIONS CONTEXTUELLES (si fiche individuelle) ========== -->
+    {% if primary_object %}
+    <div class="right-sidebar-section actions-section">
+        <div class="section-header">
+            <h6 class="mb-0">
+                <i class="bi bi-lightning-charge me-1 text-warning"></i>
+                Actions
+            </h6>
+        </div>
+        <div class="section-content">
+            <!-- Bouton Modifier -->
+            {% if primary_object_edit_url %}
+            <a href="{{ primary_object_edit_url }}" class="action-btn action-primary">
+                <i class="bi bi-pencil"></i>
+                <span>Modifier</span>
+            </a>
+            {% endif %}
+            
+            <!-- Actions contextuelles -->
+            {% if actions_context %}
+                {% for action in actions_context %}
+                <a href="{{ action.url|default:'#' }}" 
+                   class="action-btn {% if action.disabled %}disabled{% endif %}"
+                   {% if action.disabled %}aria-disabled="true"{% endif %}>
+                    <i class="bi bi-{{ action.icon|default:'arrow-right' }} {% if action.color %}text-{{ action.color }}{% endif %}"></i>
+                    <span>{{ action.label }}</span>
+                </a>
+                {% endfor %}
+            {% else %}
+                <!-- Actions par défaut selon le type d'objet -->
+                {% if primary_object_type == 'lot' %}
+                <a href="{% url 'production:operation_create' %}?lot={{ primary_object.pk }}" class="action-btn">
+                    <i class="bi bi-gear text-primary"></i><span>Ajouter opération</span>
+                </a>
+                <a href="{% url 'production:analyse_oeno_new' %}?lot={{ primary_object.pk }}" class="action-btn">
+                    <i class="bi bi-clipboard-pulse text-info"></i><span>Ajouter analyse</span>
+                </a>
+                <a href="{% url 'production:lot_tech_soutirage' primary_object.pk %}" class="action-btn">
+                    <i class="bi bi-arrow-down-up text-secondary"></i><span>Soutirage</span>
+                </a>
+                {% elif primary_object_type == 'parcelle' %}
+                <a href="{% url 'production:journal_cultural' %}?parcelle={{ primary_object.pk }}" class="action-btn">
+                    <i class="bi bi-journal-text text-success"></i><span>Journal cultural</span>
+                </a>
+                <a href="{% url 'production:vendange_new' %}?parcelle={{ primary_object.pk }}" class="action-btn">
+                    <i class="bi bi-basket text-warning"></i><span>Saisir vendange</span>
+                </a>
+                {% elif primary_object_type == 'contenant' or primary_object_type == 'cuve' %}
+                <a href="{% url 'production:contenants_affecter_lot' primary_object.pk %}" class="action-btn">
+                    <i class="bi bi-box-arrow-in-down text-primary"></i><span>Affecter lot</span>
+                </a>
+                <a href="{% url 'production:contenants_vidange' primary_object.pk %}" class="action-btn">
+                    <i class="bi bi-box-arrow-up text-secondary"></i><span>Vidange</span>
+                </a>
+                <a href="{% url 'production:contenants_nettoyage' primary_object.pk %}" class="action-btn">
+                    <i class="bi bi-droplet text-info"></i><span>Nettoyage</span>
+                </a>
+                {% elif primary_object_type == 'vendange' %}
+                <a href="{% url 'production:vendange_encuvage' primary_object.pk %}" class="action-btn">
+                    <i class="bi bi-box-arrow-in-down text-primary"></i><span>Encuver</span>
+                </a>
+                {% endif %}
+            {% endif %}
+            
+            <!-- Alerte toujours disponible -->
+            <a href="{% url 'production:alert_create' %}?scope={{ primary_object_type }}&scope_id={{ primary_object.pk }}&return={{ request.path|urlencode }}" class="action-btn action-alert">
+                <i class="bi bi-bell text-warning"></i>
+                <span>Créer alerte</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ========== TIMELINE / JOURNAL ========== -->
+    <div class="right-sidebar-section timeline-section">
+        <div class="section-header">
+            <h6 class="mb-0">
+                <i class="bi bi-clock-history me-1 text-primary"></i>
+                Journal
+                {% if timelapse_scope_label %}
+                <small class="text-muted fw-normal">· {{ timelapse_scope_label }}</small>
+                {% endif %}
+            </h6>
+            <!-- Filtres -->
+            <div class="timeline-filters mt-2">
+                <button class="filter-chip active" data-filter="all">Tout</button>
+                <button class="filter-chip" data-filter="operation">Opé</button>
+                <button class="filter-chip" data-filter="analyse">Ana</button>
+                <button class="filter-chip" data-filter="alerte">Alert</button>
+            </div>
+        </div>
+        
+        <div class="section-content timeline-content" id="timelineContent">
+            {% if timelapse_events %}
+            <ul class="timeline-list">
+                {% for event in timelapse_events %}
+                <li class="timeline-item" data-type="{{ event.type|default:'system' }}">
+                    <div class="timeline-marker {{ event.badge_class|default:'bg-secondary' }}">
+                        <i class="bi bi-{{ event.icon|default:'circle-fill' }}"></i>
+                    </div>
+                    <div class="timeline-body">
+                        <div class="timeline-title">
+                            {% if event.url %}
+                            <a href="{{ event.url }}">{{ event.title|truncatechars:35 }}</a>
+                            {% else %}
+                            {{ event.title|truncatechars:35 }}
+                            {% endif %}
+                        </div>
+                        {% if event.meta %}
+                        <div class="timeline-meta">{{ event.meta }}</div>
+                        {% endif %}
+                        <div class="timeline-date">
+                            <i class="bi bi-clock"></i>
+                            {{ event.date|date:"d/m H:i" }}
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <!-- État vide -->
+            <div class="timeline-empty">
+                <i class="bi bi-inbox"></i>
+                <p>Aucun événement récent</p>
+                <a href="{% url 'production:operation_create' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Ajouter
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== RIGHT SIDEBAR PRODUCTION ===== */
+.right-sidebar-production {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 90px);
+    overflow: hidden;
+}
+
+.right-sidebar-section {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.right-sidebar-section:last-child {
+    border-bottom: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.section-header {
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.section-header h6 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.section-content {
+    padding: 0.5rem;
+}
+
+/* Actions */
+.actions-section .section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.action-btn.action-primary {
+    background: #722f37;
+    color: #fff;
+}
+
+.action-btn.action-primary:hover {
+    background: #5a252c;
+}
+
+.action-btn.action-alert {
+    border: 1px dashed #fbbf24;
+    background: #fffbeb;
+}
+
+.action-btn.action-alert:hover {
+    background: #fef3c7;
+}
+
+.action-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.action-btn i {
+    font-size: 0.9rem;
+    width: 18px;
+    text-align: center;
+}
+
+/* Timeline filters */
+.timeline-filters {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.filter-chip {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.65rem;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    background: #fff;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+    border-color: #9ca3af;
+}
+
+.filter-chip.active {
+    background: #722f37;
+    border-color: #722f37;
+    color: #fff;
+}
+
+/* Timeline content */
+.timeline-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.timeline-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s ease;
+}
+
+.timeline-item:hover {
+    background: #fafafa;
+}
+
+.timeline-item[data-hidden="true"] {
+    display: none;
+}
+
+.timeline-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.timeline-marker i {
+    font-size: 0.6rem;
+    color: #fff;
+}
+
+.timeline-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #374151;
+    line-height: 1.3;
+}
+
+.timeline-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.timeline-title a:hover {
+    color: #722f37;
+}
+
+.timeline-meta {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-top: 0.1rem;
+}
+
+.timeline-date {
+    font-size: 0.65rem;
+    color: #9ca3af;
+    margin-top: 0.2rem;
+}
+
+.timeline-date i {
+    font-size: 0.6rem;
+    margin-right: 0.2rem;
+}
+
+/* Empty state */
+.timeline-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #9ca3af;
+}
+
+.timeline-empty i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.timeline-empty p {
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Mobile */
+@media (max-width: 991.98px) {
+    .right-sidebar-production {
+        max-height: none;
+    }
+    
+    .timeline-content {
+        max-height: 300px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtres timeline
+    const filterChips = document.querySelectorAll('.filter-chip');
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    
+    filterChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Update active state
+            filterChips.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter items
+            timelineItems.forEach(item => {
+                if (filter === 'all' || item.dataset.type === filter) {
+                    item.removeAttribute('data-hidden');
+                } else {
+                    item.setAttribute('data-hidden', 'true');
+                }
+            });
+        });
+    });
+});
+</script>

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'referentiels/base_referentiels.html' %}
 
 {% block title %}{% if is_new %}Nouveau produit{% else %}Modifier {{ produit.name }}{% endif %} - {{ organization.name }}{% endblock %}
 
@@ -130,7 +130,7 @@ body {
 </style>
 {% endblock %}
 
-{% block content %}
+{% block referentiels_content %}
 <form method="post" id="produit-form" enctype="multipart/form-data">
     {% csrf_token %}
     {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}

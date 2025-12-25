@@ -1,0 +1,261 @@
+{% extends '_layout/base_list_view.html' %}
+{% load static %}
+
+{# ===========================================
+   LISTE DES LOTS TECHNIQUES - Nouveau Design MonChai
+   =========================================== #}
+
+{% block sidebar_title %}Production{% endblock %}
+
+{% block sidebar_sections %}
+<div class="px-4 mt-4 mb-1 text-xs font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-1" style="color: var(--sidebar-green);">Vigne</div>
+<a href="{% url 'production:parcelles_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">
+    <i class="bi bi-geo-alt me-2"></i>Parcelles
+</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-1" style="color: var(--sidebar-orange);">Vendanges</div>
+<a href="{% url 'production:vendanges_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">
+    <i class="bi bi-basket me-2"></i>Réceptions
+</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold uppercase tracking-wide border-b border-gray-100 pb-1 flex justify-between text-brand-red">
+    Chai <span class="bg-gray-100 text-gray-500 text-[10px] px-1.5 rounded-full">{{ lots|length }}</span>
+</div>
+<a href="{% url 'production:lots_tech_list_v2' %}" class="block px-4 py-1.5 text-sm font-bold text-brand-red bg-red-50 ml-2 border-l-2 border-brand-red rounded-r">
+    <i class="bi bi-cup-straw me-2"></i>Lots techniques
+</a>
+<a href="{% url 'production:contenants_list_v2' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent">
+    <i class="bi bi-columns-gap me-2"></i>Cuves & barriques
+</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold uppercase tracking-wide border-b border-gray-100 pb-1 text-purple-700">Analyses</div>
+<a href="{% url 'production:analyses_oeno_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent">
+    <i class="bi bi-eyedropper me-2"></i>Analyses œnologiques
+</a>
+{% endblock %}
+
+{% block page_title %}Lots Techniques{% endblock %}
+{% block page_subtitle %}Gestion des lots en chai • {{ organization.name }}{% endblock %}
+
+{% block toolbar_filters %}
+<div class="mc-filter-pills">
+    <button type="button" class="mc-filter-pill active" data-filter="all">Tout</button>
+    <button type="button" class="mc-filter-pill" data-filter="en_cours">En cours</button>
+    <button type="button" class="mc-filter-pill" data-filter="elevage">Élevage</button>
+    <button type="button" class="mc-filter-pill" data-filter="pret">Prêt mise</button>
+</div>
+{% endblock %}
+
+{% block action_label %}Nouveau Lot{% endblock %}
+{% block action_onclick %}window.location.href='{% url "production:lot_tech_create" %}'{% endblock %}
+
+{% block grid_content %}
+{% for lot in lots %}
+<div class="mc-card {% if lot.couleur == 'rouge' %}lot-rouge{% elif lot.couleur == 'blanc' %}lot-blanc{% else %}lot-rose{% endif %}" 
+     data-id="{{ lot.id }}" 
+     data-filter="{% if lot.statut == 'VIN_ELEVAGE' %}elevage{% elif lot.statut == 'VIN_PRET_MISE' %}pret{% else %}en_cours{% endif %}"
+     onclick="selectLot({{ lot.id }})">
+    
+    <div class="mc-card-header">
+        <span class="mc-card-code">{{ lot.code }}</span>
+        <span class="mc-card-badge {% if lot.statut == 'VIN_ELEVAGE' %}mc-badge-purple{% elif lot.statut == 'VIN_PRET_MISE' %}mc-badge-green{% else %}mc-badge-orange{% endif %}">
+            {{ lot.get_statut_display|truncatechars:12 }}
+        </span>
+    </div>
+    
+    <div class="mc-card-body">
+        <h4 class="mc-card-title">{{ lot.cuvee.nom|default:lot.nom|default:"Sans cuvée" }}</h4>
+        <p class="mc-card-subtitle">{{ lot.campagne }}</p>
+        
+        <div class="mc-card-stats mt-3">
+            <div class="d-flex justify-content-between">
+                <span><i class="bi bi-droplet-fill"></i> {{ lot.volume_l|floatformat:0 }} L</span>
+                {% if lot.contenant %}
+                <span><i class="bi bi-box"></i> {{ lot.contenant }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="mc-empty-state" style="grid-column: 1 / -1;">
+    <i class="bi bi-inbox"></i>
+    <p>Aucun lot technique enregistré</p>
+    <a href="{% url 'production:lot_tech_create' %}" class="mc-btn-primary mt-3">
+        <i class="bi bi-plus-lg"></i> Créer un lot
+    </a>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block table_headers %}
+<th>Code</th>
+<th>Cuvée</th>
+<th>Campagne</th>
+<th>Volume</th>
+<th>Statut</th>
+<th>Contenant</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for lot in lots %}
+<tr data-id="{{ lot.id }}" 
+    data-filter="{% if lot.statut == 'VIN_ELEVAGE' %}elevage{% elif lot.statut == 'VIN_PRET_MISE' %}pret{% else %}en_cours{% endif %}"
+    onclick="selectLot({{ lot.id }})">
+    <td><strong>{{ lot.code }}</strong></td>
+    <td>{{ lot.cuvee.nom|default:"—" }}</td>
+    <td>{{ lot.campagne }}</td>
+    <td>{{ lot.volume_l|floatformat:0 }} L</td>
+    <td>
+        <span class="badge {% if lot.statut == 'VIN_ELEVAGE' %}bg-purple{% elif lot.statut == 'VIN_PRET_MISE' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+            {{ lot.get_statut_display }}
+        </span>
+    </td>
+    <td>{{ lot.contenant|default:"—" }}</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block preview_stats %}
+<div class="mc-preview-stat">
+    <div class="mc-preview-stat-label">Volume</div>
+    <div class="mc-preview-stat-value" id="stat-volume">—</div>
+</div>
+<div class="mc-preview-stat">
+    <div class="mc-preview-stat-label">TAV</div>
+    <div class="mc-preview-stat-value" id="stat-tav">—</div>
+</div>
+<div class="mc-preview-stat">
+    <div class="mc-preview-stat-label">SO2</div>
+    <div class="mc-preview-stat-value" id="stat-so2">—</div>
+</div>
+{% endblock %}
+
+{% block preview_quick_actions %}
+<div class="mc-quick-actions">
+    <div class="mc-quick-actions-title">
+        <i class="bi bi-lightning-fill"></i> Actions Rapides
+    </div>
+    <div class="mc-quick-actions-grid">
+        <button type="button" class="mc-quick-action-btn" onclick="actionAnalyse()">
+            <i class="bi bi-eyedropper"></i> Analyse
+        </button>
+        <button type="button" class="mc-quick-action-btn" onclick="actionSoutirage()">
+            <i class="bi bi-arrow-left-right"></i> Soutirage
+        </button>
+        <button type="button" class="mc-quick-action-btn" onclick="actionAssemblage()">
+            <i class="bi bi-plus-circle"></i> Assemblage
+        </button>
+        <button type="button" class="mc-quick-action-btn" onclick="actionMouvement()">
+            <i class="bi bi-arrow-down-up"></i> Mouvement
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block preview_sections %}
+<div class="mc-preview-section">
+    <h3 class="mc-preview-section-title">Composition</h3>
+    <div id="preview-composition" class="bg-white border rounded p-3">
+        <p class="text-muted small mb-0">Sélectionnez un lot</p>
+    </div>
+</div>
+
+<div class="mc-preview-section">
+    <h3 class="mc-preview-section-title">Derniers mouvements</h3>
+    <div class="mc-timeline" id="preview-timeline">
+        <div class="mc-timeline-item muted">
+            <div class="mc-timeline-date">—</div>
+            <div class="mc-timeline-title">Aucun mouvement</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block list_view_css %}
+<style>
+.mc-card.lot-rouge { border-left: 3px solid var(--mc-brand-red); }
+.mc-card.lot-blanc { border-left: 3px solid #E5B350; }
+.mc-card.lot-rose { border-left: 3px solid #FFB6C1; }
+.bg-purple { background-color: #8B5CF6; color: white; }
+</style>
+{% endblock %}
+
+{% block list_view_js %}
+<script>
+const lotsData = {
+    {% for lot in lots %}
+    {{ lot.id }}: {
+        id: {{ lot.id }},
+        code: "{{ lot.code }}",
+        nom: "{{ lot.nom|default:'' }}",
+        cuvee: "{{ lot.cuvee.nom|default:'' }}",
+        campagne: "{{ lot.campagne }}",
+        volume: {{ lot.volume_l|default:0 }},
+        statut: "{{ lot.get_statut_display }}",
+        contenant: "{{ lot.contenant|default:'' }}",
+        detailUrl: "{% url 'production:lot_tech_detail' lot.id %}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+function selectLot(id) {
+    const data = lotsData[id];
+    if (!data) return;
+    
+    document.getElementById('preview-title').innerHTML = `
+        Lot ${data.code}
+        <span class="badge mc-badge-red ms-2">${data.statut}</span>
+    `;
+    document.getElementById('preview-subtitle').textContent = data.cuvee || data.nom || 'Sans cuvée';
+    
+    document.getElementById('stat-volume').textContent = `${Math.round(data.volume)} L`;
+    document.getElementById('stat-tav').textContent = '—';
+    document.getElementById('stat-so2').textContent = '—';
+    
+    document.getElementById('preview-detail-link').href = data.detailUrl;
+    
+    selectItem(id, {
+        title: `Lot ${data.code}`,
+        subtitle: data.cuvee || data.nom,
+        detailUrl: data.detailUrl
+    });
+}
+
+function onFilterChange(filter) {
+    const cards = document.querySelectorAll('.mc-card[data-filter]');
+    const rows = document.querySelectorAll('.mc-table tbody tr[data-filter]');
+    
+    [...cards, ...rows].forEach(el => {
+        if (filter === 'all' || el.dataset.filter === filter) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
+
+function actionAnalyse() {
+    if (!selectedItemId) return;
+    window.location.href = `/production/lots-elevage/analyses/nouvelle/?lot=${selectedItemId}`;
+}
+
+function actionSoutirage() {
+    if (!selectedItemId) return;
+    const data = lotsData[selectedItemId];
+    if (data) {
+        window.location.href = `/production/soutirage/${data.code}/`;
+    }
+}
+
+function actionAssemblage() {
+    if (!selectedItemId) return;
+    window.location.href = `/production/assemblages/nouveau/?lot_source=${selectedItemId}`;
+}
+
+function actionMouvement() {
+    if (!selectedItemId) return;
+    window.location.href = `/production/lots/${selectedItemId}/mouvement/`;
+}
+</script>
+{% endblock %}

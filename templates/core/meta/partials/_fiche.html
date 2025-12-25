@@ -1,0 +1,225 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Vue FICHE - État courant et attributs
+=====================================================
+Affiche uniquement les attributs courants + résumés.
+Pas d'historique exhaustif ici.
+=====================================================
+-->
+
+<div class="meta-fiche">
+    <!-- Header de la fiche -->
+    <div class="meta-content-header">
+        <h2 class="meta-content-title">
+            <i class="bi bi-card-text me-2"></i>Fiche
+        </h2>
+        {% if object.get_absolute_url %}
+        <a href="{{ object.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="meta-content-body">
+        {% block fiche_content %}
+        <!-- Attributs principaux -->
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">Informations générales</h3>
+            <div class="fiche-grid">
+                {% block fiche_main_attributes %}
+                <!-- À surcharger par chaque modèle -->
+                <div class="fiche-field">
+                    <span class="fiche-label">ID</span>
+                    <span class="fiche-value">{{ object.pk }}</span>
+                </div>
+                {% if object.created_at %}
+                <div class="fiche-field">
+                    <span class="fiche-label">Créé le</span>
+                    <span class="fiche-value">{{ object.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% endif %}
+                {% if object.updated_at %}
+                <div class="fiche-field">
+                    <span class="fiche-label">Modifié le</span>
+                    <span class="fiche-value">{{ object.updated_at|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% endif %}
+                {% endblock %}
+            </div>
+        </div>
+        
+        <!-- Résumés rapides -->
+        {% if summary_cards %}
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">Résumé</h3>
+            <div class="fiche-summary-cards">
+                {% for card in summary_cards %}
+                <div class="fiche-summary-card">
+                    <div class="fiche-summary-icon" style="background: {{ card.color|default:'#e5e7eb' }};">
+                        <i class="bi {{ card.icon|default:'bi-info-circle' }}"></i>
+                    </div>
+                    <div class="fiche-summary-content">
+                        <span class="fiche-summary-value">{{ card.value }}</span>
+                        <span class="fiche-summary-label">{{ card.label }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Alertes actives -->
+        {% if alerts %}
+        <div class="fiche-section">
+            <h3 class="fiche-section-title">
+                <i class="bi bi-exclamation-triangle text-warning me-1"></i>Alertes
+            </h3>
+            <div class="fiche-alerts">
+                {% for alert in alerts %}
+                <div class="fiche-alert fiche-alert-{{ alert.level|default:'warning' }}">
+                    <i class="bi bi-{{ alert.icon|default:'exclamation-circle' }}"></i>
+                    <span>{{ alert.message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Attributs secondaires -->
+        {% block fiche_secondary_attributes %}{% endblock %}
+        
+        {% endblock %}
+    </div>
+</div>
+
+<style>
+/* Fiche styles */
+.fiche-section {
+    margin-bottom: 1.5rem;
+}
+
+.fiche-section:last-child {
+    margin-bottom: 0;
+}
+
+.fiche-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.fiche-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.fiche-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.fiche-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.fiche-value {
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.fiche-value:empty::after {
+    content: '-';
+    color: #9ca3af;
+}
+
+/* Summary cards */
+.fiche-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.fiche-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.fiche-summary-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.fiche-summary-icon i {
+    font-size: 1.25rem;
+}
+
+.fiche-summary-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.fiche-summary-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.fiche-summary-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+/* Alerts */
+.fiche-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fiche-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.fiche-alert-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.fiche-alert-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.fiche-alert-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+</style>

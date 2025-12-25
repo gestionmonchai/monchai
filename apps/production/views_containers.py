@@ -39,7 +39,6 @@ class ContenantListView(ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        # KPI rapides
         qs = self.get_queryset()
         try:
             total = qs.count()
@@ -53,19 +52,15 @@ class ContenantListView(ListView):
             occ = qs.aggregate(s=Sum('volume_occupe_l'))['s'] or Decimal('0')
         except Exception:
             occ = Decimal('0')
-        # Calcul du % d'occupation
         if cap_utile and cap_utile > 0:
             occupation_pct = round(float(occ / cap_utile * 100), 1)
         else:
             occupation_pct = 0
-        # Comptage cuves occupées vs libres
         try:
             cuves_occupees = qs.filter(volume_occupe_l__gt=0).count()
         except Exception:
             cuves_occupees = 0
-        # Volume libre
         libre = cap_utile - occ if cap_utile else Decimal('0')
-        # Conversion L vers HL pour affichage
         cap_utile_hl = cap_utile / 100 if cap_utile else Decimal('0')
         occ_hl = occ / 100 if occ else Decimal('0')
         libre_hl = libre / 100 if libre else Decimal('0')
@@ -87,6 +82,55 @@ class ContenantListView(ListView):
                 {'name': 'Cuves & barriques', 'url': None},
             ],
         })
+        return ctx
+
+
+@method_decorator(login_required, name='dispatch')
+class ContenantListViewV2(ListView):
+    """Nouvelle version avec design MonChai (sidebar + grille/liste + preview)"""
+    template_name = "production/contenants_list_v2.html"
+    model = Contenant
+    context_object_name = 'contenants'
+    
+    def get_queryset(self):
+        org = getattr(self.request, 'current_org', None)
+        qs = Contenant.objects.all()
+        if org:
+            qs = qs.filter(organization=org)
+        qs = qs.filter(is_active=True)
+        return qs.select_related('lot_courant').order_by('code')
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = getattr(self.request, 'current_org', None)
+        
+        # Enrichir les contenants avec des données calculées (wrapper dict)
+        contenants_enriched = []
+        for c in ctx['contenants']:
+            cap = c.capacite_utile_l or c.capacite_l or Decimal('0')
+            vol = c.volume_occupe_l or Decimal('0')
+            occ_pct = float(vol / cap * 100) if cap > 0 else 0
+            
+            # Wrapper avec données enrichies
+            wrapper = {
+                'obj': c,
+                'id': c.id,
+                'code': c.code,
+                'label': c.label,
+                'type': c.type,
+                'get_type_display': c.get_type_display(),
+                'capacite_l': c.capacite_l,
+                'localisation': c.localisation or '',
+                'volume_actuel_l': vol,
+                'occupancy_pct': occ_pct,
+                'lot_actuel': c.lot_courant,
+                'alerte': occ_pct > 95 or occ_pct < 5 and c.lot_courant,
+            }
+            contenants_enriched.append(wrapper)
+        
+        ctx['contenants'] = contenants_enriched
+        ctx['organization'] = org
+        ctx['page_title'] = 'Plan de Cuverie'
         return ctx
 
 

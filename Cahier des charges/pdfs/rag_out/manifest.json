@@ -1,0 +1,316 @@
+{
+  "input_dir": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs",
+  "output_dir": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out",
+  "target_tokens": 450,
+  "processed": 30,
+  "ok": 29,
+  "fail": 1,
+  "merged_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_ALL.jsonl",
+  "merged_chunks": 2219,
+  "results": [
+    {
+      "doc_id": "2-cdc-aopcôtes-de-duras-v20241203",
+      "source_file": "2--CDC-AOPCôtes-de-Duras-v20241203.pdf",
+      "sha256": "1c8cfa41cfaecf71e5a70b76a5144e198a4c05e0b09b0a181b86a03a5fef39c3",
+      "pages": 14,
+      "chunks": 27,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_2-cdc-aopcôtes-de-duras-v20241203.jsonl",
+      "error": null,
+      "seconds": 0.41646599769592285
+    },
+    {
+      "doc_id": "3-1-cdc-anjou-cabernetd-anjou-roséd-anjou-pno",
+      "source_file": "3.1-CDC-Anjou-Cabernetd-Anjou-Roséd-Anjou-PNO.pdf",
+      "sha256": "780a54a4bea69c274c15db061bda49ca7631dddb888dd140b2b73264be2a1a05",
+      "pages": 24,
+      "chunks": 50,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_3-1-cdc-anjou-cabernetd-anjou-roséd-anjou-pno.jsonl",
+      "error": null,
+      "seconds": 1.0711956024169922
+    },
+    {
+      "doc_id": "agrt1419239d-cotes-du-marmandais-cdc",
+      "source_file": "AGRT1419239D cotes du marmandais CDC.pdf",
+      "sha256": "b9e56919ef8987671ba427652f28e24807caf53493e95763455740ba374d994c",
+      "pages": 13,
+      "chunks": 24,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_agrt1419239d-cotes-du-marmandais-cdc.jsonl",
+      "error": null,
+      "seconds": 0.3669915199279785
+    },
+    {
+      "doc_id": "agrt17a-cdc-vin-corse-vprov",
+      "source_file": "AGRT17A CDC Vin Corse-vprov.pdf",
+      "sha256": "fa2e0043c21108916551641ddb5a53d704be952623bc728fda12588fa187d559",
+      "pages": 19,
+      "chunks": 33,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_agrt17a-cdc-vin-corse-vprov.jsonl",
+      "error": null,
+      "seconds": 0.48327040672302246
+    },
+    {
+      "doc_id": "agrt2009868a-cdc-montlouis-sur-loire-vdef",
+      "source_file": "AGRT2009868A CDC Montlouis sur Loire-vdef.pdf",
+      "sha256": "aaa86e45be2c9aff956c903aebaf9a72d936b2d053a96ffd8eba1aefe5307b02",
+      "pages": 13,
+      "chunks": 29,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_agrt2009868a-cdc-montlouis-sur-loire-vdef.jsonl",
+      "error": null,
+      "seconds": 0.45955371856689453
+    },
+    {
+      "doc_id": "agrt2327554a-cdc-pacherenc-du-vb",
+      "source_file": "AGRT2327554A CDC PACHERENC DU VB.pdf",
+      "sha256": "e2053933f73f09a1fcd60a6271f2dc435b53dd171460ecdcb58e4892f14ec6ea",
+      "pages": 14,
+      "chunks": 30,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_agrt2327554a-cdc-pacherenc-du-vb.jsonl",
+      "error": null,
+      "seconds": 0.41822218894958496
+    },
+    {
+      "doc_id": "aoc-alsace-grands-crus_cahier-des-charges",
+      "source_file": "aoc-alsace-grands-crus_cahier-des-charges.pdf",
+      "sha256": "ebf0f80dd86b6a12f7f7e39f89ca260ac9cd5b473342e3c450bf65ea1900ccd4",
+      "pages": 126,
+      "chunks": 261,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_aoc-alsace-grands-crus_cahier-des-charges.jsonl",
+      "error": null,
+      "seconds": 2.2227683067321777
+    },
+    {
+      "doc_id": "aoc_somm43_24102011",
+      "source_file": "AOC_SOMM43_24102011.pdf",
+      "sha256": "91c24d65285097750502c65645ca75e5425e23903074391f4184f24c130ebacd",
+      "pages": 284,
+      "chunks": 606,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_aoc_somm43_24102011.jsonl",
+      "error": null,
+      "seconds": 18.658201217651367
+    },
+    {
+      "doc_id": "cahier-des-charges-aoc-clairette-du-languedoc",
+      "source_file": "Cahier-des-charges-AOC-CLAIRETTE-DU-LANGUEDOC.pdf",
+      "sha256": "bf32c350408f2c3b693756dc38e6621f12f66252e33105eb624c964a9c171444",
+      "pages": 0,
+      "chunks": 0,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cahier-des-charges-aoc-clairette-du-languedoc.jsonl",
+      "error": "Texte PDF quasi vide après extraction (scan image ?).",
+      "seconds": 0.020139694213867188
+    },
+    {
+      "doc_id": "cdc-pacherenc-du-vic-bilh",
+      "source_file": "CDC  Pacherenc du Vic-Bilh.pdf",
+      "sha256": "033198c9944ccc24e945f80e82293734e17d442502480aa111f7b94df22c415a",
+      "pages": 13,
+      "chunks": 8,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdc-pacherenc-du-vic-bilh.jsonl",
+      "error": null,
+      "seconds": 0.3947920799255371
+    },
+    {
+      "doc_id": "cdc-aoc-languedoc_agrt2405848a",
+      "source_file": "CDC AOC Languedoc_AGRT2405848A.pdf",
+      "sha256": "8ae64d088bc43e244589700f32286c89a12fd27937361d3becb9f2ef2f83da29",
+      "pages": 47,
+      "chunks": 92,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdc-aoc-languedoc_agrt2405848a.jsonl",
+      "error": null,
+      "seconds": 2.2930212020874023
+    },
+    {
+      "doc_id": "cdc-aop-cotes-de-provence",
+      "source_file": "CDC AOP Cotes de Provence.pdf",
+      "sha256": "d31d29ddb8b63748dbc7132e53712f17e91661fa616889e456434e64f3cb6dff",
+      "pages": 27,
+      "chunks": 66,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdc-aop-cotes-de-provence.jsonl",
+      "error": null,
+      "seconds": 1.6521999835968018
+    },
+    {
+      "doc_id": "cdc-bordeaux",
+      "source_file": "CDC-Bordeaux.pdf",
+      "sha256": "ba4d1057bfd95d919d74f8e913dd8585d24bbda68cac19da1cab44ac9b21302f",
+      "pages": 19,
+      "chunks": 40,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdc-bordeaux.jsonl",
+      "error": null,
+      "seconds": 0.6342794895172119
+    },
+    {
+      "doc_id": "cdc-savoie-pnocn210211",
+      "source_file": "CDC-Savoie-PNOcn210211.pdf",
+      "sha256": "f2d760c751f7dba8bdb63f2ea4c6725c0fbe98248e0134a328ebae4075c03332",
+      "pages": 37,
+      "chunks": 72,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdc-savoie-pnocn210211.jsonl",
+      "error": null,
+      "seconds": 1.2401673793792725
+    },
+    {
+      "doc_id": "cdcbordeauxsuperieur-pno2023",
+      "source_file": "CDCBordeauxSuperieur-PNO2023.pdf",
+      "sha256": "2b9fe323ac39d9f2cbf46acd2ad45d2564f05558c39c3da9f349cc560fd8d727",
+      "pages": 52,
+      "chunks": 106,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdcbordeauxsuperieur-pno2023.jsonl",
+      "error": null,
+      "seconds": 3.3493854999542236
+    },
+    {
+      "doc_id": "cdcpnocotesdeprovencepierrefeu",
+      "source_file": "CDCPNOCotesdeProvencePierrefeu.pdf",
+      "sha256": "523653c536176d47ecc4a7ed05d7b73bf8941a4ee616cf4490861393e47d518a",
+      "pages": 25,
+      "chunks": 55,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_cdcpnocotesdeprovencepierrefeu.jsonl",
+      "error": null,
+      "seconds": 0.32683372497558594
+    },
+    {
+      "doc_id": "modif-2024-5-cdc-aop-clairettededie",
+      "source_file": "MODIF 2024 5-CDC AOP CLAIRETTEDEDIE.pdf",
+      "sha256": "fcbca9292af12b9b9d33fdc88f6cdc0b7094103b0f28af9e46c82fa30a3af39d",
+      "pages": 14,
+      "chunks": 35,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_modif-2024-5-cdc-aop-clairettededie.jsonl",
+      "error": null,
+      "seconds": 0.49013686180114746
+    },
+    {
+      "doc_id": "pno-cdc-alsace-cn240911",
+      "source_file": "pno-cdc-Alsace-cn240911.pdf",
+      "sha256": "d19c183c256e9bde4745760bd605655f237afb96c2290eabfb1c086bfc76e738",
+      "pages": 26,
+      "chunks": 55,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno-cdc-alsace-cn240911.jsonl",
+      "error": null,
+      "seconds": 0.9650528430938721
+    },
+    {
+      "doc_id": "pno-cdc-aovdqs-aoc-tursan",
+      "source_file": "PNO-CDC-AOVDQS-AOC-Tursan.pdf",
+      "sha256": "189662b82a651e9da035884614cb3c7cf2940b37f28110c5606fdf9211ca0918",
+      "pages": 14,
+      "chunks": 19,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno-cdc-aovdqs-aoc-tursan.jsonl",
+      "error": null,
+      "seconds": 0.14989972114562988
+    },
+    {
+      "doc_id": "pno2019cdcigpalpesmaritimes",
+      "source_file": "PNO2019CDCIGPAlpesMaritimes.pdf",
+      "sha256": "794c3b9166436185dfdc8276f23a643371f132cb6a57aa881cc9a16800e6f32b",
+      "pages": 8,
+      "chunks": 24,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno2019cdcigpalpesmaritimes.jsonl",
+      "error": null,
+      "seconds": 0.19579625129699707
+    },
+    {
+      "doc_id": "pno2023aopcotesdeprovence",
+      "source_file": "PNO2023AOPCotesdeProvence.pdf",
+      "sha256": "e6d37a48d23ba7472f6a3f861ba7571fdfa1b35de8adb131b1c09aa1de2c3577",
+      "pages": 29,
+      "chunks": 69,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno2023aopcotesdeprovence.jsonl",
+      "error": null,
+      "seconds": 1.6502585411071777
+    },
+    {
+      "doc_id": "pno2023aopcotesdurhone",
+      "source_file": "PNO2023AOPCotesduRhone.pdf",
+      "sha256": "72560a7e38bda23e6178656148bb0ea4ca75509cb7caac03af3914133a9f1792",
+      "pages": 20,
+      "chunks": 42,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno2023aopcotesdurhone.jsonl",
+      "error": null,
+      "seconds": 0.8315651416778564
+    },
+    {
+      "doc_id": "pno2023aoplanguedoc",
+      "source_file": "PNO2023AOPLanguedoc.pdf",
+      "sha256": "33297c6bf0870814d883285bd561d42243a44cdd2324f651180df6d3e4b10636",
+      "pages": 50,
+      "chunks": 103,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno2023aoplanguedoc.jsonl",
+      "error": null,
+      "seconds": 2.6279807090759277
+    },
+    {
+      "doc_id": "pno2025cdcaoplanguedoc",
+      "source_file": "PNO2025CDCAOPLanguedoc.pdf",
+      "sha256": "2e795c32a920308c9f3836da9d440067fd850b3b0c52f2b8bc589ae5950ceb8b",
+      "pages": 48,
+      "chunks": 96,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pno2025cdcaoplanguedoc.jsonl",
+      "error": null,
+      "seconds": 2.4978995323181152
+    },
+    {
+      "doc_id": "pnocdc-cotes-du-rhone",
+      "source_file": "PNOCDC-Cotes-du-Rhone.pdf",
+      "sha256": "e8ddfd3eb7289746c58ac8201eed76fd206e9ae1ce451cc4f08560177a740ca6",
+      "pages": 18,
+      "chunks": 40,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pnocdc-cotes-du-rhone.jsonl",
+      "error": null,
+      "seconds": 0.21967267990112305
+    },
+    {
+      "doc_id": "pnocdcalsace",
+      "source_file": "PNOCDCAlsace.pdf",
+      "sha256": "8497f7a7e7da479ee6c2cb3a7adac34767d8f8ca82393d4862c918616fb0b26f",
+      "pages": 25,
+      "chunks": 47,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pnocdcalsace.jsonl",
+      "error": null,
+      "seconds": 0.2651839256286621
+    },
+    {
+      "doc_id": "pnocdcaoc-champagne-20190619",
+      "source_file": "PNOCDCAOC-Champagne-20190619.pdf",
+      "sha256": "c6f5f2381d87ef337dd8c8ef7aedb5dc182b8cab4cddcca717bfb832f8c15a9e",
+      "pages": 28,
+      "chunks": 51,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pnocdcaoc-champagne-20190619.jsonl",
+      "error": null,
+      "seconds": 0.8454415798187256
+    },
+    {
+      "doc_id": "pnocdcaocmoselle",
+      "source_file": "PNOCDCAOCMoselle.pdf",
+      "sha256": "33c9bb69842a790bba49e02a60ec57db47060f1c9dacf3afd982fafa1a961699",
+      "pages": 15,
+      "chunks": 30,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pnocdcaocmoselle.jsonl",
+      "error": null,
+      "seconds": 0.3763084411621094
+    },
+    {
+      "doc_id": "pnocdcbourgogne",
+      "source_file": "PNOCDCBourgogne.pdf",
+      "sha256": "e181c298b4ac04c033370e480c264fd37a981b582bbdd551b26f203bf7ab3340",
+      "pages": 32,
+      "chunks": 72,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pnocdcbourgogne.jsonl",
+      "error": null,
+      "seconds": 0.5477802753448486
+    },
+    {
+      "doc_id": "pnocdcbourgognealigote",
+      "source_file": "PNOCDCBourgogneAligote.pdf",
+      "sha256": "10ad5afddb9c0396465ccfefb72cc29eb0c831fb10cde5817a1e4af7969b9e61",
+      "pages": 19,
+      "chunks": 37,
+      "out_jsonl": "C:\\Users\\33685\\Desktop\\Cahier des charges\\pdfs\\rag_out\\chunks_pnocdcbourgognealigote.jsonl",
+      "error": null,
+      "seconds": 0.2810029983520508
+    }
+  ],
+  "notes": [
+    "Si certains PDFs sont scannés (images), PyPDF2 peut extraire quasi rien.",
+    "Dans ce cas: passer sur OCR (tesseract) ou un extracteur plus robuste (pdfminer + OCR)."
+  ]
+}

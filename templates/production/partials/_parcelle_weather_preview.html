@@ -1,0 +1,37 @@
+{% load static %}
+{% if forecasts %}
+<div class="weather-preview">
+    <div class="weather-days">
+        {% for forecast in forecasts %}
+        <div class="weather-day">
+            <div class="weather-day-date">{{ forecast.date }}</div>
+            <div class="weather-day-icon">
+                <i class="{{ forecast.icon }}"
+                   data-icon="{{ forecast.icon }}"></i>
+            </div>
+            <div class="weather-day-temp">
+                <span class="temp-max">{{ forecast.temp_max|floatformat:0 }}°</span>
+                <span class="temp-min">{{ forecast.temp_min|floatformat:0 }}°</span>
+            </div>
+            {% if forecast.precipitation_mm > 0 %}
+            <div class="weather-day-rain">
+                <i class="bi bi-droplet-fill"></i> {{ forecast.precipitation_mm|floatformat:0 }} mm
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% if alerts %}
+    <div class="weather-alerts mt-3">
+        {% for alert in alerts %}
+        <div class="weather-alert weather-alert-{{ alert.type }}">
+            <strong>{{ alert.title }}</strong>
+            <p class="mb-0">{{ alert.message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="text-muted small">{{ empty_message|default:"Aucune donnée météo disponible." }}</div>
+{% endif %}

@@ -11,10 +11,15 @@ from django.views.generic import ListView, DetailView, TemplateView, UpdateView
 from django.db import transaction
 from django.db.models import Sum, Q, Count
 from django.core.paginator import Paginator
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import uuid as _uuid
 from django import forms
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
+from django.contrib.contenttypes.models import ContentType
+from datetime import datetime, date
+from django.utils import timezone as dj_timezone
+from django.utils import formats
 import csv
 
 from apps.accounts.decorators import check_permission
@@ -53,6 +58,7 @@ from apps.viticulture.models_extended import LotIntervention, LotMeasurement, Lo
 from apps.stock.models import StockManager, StockVracMove
 from apps.production.models import CostEntry, CostSnapshot
 from apps.drm.models import DRMLine
+from apps.ai.smart_suggestions import WeatherService
 
 
 @method_decorator(login_required, name='dispatch')
@@ -1314,6 +1320,28 @@ class LotTechniqueListView(PermissionMixin, ListView):
         return ctx
 
 
+@method_decorator(login_required, name='dispatch')
+class LotTechniqueListViewV2(ListView):
+    """Nouvelle version avec design MonChai (sidebar + grille/liste + preview)"""
+    model = LotTechnique
+    template_name = 'production/lots_tech_list_v2.html'
+    context_object_name = 'lots'
+
+    def get_queryset(self):
+        from django.db.models import Q
+        qs = LotTechnique.objects.all()
+        org = getattr(self.request, 'current_org', None)
+        if org:
+            qs = qs.filter(Q(cuvee__organization=org) | Q(source__organization=org))
+        return qs.select_related('cuvee', 'source').order_by('-created_at')[:100]
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['organization'] = getattr(self.request, 'current_org', None)
+        ctx['page_title'] = 'Lots Techniques'
+        return ctx
+
+
 def _journal_filtered_queryset(request):
     params = request.POST if request.method == 'POST' else request.GET
     qs = (StockVracMove.objects
@@ -2093,13 +2121,202 @@ def _lots_filtered_queryset(request):
 
 
 # ==========================
+#  APIS AUXILIAIRES
+# ==========================
+
+@login_required
+def parcelle_weather_preview(request, pk):
+    """Retourne le fragment météo pour la sidebar parcelle."""
+    org = getattr(request, 'current_org', None)
+    parcelle = get_object_or_404(Parcelle, pk=pk, organization=org)
+
+    lat = parcelle.latitude
+    lon = parcelle.longitude
+    forecasts = []
+    alerts = []
+    empty_message = None
+
+    if lat and lon:
+        try:
+            forecasts = WeatherService.get_forecast(float(lat), float(lon), days=3) or []
+            raw_alerts = WeatherService.get_parcelle_alerts(parcelle) or []
+            alerts = [
+                {
+                    'title': getattr(alert, 'title', ''),
+                    'message': getattr(alert, 'message', ''),
+                    'type': 'warning' if getattr(getattr(alert, 'nudge_type', None), 'value', 'info') in ['warning', 'alert'] else 'info',
+                }
+                for alert in raw_alerts
+            ]
+        except Exception:
+            empty_message = "Impossible de récupérer la météo pour cette parcelle."
+    else:
+        empty_message = "Renseignez les coordonnées GPS ou l'adresse dans le module carte pour afficher la météo."
+
+    html = render_to_string(
+        'production/partials/_parcelle_weather_preview.html',
+        {
+            'forecasts': forecasts,
+            'alerts': alerts,
+            'parcelle_name': parcelle.nom,
+            'empty_message': empty_message,
+        },
+        request=request,
+    )
+
+    return JsonResponse({'html': html})
+
+
+@login_required
+def parcelle_events_preview(request, pk):
+    """Retourne les derniers évènements (4-5) pour la parcelle."""
+    org = getattr(request, 'current_org', None)
+    parcelle = get_object_or_404(Parcelle, pk=pk, organization=org)
+
+    limit = 5
+    events = []
+    seen = set()
+
+    def format_date(value):
+        if not value:
+            return ''
+        if isinstance(value, datetime):
+            return formats.date_format(dj_timezone.localtime(value), "SHORT_DATETIME_FORMAT")
+        if isinstance(value, date):
+            return formats.date_format(value, "DATE_FORMAT")
+        return str(value)
+
+    def add_event(key, title, description='', icon='bi-calendar-event', color='bg-light text-muted', date_value=None, meta=''):
+        if key in seen:
+            return
+        seen.add(key)
+        events.append({
+            'title': title,
+            'description': description,
+            'icon': icon,
+            'color': color,
+            'date_display': format_date(date_value),
+            'meta': meta,
+        })
+
+    icon_map = {
+        'traitement': ('bi-droplet-fill', 'bg-danger-subtle text-danger'),
+        'taille': ('bi-scissors', 'bg-success-subtle text-success'),
+        'travail_sol': ('bi-tools', 'bg-secondary-subtle text-secondary'),
+        'palissage': ('bi-diagram-3', 'bg-info-subtle text-info'),
+        'effeuillage': ('bi-leaf', 'bg-success-subtle text-success'),
+        'fertilisation': ('bi-droplet-half', 'bg-primary-subtle text-primary'),
+        'irrigation': ('bi-moisture', 'bg-info-subtle text-info'),
+        'observation': ('bi-eye', 'bg-secondary-subtle text-secondary'),
+    }
+
+    journal_entries = list(
+        ParcelleJournalEntry.objects.select_related('op_type')
+        .filter(organization=org, parcelle=parcelle)
+        .order_by('-date', '-created_at')[:limit * 2]
+    )
+    for entry in journal_entries:
+        op_code = entry.op_type.code if entry.op_type else 'operation'
+        icon, color = icon_map.get(op_code, ('bi-calendar-event', 'bg-warning-subtle text-warning'))
+        description = entry.resume or (entry.notes[:120] + '…' if entry.notes and len(entry.notes) > 120 else entry.notes or '')
+        add_event(
+            key=('journal', entry.id),
+            title=entry.op_type.label if entry.op_type else 'Intervention',
+            description=description,
+            icon=icon,
+            color=color,
+            date_value=entry.date or entry.created_at,
+            meta='Journal cultural'
+        )
+        if len(events) >= limit:
+            break
+
+    if len(events) < limit:
+        ops = list(
+            ParcelleOperation.objects.filter(organization=org, parcelle=parcelle)
+            .order_by('-date', '-created_at')[:limit * 2]
+        )
+        for op in ops:
+            icon, color = icon_map.get(op.operation_type, ('bi-calendar-event', 'bg-secondary-subtle text-secondary'))
+            description = op.label or (op.notes[:120] + '…' if op.notes and len(op.notes) > 120 else op.notes or '')
+            add_event(
+                key=('op', op.id),
+                title=op.get_operation_type_display() if hasattr(op, 'get_operation_type_display') else 'Opération',
+                description=description,
+                icon=icon,
+                color=color,
+                date_value=op.date or op.created_at,
+                meta='Opération'
+            )
+            if len(events) >= limit:
+                break
+
+    if len(events) < limit:
+        vendanges = list(
+            VendangeReception.objects.filter(organization=org, parcelle=parcelle)
+            .order_by('-date')[:limit * 2]
+        )
+        for vendange in vendanges:
+            description = f"{vendange.poids_total} kg" if hasattr(vendange, 'poids_total') and vendange.poids_total else ''
+            add_event(
+                key=('vendange', vendange.id),
+                title=f"Vendange {vendange.code or ''}".strip(),
+                description=description,
+                icon='bi-basket-fill',
+                color='bg-warning-subtle text-warning',
+                date_value=getattr(vendange, 'date', None),
+                meta='Vendange'
+            )
+            if len(events) >= limit:
+                break
+
+    html = render_to_string(
+        'production/partials/_parcelle_events_preview.html',
+        {
+            'events': events[:limit],
+            'parcelle_name': parcelle.nom,
+        },
+        request=request,
+    )
+
+    return JsonResponse({'html': html})
+
+
+@login_required
+def parcelle_composition_preview(request, pk):
+    """Retourne l'encépagement formaté pour la sidebar."""
+    org = getattr(request, 'current_org', None)
+    parcelle = get_object_or_404(
+        Parcelle.objects.prefetch_related('encepagements__cepage'),
+        pk=pk,
+        organization=org
+    )
+
+    encepagements = parcelle.get_encepagement_blocks()
+    html = render_to_string(
+        'production/partials/_parcelle_composition_preview.html',
+        {
+            'parcelle': parcelle,
+            'encepagements': encepagements,
+            'detail_url': reverse('production:parcelle_detail', args=[parcelle.pk])
+        },
+        request=request,
+    )
+
+    return JsonResponse({'html': html})
+
+
+# ==========================
 # HELPERS DE RECHERCHE
 # ==========================
 
 def _parcelle_filtered_queryset(request):
     org = getattr(request, 'current_org', None)
     from apps.referentiels.models import Parcelle
-    qs = Parcelle.objects.filter(organization=org) if org else Parcelle.objects.none()
+    if org:
+        qs = Parcelle.objects.filter(organization=org).prefetch_related('encepagements__cepage', 'cepages')
+    else:
+        qs = Parcelle.objects.none()
     
     params = request.POST if request.method == 'POST' else request.GET
     
@@ -2284,6 +2501,20 @@ class ParcelleListView(TemplateView):
         ctx['parcelles'] = qs
         ctx['total_count'] = qs.count()
         return ctx
+
+
+@method_decorator(login_required, name='dispatch')
+class ParcelleListViewV2(TemplateView):
+    """Nouvelle version avec design MonChai (sidebar + grille/liste + preview)"""
+    template_name = 'referentiels/parcelles_list_v2.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Parcelles'
+        ctx['organization'] = getattr(self.request, 'current_org', None)
+        ctx['parcelles'] = _parcelle_filtered_queryset(self.request)
+        return ctx
+
 
 @method_decorator(login_required, name='dispatch')
 class ParcelleTableView(ListView):
@@ -2720,7 +2951,7 @@ class EncuvageWizardView(View):
             'defaults': {
                 'rendement_base': str((vendange.volume_mesure_l and '') or '0.75'),
                 'effic_pct': str(vendange.rendement_pct or '100'),
-                'poids_total_kg': str(getattr(vendange, 'poids_kg', '') or ''),
+                'poids_total_kg': str(getattr(vendange, 'poids_total', '') or getattr(vendange, 'poids_kg', '') or ''),
                 'kg_restant': str(getattr(vendange, 'kg_restant', '') or ''),
                 'kg_debites_cumules': str(getattr(vendange, 'kg_debites_cumules', '') or ''),
                 'prix_raisin_eur_kg': str(getattr(vendange, 'prix_raisin_eur_kg', '') or ''),
@@ -2796,24 +3027,23 @@ class EncuvageWizardView(View):
         # Fractionnement: kg débités ou part (%)
         kg_debite = None
         try:
+            poids_total = Decimal(str(getattr(vendange, 'poids_total', getattr(vendange, 'poids_kg', '0')) or '0'))
             if str(poids_debite_kg_raw).strip() != '':
                 kg_debite = Decimal(str(poids_debite_kg_raw))
             elif str(part_pct_raw).strip() != '':
-                tot = Decimal(str(getattr(vendange, 'poids_kg', '0') or '0'))
                 pctv = Decimal(str(part_pct_raw))
-                kg_debite = (tot * pctv / Decimal('100'))
+                kg_debite = (poids_total * pctv / Decimal('100'))
             if kg_debite is not None:
                 if kg_debite <= 0:
                     errors.append("Les kg débités doivent être > 0")
                 else:
                     try:
-                        totkg = Decimal(str(getattr(vendange, 'poids_kg', '0') or '0'))
                         cumul = Decimal(str(getattr(vendange, 'kg_debites_cumules', '0') or '0'))
-                        kg_restant = totkg - cumul
+                        kg_restant = poids_total - cumul
                         if kg_restant <= 0:
-                            errors.append(f"Tous les raisins ont déjà été encuvés ({cumul} kg sur {totkg} kg)")
+                            errors.append(f"Tous les raisins ont déjà été encuvés ({cumul} kg sur {poids_total} kg)")
                         elif kg_debite > kg_restant:
-                            errors.append(f"Les kg débités ({kg_debite} kg) dépassent le restant disponible ({kg_restant} kg sur {totkg} kg)")
+                            errors.append(f"Les kg débités ({kg_debite} kg) dépassent le restant disponible ({kg_restant} kg sur {poids_total} kg)")
                     except Exception:
                         pass
         except Exception:
@@ -2822,7 +3052,8 @@ class EncuvageWizardView(View):
         # Poids vendange > 0 si pas de volume mesuré et pas de kg_debite
         try:
             if vol_mes is None and kg_debite is None:
-                if vendange.poids_kg is None or Decimal(vendange.poids_kg) <= 0:
+                poids_total = getattr(vendange, 'poids_total', None)
+                if poids_total is None or Decimal(str(poids_total)) <= 0:
                     errors.append("La vendange doit avoir un poids > 0 kg")
         except Exception:
             errors.append("Poids de vendange invalide")
@@ -2834,7 +3065,8 @@ class EncuvageWizardView(View):
         try:
             base = Decimal(str(rendement_base))
             default_used = getattr(vendange, 'kg_restant', None)
-            kg_used = Decimal(str(kg_debite)) if kg_debite is not None else Decimal(str(default_used if default_used is not None else (getattr(vendange, 'poids_kg', '0') or '0')))
+            fallback_total = getattr(vendange, 'poids_total', getattr(vendange, 'poids_kg', '0'))
+            kg_used = Decimal(str(kg_debite)) if kg_debite is not None else Decimal(str(default_used if default_used is not None else (fallback_total or '0')))
             if vol_mes is not None and kg_used > 0 and base > 0:
                 effic_calc = (vol_mes / (kg_used * base)) * Decimal('100')
                 if effic_calc > Decimal('100') or effic_calc < Decimal('50'):
@@ -2842,20 +3074,26 @@ class EncuvageWizardView(View):
         except Exception:
             pass
         try:
-            # Convertir volume_mesure_l → hL@20 pour le service (si fourni)
-            vol_hl20 = None
-            if volume_mesure_l is not None and str(volume_mesure_l).strip() != "":
-                try:
-                    vol_hl20 = (Decimal(str(volume_mesure_l)) / Decimal('100')).quantize(Decimal('0.001'))
-                except Exception:
-                    vol_hl20 = None
-            # TODO: Réimplémenter create_from_encuvage (anciennement dans apps.chai.services.lots)
-            messages.error(request, 'Fonction encuvage temporairement désactivée (refactoring en cours)')
-            return self.get(request, pk)
+            new_lot_id = init_from_vendange(
+                vendange_id=vendange.id,
+                rendement_base_l_par_kg=rendement_base,
+                effic_pct=effic_pct,
+                contenant=contenant,
+                contenant_id=None,
+                volume_mesure_l=volume_mesure_l,
+                user=request.user,
+                poids_debite_kg=str(kg_debite) if kg_debite is not None else None,
+                mode_encuvage=mode_encuvage,
+                lot_type=lot_type,
+                temperature_c=temperature_c,
+                notes=notes,
+                expected_org_id=getattr(vendange, 'organization_id', None),
+            )
+            messages.success(request, "Encuvage enregistré et lot technique créé")
             try:
-                url = reverse('production:lot_tech_detail', kwargs={'pk': lot.id})
+                url = reverse('production:lot_tech_detail', kwargs={'pk': new_lot_id})
             except Exception:
-                url = f"/production/lots-techniques/{lot.id}/"
+                url = f"/production/lots-techniques/{new_lot_id}/"
             return redirect(url)
         except Exception as e:
             messages.error(request, f"Erreur encuvage: {e}")
@@ -2879,9 +3117,24 @@ class SoutirageWizardView(View):
             pk=pk,
         )
         form = self.Form()
+        
+        # Suggestions de cuves intelligentes
+        cuve_suggestions = []
+        if org and lot.volume_l:
+            try:
+                from apps.ai.smart_suggestions import CuveCalculator
+                current_contenant_id = lot.contenant_id if hasattr(lot, 'contenant_id') else None
+                exclude_ids = [current_contenant_id] if current_contenant_id else []
+                cuve_suggestions = CuveCalculator.get_destination_suggestions(
+                    org, lot.volume_l, exclude_ids=exclude_ids, operation_type='soutirage'
+                )[:6]  # Limiter à 6 suggestions
+            except Exception:
+                pass
+        
         return render(request, self.template_name, {
             'form': form,
             'lot': lot,
+            'cuve_suggestions': cuve_suggestions,
             'page_title': f"Soutirage – {lot.code}",
             'breadcrumb_items': [
                 {'name': 'Production', 'url': '/production/'},

@@ -36,7 +36,7 @@ urlpatterns = [
     # Apps
     path('onboarding/', include('apps.onboarding.urls')),
     path('catalogue/', include('apps.catalogue.urls')),
-    path('ventes/clients/', include('apps.clients.urls')),
+    path('referentiels/clients/', include('apps.clients.urls')),
     path('viticulture/', include('apps.viticulture.urls')),
     
     # New Commerce App (Achats/Ventes unifiés - Refonte URL 2025)

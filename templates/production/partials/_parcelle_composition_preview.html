@@ -1,0 +1,35 @@
+{% load humanize %}
+{% if encepagements %}
+  <div class="composition-list">
+    {% for bloc in encepagements|slice:":4" %}
+      <div class="composition-item">
+        <div class="composition-item-info">
+          <strong>{{ bloc.cepage|default:"Cépage" }}</strong>
+          {% if bloc.meta %}
+            <span class="composition-item-meta">{{ bloc.meta }}</span>
+          {% endif %}
+        </div>
+        <div class="text-end">
+          <div class="composition-item-pct">
+            {% if bloc.pct %}{{ bloc.pct|floatformat:"0" }}%{% else %}—{% endif %}
+          </div>
+          {% if bloc.surface %}
+            <div class="small text-muted">{{ bloc.surface|floatformat:"2" }} ha</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% with total=encepagements|length %}
+    {% if total > 4 %}
+      <div class="text-muted small mt-2">+{{ total|add:"-4" }} bloc(s) supplémentaire(s)</div>
+    {% endif %}
+  {% endwith %}
+{% else %}
+  <div class="composition-empty">Aucun encépagement renseigné.</div>
+  {% if detail_url %}
+    <a href="{{ detail_url }}" class="btn btn-sm btn-outline-primary mt-2" target="_blank" rel="noopener">
+      <i class="bi bi-plus-circle me-1"></i>Définir les cépages
+    </a>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,243 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Vue TIMELINE - Journal d'événements unifié
+=====================================================
+Liste paginée, filtres, recherche HTMX.
+=====================================================
+-->
+
+<div class="meta-timeline">
+    <!-- Header avec filtres -->
+    <div class="meta-content-header">
+        <h2 class="meta-content-title">
+            <i class="bi bi-clock-history me-2"></i>Timeline
+            {% if timeline_page.paginator.count %}
+            <span class="badge bg-secondary ms-2">{{ timeline_page.paginator.count }}</span>
+            {% endif %}
+        </h2>
+        
+        {% if can_add_event %}
+        <div class="dropdown">
+            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-plus-lg me-1"></i>Ajouter
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" data-event-type="note"><i class="bi bi-sticky me-2"></i>Note</a></li>
+                <li><a class="dropdown-item" href="#" data-event-type="document"><i class="bi bi-file-earmark me-2"></i>Document</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-event-type="operation"><i class="bi bi-gear me-2"></i>Opération</a></li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="meta-content-body p-0">
+        <!-- Barre de filtres -->
+        <div class="timeline-filters">
+            <div class="timeline-search">
+                <i class="bi bi-search"></i>
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       placeholder="Rechercher..."
+                       value="{{ timeline_search }}"
+                       hx-get="?mode=timeline"
+                       hx-trigger="keyup changed delay:300ms"
+                       hx-target="#timeline-list"
+                       hx-include="[name='event_type']"
+                       name="q">
+            </div>
+            
+            <div class="timeline-type-filter">
+                <select name="event_type" 
+                        class="form-select form-select-sm"
+                        hx-get="?mode=timeline"
+                        hx-trigger="change"
+                        hx-target="#timeline-list"
+                        hx-include="[name='q']">
+                    <option value="">Tous les types</option>
+                    {% for code, label in event_types %}
+                    <option value="{{ code }}" {% if current_event_type == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <!-- Liste des événements -->
+        <div id="timeline-list">
+            {% include "core/meta/partials/_timeline_list.html" %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Timeline styles */
+.timeline-filters {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+}
+
+.timeline-search {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+}
+
+.timeline-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.timeline-search input {
+    padding-left: 2rem;
+}
+
+.timeline-type-filter {
+    min-width: 150px;
+}
+
+/* Liste timeline */
+.timeline-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s ease;
+}
+
+.timeline-item:hover {
+    background: #fafafa;
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+}
+
+.timeline-marker {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.timeline-marker i {
+    font-size: 0.875rem;
+    color: #fff;
+}
+
+/* Couleurs par type */
+.timeline-marker.type-operation { background: #3b82f6; }
+.timeline-marker.type-document { background: #8b5cf6; }
+.timeline-marker.type-status { background: #f59e0b; }
+.timeline-marker.type-note { background: #10b981; }
+.timeline-marker.type-system { background: #6b7280; }
+.timeline-marker.type-link { background: #ec4899; }
+.timeline-marker.type-creation { background: #22c55e; }
+.timeline-marker.type-modification { background: #eab308; }
+.timeline-marker.type-alert { background: #ef4444; }
+.timeline-marker.type-analysis { background: #06b6d4; }
+.timeline-marker.type-movement { background: #f97316; }
+
+.timeline-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1f2937;
+    margin: 0;
+}
+
+.timeline-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.timeline-title a:hover {
+    color: #722f37;
+}
+
+.timeline-date {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.timeline-summary {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    line-height: 1.4;
+}
+
+.timeline-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.timeline-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.timeline-pinned {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+}
+
+/* Empty state */
+.timeline-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+}
+
+.timeline-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.timeline-empty p {
+    margin-bottom: 1rem;
+}
+
+/* Pagination */
+.timeline-pagination {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+</style>

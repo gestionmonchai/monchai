@@ -5,7 +5,8 @@ Roadmap Cut #3 : Référentiels (starter pack)
 
 from django.db import models
 from django.db.models import Sum
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import json
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
 from django.conf import settings
@@ -265,6 +266,48 @@ class Parcelle(models.Model):
         if total_pct > 0:
             return (self.surface * total_pct / Decimal('100')).quantize(Decimal('0.01'))
         return Decimal('0')
+    
+    def get_encepagement_blocks(self):
+        """Retourne une liste de blocs d'encépagement prêts pour affichage."""
+        blocs = []
+        surface = getattr(self, 'surface', None)
+        for enc in self.encepagements.select_related('cepage').all():
+            pct = enc.pourcentage
+            surface_bloc = None
+            try:
+                if surface and pct:
+                    surface_bloc = (surface * pct / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            except (InvalidOperation, TypeError):
+                surface_bloc = None
+            if enc.rang_debut and enc.rang_fin:
+                meta = f"Rangs {enc.rang_debut}-{enc.rang_fin}"
+            elif enc.rang_debut:
+                meta = f"Rang {enc.rang_debut}+"
+            elif enc.annee_plantation:
+                meta = f"Planté en {enc.annee_plantation}"
+            else:
+                meta = None
+            blocs.append({
+                'cepage': enc.cepage.nom if enc.cepage else '',
+                'pct': pct,
+                'annee': enc.annee_plantation,
+                'surface': surface_bloc,
+                'meta': meta,
+            })
+        return blocs
+    
+    def get_encepagement_preview_json(self):
+        """Retourne un JSON (str) prêt à être injecté côté client pour l'encépagement."""
+        blocs = []
+        for bloc in self.get_encepagement_blocks():
+            blocs.append({
+                'cepage': bloc.get('cepage', ''),
+                'pct': float(bloc['pct']) if bloc.get('pct') is not None else None,
+                'annee': bloc.get('annee'),
+                'surface': float(bloc['surface']) if bloc.get('surface') is not None else None,
+                'meta': bloc.get('meta'),
+            })
+        return json.dumps(blocs, ensure_ascii=False)
 
 
 class ParcelleEncepagement(models.Model):

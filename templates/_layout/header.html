@@ -179,9 +179,14 @@
             <i class="bi bi-database me-1"></i>Réf.
           </a>
           <ul class="dropdown-menu" aria-labelledby="navRefDropdown">
-            <li><a class="dropdown-item" href="{% url 'referentiels:cepage_list' %}">Cépages</a></li>
-            <li><a class="dropdown-item" href="{% url 'referentiels:cuvee_list' %}">Cuvées (modèles & millésimes)</a></li>
-            <li><a class="dropdown-item" href="{% url 'referentiels:unite_list' %}">Unités</a></li>
+            <li class="dropdown-header text-muted small">Master data</li>
+            <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:parcelle_list' %}"><i class="bi bi-map me-2"></i>Parcelles</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:cepage_list' %}"><i class="bi bi-flower1 me-2"></i>Cépages</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:unite_list' %}"><i class="bi bi-rulers me-2"></i>Unités</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:produit_list' %}"><i class="bi bi-box-seam me-2"></i>Produits</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:cuvee_list' %}"><i class="bi bi-droplet-half me-2"></i>Cuvées (modèles &amp; millésimes)</a></li>
           </ul>
         </li>
 
@@ -200,10 +205,13 @@
             <li><a class="dropdown-item" href="/compta/exports/">Exports (Sage/Quadratus/CSV)</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Référentiels</h6></li>
-            <li><a class="dropdown-item" href="{% url 'referentiels:cepage_list' %}">Cépages</a></li>
-            <li><a class="dropdown-item" href="{% url 'referentiels:cuvee_list' %}">Cuvées (modèles & millésimes)</a></li>
-            <li><a class="dropdown-item" href="{% url 'referentiels:unite_list' %}">Unités</a></li>
-            <li><a class="dropdown-item" href="{% url 'production:contenants_list' %}">Cuves & barriques</a></li>
+            <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:parcelle_list' %}"><i class="bi bi-map me-2"></i>Parcelles</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:cepage_list' %}"><i class="bi bi-flower1 me-2"></i>Cépages</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:unite_list' %}"><i class="bi bi-rulers me-2"></i>Unités</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:produit_list' %}"><i class="bi bi-box-seam me-2"></i>Produits</a></li>
+            <li><a class="dropdown-item" href="{% url 'referentiels:cuvee_list' %}"><i class="bi bi-droplet-half me-2"></i>Cuvées (modèles &amp; millésimes)</a></li>
+            <li><a class="dropdown-item" href="{% url 'production:contenants_list' %}"><i class="bi bi-archive me-2"></i>Cuves & barriques</a></li>
           </ul>
         </li>
       </ul>

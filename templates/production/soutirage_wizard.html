@@ -1,4 +1,5 @@
 {% extends 'production/base_production.html' %}
+{% load smart_tags %}
 {% block title %}Soutirage – {{ lot.code }}{% endblock %}
 {% block production_content %}
 <div class="container-fluid">
@@ -43,6 +44,48 @@
         <div class="col-md-6">
           <h6 class="text-uppercase text-muted small mb-3">2. Destination du Vin Clair</h6>
           
+          {% if cuve_suggestions %}
+          <div class="mb-3">
+            <label class="form-label fw-bold text-success">
+              <i class="bi bi-lightbulb text-warning me-1"></i>Cuves suggérées
+              <span class="badge bg-warning-subtle text-warning-emphasis ms-1">✨ IA</span>
+            </label>
+            <div class="row g-2">
+              {% for s in cuve_suggestions %}
+              <div class="col-6 col-lg-4">
+                <div class="card cuve-card h-100 {% if s.highlight == 'perfect' %}border-success glow-success{% elif s.highlight == 'good' %}border-primary{% elif s.highlight == 'disabled' %}disabled opacity-50{% endif %}"
+                     data-cuve-code="{{ s.contenant.code }}"
+                     onclick="{% if s.highlight != 'disabled' %}selectCuve('{{ s.contenant.code }}'){% endif %}"
+                     style="cursor: {% if s.highlight != 'disabled' %}pointer{% else %}not-allowed{% endif %};">
+                  <div class="card-body p-2 text-center">
+                    <div class="fw-bold">{{ s.contenant.code }}</div>
+                    <div class="small text-muted">{{ s.contenant.capacite_l|floatformat:0 }} L</div>
+                    <div class="progress mt-1" style="height: 4px;">
+                      <div class="progress-bar {% if s.contenant.occupancy_pct > 80 %}bg-danger{% elif s.contenant.occupancy_pct > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                           style="width: {{ s.contenant.occupancy_pct }}%"></div>
+                    </div>
+                    <div class="small mt-1">
+                      {% if s.highlight == 'perfect' %}
+                      <span class="text-success"><i class="bi bi-check-circle-fill"></i> Parfait</span>
+                      {% elif s.highlight == 'good' %}
+                      <span class="text-primary"><i class="bi bi-hand-thumbs-up"></i> Bon</span>
+                      {% elif s.highlight == 'disabled' %}
+                      <span class="text-muted">Indisponible</span>
+                      {% else %}
+                      <span class="text-secondary">Possible</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="form-text mt-2">
+              <i class="bi bi-info-circle"></i> Cliquez sur une cuve pour la sélectionner
+            </div>
+          </div>
+          {% endif %}
+          
           <div class="mb-3">
             <label class="form-label fw-bold text-success">Nouveau contenant (Transfert)</label>
             {{ form.destination_contenant }}
@@ -79,6 +122,29 @@
     input[name="destination_contenant"] {
       border-color: #198754;
     }
+    .cuve-card { transition: all 0.2s ease; border: 2px solid transparent; }
+    .cuve-card:hover:not(.disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .cuve-card.selected { border-color: #198754 !important; box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25); }
+    .glow-success { animation: glow-pulse 2s ease-in-out infinite alternate; }
+    @keyframes glow-pulse { from { box-shadow: 0 0 5px rgba(25, 135, 84, 0.3); } to { box-shadow: 0 0 15px rgba(25, 135, 84, 0.5); } }
   </style>
+  <script>
+  function selectCuve(code) {
+    // Mettre à jour le champ de destination
+    var input = document.querySelector('input[name="destination_contenant"]');
+    if (input) {
+      input.value = code;
+      input.dispatchEvent(new Event('change'));
+    }
+    // Marquer visuellement la cuve sélectionnée
+    document.querySelectorAll('.cuve-card').forEach(function(card) {
+      card.classList.remove('selected');
+    });
+    var selected = document.querySelector('.cuve-card[data-cuve-code="' + code + '"]');
+    if (selected) {
+      selected.classList.add('selected');
+    }
+  }
+  </script>
 </div>
 {% endblock %}

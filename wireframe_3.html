@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Chai - Les Coteaux de la Vérité</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --brand-red: #8B2E3F;
+            --brand-dark: #5A1E29;
+            --brand-bg: #F3EFE6;
+            --sidebar-green: #2F6F4E;
+            --sidebar-orange: #C16E41;
+            --accent-gold: #E5B350;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--brand-bg); }
+        .bg-brand-red { background-color: var(--brand-red); }
+        .text-brand-red { color: var(--brand-red); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+        .parcelle-card {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 1.25rem;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .parcelle-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(140deg, rgba(139,46,63,0.08), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .parcelle-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139,46,63,0.3);
+            box-shadow: 0 20px 40px rgba(24,7,9,0.08);
+        }
+        .parcelle-card:hover::after {
+            opacity: 1;
+        }
+        .parcelle-card.selected {
+            border-color: var(--brand-red);
+            box-shadow: 0 20px 45px rgba(139,46,63,0.18);
+        }
+
+        /* Preview sidebar */
+        .preview-sidebar {
+            position: fixed;
+            top: 1rem;
+            bottom: 1rem;
+            right: -460px;
+            width: 420px;
+            background: radial-gradient(circle at 30% 10%, rgba(247, 231, 206, 0.6), #fff 55%, #fdf8f3);
+            border-radius: 26px 0 0 26px;
+            border: 1px solid rgba(212, 175, 55, 0.18);
+            box-shadow: -25px 0 60px rgba(102, 13, 28, 0.2);
+            display: flex;
+            flex-direction: column;
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 40;
+            overflow: hidden;
+        }
+        .preview-sidebar.open {
+            right: 1rem;
+        }
+        .preview-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            z-index: 30;
+        }
+        .preview-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .preview-header {
+            padding: 1.75rem 1.75rem 1.25rem;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            background: linear-gradient(120deg, rgba(255,255,255,0.95), rgba(247,231,206,0.8));
+        }
+        .preview-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+        .preview-stat-card {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(139,46,63,0.12);
+            border-radius: 16px;
+            padding: 0.9rem;
+            text-align: center;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+        }
+        .preview-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        .preview-section {
+            background: rgba(255,255,255,0.9);
+            border-radius: 18px;
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 1.15rem;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+        }
+        .preview-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(139,46,63,0.08);
+        }
+        .preview-footer a {
+            display: block;
+            text-align: center;
+            background: linear-gradient(120deg, var(--brand-red), var(--brand-dark));
+            color: white;
+            padding: 0.9rem 1rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 15px 30px rgba(90,18,25,0.35);
+        }
+        @media (max-width: 1024px) {
+            .preview-sidebar {
+                width: 100%;
+                right: -100%;
+                border-radius: 0;
+            }
+            .preview-sidebar.open {
+                right: 0;
+            }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-700">
+
+    <header class="h-14 bg-brand-red text-white flex items-center justify-between px-4 shrink-0 shadow-md z-30">
+        <div class="flex items-center gap-6">
+            <span class="font-bold text-xl tracking-tight">Mon Chai</span>
+            <nav class="flex items-center gap-1 text-sm">
+                <button class="bg-white/20 px-3 py-1.5 rounded flex items-center gap-2 font-medium"><i class="fas fa-boxes"></i> Production</button>
+            </nav>
+        </div>
+        <div class="flex items-center gap-3">
+             <div class="bg-white/10 px-3 py-1 rounded text-sm">Saison 2025</div>
+             <i class="fas fa-user-circle text-xl"></i>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside class="w-60 bg-white border-r border-gray-200 flex flex-col shrink-0 z-10 hidden md:flex">
+             <div class="bg-brand-red text-white px-4 py-3 font-medium"><i class="fas fa-th mr-2"></i> Production</div>
+             <div class="py-2">
+                <div class="px-4 mt-4 mb-1 text-xs font-bold text-[#2F6F4E] uppercase border-b pb-1">Vigne</div>
+                <a href="#" class="block px-4 py-1.5 text-sm font-bold text-[#2F6F4E] bg-green-50 ml-2 border-l-2 border-[#2F6F4E] rounded-r">Parcelles</a>
+             </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-6 relative">
+            
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <div class="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                        <i class="fas fa-map-pin"></i> Ethics • Amsterdam
+                    </div>
+                    <h1 class="text-3xl font-bold text-brand-red">Les Coteaux de la Vérité</h1>
+                </div>
+                <div class="flex gap-2">
+                     <button class="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded shadow-sm hover:bg-gray-50 text-sm font-medium">
+                        <i class="fas fa-print mr-1"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-4 mb-6" id="parcelles-grid">
+                <div class="parcelle-card" data-parcelle-id="parcelle_1">
+                    <div class="text-xs uppercase tracking-wide text-gray-400 font-bold mb-2">Parcelle</div>
+                    <div class="text-xl font-bold text-brand-red mb-1">Les Coteaux de la Vérité</div>
+                    <div class="text-sm text-gray-500 flex items-center gap-2"><i class="fas fa-map-marker-alt text-brand-red"></i> Ethics, Amsterdam</div>
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <span class="font-semibold">Surface</span>
+                        <span class="text-gray-600">2,5 ha</span>
+                    </div>
+                </div>
+                <div class="parcelle-card" data-parcelle-id="parcelle_2">
+                    <div class="text-xs uppercase tracking-wide text-gray-400 font-bold mb-2">Parcelle</div>
+                    <div class="text-xl font-bold text-gray-800 mb-1">Clos des Philosophes</div>
+                    <div class="text-sm text-gray-500 flex items-center gap-2"><i class="fas fa-map-marker-alt text-brand-red"></i> Utrecht, NL</div>
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <span class="font-semibold">Surface</span>
+                        <span class="text-gray-600">1,8 ha</span>
+                    </div>
+                </div>
+                <div class="parcelle-card" data-parcelle-id="parcelle_3">
+                    <div class="text-xs uppercase tracking-wide text-gray-400 font-bold mb-2">Parcelle</div>
+                    <div class="text-xl font-bold text-gray-800 mb-1">Domaine du Paradoxe</div>
+                    <div class="text-sm text-gray-500 flex items-center gap-2"><i class="fas fa-map-marker-alt text-brand-red"></i> Leiden, NL</div>
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <span class="font-semibold">Surface</span>
+                        <span class="text-gray-600">3,1 ha</span>
+                    </div>
+                </div>
+                <div class="parcelle-card" data-parcelle-id="parcelle_4">
+                    <div class="text-xs uppercase tracking-wide text-gray-400 font-bold mb-2">Parcelle</div>
+                    <div class="text-xl font-bold text-gray-800 mb-1">Champ des Hypothèses</div>
+                    <div class="text-sm text-gray-500 flex items-center gap-2"><i class="fas fa-map-marker-alt text-brand-red"></i> Delft, NL</div>
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <span class="font-semibold">Surface</span>
+                        <span class="text-gray-600">0,9 ha</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-brand-red">
+                    <div class="text-gray-500 text-xs uppercase font-bold">Surface</div>
+                    <div class="text-2xl font-bold text-gray-800">2,50 <span class="text-sm font-normal text-gray-500">ha</span></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-[#E5B350]">
+                    <div class="text-gray-500 text-xs uppercase font-bold">Récolte 2025</div>
+                    <div class="text-2xl font-bold text-gray-800">1 500 <span class="text-sm font-normal text-gray-500">kg</span></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-blue-400">
+                    <div class="text-gray-500 text-xs uppercase font-bold">Rendement</div>
+                    <div class="text-2xl font-bold text-gray-800">300 <span class="text-sm font-normal text-gray-500">kg/ha</span></div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm border-t-4 border-gray-300">
+                    <div class="text-gray-500 text-xs uppercase font-bold">Âge moyen</div>
+                    <div class="text-2xl font-bold text-gray-400">—</div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="font-bold text-gray-800 mb-4 border-b border-gray-100 pb-2">Encépagement actuel</h2>
+                    <div class="flex flex-col items-center justify-center py-8 bg-gray-50 rounded border border-dashed border-gray-300">
+                        <div class="h-12 w-12 text-gray-300 mb-2"><i class="fas fa-leaf text-4xl"></i></div>
+                        <p class="text-gray-500 mb-4">Aucun encépagement défini pour cette parcelle.</p>
+                        <button class="text-brand-red font-medium text-sm hover:underline">Définir les cépages</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-800">Journal des récoltes</h2>
+                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">2025</span>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-500 font-medium">
+                            <tr>
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3">Bon de récolte</th>
+                                <th class="px-6 py-3">Type</th>
+                                <th class="px-6 py-3 text-right">Poids</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-3">13 Déc 2025</td>
+                                <td class="px-6 py-3 font-mono text-gray-600">VND-2025-004</td>
+                                <td class="px-6 py-3"><span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-yellow-200 border border-yellow-400"></div> Blanc</span></td>
+                                <td class="px-6 py-3 text-right font-bold">500 kg</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-3">15 Sep 2025</td>
+                                <td class="px-6 py-3 font-mono text-gray-600">VND-SPINOZA-01</td>
+                                <td class="px-6 py-3"><span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-yellow-200 border border-yellow-400"></div> Blanc</span></td>
+                                <td class="px-6 py-3 text-right font-bold">1 500 kg</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+
+        <div class="preview-overlay" id="previewOverlay" onclick="closePreview()"></div>
+        <aside class="preview-sidebar" id="previewSidebar">
+            <div class="preview-header">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-2xl font-bold text-brand-red" id="previewTitle">Sélectionnez une parcelle</h2>
+                            <span class="text-xs bg-brand-red/10 text-brand-red font-semibold px-2 py-0.5 rounded-full" id="previewBadge">—</span>
+                        </div>
+                        <p class="text-sm text-gray-500" id="previewLocation">Cliquez sur une carte pour prévisualiser.</p>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600" onclick="closePreview()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="preview-stats">
+                    <div class="preview-stat-card">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Surface</div>
+                        <div class="text-lg font-bold text-gray-800" id="statSurface">—</div>
+                    </div>
+                    <div class="preview-stat-card">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Récolte</div>
+                        <div class="text-lg font-bold text-gray-800" id="statHarvest">—</div>
+                    </div>
+                    <div class="preview-stat-card">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Rendement</div>
+                        <div class="text-lg font-bold text-gray-800" id="statRendement">—</div>
+                    </div>
+                    <div class="preview-stat-card">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Âge moyen</div>
+                        <div class="text-lg font-bold text-gray-800" id="statAge">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="preview-body">
+                <section class="preview-section">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs uppercase tracking-wide text-blue-600 font-bold flex items-center gap-2"><i class="fas fa-bolt text-brand-red"></i> Actions rapides</h3>
+                        <span class="text-[10px] text-gray-400 uppercase">Parcelle</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm font-medium">
+                        <button class="bg-brand-red text-white rounded-lg py-2 flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition"><i class="fas fa-basket-shopping"></i> Vendange</button>
+                        <button class="bg-white border border-gray-200 rounded-lg py-2 flex items-center justify-center gap-2 text-gray-700 hover:bg-gray-50 transition"><i class="fas fa-pen"></i> Modifier</button>
+                        <button class="bg-white border border-gray-200 rounded-lg py-2 flex items-center justify-center gap-2 text-gray-700 hover:bg-gray-50 transition"><i class="fas fa-leaf"></i> Traitement</button>
+                        <button class="bg-white border border-gray-200 rounded-lg py-2 flex items-center justify-center gap-2 text-gray-700 hover:bg-gray-50 transition"><i class="fas fa-ruler-combined"></i> Rangs</button>
+                    </div>
+                </section>
+
+                <section class="preview-section space-y-3">
+                    <h3 class="text-xs uppercase tracking-wide text-gray-400 font-bold flex items-center gap-2"><i class="fas fa-info-circle text-brand-red"></i> Fiche parcelle</h3>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex justify-between"><span>Lieu-dit</span><span class="font-semibold text-gray-900" id="infoLieuDit">—</span></div>
+                        <div class="flex justify-between"><span>Appellation</span><span class="font-semibold text-gray-900" id="infoAppellation">—</span></div>
+                        <div class="flex justify-between"><span>Altitude</span><span class="font-semibold text-gray-900" id="infoAltitude">—</span></div>
+                        <div class="flex justify-between items-start">
+                            <span>Certifications</span>
+                            <div id="infoCertifications" class="flex flex-wrap gap-1 justify-end text-xs font-semibold text-brand-red"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="preview-section space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs uppercase tracking-wide text-blue-600 font-bold flex items-center gap-2"><i class="fas fa-cloud-sun"></i> Météo locale</h3>
+                        <span class="text-[10px] text-gray-400" id="weatherLocation">—</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-sun text-yellow-400 text-3xl drop-shadow-sm"></i>
+                            <div>
+                                <div class="text-2xl font-bold text-gray-800" id="weatherTemp">—</div>
+                                <div class="text-[11px] text-gray-500" id="weatherFeels">Ressenti —</div>
+                            </div>
+                        </div>
+                        <div class="text-right space-y-1 text-xs text-gray-500">
+                            <div id="weatherWind"><i class="fas fa-wind text-gray-400 mr-1"></i> —</div>
+                            <div id="weatherHumidity"><i class="fas fa-tint text-blue-400 mr-1"></i> —</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-600" id="weatherForecast"></div>
+                </section>
+
+                <section class="preview-section">
+                    <h3 class="text-xs uppercase tracking-wide text-gray-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-history text-brand-red"></i> Activité récente</h3>
+                    <div class="relative pl-3 border-l-2 border-gray-100 space-y-5" id="previewTimeline">
+                        <p class="text-sm text-gray-400">Aucune activité récente.</p>
+                    </div>
+                </section>
+            </div>
+            <div class="preview-footer">
+                <a href="#" id="previewLink">Voir la fiche complète</a>
+            </div>
+        </aside>
+
+    </div>
+    <script>
+        const parcellesData = {
+            "parcelle_1": {
+                name: "Les Coteaux de la Vérité",
+                badge: "Grand Cru",
+                location: "Ethics, Amsterdam",
+                surface: "2,5 ha",
+                harvest: "1 500 kg",
+                rendement: "300 kg/ha",
+                age: "12 ans",
+                lieu_dit: "Ethics",
+                appellation: "Amsterdam IGP",
+                altitude: "75 m",
+                certifications: ["BIO", "HVE"],
+                weather: {
+                    location: "Amsterdam, NL",
+                    temp: "12°C",
+                    feels: "Ressenti 10°C",
+                    wind: "8 km/h NO",
+                    humidity: "45% Hum.",
+                    forecast: [
+                        { day: "Dem.", icon: "fa-cloud", color: "text-gray-400", value: "11°" },
+                        { day: "Jeu.", icon: "fa-cloud-rain", color: "text-blue-400", value: "9°" },
+                        { day: "Ven.", icon: "fa-sun", color: "text-yellow-400", value: "13°" }
+                    ]
+                },
+                timeline: [
+                    { date: "13 Déc 2025", title: "Vendange validée", detail: "Bon VND-2025-004 · 500 kg", color: "#E5B350" },
+                    { date: "12 Déc 2025", title: "Analyse maturité", detail: "TAV potentiel 12.8°", color: "#9ca3af" }
+                ],
+                link: "#"
+            },
+            "parcelle_2": {
+                name: "Clos des Philosophes",
+                badge: "Monopole",
+                location: "Utrecht, NL",
+                surface: "1,8 ha",
+                harvest: "780 kg",
+                rendement: "260 kg/ha",
+                age: "7 ans",
+                lieu_dit: "Spinoza",
+                appellation: "Hollande septentrionale",
+                altitude: "25 m",
+                certifications: ["Conversion BIO"],
+                weather: {
+                    location: "Utrecht, NL",
+                    temp: "9°C",
+                    feels: "Ressenti 7°C",
+                    wind: "5 km/h N",
+                    humidity: "60% Hum.",
+                    forecast: [
+                        { day: "Dem.", icon: "fa-cloud-sun", color: "text-yellow-400", value: "10°" },
+                        { day: "Jeu.", icon: "fa-cloud", color: "text-gray-400", value: "8°" },
+                        { day: "Ven.", icon: "fa-cloud-rain", color: "text-blue-400", value: "7°" }
+                    ]
+                },
+                timeline: [
+                    { date: "02 Déc 2025", title: "Travail du sol réalisé", detail: "Sous-traitant AgroPlus", color: "#4ade80" },
+                    { date: "28 Nov 2025", title: "Traitement cuivre", detail: "Multi-parcelles", color: "#f97316" }
+                ],
+                link: "#"
+            },
+            "parcelle_3": {
+                name: "Domaine du Paradoxe",
+                badge: "Argilo-calcaire",
+                location: "Leiden, NL",
+                surface: "3,1 ha",
+                harvest: "2 100 kg",
+                rendement: "340 kg/ha",
+                age: "20 ans",
+                lieu_dit: "Les Paradoxes",
+                appellation: "Hollande Méridionale",
+                altitude: "54 m",
+                certifications: ["HVE"],
+                weather: {
+                    location: "Leiden, NL",
+                    temp: "11°C",
+                    feels: "Ressenti 9°C",
+                    wind: "12 km/h O",
+                    humidity: "52% Hum.",
+                    forecast: [
+                        { day: "Dem.", icon: "fa-cloud", color: "text-gray-400", value: "10°" },
+                        { day: "Jeu.", icon: "fa-cloud-sun", color: "text-yellow-400", value: "12°" },
+                        { day: "Ven.", icon: "fa-cloud", color: "text-gray-400", value: "9°" }
+                    ]
+                },
+                timeline: [
+                    { date: "05 Déc 2025", title: "Inspection sanitaire", detail: "RAS, vigueur stable", color: "#14b8a6" }
+                ],
+                link: "#"
+            },
+            "parcelle_4": {
+                name: "Champ des Hypothèses",
+                badge: "Expérimental",
+                location: "Delft, NL",
+                surface: "0,9 ha",
+                harvest: "300 kg",
+                rendement: "333 kg/ha",
+                age: "3 ans",
+                lieu_dit: "Hypatia",
+                appellation: "Delft expérimental",
+                altitude: "12 m",
+                certifications: [],
+                weather: {
+                    location: "Delft, NL",
+                    temp: "8°C",
+                    feels: "Ressenti 6°C",
+                    wind: "6 km/h E",
+                    humidity: "55% Hum.",
+                    forecast: [
+                        { day: "Dem.", icon: "fa-cloud", color: "text-gray-400", value: "7°" },
+                        { day: "Jeu.", icon: "fa-cloud-rain", color: "text-blue-400", value: "6°" },
+                        { day: "Ven.", icon: "fa-cloud", color: "text-gray-400", value: "8°" }
+                    ]
+                },
+                timeline: [],
+                link: "#"
+            }
+        };
+
+        const overlay = document.getElementById('previewOverlay');
+        const sidebar = document.getElementById('previewSidebar');
+        let selectedCard = null;
+
+        document.querySelectorAll('.parcelle-card').forEach(card => {
+            card.addEventListener('click', () => openPreview(card.dataset.parcelleId, card));
+        });
+
+        function openPreview(id, card) {
+            const data = parcellesData[id];
+            if (!data) return;
+
+            if (selectedCard) selectedCard.classList.remove('selected');
+            selectedCard = card;
+            selectedCard.classList.add('selected');
+
+            document.getElementById('previewTitle').textContent = data.name;
+            document.getElementById('previewBadge').textContent = data.badge || 'Parcelle';
+            document.getElementById('previewLocation').textContent = data.location;
+            document.getElementById('statSurface').textContent = data.surface;
+            document.getElementById('statHarvest').textContent = data.harvest;
+            document.getElementById('statRendement').textContent = data.rendement;
+            document.getElementById('statAge').textContent = data.age;
+            document.getElementById('infoLieuDit').textContent = data.lieu_dit;
+            document.getElementById('infoAppellation').textContent = data.appellation;
+            document.getElementById('infoAltitude').textContent = data.altitude;
+
+            const certContainer = document.getElementById('infoCertifications');
+            certContainer.innerHTML = '';
+            if (data.certifications.length) {
+                data.certifications.forEach(cert => {
+                    const badge = document.createElement('span');
+                    badge.className = "px-2 py-0.5 bg-brand-red/10 text-brand-red rounded-full";
+                    badge.textContent = cert;
+                    certContainer.appendChild(badge);
+                });
+            } else {
+                certContainer.innerHTML = '<span class="text-gray-400">Aucune</span>';
+            }
+
+            const weather = data.weather;
+            document.getElementById('weatherLocation').textContent = weather.location;
+            document.getElementById('weatherTemp').textContent = weather.temp;
+            document.getElementById('weatherFeels').textContent = weather.feels;
+            document.getElementById('weatherWind').innerHTML = `<i class="fas fa-wind text-gray-400 mr-1"></i>${weather.wind}`;
+            document.getElementById('weatherHumidity').innerHTML = `<i class="fas fa-tint text-blue-400 mr-1"></i>${weather.humidity}`;
+
+            const forecastContainer = document.getElementById('weatherForecast');
+            forecastContainer.innerHTML = '';
+            weather.forecast.forEach(item => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="text-[10px] text-gray-400">${item.day}</div>
+                    <i class="fas ${item.icon} ${item.color} text-sm my-0.5"></i>
+                    <div class="text-xs font-bold text-gray-700">${item.value}</div>
+                `;
+                forecastContainer.appendChild(div);
+            });
+
+            const timeline = document.getElementById('previewTimeline');
+            timeline.innerHTML = '';
+            if (!data.timeline.length) {
+                timeline.innerHTML = '<p class="text-sm text-gray-400">Aucune activité récente.</p>';
+            } else {
+                data.timeline.forEach(item => {
+                    const entry = document.createElement('div');
+                    entry.className = 'relative pl-4';
+                    entry.innerHTML = `
+                        <div class="absolute -left-[10px] top-1 h-4 w-4 rounded-full border-2" style="border-color:${item.color};"></div>
+                        <div class="text-xs text-gray-400 font-mono mb-0.5">${item.date}</div>
+                        <div class="font-semibold text-gray-800">${item.title}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">${item.detail}</div>
+                    `;
+                    timeline.appendChild(entry);
+                });
+            }
+
+            document.getElementById('previewLink').href = data.link;
+
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+        }
+
+        function closePreview() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+            if (selectedCard) {
+                selectedCard.classList.remove('selected');
+                selectedCard = null;
+            }
+        }
+    </script>
+</body>
+</html>

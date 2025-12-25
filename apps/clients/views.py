@@ -158,6 +158,37 @@ def customers_list(request, segment_override=None):
 
 @login_required
 @require_membership(role_min='read_only')
+def customers_list_v2(request):
+    """
+    Liste des clients - Nouveau design MonChai (sidebar + grille/liste + preview)
+    """
+    organization = request.current_org
+    
+    try:
+        clients = Customer.objects.filter(
+            organization=organization,
+            is_archived=False
+        ).order_by('-created_at')[:100]
+        
+        context = {
+            'page_title': 'Clients',
+            'clients': clients,
+            'organization': organization,
+        }
+        
+        return render(request, 'commerce/customers_list_v2.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Erreur lors du chargement des clients: {str(e)}")
+        return render(request, 'commerce/customers_list_v2.html', {
+            'page_title': 'Clients',
+            'clients': [],
+            'organization': organization,
+        })
+
+
+@login_required
+@require_membership(role_min='read_only')
 def customer_detail(request, customer_id):
     """
     Page de détail d'un client avec gestion des onglets

@@ -1,0 +1,233 @@
+{% load static %}
+<!--
+=====================================================
+PARTIAL: Vue RELATIONS - Données liées avec recherche HTMX
+=====================================================
+Affiche les objets liés avec recherche instantanée,
+tri et pagination par section.
+=====================================================
+-->
+
+<div class="meta-relations">
+    <!-- Header -->
+    <div class="meta-content-header">
+        <h2 class="meta-content-title">
+            <i class="bi bi-diagram-3 me-2"></i>Relations
+        </h2>
+    </div>
+    
+    <div class="meta-content-body p-0">
+        {% if relations %}
+        <div class="relations-sections">
+            {% for rel in relations %}
+            <div class="relation-section" id="relation-{{ rel.name }}">
+                <!-- Header de section -->
+                <div class="relation-section-header">
+                    <div class="relation-section-title">
+                        <i class="bi {{ rel.icon }}"></i>
+                        <span>{{ rel.label }}</span>
+                        <span class="relation-count badge bg-secondary">{{ rel.total_count }}</span>
+                    </div>
+                    
+                    <div class="relation-section-actions">
+                        <!-- Recherche -->
+                        <div class="relation-search">
+                            <input type="text" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="Rechercher..."
+                                   value="{{ rel.search }}"
+                                   name="search_{{ rel.name }}"
+                                   hx-get="?mode=relations"
+                                   hx-trigger="keyup changed delay:300ms"
+                                   hx-target="#relation-{{ rel.name }}-content"
+                                   hx-swap="innerHTML">
+                        </div>
+                        
+                        <!-- Actions -->
+                        {% if rel.can_create and rel.create_url %}
+                        <a href="{{ rel.create_url }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus-lg"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Contenu de section -->
+                <div class="relation-section-content" id="relation-{{ rel.name }}-content">
+                    {% include "core/meta/partials/_relation_table.html" with relation=rel %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="relations-empty">
+            <i class="bi bi-diagram-3"></i>
+            <p>Aucune relation configurée pour cet objet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Relations styles */
+.relations-sections {
+    display: flex;
+    flex-direction: column;
+}
+
+.relation-section {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.relation-section:last-child {
+    border-bottom: none;
+}
+
+.relation-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    flex-wrap: wrap;
+}
+
+.relation-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.relation-section-title i {
+    color: #6b7280;
+}
+
+.relation-count {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.relation-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.relation-search {
+    width: 180px;
+}
+
+.relation-search input {
+    font-size: 0.8rem;
+}
+
+.relation-section-content {
+    padding: 0;
+}
+
+/* Table */
+.relation-table {
+    width: 100%;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.relation-table thead {
+    background: #fafafa;
+}
+
+.relation-table th {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.relation-table td {
+    padding: 0.5rem 0.75rem;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.relation-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.relation-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.relation-table a {
+    color: #722f37;
+    text-decoration: none;
+}
+
+.relation-table a:hover {
+    text-decoration: underline;
+}
+
+/* Actions row */
+.relation-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.relation-actions .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+}
+
+/* Pagination */
+.relation-pagination {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.5rem 0.75rem;
+    background: #fafafa;
+}
+
+.relation-pagination .pagination {
+    margin: 0;
+}
+
+/* Empty state */
+.relation-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #9ca3af;
+}
+
+.relation-empty i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.relations-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+}
+
+.relations-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* Collapsed section */
+.relation-section.collapsed .relation-section-content {
+    display: none;
+}
+
+.relation-section.collapsed .relation-section-header {
+    border-bottom: none;
+}
+</style>

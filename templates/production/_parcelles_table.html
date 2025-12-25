@@ -11,13 +11,28 @@
   </thead>
   <tbody>
   {% for p in parcelles %}
-    <tr style="cursor: pointer;" onclick="window.location='{% url 'production:parcelle_detail' p.id %}'">
+    <tr class="parcelle-row"
+        data-id="{{ p.id }}"
+        data-nom="{{ p.nom|escape }}"
+        data-lieu="{{ p.lieu_dit|default:''|escape }}"
+        data-commune="{{ p.commune|default:''|escape }}"
+        data-appellation="{{ p.appellation|default:''|escape }}"
+        data-surface="{{ p.surface|default:0 }}"
+        data-lat="{{ p.latitude|default:'' }}"
+        data-lon="{{ p.longitude|default:'' }}"
+        data-detail-url="{% url 'production:parcelle_detail' p.id %}"
+        data-weather-url="{% url 'production:parcelle_weather_preview' p.id %}"
+        data-events-url="{% url 'production:parcelle_events_preview' p.id %}"
+        data-composition-url="{% url 'production:parcelle_composition_preview' p.id %}"
+        data-certifications="{% if p.tags %}{{ p.tags|join:',' }}{% endif %}"
+        data-encepagement='{{ p.get_encepagement_preview_json|escapejs }}'
+        style="cursor:pointer;">
       <td class="fw-medium">{{ p.nom }}</td>
       <td>{{ p.commune|default:'—' }}</td>
       <td>{{ p.appellation|default:'—' }}</td>
       <td class="text-end">{{ p.surface|default:'—' }}</td>
       <td class="text-end">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'production:parcelle_detail' p.id %}"><i class="bi bi-eye me-1"></i>Voir</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'production:parcelle_detail' p.id %}" onclick="event.stopPropagation();"><i class="bi bi-eye me-1"></i>Voir</a>
       </td>
     </tr>
   {% empty %}

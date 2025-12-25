@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'referentiels/base_referentiels.html' %}
 {% load i18n %}
 
 {% block title %}{{ page_title }} - {{ organization.name }}{% endblock %}
@@ -58,7 +58,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block referentiels_content %}
 <div class="container py-4">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">

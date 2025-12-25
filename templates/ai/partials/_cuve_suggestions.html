@@ -1,0 +1,117 @@
+{# Suggestions de cuves pour soutirage/assemblage #}
+{% load smart_tags %}
+
+<style>
+.cuve-card.glow-success {
+    box-shadow: 0 0 15px rgba(25, 135, 84, 0.4);
+    animation: glow-pulse 2s ease-in-out infinite alternate;
+}
+@keyframes glow-pulse {
+    from { box-shadow: 0 0 10px rgba(25, 135, 84, 0.3); }
+    to { box-shadow: 0 0 20px rgba(25, 135, 84, 0.5); }
+}
+.cuve-card.disabled {
+    pointer-events: none;
+}
+.cuve-card:not(.disabled):hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
+</style>
+
+<div class="cuve-suggestions">
+    {% if perfect_count > 0 %}
+    <div class="mb-2">
+        <span class="badge bg-success-subtle text-success">
+            <i class="bi bi-stars me-1"></i>{{ perfect_count }} Perfect fit{{ perfect_count|pluralize }}
+        </span>
+    </div>
+    {% endif %}
+    
+    <div class="row g-2">
+        {% for cuve in suggestions %}
+        <div class="col-md-4 col-lg-3">
+            <div class="cuve-card card h-100 {{ cuve.highlight|highlight_class }}" 
+                 data-cuve-id="{{ cuve.id }}"
+                 data-fit-score="{{ cuve.fit_score }}"
+                 {% if cuve.highlight != 'disabled' %}
+                 role="button"
+                 onclick="selectCuve({{ cuve.id }})"
+                 {% endif %}>
+                
+                <div class="card-body p-2">
+                    {# En-tête cuve #}
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <span class="fw-bold">{{ cuve.code }}</span>
+                            <br>
+                            <small class="text-muted">{{ cuve.type }}</small>
+                        </div>
+                        {% if cuve.highlight == 'perfect' %}
+                        <span class="sparkle-badge">✨</span>
+                        {% endif %}
+                    </div>
+                    
+                    {# Jauge de remplissage #}
+                    <div class="progress mb-1" style="height: 6px;">
+                        <div class="progress-bar 
+                             {% if cuve.occupancy_pct >= 90 %}bg-danger
+                             {% elif cuve.occupancy_pct >= 70 %}bg-warning
+                             {% else %}bg-success{% endif %}"
+                             style="width: {{ cuve.occupancy_pct }}%"></div>
+                    </div>
+                    
+                    {# Capacité #}
+                    <div class="small">
+                        <span class="{% if cuve.highlight == 'disabled' %}text-danger{% else %}text-success{% endif %}">
+                            {{ cuve.free_capacity_l|floatformat:0 }}L
+                        </span>
+                        <span class="text-muted">/ {{ cuve.capacite_l|floatformat:0 }}L</span>
+                    </div>
+                    
+                    {# Raison #}
+                    <div class="small mt-1 
+                         {% if cuve.highlight == 'perfect' %}text-success fw-medium
+                         {% elif cuve.highlight == 'disabled' %}text-danger
+                         {% else %}text-muted{% endif %}">
+                        {{ cuve.reason }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Aucune cuve disponible pour ce volume.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function selectCuve(cuveId) {
+    // Retirer la sélection précédente
+    document.querySelectorAll('.cuve-card.selected').forEach(el => {
+        el.classList.remove('selected', 'border-primary', 'border-2');
+    });
+    
+    // Sélectionner la nouvelle cuve
+    const card = document.querySelector(`[data-cuve-id="${cuveId}"]`);
+    if (card && !card.classList.contains('disabled')) {
+        card.classList.add('selected', 'border-primary', 'border-2');
+        
+        // Mettre à jour le champ caché si présent
+        const input = document.getElementById('id_contenant_destination');
+        if (input) {
+            input.value = cuveId;
+        }
+        
+        // Déclencher un événement custom
+        document.dispatchEvent(new CustomEvent('cuveSelected', { 
+            detail: { cuveId: cuveId }
+        }));
+    }
+}
+</script>

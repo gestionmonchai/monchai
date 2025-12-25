@@ -1,0 +1,561 @@
+{
+  "version": "2.0",
+  "updated": "2024-12-24",
+  "description": "Index d'aide contextuelle pour MonChai - Mapping URL → Contenu d'aide",
+  
+  "pages": {
+    "/": {
+      "title": "Accueil",
+      "description": "Page d'accueil MonChai - Redirection automatique vers le dashboard ou la landing page",
+      "help_text": "Bienvenue sur MonChai ! Si vous êtes connecté, vous serez redirigé vers votre tableau de bord. Sinon, vous verrez la page d'accueil publique.",
+      "shortcuts": ["Ctrl+K pour rechercher", "? pour l'aide"],
+      "related": ["/dashboard/", "/auth/login/"]
+    },
+    
+    "/dashboard/": {
+      "title": "Tableau de Bord",
+      "description": "Vue d'ensemble de votre domaine viticole",
+      "help_text": "Le tableau de bord affiche les informations clés de votre exploitation : alertes, statistiques de production, dernières activités et tâches à venir.",
+      "tips": [
+        "Personnalisez votre dashboard via le bouton ⚙️",
+        "Les widgets sont déplaçables par drag & drop",
+        "Cliquez sur une stat pour voir le détail"
+      ],
+      "shortcuts": ["Ctrl+N pour créer", "Ctrl+K pour rechercher"],
+      "related": ["/auth/dashboard/configure/", "/production/alertes/"]
+    },
+    
+    "/auth/login/": {
+      "title": "Connexion",
+      "description": "Page de connexion à MonChai",
+      "help_text": "Saisissez votre email et mot de passe pour accéder à votre espace. Si vous avez oublié votre mot de passe, cliquez sur 'Mot de passe oublié'.",
+      "tips": [
+        "Utilisez un mot de passe fort (8+ caractères)",
+        "Cochez 'Se souvenir de moi' sur vos appareils personnels"
+      ],
+      "related": ["/auth/signup/", "/auth/password/reset/"]
+    },
+    
+    "/auth/signup/": {
+      "title": "Inscription",
+      "description": "Créer un nouveau compte MonChai",
+      "help_text": "Créez votre compte en renseignant votre email professionnel et un mot de passe sécurisé. Vous recevrez un email de confirmation.",
+      "tips": [
+        "Utilisez votre email professionnel",
+        "Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre"
+      ],
+      "related": ["/auth/login/"]
+    },
+    
+    "/production/": {
+      "title": "Production - Accueil",
+      "description": "Vue d'ensemble de la production viticole",
+      "help_text": "Le module Production couvre l'ensemble du processus viticole : de la vigne au chai, en passant par l'élevage et le conditionnement.",
+      "sections": {
+        "vigne": "Gestion des parcelles, journal cultural, suivi phytosanitaire",
+        "chai": "Vendanges, encuvages, vinification",
+        "elevage": "Analyses, assemblages, élevage en cuves et fûts",
+        "conditionnement": "Mises en bouteille, lots commerciaux"
+      },
+      "shortcuts": ["Ctrl+N pour nouvelle vendange"],
+      "related": ["/production/parcelles/", "/production/vendanges/", "/production/lots-techniques/"]
+    },
+    
+    "/production/parcelles/": {
+      "title": "Parcelles",
+      "description": "Gestion des parcelles viticoles",
+      "help_text": "Gérez vos parcelles de vignes : surface, encépagement, localisation. Chaque parcelle peut être géolocalisée et associée à une appellation.",
+      "actions": {
+        "create": "Cliquez '+ Nouvelle parcelle' pour créer",
+        "view": "Cliquez sur une parcelle pour voir le détail",
+        "edit": "Bouton 'Modifier' sur la fiche",
+        "export": "Menu '...' → Exporter en CSV"
+      },
+      "tips": [
+        "Définissez l'encépagement pour chaque parcelle",
+        "La vue carte montre la géolocalisation",
+        "Les alertes météo sont disponibles par parcelle"
+      ],
+      "related": ["/production/journal-cultural/", "/production/vendanges/"]
+    },
+    
+    "/production/journal-cultural/": {
+      "title": "Journal Cultural",
+      "description": "Registre unifié des interventions vigne",
+      "help_text": "Le journal cultural regroupe toutes les interventions sur vos parcelles : travaux viticoles, traitements phytosanitaires et suivi de maturité.",
+      "tabs": {
+        "interventions": "Travaux du sol, taille, effeuillage, etc.",
+        "phyto": "Traitements fongicides, insecticides (registre réglementaire)",
+        "maturite": "Suivi des degrés, acidité, pH avant vendanges"
+      },
+      "tips": [
+        "Le registre phyto est obligatoire réglementairement",
+        "Exportez en PDF pour archivage",
+        "Les alertes météo aident à planifier les traitements"
+      ],
+      "related": ["/production/parcelles/", "/production/vendanges/"]
+    },
+    
+    "/production/vendanges/": {
+      "title": "Vendanges",
+      "description": "Saisie et suivi des vendanges",
+      "help_text": "Enregistrez chaque apport de vendange : parcelle, poids, degré potentiel. L'interface terrain est optimisée pour une saisie rapide au smartphone.",
+      "actions": {
+        "create": "Cliquez '+ Nouvelle vendange' ou utilisez l'interface terrain",
+        "encuver": "Depuis une vendange, cliquez 'Encuver' pour créer un lot technique"
+      },
+      "tips": [
+        "Utilisez les boutons de poids rapides (+100, +250, +500 kg)",
+        "L'interface terrain est optimisée pour les smartphones",
+        "La géolocalisation est automatique sur mobile"
+      ],
+      "shortcuts": ["Ctrl+N pour nouvelle vendange"],
+      "related": ["/production/lots-techniques/", "/production/encuvages/"]
+    },
+    
+    "/production/lots-techniques/": {
+      "title": "Lots Techniques (Vue Cuvée)",
+      "description": "Gestion des lots techniques et vue du chai",
+      "help_text": "La Vue Cuvée affiche l'état de chaque contenant de votre chai. Chaque carte représente une cuve avec son lot technique en cours, le volume et les dernières opérations.",
+      "views": {
+        "cuvee": "Vue visuelle du chai avec les cuves",
+        "liste": "Liste traditionnelle des lots techniques"
+      },
+      "actions": {
+        "detail": "Cliquez une cuve pour voir le lot",
+        "soutirage": "Actions → Soutirage",
+        "analyse": "Actions → Nouvelle analyse"
+      },
+      "tips": [
+        "La couleur indique le type de vin",
+        "Le remplissage montre le volume actuel",
+        "Les badges signalent les opérations récentes"
+      ],
+      "related": ["/production/soutirages/", "/production/lots-elevage/analyses/"]
+    },
+    
+    "/production/contenants/": {
+      "title": "Contenants",
+      "description": "Gestion des cuves, fûts et barriques",
+      "help_text": "Gérez votre parc de contenants : cuves inox, béton, fûts, barriques. Suivez leur état, leur occupation et leur historique d'utilisation.",
+      "actions": {
+        "create": "Cliquez '+ Nouveau contenant'",
+        "affecter": "Affectez un lot technique à un contenant",
+        "vidanger": "Vidangez un contenant pour nettoyage"
+      },
+      "types": ["Cuve inox", "Cuve béton", "Cuve fibre", "Fût chêne", "Barrique", "Demi-muid", "Foudre"],
+      "related": ["/production/lots-techniques/", "/production/soutirages/"]
+    },
+    
+    "/production/soutirages/": {
+      "title": "Soutirages",
+      "description": "Transferts entre contenants",
+      "help_text": "Effectuez des soutirages pour transférer du vin d'un contenant à un autre. Le wizard guide chaque étape et met à jour automatiquement les volumes.",
+      "steps": [
+        "Sélectionnez le contenant source",
+        "Définissez le volume à transférer",
+        "Choisissez le(s) contenant(s) de destination",
+        "Options : ouillage, sulfitage",
+        "Validez pour enregistrer le mouvement"
+      ],
+      "tips": [
+        "Le système vérifie les capacités disponibles",
+        "L'ouillage peut être automatique",
+        "Tous les mouvements sont tracés"
+      ],
+      "related": ["/production/lots-techniques/", "/production/contenants/"]
+    },
+    
+    "/production/assemblages/": {
+      "title": "Assemblages",
+      "description": "Création d'assemblages de lots",
+      "help_text": "Assemblez plusieurs lots techniques pour créer une cuvée. Le wizard calcule les proportions et vérifie la compatibilité des appellations.",
+      "steps": [
+        "Sélectionnez les lots sources (2 minimum)",
+        "Définissez les proportions (total = 100%)",
+        "Choisissez la destination",
+        "Associez à une cuvée produit",
+        "Validez pour créer le nouveau lot"
+      ],
+      "tips": [
+        "Vérifiez la compatibilité des appellations",
+        "Le volume résultant est calculé automatiquement",
+        "La traçabilité complète est conservée"
+      ],
+      "related": ["/production/lots-techniques/", "/production/mises/"]
+    },
+    
+    "/production/lots-elevage/analyses/": {
+      "title": "Analyses Œnologiques",
+      "description": "Suivi analytique des lots",
+      "help_text": "Enregistrez les analyses de vos lots : TAV, acidité, pH, SO2, etc. Le système détecte automatiquement les valeurs hors normes.",
+      "parameters": ["TAV (% vol)", "Acidité totale (g/L)", "pH", "Acidité volatile (g/L)", "SO2 libre (mg/L)", "SO2 total (mg/L)", "Sucres résiduels (g/L)"],
+      "alerts": {
+        "av_high": "AV > 0.60 g/L → Risque piqûre",
+        "so2_low": "SO2 libre < 20 mg/L → Protection insuffisante",
+        "ph_high": "pH > 3.8 → Risque stabilité"
+      },
+      "tips": [
+        "Joignez les rapports de laboratoire",
+        "Suivez l'évolution avec les graphiques",
+        "Les alertes sont automatiques"
+      ],
+      "related": ["/production/lots-techniques/", "/production/lots-elevage/"]
+    },
+    
+    "/production/mises/": {
+      "title": "Mises en Bouteille",
+      "description": "Conditionnement des lots",
+      "help_text": "Créez des mises en bouteille depuis vos lots techniques. Le wizard calcule automatiquement le nombre de bouteilles et génère les lots commerciaux.",
+      "steps": [
+        "Sélectionnez le(s) lot(s) source(s)",
+        "Choisissez le format (75cl, 150cl, etc.)",
+        "Définissez le nombre de bouteilles",
+        "Associez au SKU produit",
+        "Validez pour créer le lot commercial"
+      ],
+      "tips": [
+        "Les pertes sont estimées automatiquement",
+        "Le stock vrac est débité",
+        "Le stock bouteilles est crédité"
+      ],
+      "related": ["/production/lots-techniques/", "/production/inventaire/"]
+    },
+    
+    "/production/inventaire/": {
+      "title": "Inventaire",
+      "description": "Vue consolidée des stocks",
+      "help_text": "L'inventaire affiche tous vos stocks : vrac en cuves, bouteilles conditionnées, lots commerciaux et matières sèches.",
+      "tabs": {
+        "vrac": "Lots techniques en cuves (en hL)",
+        "produits": "Bouteilles conditionnées",
+        "lots_commerciaux": "Lots prêts à la vente",
+        "ms": "Matières sèches (bouchons, étiquettes, etc.)"
+      },
+      "tips": [
+        "Filtrez par couleur, appellation, millésime",
+        "Les alertes stock sont visibles ici",
+        "Exportez en CSV pour analyse"
+      ],
+      "related": ["/production/lots-techniques/", "/stocks/"]
+    },
+    
+    "/production/alertes/": {
+      "title": "Alertes & Rappels",
+      "description": "Gestion des tâches et rappels",
+      "help_text": "Gérez vos alertes et rappels : tâches à effectuer, deadlines, rappels automatiques liés aux lots ou contenants.",
+      "actions": {
+        "create": "Créez une alerte manuelle",
+        "complete": "Marquez comme terminée ✓",
+        "snooze": "Reportez à plus tard 🕐",
+        "dismiss": "Ignorez sans action ✗"
+      },
+      "priorities": ["Basse", "Normale", "Haute", "Urgente"],
+      "tips": [
+        "Les alertes peuvent être liées à un lot ou contenant",
+        "Des rappels automatiques sont générés par le système",
+        "Filtrez par priorité ou statut"
+      ],
+      "related": ["/dashboard/", "/production/lots-techniques/"]
+    },
+    
+    "/referentiels/clients/": {
+      "title": "Clients",
+      "description": "Gestion de la base clients",
+      "help_text": "Gérez votre base clients : particuliers, professionnels, cavistes, export. Chaque fiche client comprend 5 volets d'informations.",
+      "types": {
+        "particulier": "Nom, prénom, préférences vin",
+        "professionnel": "Raison sociale, SIRET, contact",
+        "caviste": "Enseigne, volume annuel, gamme",
+        "export": "TVA intra, Incoterm, langue"
+      },
+      "volets": [
+        "Identité & Coordonnées",
+        "Commercial & Fiscalité",
+        "Adresses & Logistique",
+        "Historique & Performance",
+        "Documents & Conformité"
+      ],
+      "tips": [
+        "Le type de client adapte les champs affichés",
+        "Détection automatique des doublons",
+        "Export CSV disponible"
+      ],
+      "related": ["/ventes/devis/", "/ventes/commandes/"]
+    },
+    
+    "/ventes/dashboard/": {
+      "title": "Ventes - Dashboard",
+      "description": "Tableau de bord commercial",
+      "help_text": "Vue d'ensemble de votre activité commerciale : pipeline, devis en cours, commandes, facturation et encaissements.",
+      "metrics": ["CA période", "Devis en attente", "Commandes en cours", "Factures à encaisser"],
+      "related": ["/ventes/devis/", "/ventes/commandes/", "/ventes/factures/"]
+    },
+    
+    "/ventes/devis/": {
+      "title": "Devis",
+      "description": "Gestion des devis clients",
+      "help_text": "Créez et gérez vos devis. Un devis validé peut être transformé en commande en un clic.",
+      "workflow": "Brouillon → Validé → Transformé en commande",
+      "tips": [
+        "Ajoutez des lignes produits depuis le catalogue",
+        "Les remises peuvent être par ligne ou globales",
+        "Transformez en commande en 1 clic"
+      ],
+      "related": ["/ventes/commandes/", "/referentiels/clients/"]
+    },
+    
+    "/ventes/commandes/": {
+      "title": "Commandes",
+      "description": "Gestion des commandes clients",
+      "help_text": "Suivez vos commandes de la validation à la livraison. Générez automatiquement les bons de livraison et factures.",
+      "workflow": "Brouillon → Validée → En préparation → Expédiée → Facturée",
+      "tips": [
+        "La réservation stock est optionnelle",
+        "Générez le BL depuis la commande",
+        "Facturez en 1 clic"
+      ],
+      "related": ["/ventes/livraisons/", "/ventes/factures/"]
+    },
+    
+    "/ventes/factures/": {
+      "title": "Factures",
+      "description": "Facturation clients",
+      "help_text": "Créez et gérez vos factures. La numérotation est automatique et conforme. Export PDF et envoi email intégrés.",
+      "features": [
+        "Numérotation automatique",
+        "Calcul TVA automatique",
+        "Export PDF",
+        "Envoi email intégré",
+        "Suivi encaissements"
+      ],
+      "tips": [
+        "Facturez depuis une commande ou un BL",
+        "Les avoirs sont liés à une facture",
+        "Suivez les échéances de paiement"
+      ],
+      "related": ["/ventes/commandes/", "/ventes/paiements/echeancier/"]
+    },
+    
+    "/ventes/grilletarifs/": {
+      "title": "Grilles Tarifaires",
+      "description": "Gestion des prix de vente",
+      "help_text": "Créez des grilles tarifaires par segment client (public, pro, export). Chaque grille définit les prix par SKU.",
+      "features": [
+        "Grilles par segment",
+        "Import/export CSV",
+        "Édition en grille (style Excel)",
+        "Historique des prix"
+      ],
+      "tips": [
+        "Créez une grille par type de client",
+        "Importez vos prix depuis Excel",
+        "L'historique est conservé automatiquement"
+      ],
+      "related": ["/ventes/articles/", "/referentiels/clients/"]
+    },
+    
+    "/achats/dashboard/": {
+      "title": "Achats - Dashboard",
+      "description": "Tableau de bord achats",
+      "help_text": "Vue d'ensemble de vos achats : demandes de prix, commandes fournisseurs, réceptions et facturation.",
+      "related": ["/achats/fournisseurs/", "/achats/commandes/"]
+    },
+    
+    "/achats/fournisseurs/": {
+      "title": "Fournisseurs",
+      "description": "Gestion des fournisseurs",
+      "help_text": "Gérez vos fournisseurs avec la même structure que les clients. Associez-leur un catalogue d'articles.",
+      "related": ["/achats/articles/", "/achats/commandes/"]
+    },
+    
+    "/drm/": {
+      "title": "DRM - Dashboard",
+      "description": "Déclaration Récapitulative Mensuelle",
+      "help_text": "Préparez et exportez vos DRM (Déclarations Récapitulatives Mensuelles) pour les douanes. Le système pré-remplit depuis vos mouvements.",
+      "workflow": "Brouillon → Validé → Exporté → Transmis",
+      "features": [
+        "Pré-remplissage automatique",
+        "Vérification cohérence",
+        "Export CSV douanes",
+        "Export PDF archivage"
+      ],
+      "tips": [
+        "Vérifiez les codes INAO de vos produits",
+        "L'échéance est le 10 du mois suivant",
+        "Conservez les PDF pour archivage"
+      ],
+      "related": ["/drm/editer/", "/drm/export/", "/drm/inao/"]
+    },
+    
+    "/drm/editer/": {
+      "title": "Éditeur DRM",
+      "description": "Édition du brouillon DRM",
+      "help_text": "Éditez votre déclaration mensuelle. Les mouvements sont pré-remplis depuis vos saisies. Vérifiez et ajustez si nécessaire.",
+      "sections": ["Entrées", "Sorties", "Stocks fin de mois", "Récapitulatif"],
+      "tips": [
+        "Les données viennent de vos mouvements",
+        "Corrigez directement dans le tableau",
+        "Sauvegardez en brouillon avant export"
+      ],
+      "related": ["/drm/", "/drm/export/"]
+    },
+    
+    "/stocks/": {
+      "title": "Stocks - Dashboard",
+      "description": "Gestion des stocks",
+      "help_text": "Vue d'ensemble de vos stocks : mouvements, inventaires, transferts, alertes. Gérez vos entrepôts et emplacements.",
+      "modules": {
+        "mouvements": "Journal de tous les mouvements",
+        "inventaires": "Sessions d'inventaire physique",
+        "transferts": "Transferts entre emplacements",
+        "alertes": "Stocks sous seuil"
+      },
+      "related": ["/stocks/mouvements/", "/stocks/alertes/", "/production/inventaire/"]
+    },
+    
+    "/referentiels/": {
+      "title": "Référentiels",
+      "description": "Données de référence",
+      "help_text": "Gérez vos données de référence : cépages, parcelles, unités, cuvées, entrepôts. Ces données sont utilisées dans toute l'application.",
+      "entities": ["Cépages", "Parcelles", "Unités", "Cuvées", "Entrepôts"],
+      "features": [
+        "Import CSV",
+        "Export CSV",
+        "Recherche avancée"
+      ],
+      "related": ["/referentiels/cepages/", "/referentiels/parcelles/", "/referentiels/import/"]
+    },
+    
+    "/catalogue/": {
+      "title": "Catalogue",
+      "description": "Catalogue produits",
+      "help_text": "Visualisez votre catalogue de produits en grille. Filtrez par couleur, appellation, millésime.",
+      "views": ["Grille visuelle", "Liste détaillée"],
+      "filters": ["Couleur", "Appellation", "Millésime", "Prix", "Stock"],
+      "related": ["/produits/produits/catalogue/", "/ventes/articles/"]
+    },
+    
+    "/onboarding/": {
+      "title": "Onboarding",
+      "description": "Guide de démarrage",
+      "help_text": "Suivez le guide de démarrage pour configurer votre domaine viticole : informations de base, parcelles, contenants, produits.",
+      "steps": [
+        "Informations du domaine",
+        "Création des parcelles",
+        "Création des contenants",
+        "Création des cuvées/produits",
+        "Paramètres de vente"
+      ],
+      "tips": [
+        "Vous pouvez passer des étapes",
+        "Revenez à tout moment via le menu",
+        "Les données peuvent être importées"
+      ]
+    },
+    
+    "/auth/settings/roles/": {
+      "title": "Gestion des Rôles",
+      "description": "Membres et permissions",
+      "help_text": "Gérez les membres de votre organisation et leurs rôles. Invitez de nouveaux collaborateurs et définissez leurs permissions.",
+      "roles": {
+        "owner": "Propriétaire - Tous droits",
+        "admin": "Administrateur - Tous droits sauf suppression org",
+        "manager": "Gestionnaire - CRUD données + invitations",
+        "member": "Membre - CRUD données limitées",
+        "viewer": "Lecteur - Lecture seule"
+      },
+      "actions": ["Inviter", "Changer rôle", "Désactiver"],
+      "related": ["/auth/invite/send/", "/auth/organizations/"]
+    },
+    
+    "/auth/me/profile/": {
+      "title": "Mon Profil",
+      "description": "Paramètres personnels",
+      "help_text": "Modifiez vos informations personnelles, changez votre mot de passe et gérez vos sessions actives.",
+      "tabs": {
+        "profil": "Nom, email, langue, fuseau horaire",
+        "securite": "Mot de passe, MFA",
+        "sessions": "Appareils connectés"
+      },
+      "related": ["/auth/organizations/"]
+    }
+  },
+  
+  "shortcuts": {
+    "global": {
+      "Ctrl+K": "Recherche globale",
+      "Ctrl+N": "Nouveau (contextuel)",
+      "?": "Aide contextuelle",
+      "Esc": "Fermer modal/panneau"
+    },
+    "navigation": {
+      "Tab": "Champ suivant",
+      "Shift+Tab": "Champ précédent",
+      "Enter": "Valider formulaire"
+    },
+    "lists": {
+      "↑/↓": "Navigation dans la liste",
+      "Enter": "Ouvrir l'élément sélectionné",
+      "Delete": "Supprimer (si autorisé)"
+    }
+  },
+  
+  "glossary": {
+    "lot_technique": "Unité de vin en cours de vinification/élevage, tracé de la vendange à la mise",
+    "lot_commercial": "Lot de bouteilles prêt à la vente, issu d'une mise en bouteille",
+    "encuvage": "Action de mettre le raisin ou le moût dans une cuve",
+    "soutirage": "Transfert de vin d'un contenant à un autre en séparant les lies",
+    "assemblage": "Mélange de plusieurs lots pour créer une cuvée",
+    "mise": "Mise en bouteille d'un lot de vin",
+    "drm": "Déclaration Récapitulative Mensuelle pour les douanes",
+    "crd": "Capsule Représentative de Droit (timbre fiscal)",
+    "tav": "Titre Alcoométrique Volumique (degré d'alcool)",
+    "av": "Acidité Volatile",
+    "at": "Acidité Totale",
+    "so2": "Dioxyde de Soufre (sulfites)"
+  },
+  
+  "faq": [
+    {
+      "question": "Comment créer ma première parcelle ?",
+      "answer": "Allez dans Production → Parcelles → + Nouvelle parcelle. Renseignez le nom, la surface et l'encépagement.",
+      "url": "/production/parcelles/nouveau/"
+    },
+    {
+      "question": "Comment saisir une vendange sur le terrain ?",
+      "answer": "Utilisez l'interface mobile : Production → Vendanges → + Nouveau. Les boutons de poids rapides facilitent la saisie.",
+      "url": "/production/vendanges/nouveau/"
+    },
+    {
+      "question": "Comment faire un soutirage ?",
+      "answer": "Production → Soutirages → + Nouveau. Sélectionnez la source, le volume, la destination et validez.",
+      "url": "/production/soutirages/nouveau/"
+    },
+    {
+      "question": "Comment préparer ma DRM ?",
+      "answer": "Allez dans DRM → Éditer. Le système pré-remplit depuis vos mouvements. Vérifiez et exportez.",
+      "url": "/drm/editer/"
+    },
+    {
+      "question": "Comment inviter un collaborateur ?",
+      "answer": "Auth → Gestion des rôles → + Inviter. Saisissez l'email et choisissez le rôle.",
+      "url": "/auth/settings/roles/"
+    },
+    {
+      "question": "Comment créer un devis ?",
+      "answer": "Ventes → Devis → + Nouveau. Sélectionnez le client, ajoutez les lignes produits et validez.",
+      "url": "/ventes/devis/nouveau/"
+    },
+    {
+      "question": "Comment suivre mes alertes ?",
+      "answer": "Production → Alertes. Vous pouvez terminer, reporter ou ignorer chaque alerte.",
+      "url": "/production/alertes/"
+    },
+    {
+      "question": "Comment exporter mes données ?",
+      "answer": "Sur chaque liste, utilisez le menu '...' ou le bouton Export pour télécharger en CSV.",
+      "url": "/referentiels/"
+    }
+  ]
+}

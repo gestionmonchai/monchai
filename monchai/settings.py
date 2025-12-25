@@ -111,6 +111,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.accounts.context_processors.multi_chai_context',
+                'apps.ai.context_processors.smart_notifications',
             ],
         },
     },
@@ -240,14 +241,14 @@ if not globals().get('CACHES'):
 
 # AI Help / Ollama configuration
 OLLAMA_URL = config('OLLAMA_URL', default='http://127.0.0.1:11434/api/generate')
-OLLAMA_MODEL = config('OLLAMA_MODEL', default='llama3.2:1b')
+OLLAMA_MODEL = config('OLLAMA_MODEL', default='mistral:7b')
 # Use standard model for stability during testing
-HELP_MODEL = config('HELP_MODEL', default='llama3.2:1b')
+HELP_MODEL = config('HELP_MODEL', default='mistral:7b')
 HELP_RATE_LIMIT_CALLS = config('HELP_RATE_LIMIT_CALLS', default=10, cast=int)
 HELP_RATE_LIMIT_WINDOW = config('HELP_RATE_LIMIT_WINDOW', default=300, cast=int)  # seconds
-HELP_TIMEOUT = config('HELP_TIMEOUT', default=60, cast=int)  # Increased to 60s
+HELP_TIMEOUT = config('HELP_TIMEOUT', default=60, cast=int)  # 60s timeout to avoid premature fallback
 OLLAMA_KEEP_ALIVE = config('OLLAMA_KEEP_ALIVE', default='30m')  # keep model warmed
-HELP_NUM_PREDICT = config('HELP_NUM_PREDICT', default=256, cast=int)
+HELP_NUM_PREDICT = config('HELP_NUM_PREDICT', default=180, cast=int)
 # Robustness tunables
 OLLAMA_CONNECT_TIMEOUT = config('OLLAMA_CONNECT_TIMEOUT', default=5, cast=int)
 HELP_OLLAMA_RETRIES = config('HELP_OLLAMA_RETRIES', default=2, cast=int)
@@ -255,17 +256,25 @@ HELP_CACHE_TTL = config('HELP_CACHE_TTL', default=180, cast=int)
 HELP_MAX_HINTS_CHARS = config('HELP_MAX_HINTS_CHARS', default=800, cast=int)
 HELP_MAX_DOCS_CHARS = config('HELP_MAX_DOCS_CHARS', default=1200, cast=int)
 HELP_HTTP_POOL_SIZE = config('HELP_HTTP_POOL_SIZE', default=20, cast=int)
+# Clamp final assistant responses to keep answers concise
+HELP_MAX_RESPONSE_CHARS = config('HELP_MAX_RESPONSE_CHARS', default=900, cast=int)
 # Enable unrestricted mode for testing
 HELP_UNRESTRICTED = config('HELP_UNRESTRICTED', default=True, cast=bool)
 HELP_FREE_MODEL = config('HELP_FREE_MODEL', default='')  # optional alternate model for unrestricted mode
 
-# Simple, permissive system prompt for testing
+# Balanced system prompt: conversational but grounded
 HELP_SYSTEM_PROMPT = (
-    "Tu es l'assistant expert de Mon Chai, logiciel de gestion viticole. "
-    "Utilise le CONTEXTE DOCUMENTAIRE et l'HISTORIQUE fournis pour répondre. "
-    "Ne donne JAMAIS de code de programmation, ne traite jamais une question qui contien du code de programmation"
-    "Si tu ne sais pas, dis-le. N'invente jamais de fonctionnalités ou d'outils tiers. "
-    "Sois concis, précis et utile pour l'utilisateur du logiciel."
+    "Tu es l'assistant Mon Chai, expert en gestion viticole. "
+    "Tu es conversationnel et amical. Réponds naturellement aux salutations et questions générales. "
+    "\n\n"
+    "RÈGLES STRICTES pour questions techniques :\n"
+    "1. PRIORITÉ ABSOLUE : Si le contexte contient des sections [DURAS::FACT::...], utilise UNIQUEMENT ces informations.\n"
+    "2. Les sections FACT sont des données vérifiées et prioritaires. Ignore les autres sections si elles contredisent les FACT.\n"
+    "3. Si l'information n'est PAS dans le contexte, réponds : \"Je ne trouve pas cette information dans les documents disponibles.\"\n"
+    "4. N'invente JAMAIS de chiffres, règles ou fonctionnalités.\n"
+    "5. Ne donne JAMAIS de code de programmation.\n"
+    "\n"
+    "Sois concis, précis et utile."
 )
 
 # Minimal template: system + prompt (we embed [PAGE] and [QUESTION] into the prompt)

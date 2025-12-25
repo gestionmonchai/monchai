@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.db import models
 from datetime import datetime
 from .models import DRMLine
 from .services import select_inao_codes
@@ -128,47 +129,56 @@ class INAOCodeSearchApiView(View):
 @method_decorator(login_required, name='dispatch')
 class INAOListView(View):
     def get(self, request):
-        q = request.GET.get('q')
-        appellation = request.GET.get('appellation')
-        color = request.GET.get('color')
-        vol_l = request.GET.get('volume_l') or request.GET.get('vol_l')
-        vol_ml = request.GET.get('volume_ml') or request.GET.get('format_ml')
-        abv = request.GET.get('abv_pct') or request.GET.get('abv')
-
-        volume_l = None
-        try:
-            if vol_l:
-                volume_l = Decimal(str(vol_l).replace(',', '.'))
-            elif vol_ml:
-                volume_l = (Decimal(int(vol_ml)) / Decimal(1000)).quantize(Decimal('0.001'))
-        except Exception:
-            volume_l = None
-
-        abv_pct = None
-        try:
-            if abv:
-                abv_pct = Decimal(str(abv).replace(',', '.'))
-        except Exception:
-            abv_pct = None
-
-        any_filter = any([q, appellation, color, volume_l is not None, abv_pct is not None])
+        from .models import INAOCode
+        
+        q = request.GET.get('q', '').strip()
+        appellation = request.GET.get('appellation', '').strip()
+        categorie = request.GET.get('categorie', '').strip()
+        region = request.GET.get('region', '').strip()
+        
+        # Construire le queryset
+        qs = INAOCode.objects.filter(active=True)
+        
+        if q:
+            qs = qs.filter(
+                models.Q(appellation_label__icontains=q) |
+                models.Q(code_inao__icontains=q) |
+                models.Q(code_nc__icontains=q) |
+                models.Q(categorie__icontains=q)
+            )
+        if appellation:
+            qs = qs.filter(appellation_label__icontains=appellation)
+        if categorie:
+            qs = qs.filter(categorie_code=categorie)
+        if region:
+            qs = qs.filter(region__icontains=region)
+        
+        any_filter = any([q, appellation, categorie, region])
         limit = 500 if any_filter else 100
-        results = list(select_inao_codes(appellation=appellation, color=color, volume_l=volume_l, abv_pct=abv_pct, q=q, limit=limit))
+        results = list(qs[:limit])
         limited = (not any_filter) and len(results) >= limit
+        total_count = INAOCode.objects.filter(active=True).count()
+        
+        # Listes pour les filtres
+        categories = INAOCode.CATEGORIE_CHOICES
+        regions = INAOCode.objects.filter(active=True).exclude(region='').values_list('region', flat=True).distinct().order_by('region')
 
         return render(request, 'drm/inao_list.html', {
             'results': results,
             'limited': limited,
+            'total_count': total_count,
             'page_title': 'Codes INAO (Douanes)',
             'breadcrumb_items': [
                 {'name': 'DRM', 'url': '/drm/'},
                 {'name': 'Codes INAO', 'url': None},
             ],
             'filters': {
-                'q': q or '',
-                'appellation': appellation or '',
-                'color': color or '',
-                'format_ml': vol_ml or '',
-                'abv_pct': str(abv_pct) if abv_pct is not None else '',
-            }
+                'q': q,
+                'appellation': appellation,
+                'categorie': categorie,
+                'region': region,
+            },
+            'categories': categories,
+            'regions': regions,
+            'douanes_url': 'https://www.douane.gouv.fr/la-douane/opendata?f%5B0%5D=categorie_opendata_facet%3ADonn%C3%A9es%20fiscales',
         })

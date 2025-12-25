@@ -1,0 +1,44 @@
+{
+  "timestamp": "20251223_165832",
+  "score": 50.0,
+  "passed": 2,
+  "total": 4,
+  "results": [
+    {
+      "id": "DURAS_CHARGE_BLANCS",
+      "status": "FAIL",
+      "has_value": false,
+      "has_keywords": true,
+      "has_citation": false,
+      "no_hallucination": true,
+      "response": "Les charges maximales par hectare pour les blancs en Côtes de Duras sont de 72 hectolitres par hectare."
+    },
+    {
+      "id": "DURAS_DENSITE_ROUGE",
+      "status": "PASS",
+      "has_value": true,
+      "has_keywords": true,
+      "has_citation": false,
+      "no_hallucination": true,
+      "response": "La densité minimale de plantation exigée pour les nouvelles parcelles en Côtes de Duras rouge est de 3300 pieds par hectare."
+    },
+    {
+      "id": "DURAS_RICHESSE_LIQUOREUX",
+      "status": "PASS",
+      "has_value": true,
+      "has_keywords": true,
+      "has_citation": false,
+      "no_hallucination": true,
+      "response": "Selon le document fourni, pour un vin liquoreux Côtes de Duras, des richesses en sucre sont demandées à l'origine :\n\n* 170 grammes par litre de moût (vins blancs secs)\n* 185 grammes par litre de moût (autres vins blancs)"
+    },
+    {
+      "id": "DURAS_RECOLTE_ROSE",
+      "status": "FAIL",
+      "has_value": false,
+      "has_keywords": true,
+      "has_citation": false,
+      "no_hallucination": true,
+      "response": "Les créneaux de récolte autorisés pour les raisins destinés aux rosés « Côtes de Duras » sont :\n\n* La récolte des raisins\n* L'élaboration et la vinification du vin (c'est-à-dire l'étape avant que le vin ne soit commercialisé)\n\nCes deux créneaux sont autorisés dans les communes suivantes : Auriac-sur"
+    }
+  ]
+}

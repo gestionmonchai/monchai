@@ -1,0 +1,247 @@
+{% extends '_layout/base_list_view.html' %}
+{% load static %}
+
+{% block sidebar_title %}Production{% endblock %}
+
+{% block sidebar_sections %}
+<div class="px-4 mt-4 mb-1 text-xs font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-1" style="color: var(--sidebar-green);">Vigne</div>
+<a href="{% url 'production:parcelles_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">Parcelles</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-1" style="color: var(--sidebar-orange);">Vendanges</div>
+<a href="{% url 'production:vendanges_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent hover:border-gray-300">Réceptions</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold uppercase tracking-wide border-b border-gray-100 pb-1 flex justify-between text-brand-red">
+    Chai <span class="bg-gray-100 text-gray-500 text-[10px] px-1.5 rounded-full">{{ contenants|length }}</span>
+</div>
+<a href="{% url 'production:lots_tech_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent">Lots techniques</a>
+<a href="{% url 'production:contenants_list_v2' %}" class="block px-4 py-1.5 text-sm font-bold text-brand-red bg-red-50 ml-2 border-l-2 border-brand-red rounded-r">
+    Cuves & barriques
+</a>
+
+<div class="px-4 mt-4 mb-1 text-xs font-bold uppercase tracking-wide border-b border-gray-100 pb-1 text-purple-700">Analyses</div>
+<a href="{% url 'production:analyses_oeno_list' %}" class="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 ml-2 border-l-2 border-transparent">Analyses œnologiques</a>
+{% endblock %}
+
+{% block page_title %}Plan de Cuverie{% endblock %}
+{% block page_subtitle %}Gestion visuelle des contenants • {{ organization.name }}{% endblock %}
+
+{% block toolbar_filters %}
+<div class="bg-white rounded-full px-1 py-1 shadow-sm border border-gray-200 flex text-xs font-medium">
+    <button class="mc-filter-pill px-3 py-1 rounded-full bg-brand-red text-white shadow-sm" data-filter="all">Tout</button>
+    <button class="mc-filter-pill px-3 py-1 rounded-full text-gray-600 hover:bg-gray-100" data-filter="rouge">Rouges</button>
+    <button class="mc-filter-pill px-3 py-1 rounded-full text-gray-600 hover:bg-gray-100" data-filter="blanc">Blancs</button>
+    <button class="mc-filter-pill px-3 py-1 rounded-full text-gray-600 hover:bg-gray-100" data-filter="vide">Vides</button>
+</div>
+{% endblock %}
+
+{% block action_label %}Nouveau Contenant{% endblock %}
+{% block action_onclick %}window.location.href='{% url "production:contenants_new" %}'{% endblock %}
+
+{% block grid_content %}
+{% for c in contenants %}
+<div class="relative bg-white rounded-lg shadow-sm border {% if c.lot_actuel %}border-brand-red border-2{% else %}border-gray-200 border-dashed{% endif %} cursor-pointer overflow-hidden h-56 hover:shadow-md hover:-translate-y-1 transition-all group"
+     data-id="{{ c.id }}"
+     data-filter="{% if c.lot_actuel %}{{ c.lot_actuel.couleur|default:'autre' }}{% else %}vide{% endif %}"
+     onclick="selectContenant({{ c.id }})">
+    
+    {% if c.lot_actuel %}
+    <div class="absolute bottom-0 w-full liquid {% if c.lot_actuel.couleur == 'rouge' %}liquid-red{% else %}liquid-white{% endif %}" style="height: {{ c.occupancy_pct|floatformat:0 }}%;"></div>
+    {% endif %}
+    
+    <div class="absolute inset-0 p-4 flex flex-col justify-between z-10">
+        <div class="flex justify-between items-start">
+            <span class="bg-white/90 backdrop-blur px-2 py-0.5 rounded text-sm font-bold text-gray-800 shadow-sm">{{ c.code }}</span>
+            <span class="text-[10px] bg-gray-800 text-white px-1.5 rounded">{{ c.get_type_display|upper|slice:":6" }}</span>
+        </div>
+        
+        {% if c.lot_actuel %}
+        <div class="bg-white/90 backdrop-blur p-2 rounded shadow-sm text-center">
+            <div class="text-xs font-bold text-gray-800">{{ c.lot_actuel.code }}</div>
+            <div class="text-[10px] text-gray-500">Lot: {{ c.lot_actuel.code }}</div>
+            <div class="w-full bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
+                <div class="bg-brand-red h-full" style="width: {{ c.occupancy_pct|floatformat:0 }}%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] mt-1 text-gray-600">
+                <span>{{ c.volume_actuel_l|floatformat:0 }} L</span>
+                <span>/ {{ c.capacite_l|floatformat:0 }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center">
+            <div class="text-gray-300 mb-1"><i class="fas fa-tint-slash text-2xl"></i></div>
+            <span class="text-xs font-medium text-gray-400">Vide</span>
+        </div>
+        <div class="text-center text-[10px] text-gray-400">Cap: {{ c.capacite_l|floatformat:0 }} L</div>
+        {% endif %}
+    </div>
+    
+    {% if c.alerte %}
+    <div class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] h-5 w-5 rounded-full flex items-center justify-center shadow-md animate-pulse z-20">!</div>
+    {% endif %}
+</div>
+{% empty %}
+<div class="col-span-full text-center py-12">
+    <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+    <p class="text-gray-500">Aucun contenant enregistré</p>
+    <a href="{% url 'production:contenants_new' %}" class="inline-block mt-4 bg-[#E5B350] hover:bg-[#d4a540] text-white text-sm font-bold px-4 py-2 rounded shadow-sm">
+        <i class="fas fa-plus mr-1"></i> Créer un contenant
+    </a>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block table_headers %}
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Code</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Contenu</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Volume</th>
+<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Remplissage</th>
+{% endblock %}
+
+{% block table_rows %}
+{% for c in contenants %}
+<tr class="hover:bg-gray-50 cursor-pointer" data-id="{{ c.id }}" data-filter="{% if c.lot_actuel %}{{ c.lot_actuel.couleur|default:'autre' }}{% else %}vide{% endif %}" onclick="selectContenant({{ c.id }})">
+    <td class="px-4 py-3 font-bold text-gray-800">{{ c.code }}</td>
+    <td class="px-4 py-3"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ c.get_type_display }}</span></td>
+    <td class="px-4 py-3">
+        {% if c.lot_actuel %}
+        <span class="font-medium">{{ c.lot_actuel.code }}</span>
+        {% else %}
+        <span class="text-gray-400">— Vide —</span>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3">{{ c.volume_actuel_l|floatformat:0 }} / {{ c.capacite_l|floatformat:0 }} L</td>
+    <td class="px-4 py-3">
+        <div class="flex items-center gap-2">
+            <div class="w-20 bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-brand-red h-full" style="width: {{ c.occupancy_pct|floatformat:0 }}%"></div>
+            </div>
+            <span class="text-xs text-gray-500">{{ c.occupancy_pct|floatformat:0 }}%</span>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block preview_stats %}
+<div class="bg-white border border-gray-100 p-2 rounded text-center shadow-sm">
+    <div class="text-[10px] text-gray-400 uppercase">Volume</div>
+    <div class="text-sm font-bold text-brand-red" id="stat-volume">—</div>
+</div>
+<div class="bg-white border border-gray-100 p-2 rounded text-center shadow-sm">
+    <div class="text-[10px] text-gray-400 uppercase">Degré</div>
+    <div class="text-sm font-bold text-gray-800" id="stat-degre">—</div>
+</div>
+<div class="bg-white border border-gray-100 p-2 rounded text-center shadow-sm">
+    <div class="text-[10px] text-gray-400 uppercase">SO2 T.</div>
+    <div class="text-sm font-bold text-gray-800" id="stat-so2">—</div>
+</div>
+{% endblock %}
+
+{% block preview_quick_actions %}
+<div class="bg-gray-800 text-white rounded-lg p-4 shadow-md">
+    <div class="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
+        <i class="fas fa-bolt text-yellow-400"></i> Actions Rapides
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+        <button onclick="actionAnalyse()" class="bg-white/10 hover:bg-white/20 py-2 rounded text-xs font-medium border border-white/10 transition">
+            <i class="fas fa-flask mb-1 block text-sm"></i> Analyse
+        </button>
+        <button onclick="actionSoutirage()" class="bg-white/10 hover:bg-white/20 py-2 rounded text-xs font-medium border border-white/10 transition">
+            <i class="fas fa-random mb-1 block text-sm"></i> Soutirage
+        </button>
+        <button onclick="actionAjout()" class="bg-white/10 hover:bg-white/20 py-2 rounded text-xs font-medium border border-white/10 transition">
+            <i class="fas fa-plus mb-1 block text-sm"></i> Ajout
+        </button>
+        <button onclick="actionRenommer()" class="bg-white/10 hover:bg-white/20 py-2 rounded text-xs font-medium border border-white/10 transition">
+            <i class="fas fa-tag mb-1 block text-sm"></i> Renommer
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block preview_sections %}
+<div>
+    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Composition (Traçabilité)</h3>
+    <div class="bg-white border border-gray-100 rounded-lg p-3 shadow-sm" id="preview-composition">
+        <p class="text-sm text-gray-400">Sélectionnez un contenant</p>
+    </div>
+</div>
+
+<div>
+    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Historique récent</h3>
+    <div class="space-y-3 pl-2 border-l border-gray-200" id="preview-timeline">
+        <div class="relative pl-4">
+            <div class="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-gray-300 border border-white"></div>
+            <p class="text-xs text-gray-400">—</p>
+            <p class="text-sm font-medium text-gray-500">Aucune opération</p>
+        </div>
+    </div>
+    <button class="text-xs text-brand-red font-medium mt-2 hover:underline">Voir tout l'historique</button>
+</div>
+{% endblock %}
+
+{% block list_view_js %}
+<script>
+const contenantsData = {
+    {% for c in contenants %}
+    {{ c.id }}: {
+        id: {{ c.id }},
+        code: "{{ c.code }}",
+        type: "{{ c.get_type_display }}",
+        capacite: {{ c.capacite_l }},
+        volume: {{ c.volume_actuel_l|default:0 }},
+        occupancy: {{ c.occupancy_pct|default:0 }},
+        localisation: "{{ c.localisation|default:'' }}",
+        lot: {% if c.lot_actuel %}{ code: "{{ c.lot_actuel.code }}", couleur: "{{ c.lot_actuel.couleur|default:'' }}" }{% else %}null{% endif %},
+        detailUrl: "{% url 'production:contenants_detail' c.id %}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+function selectContenant(id) {
+    const data = contenantsData[id];
+    if (!data) return;
+    
+    selectItem(id, {
+        title: `Cuve ${data.code} <span class="text-xs bg-brand-red text-white px-2 py-0.5 rounded ml-2">${data.type}</span>`,
+        subtitle: data.lot ? `Lot: ${data.lot.code}` : 'Vide',
+        detailUrl: data.detailUrl
+    });
+    
+    document.getElementById('stat-volume').textContent = data.lot ? `${Math.round(data.volume)} L` : '—';
+    document.getElementById('stat-degre').textContent = '—';
+    document.getElementById('stat-so2').textContent = '—';
+    
+    const compoDiv = document.getElementById('preview-composition');
+    if (data.lot) {
+        compoDiv.innerHTML = `
+            <div class="flex justify-between text-xs mb-1">
+                <span class="font-medium text-gray-700">${data.lot.code}</span>
+                <span>100%</span>
+            </div>
+            <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-brand-red h-full" style="width: 100%"></div>
+            </div>
+        `;
+    } else {
+        compoDiv.innerHTML = '<p class="text-sm text-gray-400">Contenant vide</p>';
+    }
+}
+
+function onFilterChange(filter) {
+    document.querySelectorAll('[data-filter]').forEach(el => {
+        if (filter === 'all' || el.dataset.filter === filter) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
+
+function actionAnalyse() { if (selectedItemId) window.location.href = `/production/lots-elevage/analyses/nouvelle/?contenant=${selectedItemId}`; }
+function actionSoutirage() { if (selectedItemId) alert('Soutirage - À venir'); }
+function actionAjout() { if (selectedItemId) alert('Ajout - À venir'); }
+function actionRenommer() { if (selectedItemId) window.location.href = `/production/contenants/${selectedItemId}/edit/`; }
+</script>
+{% endblock %}

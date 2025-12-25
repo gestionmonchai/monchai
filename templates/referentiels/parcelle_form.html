@@ -16,7 +16,7 @@
     
     /* Page Header */
     .page-header {
-        background: linear-gradient(135deg, var(--raisin) 0%, var(--bordeaux) 100%);
+        background: linear-gradient(135deg, #6610f2 0%, #520dc2 100%);
         color: white;
         border-radius: 12px;
         padding: 1.5rem 2rem;
@@ -691,147 +691,73 @@
             </div>
         </div>
         
-        <!-- Tab 2: Carte & Rangs -->
+        <!-- Tab 2: Carte & Localisation GPS -->
         <div class="tab-panel" data-panel="carte">
             <div class="row">
                 <div class="col-lg-8">
-                    <div class="section-card">
-                        <div class="section-header">
-                            <h5><i class="bi bi-map me-2"></i>Localisation et dessin des rangs</h5>
+                    <!-- Section GPS explicite -->
+                    <div class="section-card mb-3">
+                        <div class="section-header" style="background: linear-gradient(135deg, #198754 0%, #157347 100%); color: white;">
+                            <h5 class="mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Coordonnées GPS (pour la météo)</h5>
                         </div>
                         <div class="section-body">
-                            <!-- Outils de recherche cadastrale -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-8">
-                                    <div class="input-group input-group-sm">
-                                        <input id="addrQForm" type="text" class="form-control" placeholder="Recherche par adresse..." autocomplete="off">
-                                        <button id="btnAddrGo" type="button" class="btn btn-outline-secondary">
-                                            <i class="bi bi-search"></i>
-                                        </button>
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Important :</strong> Les coordonnées GPS permettent d'afficher les <strong>prévisions météo</strong> sur la fiche de la parcelle.
+                                Vous pouvez les saisir manuellement ou cliquer sur la carte ci-dessous.
+                            </div>
+                            
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label for="{{ form.latitude.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-compass me-1"></i>Latitude
+                                    </label>
+                                    {{ form.latitude }}
+                                    <div class="form-text">Ex: 47.218371 (France: 41 à 51)</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="{{ form.longitude.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-compass me-1"></i>Longitude
+                                    </label>
+                                    {{ form.longitude }}
+                                    <div class="form-text">Ex: -1.553621 (France: -5 à 10)</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-success w-100" id="btn-get-gps" onclick="getGPSFromBrowser()">
+                                        <i class="bi bi-crosshair me-1"></i>Ma position actuelle
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mt-2">
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="text-muted small">Ou recherchez une adresse :</span>
+                                        <div class="input-group" style="max-width: 400px;">
+                                            <input id="addrQForm" type="text" class="form-control" placeholder="Ex: Château Margaux, Bordeaux" autocomplete="off">
+                                            <button id="btnAddrGo" type="button" class="btn btn-outline-secondary">
+                                                <i class="bi bi-search"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div id="addrResultsForm" class="list-group mt-1" style="max-height:120px;overflow:auto;"></div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="input-group input-group-sm">
-                                        <input id="insee" type="text" maxlength="5" class="form-control" placeholder="INSEE">
-                                        <input id="section" type="text" maxlength="3" class="form-control" placeholder="Sect">
-                                        <input id="numero" type="text" maxlength="5" class="form-control" placeholder="Num">
-                                        <button id="btnSearchParcel" type="button" class="btn btn-outline-primary">
-                                            <i class="bi bi-search"></i>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
                             
-                            <!-- Toolbar principale -->
-                            <div class="zone-toolbar">
-                                <button type="button" class="btn btn-outline-secondary btn-sm active" id="btn-mode-select" title="Mode sélection">
-                                    <i class="bi bi-cursor"></i> Sélection
-                                </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-mode-move" title="Déplacer la zone">
-                                    <i class="bi bi-arrows-move"></i> Déplacer
-                                </button>
-                                <button type="button" class="btn btn-outline-danger btn-sm" id="btn-delete-zone" title="Supprimer la zone sélectionnée">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                                <div class="ms-auto">
-                                    <button type="button" class="btn btn-bordeaux btn-sm" id="btn-transfer-to-encepagement">
-                                        <i class="bi bi-arrow-right me-1"></i>Appliquer à l'encépagement
-                                    </button>
-                                </div>
+                            <div id="gps-status" class="mt-2" style="display:none;">
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Coordonnées définies</span>
                             </div>
-                            
-                            <!-- Sélecteur de formes -->
-                            <div class="zone-config">
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="fw-semibold small text-muted">Forme :</span>
-                                    <div class="shape-picker">
-                                        <button type="button" class="shape-btn" data-shape="triangle" title="Triangle (3 points)">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <circle cx="12" cy="3" r="1.5"/>
-                                                <circle cx="3" cy="21" r="1.5"/>
-                                                <circle cx="21" cy="21" r="1.5"/>
-                                                <path d="M12 5 L3 19 L21 19 L12 5"/>
-                                            </svg>
-                                            <span>3pts</span>
-                                        </button>
-                                        <button type="button" class="shape-btn" data-shape="rectangle" title="Rectangle (4 points)">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <circle cx="3" cy="3" r="1.5"/>
-                                                <circle cx="21" cy="3" r="1.5"/>
-                                                <circle cx="21" cy="21" r="1.5"/>
-                                                <circle cx="3" cy="21" r="1.5"/>
-                                                <path d="M3 5 L3 19 L21 19 L21 5 L3 5"/>
-                                            </svg>
-                                            <span>4pts</span>
-                                        </button>
-                                        <button type="button" class="shape-btn" data-shape="pentagon" title="Pentagone (5 points)">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <circle cx="12" cy="2" r="1.5"/>
-                                                <circle cx="22" cy="9" r="1.5"/>
-                                                <circle cx="19" cy="21" r="1.5"/>
-                                                <circle cx="5" cy="21" r="1.5"/>
-                                                <circle cx="2" cy="9" r="1.5"/>
-                                                <path d="M12 3.5 L22 9 L19 21 L5 21 L2 9 L12 3.5"/>
-                                            </svg>
-                                            <span>5pts</span>
-                                        </button>
-                                        <button type="button" class="shape-btn" data-shape="hexagon" title="Hexagone (6 points)">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <circle cx="12" cy="2" r="1.5"/>
-                                                <circle cx="21" cy="6" r="1.5"/>
-                                                <circle cx="21" cy="18" r="1.5"/>
-                                                <circle cx="12" cy="22" r="1.5"/>
-                                                <circle cx="3" cy="18" r="1.5"/>
-                                                <circle cx="3" cy="6" r="1.5"/>
-                                                <path d="M12 3.5 L21 6 L21 18 L12 20.5 L3 18 L3 6 L12 3.5"/>
-                                            </svg>
-                                            <span>6pts</span>
-                                        </button>
-                                    </div>
-                                    <div class="vr mx-1" style="height: 30px;"></div>
-                                    <div class="zone-config-item">
-                                        <label>Rangs:</label>
-                                        <input type="number" id="zone-rang-count" class="form-control" value="10" min="1" max="100">
-                                    </div>
-                                    <div class="zone-config-item">
-                                        <label>Cépage:</label>
-                                        <select id="zone-cepage" class="form-select" style="min-width: 140px;">
-                                            <option value="">— Choisir —</option>
-                                            {% for cepage in cepages %}
-                                            <option value="{{ cepage.pk }}" data-couleur="{{ cepage.couleur }}" data-nom="{{ cepage.nom }}">
-                                                {{ cepage.nom }}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="zone-config-item">
-                                        <label>Couleur:</label>
-                                        <input type="color" id="zone-color" class="zone-color-picker" value="#7B1E22" title="Couleur de la zone">
-                                    </div>
-                                    <button type="button" class="btn btn-add-zone btn-sm" id="btn-add-zone-manual">
-                                        <i class="bi bi-plus-lg me-1"></i>Ajouter
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Instructions d'utilisation -->
-                            <div class="usage-instructions mb-2">
-                                <div class="alert alert-light border py-2 px-3 mb-0">
-                                    <strong class="d-block mb-2"><i class="bi bi-info-circle me-1"></i>Mode d'emploi</strong>
-                                    <ol class="mb-0 ps-3 small">
-                                        <li><strong>Sélectionner les parcelles cadastrales :</strong> Cliquez sur le <u>numéro</u> d'une parcelle sur la carte pour la sélectionner (surlignée en jaune). Cliquez à nouveau pour la désélectionner. Vous pouvez en sélectionner plusieurs.</li>
-                                        <li><strong>Définir une zone de rangs :</strong> Choisissez une forme (3pts à 6pts), configurez le nombre de rangs et le cépage, puis cliquez sur <strong>Ajouter</strong> ou directement sur la carte.</li>
-                                        <li><strong>Ajuster la zone :</strong> Glissez les points de contrôle pour modifier la forme. Cliquez sur une zone pour la sélectionner et modifier ses propriétés.</li>
-                                        <li><strong>Valider :</strong> Cliquez sur <strong>« Appliquer à l'encépagement »</strong> pour transférer les zones vers l'onglet Encépagement.</li>
-                                    </ol>
-                                </div>
-                            </div>
-                            
-                            <!-- Message dynamique -->
-                            <div class="drawing-instructions" id="drawing-instructions">
-                                <i class="bi bi-hand-index"></i>
-                                <span id="instruction-text">Sélectionnez une forme puis cliquez sur la carte ou sur "Ajouter".</span>
+                        </div>
+                    </div>
+                    
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h5><i class="bi bi-map me-2"></i>Carte (cliquez pour définir la position)</h5>
+                        </div>
+                        <div class="section-body">
+                            <div class="alert alert-light border py-2 px-3 mb-3">
+                                <i class="bi bi-hand-index me-2"></i>
+                                <strong>Astuce :</strong> Cliquez directement sur la carte pour définir les coordonnées GPS de la parcelle.
                             </div>
                             
                             <!-- Map Container -->
@@ -858,76 +784,71 @@
                 </div>
                 
                 <div class="col-lg-4">
-                    <!-- Liste des zones -->
+                    <!-- Position GPS actuelle -->
                     <div class="section-card mb-3">
-                        <div class="section-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-layers me-2"></i>Zones définies</h5>
-                            <button type="button" class="btn btn-outline-danger btn-sm" id="btn-clear-all-zones" title="Tout effacer">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                        <div class="section-header" style="background: linear-gradient(135deg, #198754 0%, #157347 100%); color: white;">
+                            <h5 class="mb-0"><i class="bi bi-pin-map-fill me-2"></i>Position sélectionnée</h5>
                         </div>
-                        <div class="zones-list" id="zones-list">
-                            <div class="p-3 text-center text-muted small">
-                                <i class="bi bi-plus-circle d-block mb-2" style="font-size: 1.5rem;"></i>
-                                Cliquez sur une forme ci-dessus pour ajouter une zone
+                        <div class="section-body text-center" id="gps-display">
+                            <div class="py-3 text-muted" id="gps-empty">
+                                <i class="bi bi-geo-alt d-block mb-2" style="font-size: 2rem; opacity: 0.5;"></i>
+                                <p class="mb-0">Aucune position définie</p>
+                                <small>Cliquez sur la carte ou utilisez la géolocalisation</small>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Panneau d'édition de zone -->
-                    <div class="section-card" id="zone-edit-panel" style="display: none;">
-                        <div class="section-header">
-                            <h5><i class="bi bi-pencil-square me-2"></i>Modifier la zone</h5>
-                        </div>
-                        <div class="section-body">
-                            <div class="mb-3">
-                                <label class="form-label small">Cépage</label>
-                                <select id="edit-zone-cepage" class="form-select form-select-sm">
-                                    <option value="">— Non attribué —</option>
-                                    {% for cepage in cepages %}
-                                    <option value="{{ cepage.pk }}" data-couleur="{{ cepage.couleur }}" data-nom="{{ cepage.nom }}">
-                                        {{ cepage.nom }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small">Nombre de rangs</label>
-                                <input type="number" id="edit-zone-rangs" class="form-control form-control-sm" min="1" max="100">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small">Couleur de la zone</label>
-                                <input type="color" id="edit-zone-color" class="form-control form-control-sm form-control-color" value="#7B1E22" title="Couleur de la zone">
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btn-save-zone-edit">
-                                    <i class="bi bi-check me-1"></i>Appliquer
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-cancel-zone-edit">
-                                    Annuler
-                                </button>
+                            <div class="py-2" id="gps-filled" style="display: none;">
+                                <div class="d-flex justify-content-center gap-4 mb-2">
+                                    <div>
+                                        <div class="text-muted small">Latitude</div>
+                                        <div class="fw-bold fs-5" id="display-lat">—</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">Longitude</div>
+                                        <div class="fw-bold fs-5" id="display-lng">—</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Position enregistrée</span>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Aide -->
-                    <div class="alert alert-light border">
-                        <h6 class="alert-heading"><i class="bi bi-lightbulb me-2 text-warning"></i>Utilisation</h6>
+                    <!-- Aide GPS -->
+                    <div class="alert alert-success border-success">
+                        <h6 class="alert-heading"><i class="bi bi-cloud-sun me-2"></i>Pourquoi les coordonnées GPS ?</h6>
+                        <p class="small mb-2">
+                            Les coordonnées GPS permettent d'afficher les <strong>prévisions météo à 3 jours</strong> 
+                            directement sur la fiche de votre parcelle.
+                        </p>
                         <ul class="mb-0 small">
-                            <li class="mb-1"><strong>Ajouter :</strong> Cliquez sur une forme puis sur la carte</li>
-                            <li class="mb-1"><strong>Ajuster :</strong> Glissez les coins (points bleus)</li>
-                            <li class="mb-1"><strong>Déplacer :</strong> Mode "Déplacer" puis glissez la zone</li>
-                            <li><strong>Modifier :</strong> Cliquez sur une zone dans la liste</li>
+                            <li>Température min/max</li>
+                            <li>Précipitations prévues</li>
+                            <li>Alertes gel, pluie, vent</li>
                         </ul>
                     </div>
                     
-                    <!-- Récapitulatif -->
+                    <!-- Méthodes de saisie -->
                     <div class="section-card">
                         <div class="section-header">
-                            <h5><i class="bi bi-bar-chart me-2"></i>Récapitulatif</h5>
+                            <h5><i class="bi bi-question-circle me-2"></i>Comment obtenir les coordonnées ?</h5>
                         </div>
-                        <div class="section-body" id="zones-summary">
-                            <p class="text-muted small mb-0">Aucune zone définie.</p>
+                        <div class="section-body">
+                            <ol class="small mb-0 ps-3">
+                                <li class="mb-2">
+                                    <strong>Cliquer sur la carte</strong><br>
+                                    <span class="text-muted">Zoomez et cliquez sur votre parcelle</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong>Géolocalisation</strong><br>
+                                    <span class="text-muted">Bouton "Ma position actuelle" (si vous êtes sur place)</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong>Recherche d'adresse</strong><br>
+                                    <span class="text-muted">Tapez le nom du domaine ou l'adresse</span>
+                                </li>
+                                <li>
+                                    <strong>Google Maps</strong><br>
+                                    <span class="text-muted">Clic droit sur Google Maps → copier les coordonnées</span>
+                                </li>
+                            </ol>
                         </div>
                     </div>
                 </div>
@@ -2477,6 +2398,150 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+});
+
+// =============================================
+// FONCTIONS GPS EXPLICITES
+// =============================================
+
+// Récupérer la position GPS du navigateur
+function getGPSFromBrowser() {
+    const btn = document.getElementById('btn-get-gps');
+    if (!navigator.geolocation) {
+        alert('La géolocalisation n\'est pas supportée par votre navigateur.');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Localisation...';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude.toFixed(6);
+            const lng = position.coords.longitude.toFixed(6);
+            setGPSCoordinates(lat, lng);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Position trouvée !';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="bi bi-crosshair me-1"></i>Ma position actuelle';
+            }, 2000);
+        },
+        function(error) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-crosshair me-1"></i>Ma position actuelle';
+            let msg = 'Impossible de récupérer votre position.';
+            if (error.code === 1) msg = 'Vous avez refusé la géolocalisation.';
+            else if (error.code === 2) msg = 'Position indisponible.';
+            else if (error.code === 3) msg = 'Délai dépassé.';
+            alert(msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// Définir les coordonnées GPS dans les champs
+function setGPSCoordinates(lat, lng) {
+    // Mettre à jour les champs du formulaire
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lng;
+    
+    // Mettre à jour l'affichage dans la sidebar
+    updateGPSDisplay(lat, lng);
+    
+    // Centrer la carte si disponible
+    if (window.parcellemap) {
+        window.parcellemap.flyTo({ center: [parseFloat(lng), parseFloat(lat)], zoom: 15 });
+        
+        // Ajouter/mettre à jour le marqueur
+        updateMapMarker(parseFloat(lat), parseFloat(lng));
+    }
+}
+
+// Mettre à jour l'affichage GPS dans la sidebar
+function updateGPSDisplay(lat, lng) {
+    const empty = document.getElementById('gps-empty');
+    const filled = document.getElementById('gps-filled');
+    const displayLat = document.getElementById('display-lat');
+    const displayLng = document.getElementById('display-lng');
+    const status = document.getElementById('gps-status');
+    
+    if (lat && lng) {
+        if (empty) empty.style.display = 'none';
+        if (filled) filled.style.display = 'block';
+        if (displayLat) displayLat.textContent = parseFloat(lat).toFixed(6);
+        if (displayLng) displayLng.textContent = parseFloat(lng).toFixed(6);
+        if (status) status.style.display = 'block';
+    } else {
+        if (empty) empty.style.display = 'block';
+        if (filled) filled.style.display = 'none';
+        if (status) status.style.display = 'none';
+    }
+}
+
+// Marqueur GPS sur la carte
+var gpsMarker = null;
+function updateMapMarker(lat, lng) {
+    if (!window.parcellemap) return;
+    
+    // Supprimer l'ancien marqueur
+    if (gpsMarker) {
+        gpsMarker.remove();
+    }
+    
+    // Créer un nouveau marqueur
+    const el = document.createElement('div');
+    el.className = 'gps-marker';
+    el.innerHTML = '<i class="bi bi-geo-alt-fill" style="font-size: 32px; color: #198754; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>';
+    el.style.cssText = 'cursor: pointer; transform: translate(-50%, -100%);';
+    
+    gpsMarker = new maplibregl.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .addTo(window.parcellemap);
+}
+
+// Initialiser les champs GPS au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    
+    // Si des valeurs existent déjà, mettre à jour l'affichage
+    if (latInput && lngInput && latInput.value && lngInput.value) {
+        updateGPSDisplay(latInput.value, lngInput.value);
+    }
+    
+    // Écouter les changements sur les champs
+    if (latInput) {
+        latInput.addEventListener('change', function() {
+            if (lngInput.value) {
+                setGPSCoordinates(this.value, lngInput.value);
+            }
+        });
+    }
+    if (lngInput) {
+        lngInput.addEventListener('change', function() {
+            if (latInput.value) {
+                setGPSCoordinates(latInput.value, this.value);
+            }
+        });
+    }
+});
+
+// Ajouter le clic sur la carte pour définir les coordonnées
+document.addEventListener('DOMContentLoaded', function() {
+    // Attendre que la carte soit chargée
+    var checkMap = setInterval(function() {
+        if (window.parcellemap) {
+            clearInterval(checkMap);
+            
+            window.parcellemap.on('click', function(e) {
+                const lat = e.lngLat.lat.toFixed(6);
+                const lng = e.lngLat.lng.toFixed(6);
+                setGPSCoordinates(lat, lng);
+            });
+        }
+    }, 500);
 });
 </script>
 {% endblock %}

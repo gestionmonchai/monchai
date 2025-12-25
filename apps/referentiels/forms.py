@@ -133,12 +133,14 @@ class ParcelleForm(forms.ModelForm):
 
     class Meta:
         model = Parcelle
-        fields = ['nom', 'surface', 'lieu_dit', 'commune', 'cepages', 'notes', 'conseils', 'geojson']
+        fields = ['nom', 'surface', 'lieu_dit', 'commune', 'latitude', 'longitude', 'cepages', 'notes', 'conseils', 'geojson']
         widgets = {
             'nom': forms.TextInput(attrs={'class': 'form-control'}),
             'surface': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'lieu_dit': forms.TextInput(attrs={'class': 'form-control'}),
             'commune': forms.TextInput(attrs={'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001', 'placeholder': 'Ex: 47.218371'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001', 'placeholder': 'Ex: -1.553621'}),
             'cepages': forms.CheckboxSelectMultiple(),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'conseils': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
@@ -153,6 +155,8 @@ class ParcelleForm(forms.ModelForm):
         self.fields['surface'].help_text = "Surface en hectares"
         self.fields['lieu_dit'].help_text = "Lieu-dit (optionnel)"
         self.fields['commune'].help_text = "Commune (optionnel)"
+        self.fields['latitude'].help_text = "Latitude GPS (ex: 47.218371)"
+        self.fields['longitude'].help_text = "Longitude GPS (ex: -1.553621)"
         self.fields['cepages'].help_text = "Sélectionnez un ou plusieurs cépages"
         # Filtrer les cépages par organisation
         if self.organization and 'cepages' in self.fields:

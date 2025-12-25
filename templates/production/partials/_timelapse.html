@@ -1,0 +1,216 @@
+<!--
+=====================================================================
+TIMELAPSE BAR PRODUCTION - JOURNAL UNIFIÉ (STICKY DROITE)
+=====================================================================
+Variables attendues :
+- timelapse_events (list of dict: {date, type, title, url, meta, icon, badge_class})
+- timelapse_scope_label (str) - ex: "Parcelle", "Lot", "Cuve", "Production"
+- timelapse_filters (list of str) - Filtres actifs
+=====================================================================
+-->
+
+<div class="production-timelapse bg-white border-start h-100" id="productionTimelapse">
+    <!-- Header Timelapse -->
+    <div class="timelapse-header border-bottom p-2 bg-light sticky-top">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 fw-semibold text-dark">
+                <i class="bi bi-clock-history me-1 text-primary"></i>
+                Journal
+                {% if timelapse_scope_label %}
+                <small class="text-muted fw-normal">· {{ timelapse_scope_label }}</small>
+                {% endif %}
+            </h6>
+            <!-- Toggle mobile -->
+            <button class="btn btn-sm btn-link text-muted p-0 d-lg-none" id="btnToggleTimelapse" title="Afficher/Masquer">
+                <i class="bi bi-chevron-down" id="timelapseChevron"></i>
+            </button>
+        </div>
+        
+        <!-- Filtres rapides -->
+        <div class="timelapse-filters d-flex flex-wrap gap-1">
+            <button class="btn btn-xs btn-outline-secondary rounded-pill active" data-filter="all">
+                Tout
+            </button>
+            <button class="btn btn-xs btn-outline-primary rounded-pill" data-filter="operation">
+                <i class="bi bi-gear-fill"></i> Opérations
+            </button>
+            <button class="btn btn-xs btn-outline-info rounded-pill" data-filter="analyse">
+                <i class="bi bi-droplet-fill"></i> Analyses
+            </button>
+            <button class="btn btn-xs btn-outline-success rounded-pill" data-filter="sanitaire">
+                <i class="bi bi-shield-check"></i> Sanitaire
+            </button>
+            <button class="btn btn-xs btn-outline-warning rounded-pill" data-filter="alerte">
+                <i class="bi bi-bell-fill"></i> Alertes
+            </button>
+        </div>
+    </div>
+    
+    <!-- Liste des événements -->
+    <div class="timelapse-content overflow-auto" id="timelapseContent" style="max-height: calc(100vh - 200px);">
+        {% if timelapse_events %}
+        <ul class="list-unstyled mb-0">
+            {% for event in timelapse_events %}
+            <li class="timelapse-item border-bottom p-2 {% if forloop.first %}border-top-0{% endif %}" 
+                data-type="{{ event.type|default:'system' }}">
+                <div class="d-flex gap-2">
+                    <!-- Icône type -->
+                    <div class="timelapse-icon flex-shrink-0">
+                        <span class="badge rounded-circle {{ event.badge_class|default:'bg-secondary' }}" 
+                              style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-{{ event.icon|default:'circle-fill' }}" style="font-size: 0.7rem;"></i>
+                        </span>
+                    </div>
+                    <!-- Contenu -->
+                    <div class="timelapse-body flex-grow-1 min-width-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                {% if event.url %}
+                                <a href="{{ event.url }}" class="text-decoration-none text-dark fw-medium small">
+                                    {{ event.title|truncatechars:40 }}
+                                </a>
+                                {% else %}
+                                <span class="text-dark fw-medium small">{{ event.title|truncatechars:40 }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="badge bg-light text-muted" style="font-size: 0.65rem;">
+                                {{ event.type|default:'Système' }}
+                            </span>
+                        </div>
+                        {% if event.meta %}
+                        <small class="text-muted d-block" style="font-size: 0.75rem;">{{ event.meta }}</small>
+                        {% endif %}
+                        <small class="text-muted" style="font-size: 0.7rem;">
+                            <i class="bi bi-clock me-1"></i>
+                            {{ event.date|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        
+        <!-- Voir plus -->
+        {% if timelapse_events|length >= 20 %}
+        <div class="text-center p-2 border-top">
+            <a href="#" class="small text-primary text-decoration-none">
+                <i class="bi bi-arrow-down-circle me-1"></i>Charger plus
+            </a>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- État vide -->
+        <div class="timelapse-empty text-center p-4">
+            <div class="mb-3">
+                <i class="bi bi-inbox text-muted" style="font-size: 2.5rem;"></i>
+            </div>
+            <p class="text-muted mb-2 small">Aucun événement récent</p>
+            <p class="text-muted mb-3" style="font-size: 0.8rem;">
+                Les opérations, analyses et alertes apparaîtront ici.
+            </p>
+            <div class="d-flex flex-column gap-2">
+                <a href="{% url 'production:operation_create' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Ajouter une opération
+                </a>
+                <a href="{% url 'production:analyse_oeno_new' %}" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-clipboard-pulse me-1"></i>Ajouter une analyse
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Timelapse bar styles */
+.production-timelapse {
+    font-size: 0.875rem;
+}
+
+.timelapse-item {
+    transition: background-color 0.15s ease;
+}
+
+.timelapse-item:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.timelapse-item.highlight {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-left: 3px solid #0d6efd;
+}
+
+/* Boutons filtres xs */
+.btn-xs {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+/* Animation filtres */
+.timelapse-item[data-hidden="true"] {
+    display: none;
+}
+
+/* Mobile collapse */
+@media (max-width: 991.98px) {
+    #timelapseContent {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+    
+    #timelapseContent.show {
+        max-height: 400px;
+    }
+    
+    .production-timelapse {
+        border-left: none !important;
+        border-top: 1px solid #dee2e6;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtres timelapse
+    const filterBtns = document.querySelectorAll('.timelapse-filters button[data-filter]');
+    const items = document.querySelectorAll('.timelapse-item');
+    
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Update active state
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter items
+            items.forEach(item => {
+                if (filter === 'all' || item.dataset.type === filter) {
+                    item.removeAttribute('data-hidden');
+                    item.style.display = '';
+                } else {
+                    item.setAttribute('data-hidden', 'true');
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Toggle mobile
+    const toggleBtn = document.getElementById('btnToggleTimelapse');
+    const content = document.getElementById('timelapseContent');
+    const chevron = document.getElementById('timelapseChevron');
+    
+    if (toggleBtn && content) {
+        toggleBtn.addEventListener('click', function() {
+            content.classList.toggle('show');
+            if (chevron) {
+                chevron.classList.toggle('bi-chevron-down');
+                chevron.classList.toggle('bi-chevron-up');
+            }
+        });
+    }
+});
+</script>

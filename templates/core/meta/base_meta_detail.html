@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ object }} - {{ meta.object_type }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* =====================================================
+   META DETAIL VIEW - Layout standardisé
+   ===================================================== */
+
+.meta-detail-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Header avec breadcrumb et titre */
+.meta-header {
+    margin-bottom: 1.5rem;
+}
+
+.meta-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.meta-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* Mode Switch - Navigation par onglets */
+.meta-mode-switch {
+    display: flex;
+    gap: 0.25rem;
+    background: #f3f4f6;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.meta-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    background: transparent;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.meta-mode-btn:hover {
+    color: #1f2937;
+    background: #e5e7eb;
+}
+
+.meta-mode-btn.active {
+    color: #fff;
+    background: #722f37;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.meta-mode-btn i {
+    font-size: 1rem;
+}
+
+/* Layout principal */
+.meta-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .meta-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .meta-sidebar {
+        order: -1;
+    }
+}
+
+/* Zone de contenu principal */
+.meta-main {
+    min-width: 0;
+}
+
+.meta-content {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.meta-content-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meta-content-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.meta-content-body {
+    padding: 1.25rem;
+}
+
+/* Sidebar droite */
+.meta-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.meta-sidebar-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.meta-sidebar-header {
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-sidebar-body {
+    padding: 0.75rem 1rem;
+}
+
+/* Section Outils (repliée) */
+.meta-tools-section {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1rem;
+}
+
+.meta-tools-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #f9fafb;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.meta-tools-toggle:hover {
+    background: #f3f4f6;
+}
+
+.meta-tools-toggle i.toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.meta-tools-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.meta-tools-content.open {
+    max-height: 500px;
+}
+
+.meta-tools-list {
+    padding: 0.5rem;
+}
+
+.meta-tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: #4b5563;
+    background: none;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: left;
+}
+
+.meta-tool-btn:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+/* Quick stats */
+.meta-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.meta-stat {
+    text-align: center;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+}
+
+.meta-stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.meta-stat-label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+/* Actions rapides sidebar */
+.meta-quick-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    font-size: 0.8rem;
+    color: #4b5563;
+    text-decoration: none;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.meta-quick-action:last-child {
+    border-bottom: none;
+}
+
+.meta-quick-action:hover {
+    color: #722f37;
+}
+
+/* Loading state */
+.meta-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #9ca3af;
+}
+
+.meta-loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="meta-detail-container">
+    <!-- Header -->
+    <div class="meta-header">
+        <div class="meta-header-row">
+            <div>
+                <h1 class="meta-title">
+                    <i class="bi bi-{% block meta_icon %}file-text{% endblock %}"></i>
+                    {% block meta_title %}{{ object }}{% endblock %}
+                </h1>
+                <p class="meta-subtitle">
+                    {% block meta_subtitle %}{{ meta.object_type }}{% endblock %}
+                </p>
+            </div>
+            
+            <!-- Mode Switch -->
+            <div class="meta-mode-switch" role="tablist">
+                {% for mode in meta.modes %}
+                <a href="?mode={{ mode.name }}"
+                   class="meta-mode-btn {% if mode.active %}active{% endif %}"
+                   role="tab"
+                   aria-selected="{{ mode.active|yesno:'true,false' }}"
+                   hx-get="?mode={{ mode.name }}"
+                   hx-target="#meta-content-area"
+                   hx-swap="innerHTML"
+                   hx-push-url="true">
+                    <i class="bi {{ mode.icon }}"></i>
+                    <span class="d-none d-sm-inline">{{ mode.label }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Layout principal -->
+    <div class="meta-layout">
+        <!-- Contenu principal -->
+        <div class="meta-main">
+            <div class="meta-content">
+                <div id="meta-content-area">
+                    {% block meta_content %}
+                    {% include "core/meta/partials/_"|add:meta.current_mode|add:".html" %}
+                    {% endblock %}
+                </div>
+            </div>
+            
+            <!-- Section Outils (repliée) -->
+            {% if tools %}
+            <div class="meta-tools-section">
+                <button class="meta-tools-toggle" onclick="toggleTools()">
+                    <span><i class="bi bi-tools me-2"></i>Outils</span>
+                    <i class="bi bi-chevron-down toggle-icon" id="toolsToggleIcon"></i>
+                </button>
+                <div class="meta-tools-content" id="toolsContent">
+                    <div class="meta-tools-list">
+                        {% for tool in tools %}
+                        <a href="{{ tool.url }}" class="meta-tool-btn">
+                            <i class="bi {{ tool.icon }}"></i>
+                            {{ tool.label }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar droite -->
+        <div class="meta-sidebar">
+            {% block meta_sidebar %}
+            <!-- Quick Stats -->
+            <div class="meta-sidebar-card">
+                <div class="meta-sidebar-header">
+                    <i class="bi bi-bar-chart"></i> Résumé
+                </div>
+                <div class="meta-sidebar-body">
+                    <div class="meta-quick-stats">
+                        <div class="meta-stat">
+                            <div class="meta-stat-value">{{ events_count|default:0 }}</div>
+                            <div class="meta-stat-label">Événements</div>
+                        </div>
+                        <div class="meta-stat">
+                            <div class="meta-stat-value">{{ documents_count|default:0 }}</div>
+                            <div class="meta-stat-label">Documents</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dernier événement -->
+            {% if last_event %}
+            <div class="meta-sidebar-card">
+                <div class="meta-sidebar-header">
+                    <i class="bi bi-clock-history"></i> Dernier événement
+                </div>
+                <div class="meta-sidebar-body">
+                    <div class="small">
+                        <strong>{{ last_event.title|truncatechars:40 }}</strong>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            {{ last_event.created_at|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Actions rapides -->
+            <div class="meta-sidebar-card">
+                <div class="meta-sidebar-header">
+                    <i class="bi bi-lightning"></i> Actions
+                </div>
+                <div class="meta-sidebar-body">
+                    {% block meta_quick_actions %}
+                    <a href="#" class="meta-quick-action">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                    <a href="#" class="meta-quick-action">
+                        <i class="bi bi-plus-circle"></i> Ajouter note
+                    </a>
+                    <a href="#" class="meta-quick-action">
+                        <i class="bi bi-upload"></i> Joindre document
+                    </a>
+                    {% endblock %}
+                </div>
+            </div>
+            
+            <!-- Summary cards personnalisées -->
+            {% for card in summary_cards %}
+            <div class="meta-sidebar-card">
+                <div class="meta-sidebar-header">
+                    <i class="bi {{ card.icon|default:'bi-info-circle' }}"></i> {{ card.title }}
+                </div>
+                <div class="meta-sidebar-body">
+                    {{ card.content|safe }}
+                </div>
+            </div>
+            {% endfor %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTools() {
+    const content = document.getElementById('toolsContent');
+    const icon = document.getElementById('toolsToggleIcon');
+    content.classList.toggle('open');
+    icon.style.transform = content.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// HTMX : Mettre à jour le mode actif après navigation
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'meta-content-area') {
+        const url = new URL(window.location.href);
+        const mode = url.searchParams.get('mode') || 'fiche';
+        
+        document.querySelectorAll('.meta-mode-btn').forEach(btn => {
+            const btnMode = new URL(btn.href).searchParams.get('mode');
+            btn.classList.toggle('active', btnMode === mode);
+        });
+    }
+});
+</script>
+{% endblock %}

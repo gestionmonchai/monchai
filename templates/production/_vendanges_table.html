@@ -13,7 +13,25 @@
       </thead>
       <tbody>
       {% for v in vendanges %}
-        <tr class="row-click cursor-pointer" onclick="window.location='{% url 'production:vendange_detail' v.id %}'">
+        <tr class="vendange-row cursor-pointer"
+            onclick="openVendangePreview(event, this)"
+            data-id="{{ v.id }}"
+            data-code="{{ v.code|default:'—' }}"
+            data-detail-url="{% url 'production:vendange_detail' v.id %}"
+            data-encuvage-url="{% url 'production:vendange_encuvage' v.id %}"
+            data-parcelle="{{ v.parcelle|default:'—' }}"
+            data-cuvee="{{ v.cuvee.nom|default:'Non affectée' }}"
+            data-poids="{{ v.poids_total|default_if_none:0 }}"
+            data-encuves="{{ v.kg_debites_cumules|default_if_none:0 }}"
+            data-restant="{{ v.kg_restant|default_if_none:0 }}"
+            data-statut="{{ v.statut }}"
+            data-statut-label="{{ v.get_statut_display }}"
+            data-date="{{ v.date|date:'d/m/Y' }}"
+            data-campagne="{{ v.campagne|default:'—' }}"
+            data-degre="{{ v.degre_potentiel|default:'—' }}"
+            data-contenant="{{ v.contenant|default:'—' }}"
+            data-temperature="{{ v.temperature_c|default:'—' }}"
+            data-alert="{% if v.kg_restant > 0 %}Reste {{ v.kg_restant|floatformat:0 }} kg à encuver{% endif %}">
           <td>
             <div class="fw-bold text-primary">{{ v.code|default:'—' }}</div>
             <small class="text-muted">{{ v.campagne|default:'—' }}</small>
@@ -43,9 +61,31 @@
                 <div class="progress" style="height: 6px;" title="{{ ratio }}% encuvé">
                     <div class="progress-bar bg-success" role="progressbar" style="width: {{ ratio }}%"></div>
                 </div>
-                <small class="text-muted" style="font-size: 0.75rem;">{{ v.kg_debites_cumules|floatformat:0 }} kg encuvés</small>
+                <div class="d-flex flex-column align-items-end mt-1">
+                    <small class="text-muted" style="font-size: 0.75rem;">{{ v.kg_debites_cumules|floatformat:0 }} kg encuvés</small>
+                    {% with remaining=v.kg_restant %}
+                        {% if remaining > 0 %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle mt-1">
+                                Reste {{ remaining|floatformat:0 }} kg
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success fw-semibold mt-1">
+                                Encuvage complet
+                            </span>
+                        {% endif %}
+                    {% endwith %}
+                </div>
             {% else %}
-                <small class="text-muted">Non traité</small>
+                <div class="d-flex flex-column align-items-end gap-1">
+                    <small class="text-muted">Non traité</small>
+                    {% with remaining=v.kg_restant %}
+                        {% if remaining > 0 %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                Reste {{ remaining|floatformat:0 }} kg
+                            </span>
+                        {% endif %}
+                    {% endwith %}
+                </div>
             {% endif %}
           </td>
           <td class="text-center">

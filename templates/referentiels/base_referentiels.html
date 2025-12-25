@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{# 1. ON VIDE LE MENU HORIZONTAL PARASITE #}
+{% block local_nav %}{% endblock %}
+
+{# 2. STYLE CSS POUR LA TRANSITION #}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ===========================================
+       LAYOUT REFERENTIELS - RESPONSIVE SIDEBAR
+       =========================================== */
+    
+    /* Base layout */
+    #referentiels-layout {
+        min-height: calc(100vh - 120px);
+    }
+    
+    #referentiels-layout > .row {
+        display: flex;
+        flex-wrap: nowrap;
+    }
+    
+    .transition-all {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    /* ============ DESKTOP (>= 992px) ============ */
+    @media (min-width: 992px) {
+        #referentiels-layout {
+            padding-top: 0.5rem;
+        }
+        
+        #refSidebar {
+            width: 260px;
+            min-width: 260px;
+            max-width: 260px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+        
+        #refContent {
+            flex: 1;
+            min-width: 0; /* Prevent content overflow */
+            padding-left: 1rem;
+        }
+        
+        #refSidebar .card {
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+        
+        #refSidebar .card-header {
+            padding: 0.6rem 0.85rem;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        #refSidebar .list-group-item {
+            padding: 0.45rem 0.85rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Sidebar Collapsed State */
+        .sidebar-collapsed #refSidebar {
+            width: 70px !important;
+            min-width: 70px !important;
+            max-width: 70px !important;
+        }
+        
+        .sidebar-collapsed #refContent {
+            padding-left: 0.5rem;
+        }
+        
+        .sidebar-collapsed .sidebar-label,
+        .sidebar-collapsed .sidebar-hide-collapsed {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .sidebar-collapsed .text-muted:not(.sidebar-keep),
+        .sidebar-collapsed .dropdown,
+        .sidebar-collapsed .form-control,
+        .sidebar-collapsed .input-group,
+        .sidebar-collapsed hr,
+        .sidebar-collapsed .list-group-flush {
+            display: none !important;
+        }
+        
+        .sidebar-collapsed .card-header {
+            justify-content: center;
+        }
+        
+        .sidebar-collapsed .card-header .d-flex {
+            justify-content: center;
+        }
+        
+        .sidebar-collapsed .card-header .bg-white {
+            margin: 0 auto;
+        }
+    }
+
+    /* Sidebar label transition */
+    .sidebar-label {
+        display: inline-block;
+        opacity: 1;
+        transition: opacity 0.2s ease-in-out;
+        white-space: nowrap;
+    }
+
+    /* Chevron rotation */
+    #desktopChevron {
+        transition: transform 0.3s ease;
+    }
+    .sidebar-collapsed #desktopChevron {
+        transform: rotate(180deg);
+    }
+    
+    /* ============ TABLET (768px - 991px) ============ */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        #referentiels-layout > .row {
+            flex-direction: column;
+        }
+        
+        #refSidebar {
+            width: 100% !important;
+            max-width: 100% !important;
+            order: 1;
+            margin-bottom: 1rem;
+        }
+        
+        #refContent {
+            width: 100% !important;
+            order: 2;
+            padding-left: 0;
+        }
+        
+        #refSidebar .card {
+            margin-bottom: 0;
+        }
+        
+        #refSidebar .list-group {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out;
+        }
+        
+        #refSidebar .list-group.show {
+            max-height: 1000px;
+            transition: max-height 0.5s ease-in;
+        }
+    }
+    
+    /* ============ MOBILE (< 768px) ============ */
+    @media (max-width: 767.98px) {
+        #referentiels-layout {
+            padding: 0.5rem;
+        }
+        
+        #referentiels-layout > .row {
+            flex-direction: column;
+        }
+        
+        #refSidebar {
+            width: 100% !important;
+            max-width: 100% !important;
+            order: 1;
+            margin-bottom: 0.75rem;
+        }
+        
+        #refContent {
+            width: 100% !important;
+            order: 2;
+            padding-left: 0;
+        }
+        
+        #refSidebar .card {
+            margin-bottom: 0;
+            border-radius: 8px;
+        }
+        
+        #refSidebar .list-group {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out;
+        }
+        
+        #refSidebar .list-group.show {
+            max-height: 1000px;
+            transition: max-height 0.5s ease-in;
+        }
+        
+        /* Compact mobile header */
+        #refSidebar .card-header {
+            padding: 0.5rem 0.75rem;
+        }
+    }
+    
+    /* ============ CONTENT OVERFLOW FIX ============ */
+    #refContent .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    #refContent .table-responsive {
+        overflow-x: auto;
+    }
+    
+    #refContent .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+</style>
+{% endblock %}
+
+{# 3. LAYOUT PRINCIPAL #}
+{% block content %}
+<div class="container-fluid px-2 px-lg-3" id="referentiels-layout">
+    <div class="row g-0 g-lg-2">
+        <!-- Sidebar -->
+        <div class="transition-all" id="refSidebar">
+            <div class="pe-lg-2">
+                {% include '_layout/sidebar_referentiels.html' %}
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="transition-all" id="refContent">
+            {% block referentiels_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnDesktop = document.getElementById('btnToggleSidebarDesktop');
+    const btnMobile = document.getElementById('btnToggleSidebarMobile');
+    const layout = document.getElementById('referentiels-layout');
+    const sidebar = document.getElementById('refSidebar');
+    
+    const STORAGE_KEY = 'monchai_ref_sidebar_collapsed';
+
+    function isMobile() {
+        return window.innerWidth < 992;
+    }
+
+    // === DESKTOP ===
+    function setSidebarCollapsed(isCollapsed) {
+        if (!layout) return;
+        if (isCollapsed) {
+            layout.classList.add('sidebar-collapsed');
+        } else {
+            layout.classList.remove('sidebar-collapsed');
+        }
+        const chevron = document.getElementById('desktopChevron');
+        if (chevron) {
+            chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    if (!isMobile()) {
+        const saved = localStorage.getItem(STORAGE_KEY) === 'true';
+        setSidebarCollapsed(saved);
+    }
+
+    if (btnDesktop) {
+        btnDesktop.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isCollapsed = layout.classList.contains('sidebar-collapsed');
+            setSidebarCollapsed(!isCollapsed);
+            localStorage.setItem(STORAGE_KEY, !isCollapsed);
+        });
+    }
+
+    // === MOBILE ===
+    function toggleMobileMenu() {
+        const listGroup = sidebar ? sidebar.querySelector('.list-group') : null;
+        const chevron = document.getElementById('mobileMenuChevron');
+        if (!listGroup) return;
+        
+        const isShown = listGroup.classList.contains('show');
+        if (isShown) {
+            listGroup.classList.remove('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-up');
+                chevron.classList.add('bi-chevron-down');
+            }
+        } else {
+            listGroup.classList.add('show');
+            if (chevron) {
+                chevron.classList.remove('bi-chevron-down');
+                chevron.classList.add('bi-chevron-up');
+            }
+        }
+    }
+
+    if (btnMobile) {
+        btnMobile.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleMobileMenu();
+        });
+    }
+});
+</script>
+{% endblock %}

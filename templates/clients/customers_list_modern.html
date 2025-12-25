@@ -1,8 +1,9 @@
-{% extends 'commerce/base_commerce.html' %}
+{% extends 'referentiels/base_referentiels.html' %}
 
 {% block title %}Clients - {{ organization.name }}{% endblock %}
 
-{% block commerce_content %}
+{% block extra_css %}
+{{ block.super }}
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 /* Custom colors for wine theme */
@@ -14,7 +15,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block referentiels_content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- En-tête avec bouton de création -->
     <div class="flex justify-between items-center mb-6">

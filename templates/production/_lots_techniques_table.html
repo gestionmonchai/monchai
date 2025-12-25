@@ -14,7 +14,26 @@
   </thead>
   <tbody>
   {% for lot in lots %}
-    <tr style="cursor: pointer;" onclick="window.location='{% url 'production:lot_tech_detail' lot.id %}'">
+    <tr class="lot-row cursor-pointer"
+        onclick="openLotPreview(event, this)"
+        data-id="{{ lot.id }}"
+        data-code="{{ lot.code }}"
+        data-detail-url="{% url 'production:lot_tech_detail' lot.id %}"
+        data-campagne="{{ lot.campagne|default:'—' }}"
+        data-cuvee="{% if lot.cuvee %}{{ lot.cuvee.nom }}{% else %}Sans cuvée{% endif %}"
+        data-volume="{{ lot.volume_l|default_if_none:0 }}"
+        data-volume-hl="{{ lot.volume_hl20|default_if_none:0 }}"
+        data-contenant="{{ lot.contenant|default:'—' }}"
+        data-statut="{{ lot.statut }}"
+        data-statut-label="{{ lot.get_statut_display }}"
+        data-created="{{ lot.created_at|date:'d/m/Y H:i' }}"
+        data-capacity="{{ lot.analytics_json.capacity_l|default_if_none:'' }}"
+        data-degre="{{ lot.analytics_json.degre|default_if_none:'' }}"
+        data-ph="{{ lot.analytics_json.ph|default_if_none:'' }}"
+        data-so2="{{ lot.analytics_json.so2_total|default_if_none:'' }}"
+        data-task="{{ lot.analytics_json.todo_label|default_if_none:'' }}"
+        data-task-action="{{ lot.analytics_json.todo_url|default_if_none:'' }}"
+        data-alert="{{ lot.analytics_json.alert_label|default_if_none:'' }}">
       <td class="fw-medium text-nowrap">{{ lot.code }}</td>
       <td><span class="badge bg-light text-dark border">{{ lot.campagne }}</span></td>
       <td>{% if lot.cuvee %}{{ lot.cuvee.nom }}{% else %}<span class="text-muted">—</span>{% endif %}</td>

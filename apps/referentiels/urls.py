@@ -50,13 +50,13 @@ urlpatterns = [
     path('cepages/<int:pk>/modifier/', cepage_update, name='cepage_update'),
     path('cepages/<int:pk>/supprimer/', cepage_delete, name='cepage_delete'),
     
-    # Parcelles - déplacé sous /production/, garder redirect compatibles
-    path('parcelles/', RedirectView.as_view(url='/production/parcelles/', permanent=False), name='parcelle_list'),
+    # Parcelles
+    path('parcelles/', parcelle_list, name='parcelle_list'),
     path('parcelles/carte/', parcelles_map, name='parcelles_map'),
     path('parcelles/export/', export_parcelles, name='export_parcelles'),
     path('parcelles/search-ajax/', parcelle_search_ajax, name='parcelle_search_ajax'),
-    path('parcelles/<int:pk>/', RedirectView.as_view(url='/production/parcelles/%(pk)s/', permanent=False), name='parcelle_detail'),
-    path('parcelles/nouvelle/', RedirectView.as_view(url='/production/parcelles/nouveau/', permanent=False), name='parcelle_create'),
+    path('parcelles/<int:pk>/', parcelle_detail, name='parcelle_detail'),
+    path('parcelles/nouvelle/', parcelle_create, name='parcelle_create'),
     path('parcelles/<int:pk>/modifier/', parcelle_update, name='parcelle_update'),
     path('parcelles/<int:pk>/supprimer/', parcelle_delete, name='parcelle_delete'),
     path('parcelles/api/update-geo/', parcelles_update_geo, name='parcelles_update_geo'),

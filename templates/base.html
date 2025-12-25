@@ -21,6 +21,8 @@
     <link href="{% static 'css/viticole_dense.css' %}" rel="stylesheet">
     <!-- Product Tour CSS (global) -->
     <link href="{% static 'css/tour.css' %}" rel="stylesheet">
+    <!-- Smart Suggestions CSS -->
+    <link href="{% static 'css/smart-suggestions.css' %}" rel="stylesheet">
     
     <!-- Styles personnalisés pour le header -->
     <style>
@@ -139,7 +141,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {% include '_layout/header.html' %}
+    {% include '_layout/base_header.html' %}
     
     <!-- Banniere contexte chai (Point 7) -->
     {% include 'components/org_banner.html' %}
@@ -152,8 +154,7 @@
     {% endif %}
 
     <!-- Contenu principal -->
-    <main class="container mt-1">
-        {% include '_layout/breadcrumbs.html' %}
+    <main class="container mt-2">
         {% block local_nav %}{% include '_layout/local_nav.html' %}{% endblock %}
         {% block content %}{% endblock %}
     </main>

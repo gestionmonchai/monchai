@@ -1,0 +1,40 @@
+{% load static %}
+{% with p=request.path %}
+  {% if referentiel_entity %}
+    {% with entity=referentiel_entity %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/clients/' in p or '/clients/' in p %}
+    {% with entity='clients' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/parcelles/' in p %}
+    {% with entity='parcelles' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/cepages/' in p %}
+    {% with entity='cepages' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/unites/' in p %}
+    {% with entity='unites' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/produits/' in p %}
+    {% with entity='produits' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/cuvees/' in p %}
+    {% with entity='cuvees' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% elif '/referentiels/entrepots/' in p %}
+    {% with entity='entrepots' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% else %}
+    {% with entity='' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
+  {% endif %}
+{% endwith %}

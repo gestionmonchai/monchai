@@ -1,0 +1,242 @@
+{% load static %}
+
+<div class="card shadow-sm mb-4 border-0">
+    <!-- HEADER REFERENTIELS - Style indigo/purple -->
+    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, #6610f2 0%, #520dc2 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Logo + Titre -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                    <i class="bi bi-collection-fill text-white"></i>
+                </div>
+                <span class="sidebar-label text-white fw-semibold" style="font-size: 0.9rem;">Référentiels</span>
+            </div>
+            
+             <!-- Actions: Toggle -->
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block" id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
+                    <i class="bi bi-chevron-left" id="desktopChevron"></i>
+                </button>
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none" id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
+                    <i class="bi bi-chevron-down" id="mobileMenuChevron"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="list-group list-group-flush p-2">
+        
+        <!-- SEARCH -->
+        <div class="mb-3 position-relative">
+            <input type="text" class="form-control form-control-sm ps-4" placeholder="Rechercher..." aria-label="Search">
+             <i class="bi bi-search position-absolute text-muted" style="top: 8px; left: 10px; font-size: 0.8rem;"></i>
+        </div>
+
+        <!-- ENTITY SWITCHER -->
+        <div class="mb-3">
+             <label class="text-uppercase text-muted small fw-bold mb-1" style="font-size: 0.7rem;">Entité courante</label>
+             <div class="dropdown w-100">
+                <button class="btn btn-light btn-sm w-100 text-start d-flex justify-content-between align-items-center border" type="button" id="entitySwitcher" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span>
+                        {% if entity == 'clients' %}<i class="bi bi-people me-2 text-primary"></i>Clients & contacts
+                        {% elif entity == 'parcelles' %}<i class="bi bi-geo-alt me-2 text-success"></i>Parcelles
+                        {% elif entity == 'cepages' %}<i class="bi bi-flower1 me-2 text-danger"></i>Cépages
+                        {% elif entity == 'unites' %}<i class="bi bi-rulers me-2 text-info"></i>Unités
+                        {% elif entity == 'produits' %}<i class="bi bi-box-seam me-2 text-warning"></i>Produits
+                        {% elif entity == 'cuvees' %}<i class="bi bi-cup-straw me-2 text-danger"></i>Cuvées
+                        {% elif entity == 'entrepots' %}<i class="bi bi-building me-2 text-secondary"></i>Entrepôts
+                        {% else %}Sélectionner...{% endif %}
+                    </span>
+                    <i class="bi bi-chevron-down small"></i>
+                </button>
+                <ul class="dropdown-menu w-100 shadow-sm" aria-labelledby="entitySwitcher">
+                    <li><a class="dropdown-item {% if entity == 'clients' %}active{% endif %}" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
+                    <li><a class="dropdown-item {% if entity == 'parcelles' %}active{% endif %}" href="{% url 'referentiels:parcelle_list' %}"><i class="bi bi-geo-alt me-2"></i>Parcelles</a></li>
+                    <li><a class="dropdown-item {% if entity == 'cepages' %}active{% endif %}" href="{% url 'referentiels:cepage_list' %}"><i class="bi bi-flower1 me-2"></i>Cépages</a></li>
+                    <li><a class="dropdown-item {% if entity == 'unites' %}active{% endif %}" href="{% url 'referentiels:unite_list' %}"><i class="bi bi-rulers me-2"></i>Unités</a></li>
+                    <li><a class="dropdown-item {% if entity == 'produits' %}active{% endif %}" href="{% url 'referentiels:produit_list' %}"><i class="bi bi-box-seam me-2"></i>Produits</a></li>
+                    <li><a class="dropdown-item {% if entity == 'cuvees' %}active{% endif %}" href="{% url 'referentiels:cuvee_list' %}"><i class="bi bi-cup-straw me-2"></i>Cuvées</a></li>
+                    <li><a class="dropdown-item {% if entity == 'entrepots' %}active{% endif %}" href="{% url 'referentiels:entrepot_list' %}"><i class="bi bi-building me-2"></i>Entrepôts</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <hr class="my-1">
+
+        <!-- DYNAMIC CONTENT BASED ON ENTITY -->
+        
+        <!-- 1. CLIENTS -->
+        {% if entity == 'clients' %}
+            <div class="mb-2">
+                <a href="{% url 'clients:customer_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouveau client
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-person-plus me-2 text-primary"></i>Nouveau contact</a>
+                    <a href="{% url 'referentiels:import_csv' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-upload me-2 text-success"></i>Import CSV</a>
+                    <a href="{% url 'clients:customers_export' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export CSV/Excel</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-tags me-2 text-info"></i>Segments & tags</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-magic me-2 text-warning"></i>Détecter doublons</a>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'ventes:dashboard' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Ventes / Clients</a>
+                    <a href="#" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Compta / Tiers</a>
+                 </div>
+            </div>
+
+        <!-- 2. PARCELLES -->
+        {% elif entity == 'parcelles' %}
+             <div class="mb-2">
+                <a href="{% url 'referentiels:parcelle_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouvelle parcelle
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="{% url 'referentiels:parcelles_map' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-map me-2 text-primary"></i>Carte / Cadastre</a>
+                    <a href="{% url 'referentiels:import_csv' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-upload me-2 text-success"></i>Import parcelles</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-flower1 me-2 text-danger"></i>Gérer encépagement</a>
+                    <a href="{% url 'referentiels:export_parcelles' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export</a>
+                </div>
+            </div>
+             <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'production:parcelles_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Production / Parcelles</a>
+                    <a href="{% url 'production:journal_cultural' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Vigne / Journal</a>
+                    <a href="{% url 'production:vendanges_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Vendanges</a>
+                 </div>
+            </div>
+
+        <!-- 3. CEPAGES -->
+        {% elif entity == 'cepages' %}
+            <div class="mb-2">
+                <a href="{% url 'referentiels:cepage_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouveau cépage
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="{% url 'referentiels:cepage_import_reference' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-book me-2 text-primary"></i>Importer du catalogue</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-arrow-repeat me-2 text-warning"></i>Alias / Synonymes</a>
+                    <a href="{% url 'referentiels:export_cepages' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export</a>
+                </div>
+            </div>
+             <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'referentiels:parcelle_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Parcelles / Encépagement</a>
+                    <a href="{% url 'production:lots_tech_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Chai / Lots techniques</a>
+                 </div>
+            </div>
+
+        <!-- 4. UNITES -->
+        {% elif entity == 'unites' %}
+             <div class="mb-2">
+                <a href="{% url 'referentiels:unite_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouvelle unité
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-box me-2 text-primary"></i>Sets par défaut</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-arrow-left-right me-2 text-info"></i>Conversions</a>
+                    <a href="{% url 'referentiels:export_unites' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export</a>
+                </div>
+            </div>
+             <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <span class="text-muted small"><i class="bi bi-check-all me-2"></i>Partout (Stocks, Achats...)</span>
+                 </div>
+            </div>
+
+        <!-- 5. PRODUITS -->
+        {% elif entity == 'produits' %}
+             <div class="mb-2">
+                <a href="{% url 'referentiels:produit_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouveau produit
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-tags me-2 text-primary"></i>Catégories & familles</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-currency-euro me-2 text-warning"></i>Prix & grilles</a>
+                    <a href="{% url 'referentiels:import_csv' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-upload me-2 text-success"></i>Import catalogue</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export</a>
+                </div>
+            </div>
+             <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'ventes:dashboard' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Ventes / Commandes</a>
+                    <a href="{% url 'achats:dashboard' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Achats / Commandes</a>
+                    <a href="#" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Stock / Inventaire</a>
+                 </div>
+            </div>
+
+         <!-- 6. CUVEES -->
+        {% elif entity == 'cuvees' %}
+             <div class="mb-2">
+                <a href="{% url 'referentiels:cuvee_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouvelle cuvée
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-calendar-range me-2 text-info"></i>Décliner millésime</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-diagram-2 me-2 text-warning"></i>Assemblage cible</a>
+                    <a href="{% url 'referentiels:import_csv' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-upload me-2 text-success"></i>Import</a>
+                    <a href="{% url 'referentiels:export_cuvees' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export</a>
+                </div>
+            </div>
+             <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'production:lots_tech_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Chai / Lots techniques</a>
+                    <a href="{% url 'ventes:dashboard' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Ventes / Catalogue</a>
+                 </div>
+            </div>
+
+        <!-- 7. ENTREPOTS -->
+        {% elif entity == 'entrepots' %}
+             <div class="mb-2">
+                <a href="{% url 'referentiels:entrepot_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouvel entrepôt
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Actions rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="{% url 'referentiels:entrepot_list' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-list me-2"></i>Liste des entrepôts</a>
+                    <a href="{% url 'referentiels:export_entrepots' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export</a>
+                </div>
+            </div>
+             <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'production:contenants_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Production / Cuverie</a>
+                    <a href="{% url 'catalogue:inventory_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Stock / Inventaire</a>
+                 </div>
+            </div>
+
+        {% else %}
+             <!-- DEFAULT VIEW (Home) -->
+             <div class="mb-2">
+                 <p class="text-muted small px-2">Sélectionnez une entité dans le menu ci-dessus pour accéder aux actions.</p>
+             </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+.hover-primary:hover {
+    color: var(--bs-primary) !important;
+}
+</style>

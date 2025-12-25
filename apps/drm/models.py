@@ -35,27 +35,47 @@ class DRMLine(models.Model):
 
 
 class INAOCode(models.Model):
+    """
+    Codes vinicoles interprofessionnels (INAO/Douanes).
+    Source: https://www.douane.gouv.fr - Codes vinicoles interprofessionnels 2024
+    """
+    CATEGORIE_CHOICES = [
+        ('aop_blanc', 'AOP Blancs'),
+        ('aop_rouge_rose', 'AOP Rouges et Rosés'),
+        ('igp_blanc', 'IGP Blancs'),
+        ('igp_rouge_rose', 'IGP Rouges et Rosés'),
+        ('autre', 'Autre'),
+    ]
+    
     # id auto-généré par Django (BigAutoField)
-    code_inao = models.CharField(max_length=32)
-    code_nc = models.CharField(max_length=32)
-    appellation_label = models.CharField(max_length=160, blank=True)
-    color = models.CharField(max_length=16, blank=True)
-    condition_text = models.TextField(blank=True)
+    code_inao = models.CharField(max_length=32, verbose_name="Code vinicole interprofessionnel")
+    code_nc = models.CharField(max_length=32, verbose_name="Nomenclature combinée (NC)")
+    appellation_label = models.CharField(max_length=255, blank=True, verbose_name="Libellé appellation")
+    categorie = models.CharField(max_length=50, blank=True, verbose_name="Catégorie")
+    categorie_code = models.CharField(max_length=20, choices=CATEGORIE_CHOICES, default='autre', verbose_name="Type")
+    region = models.CharField(max_length=100, blank=True, verbose_name="Région viticole")
+    color = models.CharField(max_length=16, blank=True, verbose_name="Couleur")
+    date_validite = models.DateField(null=True, blank=True, verbose_name="Date début validité")
+    contenance = models.CharField(max_length=20, blank=True, verbose_name="Contenance", help_text="Ex: <=2 (litres)")
+    condition_text = models.TextField(blank=True, verbose_name="Conditions")
     packaging_min_l = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True)
     packaging_max_l = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True)
     abv_min_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     abv_max_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("code_inao", "code_nc")
+        ordering = ("appellation_label", "code_inao")
+        verbose_name = "Code INAO"
+        verbose_name_plural = "Codes INAO"
         indexes = [
             models.Index(fields=["code_inao"]),
             models.Index(fields=["code_nc"]),
-            models.Index(fields=["appellation_label", "color"]),
-            models.Index(fields=["packaging_max_l", "abv_max_pct"]),
+            models.Index(fields=["appellation_label"]),
+            models.Index(fields=["categorie_code", "region"]),
         ]
 
     def __str__(self) -> str:
-        return f"{self.code_inao} / {self.code_nc}"
+        return f"{self.appellation_label} ({self.code_inao})"

@@ -48,6 +48,28 @@
 .help-msg.you .bubble { background: #0d6efd; color: white; border-bottom-right-radius: 0.25rem; }
 .help-msg.ai .bubble { background: #e9ecef; color: #212529; border-bottom-left-radius: 0.25rem; }
 
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.35rem 0.5rem;
+}
+.typing-indicator span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    display: inline-block;
+    animation: typingPulse 1.2s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingPulse {
+    0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-2px); }
+}
+
 /* Responsive tweaks for small screens */
 @media (max-width: 576px) {
   #help-widget { bottom: 8px; right: 8px; }
@@ -100,7 +122,7 @@
       <div class="mt-auto pt-2">
         <div class="input-group">
           <input type="text" id="help-input" class="form-control shadow-none" placeholder="Posez votre question..." autocomplete="off">
-          <button id="help-send" class="btn btn-primary">
+          <button id="help-send" class="btn btn-primary position-relative overflow-hidden">
             <i class="bi bi-send-fill" id="btn-icon-send"></i>
             <span id="help-sending" class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
           </button>
@@ -140,6 +162,7 @@
   let pageHintsCache = null; // Cache des hints de page
   let lastPath = null;
   let history = []; // Conversation history [{role: 'user'|'assistant', content: '...'}, ...]
+  let typingNode = null;
 
   // Allowed URL prefixes for which the help is applicable
   const ALLOWLIST = [
@@ -251,6 +274,30 @@
     log.scrollTop = log.scrollHeight;
   }
 
+  function showTyping(){
+    if (typingNode) return;
+    typingNode = document.createElement('div');
+    typingNode.className = 'help-msg ai';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble typing-indicator';
+    bubble.setAttribute('role', 'status');
+    bubble.setAttribute('aria-live', 'polite');
+    for (let i = 0; i < 3; i++){
+      const dot = document.createElement('span');
+      bubble.appendChild(dot);
+    }
+    typingNode.appendChild(bubble);
+    log.appendChild(typingNode);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function hideTyping(){
+    if (typingNode && typingNode.parentNode){
+      typingNode.parentNode.removeChild(typingNode);
+    }
+    typingNode = null;
+  }
+
   // Quick guides repository
   const GUIDES = {
     mise_stock: `Mettre des bouteilles en stock (de A → Z)\n\nVue d’ensemble (qui fait quoi)\n- Vendange → enregistre la matière (kg, °pot) et affecte une Cuvée (millésime).\n- Encuvage/Pressurage → crée un Lot technique (vin en vrac, volume en L).\n- Élevage → mouvements/analyses jusqu’à statut: prêt mise.\n- Mise (OF) → consomme du vrac et crée un tirage (Lot commercial) → stock produit (SKU).\n\nPas-à-pas (application)\n- Créer/Affecter la Cuvée\n  Ouvre la vendange → bouton “Affecter à une cuvée” (ou crée la Cuvée millésime).\n- Encuver/Presser\n  Vendange → “Encuvage / Pressurage” → saisis rendement % (ou volume mesuré) + contenant → crée le Lot technique.\n- Suivre le Lot\n  Va sur Lots & Élevage → ouvre le lot → enregistre analyses / mouvements (soutirage, ouillage…).\n- Passer le lot en “Prêt mise”\n  Dans la fiche lot, marque “Prêt mise” (analyses obligatoires OK).\n- Créer l’OF de mise\n  Production → Mises → Nouveau : choisis lot source, format (ex. 75 cl), saisis la quantité de bouteilles.\n  (Si BOM/MS actifs : “Préparer” pour réserver bouteilles/bouchons/étiquettes.)\n- Valider la mise\n  Valider : le système décrémente le vrac, crée le Lot commercial (tirage) et crédite le stock produit (SKU).\n- Contrôler le stock produit\n  Va dans Catalogue/Produits ou Ventes → vérifie le stock disponible du SKU du tirage.\n\nRègles & chiffres utiles\n- Conversion bouteilles ↔ vrac : nb_bouteilles × (ml / 1000) = L\n  Ex. 10 000 × 0,75 L = 7 500 L nécessaires au lot source.\n- Pré-requis “Prêt mise” : analyses mini (définies dans la Cuvée) présentes.\n\nÉchecs fréquents\n- Lot pas “Prêt mise” → impossible de valider l’OF.\n- Volume vrac insuffisant pour la quantité demandée.\n- (Si MS actives) stock MS insuffisant ou lot fournisseur bloqué.\n\nMini-exemple contrôlable\n- Vendange 8 000 kg → encuvage → 5 600 L (si 70 % réel).\n- Après élevage : 7 800 L disponibles (après ajouts/assemblage).\n- Objectif : 10 000 bt 75 cl → besoin 7 500 L.\n- Passe le lot en “Prêt mise” → Mise (10 000, 75 cl) → valider → stock produit +10 000 unités (tirage), lot vrac −7 500 L.`
@@ -329,6 +376,7 @@
     input.disabled = true;
     if (sendingEl) sendingEl.classList.remove('d-none');
     try{
+      showTyping();
       const headers = {'Content-Type':'application/json'};
       const csrft = getCookie('csrftoken');
       if (csrft) headers['X-CSRFToken'] = csrft;
@@ -353,9 +401,11 @@
       }
       const data = await resp.json();
       if (!resp.ok){
+        hideTyping();
         appendMsg(data.error || `Erreur ${resp.status}`, 'ai');
       } else {
         const out = sanitize(data.text || data.answer) || '(vide)';
+        hideTyping();
         appendMsg(out, 'ai');
         
         // Add AI response to history
@@ -370,6 +420,7 @@
         localCache.set(cacheKey, out);
       }
     }catch(e){
+      hideTyping();
       if (!(e && e.name === 'AbortError')){
         appendMsg('Ollama indisponible ?', 'ai');
       }

@@ -1,0 +1,61 @@
+{# Suggestions d'intrants basées sur l'historique #}
+{% if suggestions %}
+<div class="intrant-suggestions mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="sparkle-icon">✨</span>
+        <span class="small fw-semibold text-muted">Basé sur votre historique</span>
+    </div>
+    
+    <div class="d-flex flex-wrap gap-2">
+        {% for suggestion in suggestions %}
+        <button type="button" 
+                class="btn btn-sm btn-outline-secondary intrant-suggestion-btn"
+                data-produit="{{ suggestion.produit }}"
+                data-dose="{{ suggestion.dose }}"
+                data-unite="{{ suggestion.dose_unite }}"
+                onclick="prefillIntrant(this)">
+            <span class="fw-medium">{{ suggestion.produit }}</span>
+            <span class="text-muted ms-1">{{ suggestion.dose }} {{ suggestion.dose_unite }}</span>
+            {% if suggestion.frequency > 1 %}
+            <span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size: 0.65rem;">
+                {{ suggestion.frequency }}x
+            </span>
+            {% endif %}
+        </button>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function prefillIntrant(btn) {
+    const produit = btn.dataset.produit;
+    const dose = btn.dataset.dose;
+    const unite = btn.dataset.unite;
+    
+    // Pré-remplir les champs du formulaire
+    const produitInput = document.querySelector('[name="intrant_produit"], [name="produit"]');
+    const doseInput = document.querySelector('[name="intrant_dose"], [name="dose"]');
+    const uniteSelect = document.querySelector('[name="intrant_unite"], [name="dose_unite"]');
+    
+    if (produitInput) produitInput.value = produit;
+    if (doseInput) doseInput.value = dose;
+    if (uniteSelect) {
+        // Chercher l'option correspondante
+        for (let opt of uniteSelect.options) {
+            if (opt.value === unite || opt.text === unite) {
+                uniteSelect.value = opt.value;
+                break;
+            }
+        }
+    }
+    
+    // Feedback visuel
+    btn.classList.add('btn-success');
+    btn.classList.remove('btn-outline-secondary');
+    setTimeout(() => {
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-secondary');
+    }, 1000);
+}
+</script>
+{% endif %}

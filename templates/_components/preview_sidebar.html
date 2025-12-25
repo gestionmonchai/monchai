@@ -1,0 +1,309 @@
+{% comment %}
+Reusable preview sidebar component. Pass include_only_css=True to inject only the CSS block.
+You can override IDs by providing overlay_id, sidebar_id, title_id, type_id, lot_id,
+stat_volume_id, stat_degree_id, stat_so2_id, composition_id, timeline_id, footer_link_id and footer_link_label.
+{% endcomment %}
+{% if include_only_css %}
+<style>
+    .preview-sidebar {
+        position: fixed;
+        top: 1rem;
+        bottom: 1rem;
+        right: -460px;
+        width: 460px;
+        background: radial-gradient(circle at 20% 20%, rgba(247, 231, 206, 0.7) 0%, #fff 45%, #fdf8f3 100%);
+        border-left: none;
+        border-radius: 24px 0 0 24px;
+        border: 1px solid rgba(212, 175, 55, 0.2);
+        box-shadow: -25px 0 60px rgba(139, 21, 56, 0.18);
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        overflow: hidden;
+    }
+    .preview-sidebar.open {
+        right: 0;
+    }
+    .preview-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(25, 15, 20, 0.15);
+        z-index: 1999;
+        display: none;
+        transition: opacity 0.3s ease;
+    }
+    .preview-overlay.open {
+        display: block;
+    }
+    .preview-header {
+        background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(247,231,206,0.8));
+        padding: 1.75rem 1.75rem 1.25rem;
+        border-bottom: 1px solid rgba(255,255,255,0.4);
+    }
+    .preview-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2a1a1f;
+    }
+    .preview-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    .preview-stat-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(139, 21, 56, 0.12);
+        border-radius: 14px;
+        padding: 0.85rem;
+        text-align: center;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+        backdrop-filter: blur(6px);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .preview-stat-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(139, 21, 56, 0.25);
+    }
+    .preview-stat-label {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(45, 34, 31, 0.55);
+        margin-bottom: 0.3rem;
+        font-weight: 700;
+    }
+    .preview-stat-value {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #2b181c;
+    }
+    .preview-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .preview-quick-actions {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(64, 6, 22, 0.9));
+        color: white;
+        border-radius: 18px;
+        padding: 1.25rem;
+        box-shadow: 0 20px 35px rgba(34, 6, 11, 0.45);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .preview-quick-actions h3 {
+        text-transform: uppercase;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .preview-action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+    }
+    .preview-quick-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.65rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.95);
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .preview-quick-action i {
+        font-size: 0.95rem;
+        color: var(--wine-gold, #d4af37);
+    }
+    .preview-quick-action:hover {
+        background: rgba(255,255,255,0.18);
+        transform: translateY(-1px);
+    }
+    .preview-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    .preview-section h3 {
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        color: rgba(42, 26, 31, 0.55);
+        font-weight: 700;
+    }
+    .preview-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(139, 21, 56, 0.12);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+    }
+    .preview-timeline {
+        border-left: 2px solid rgba(42, 26, 31, 0.08);
+        padding-left: 1rem;
+    }
+    .preview-timeline-item {
+        position: relative;
+        padding-left: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .preview-timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.2rem;
+        top: 0.35rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--wine-burgundy, #8B2E3F);
+        box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.15);
+    }
+    .preview-footer {
+        background: rgba(255,255,255,0.9);
+        padding: 1.5rem;
+        border-top: 1px solid rgba(139, 21, 56, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+    }
+    .preview-footer-link {
+        display: block;
+        text-align: center;
+        background: linear-gradient(120deg, var(--wine-burgundy, #8B2E3F), #611026);
+        border: none;
+        border-radius: 999px;
+        padding: 0.9rem 1.5rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #fff;
+        text-decoration: none;
+        box-shadow: 0 15px 30px rgba(97, 16, 38, 0.35);
+        transition: opacity 0.2s ease;
+    }
+    .preview-footer-link:hover {
+        opacity: 0.92;
+        color: #fff;
+    }
+    @media (max-width: 1024px) {
+        .preview-sidebar {
+            width: 100%;
+            right: -100%;
+            border-radius: 0;
+            top: 0;
+            bottom: 0;
+        }
+        .preview-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @media (max-width: 640px) {
+        .preview-stats,
+        .preview-action-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% else %}
+{% with overlay_id=overlay_id|default:'preview-overlay' %}
+{% with sidebar_id=sidebar_id|default:'preview-sidebar' %}
+{% with title_id=title_id|default:'preview-title' %}
+{% with type_id=type_id|default:'preview-type' %}
+{% with lot_id=lot_id|default:'preview-lot' %}
+{% with stat_volume_id=stat_volume_id|default:'stat-volume' %}
+{% with stat_degree_id=stat_degree_id|default:'stat-degre' %}
+{% with stat_so2_id=stat_so2_id|default:'stat-so2' %}
+{% with composition_id=composition_id|default:'preview-composition' %}
+{% with timeline_id=timeline_id|default:'preview-timeline' %}
+{% with footer_link_id=footer_link_id|default:'preview-detail-link' %}
+{% with footer_link_label=footer_link_label|default:'Voir la fiche complète' %}
+<div class="preview-overlay" id="{{ overlay_id }}" onclick="closePreview()"></div>
+<aside class="preview-sidebar" id="{{ sidebar_id }}">
+    <div class="preview-header">
+        <div class="flex justify-between items-start">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <h2 class="text-xl font-bold text-gray-800" id="{{ title_id }}">—</h2>
+                    <span class="text-xs bg-brand-red text-white px-2 py-0.5 rounded" id="{{ type_id }}">—</span>
+                </div>
+                <p class="text-sm text-gray-500" id="{{ lot_id }}">Lot: —</p>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600 text-xl" onclick="closePreview()" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="preview-stats">
+            <div class="preview-stat-card">
+                <div class="preview-stat-label">Volume</div>
+                <div class="preview-stat-value text-brand-red" id="{{ stat_volume_id }}">— HL</div>
+            </div>
+            <div class="preview-stat-card">
+                <div class="preview-stat-label">Degré</div>
+                <div class="preview-stat-value" id="{{ stat_degree_id }}">—%</div>
+            </div>
+            <div class="preview-stat-card">
+                <div class="preview-stat-label">SO₂ total</div>
+                <div class="preview-stat-value" id="{{ stat_so2_id }}">—</div>
+            </div>
+        </div>
+    </div>
+    <div class="preview-body">
+        <section class="preview-quick-actions">
+            <h3><i class="fas fa-bolt text-yellow-400"></i> Actions rapides</h3>
+            <div class="preview-action-grid">
+                <button type="button" onclick="actionAnalyse()" class="preview-quick-action">
+                    <i class="fas fa-flask"></i>
+                    Analyse
+                </button>
+                <button type="button" onclick="actionSoutirage()" class="preview-quick-action">
+                    <i class="fas fa-random"></i>
+                    Soutirage
+                </button>
+                <button type="button" onclick="actionAjout()" class="preview-quick-action">
+                    <i class="fas fa-plus"></i>
+                    Ajout
+                </button>
+                <button type="button" onclick="actionRenommer()" class="preview-quick-action">
+                    <i class="fas fa-tag"></i>
+                    Renommer
+                </button>
+            </div>
+        </section>
+        <section class="preview-section">
+            <h3>Composition (traçabilité)</h3>
+            <div class="preview-card" id="{{ composition_id }}">
+                <p class="text-sm text-gray-400">Aucun lot affecté</p>
+            </div>
+        </section>
+        <section class="preview-section">
+            <h3>Historique récent</h3>
+            <div class="preview-timeline" id="{{ timeline_id }}">
+                <div class="preview-timeline-item">
+                    <p class="text-xs text-gray-400">—</p>
+                    <p class="text-sm font-medium text-gray-500">Aucune opération récente</p>
+                </div>
+            </div>
+            <button class="text-xs text-brand-red font-medium mt-1 hover:underline" id="btn-voir-historique" type="button">Voir tout l'historique</button>
+        </section>
+    </div>
+    <div class="preview-footer">
+        <a href="#" class="preview-footer-link" id="{{ footer_link_id }}">{{ footer_link_label }}</a>
+    </div>
+</aside>
+{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}{% endwith %}
+{% endif %}
