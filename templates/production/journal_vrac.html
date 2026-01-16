@@ -4,8 +4,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">Journal des mouvements (vrac)</h1>
   <div class="btn-group">
-    <a href="/production/lots-elevage/" class="btn btn-outline-secondary">Retour Lots & Élevage</a>
-    <a href="/production/lots-techniques/?scope=elevage" class="btn btn-outline-secondary"><i class="bi bi-table me-1"></i>Vue BDD</a>
+    <a href="{% url 'production:lots_elevage_home' %}" class="btn btn-outline-secondary">Retour Lots & Élevage</a>
+    <a href="{% url 'production:lots_tech_list' %}?scope=elevage" class="btn btn-outline-secondary"><i class="bi bi-table me-1"></i>Vue BDD</a>
   </div>
 </div>
 

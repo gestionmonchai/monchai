@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ customer.name }} - Ventes{% endblock %}
+
+{% block extra_css %}
+<style>
+.client-header-ventes {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.kpi-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.nav-tabs-ventes .nav-link {
+    color: #495057;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-tabs-ventes .nav-link.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    font-weight: 600;
+}
+
+.document-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background 0.2s;
+}
+
+.document-item:hover {
+    background: #f8f9fa;
+}
+
+.badge-status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 py-3">
+    <!-- Header Client -->
+    <div class="client-header-ventes">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h3 mb-2">{{ customer.name }}</h1>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-light text-dark">
+                        {{ customer.get_segment_display|default:"Client" }}
+                    </span>
+                    <span class="text-white-50">
+                        <i class="bi bi-tag me-1"></i>{{ customer.code }}
+                    </span>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'ventes:quote_create' %}?customer={{ customer.code }}" class="btn btn-light">
+                        <i class="bi bi-file-plus me-1"></i>Nouveau devis
+                    </a>
+                    <a href="{% url 'partners:partner_detail' customer.display_id %}" class="btn btn-outline-light" title="Voir la fiche CRM complète avec master data">
+                        <i class="bi bi-database me-1"></i>Fiche CRM
+                    </a>
+                    <a href="{% url 'ventes:clients_list' %}" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-1"></i>Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Ventes -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-value">{{ kpis.ca_12m|floatformat:0 }} €</div>
+                <div class="kpi-label">CA 12 mois</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-value">{{ kpis.encours|floatformat:0 }} €</div>
+                <div class="kpi-label">Encours</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-value">{{ kpis.nb_factures }}</div>
+                <div class="kpi-label">Factures (12 mois)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-value">{{ kpis.panier_moyen|floatformat:0 }} €</div>
+                <div class="kpi-label">Panier moyen</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets Documents -->
+    <ul class="nav nav-tabs nav-tabs-ventes mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link {% if tab == 'overview' %}active{% endif %}" 
+               href="{% url 'ventes:client_detail' customer.display_id %}?tab=overview">
+                <i class="bi bi-speedometer2 me-1"></i>Vue d'ensemble
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tab == 'quotes' %}active{% endif %}" 
+               href="{% url 'ventes:client_detail' customer.display_id %}?tab=quotes">
+                <i class="bi bi-file-text me-1"></i>Devis
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tab == 'orders' %}active{% endif %}" 
+               href="{% url 'ventes:client_detail' customer.display_id %}?tab=orders">
+                <i class="bi bi-cart me-1"></i>Commandes
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tab == 'invoices' %}active{% endif %}" 
+               href="{% url 'ventes:client_detail' customer.display_id %}?tab=invoices">
+                <i class="bi bi-receipt me-1"></i>Factures
+            </a>
+        </li>
+    </ul>
+
+    <!-- Contenu Documents -->
+    <div class="card">
+        <div class="card-body">
+            {% if documents %}
+                {% for doc in documents %}
+                <div class="document-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ doc.reference }}</strong>
+                            <span class="badge badge-status bg-secondary ms-2">{{ doc.get_type_display }}</span>
+                            {% if doc.status %}
+                                <span class="badge badge-status 
+                                    {% if doc.status == 'draft' %}bg-secondary
+                                    {% elif doc.status == 'validated' %}bg-success
+                                    {% elif doc.status == 'paid' %}bg-primary
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ doc.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">{{ doc.total_ttc|floatformat:2 }} €</div>
+                            <div class="small text-muted">{{ doc.date|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                    <p>Aucun document pour ce client</p>
+                    <a href="{% url 'ventes:quote_create' %}?customer={{ customer.code }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Créer un devis
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informations Rapides -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2"></i>Informations Contact
+                </div>
+                <div class="card-body">
+                    {% if customer.email %}
+                    <div class="mb-2">
+                        <i class="bi bi-envelope me-2 text-muted"></i>
+                        <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                    </div>
+                    {% endif %}
+                    {% if customer.phone %}
+                    <div class="mb-2">
+                        <i class="bi bi-telephone me-2 text-muted"></i>
+                        <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                    </div>
+                    {% endif %}
+                    {% if customer.country_code %}
+                    <div class="mb-2">
+                        <i class="bi bi-geo-alt me-2 text-muted"></i>
+                        {{ customer.country_code }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-clock-history me-2"></i>Dernière Activité
+                </div>
+                <div class="card-body">
+                    {% if kpis.last_order_date %}
+                    <div class="mb-2">
+                        <strong>Dernière commande :</strong> {{ kpis.last_order_date|date:"d/m/Y" }}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Aucune commande enregistrée</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

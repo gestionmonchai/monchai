@@ -19,10 +19,10 @@ urlpatterns = [
     path('', onboarding_flow, name='flow'),
 
     # Existing org-setup checklist
-    path('checklist/', checklist_view, name='checklist'),
+    path('liste-taches/', checklist_view, name='checklist'),
 
     # Actions
-    path('skip/<str:step_key>/', onboarding_skip_step, name='skip'),
-    path('dismiss/', onboarding_dismiss, name='dismiss'),
-    path('reset/', onboarding_reset, name='reset'),
+    path('passer/<str:step_key>/', onboarding_skip_step, name='skip'),
+    path('ignorer/', onboarding_dismiss, name='dismiss'),
+    path('reinitialiser/', onboarding_reset, name='reset'),
 ]

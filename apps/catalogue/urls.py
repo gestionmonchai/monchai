@@ -14,7 +14,7 @@ app_name = 'catalogue'
 urlpatterns = [
     # Catalogue Grid - Roadmap 25
     path('', views_grid.catalogue_grid, name='home'),
-    path('search/', views_grid.catalogue_search_ajax, name='search_ajax'),
+    path('recherche/', views_grid.catalogue_search_ajax, name='search_ajax'),
     
     # Catalogue détail - Roadmap 26 (canonique)
     path('<int:pk>/', views_unified.cuvee_detail, name='cuvee_detail'),
@@ -22,22 +22,22 @@ urlpatterns = [
     # Interface unifiée produits - Même ergonomie que clients
     path('produits/', views_unified.products_dashboard, name='products_dashboard'),
     path('produits/cuvees/', views_unified.products_cuvees, name='products_cuvees'),
-    path('produits/cuvees/search-ajax/', views_unified.cuvees_search_ajax, name='products_cuvees_search_ajax'),
+    path('produits/cuvees/recherche-ajax/', views_unified.cuvees_search_ajax, name='products_cuvees_search_ajax'),
     path('produits/cuvees/nouveau/', views_unified.cuvee_create, name='cuvee_create'),
     # Détail cuvée unifiée couvert par la route canonique ci-dessus
     path('produits/lots/', views_unified.products_lots, name='products_lots'),
-    path('produits/lots/search-ajax/', views_unified.lots_search_ajax, name='products_lots_search_ajax'),
+    path('produits/lots/recherche-ajax/', views_unified.lots_search_ajax, name='products_lots_search_ajax'),
     # Alias rétrocompatible pour dashboard et anciens liens
     path('produits/lots/', views_unified.products_lots, name='lot_list'),
     path('produits/lots/nouveau/', views_unified.lot_create, name='lot_create'),
     path('produits/lots/<int:pk>/', views_unified.lot_detail, name='lot_detail'),
-    path('produits/skus/', views_unified.products_skus, name='products_skus'),
-    path('produits/skus/search-ajax/', views_unified.skus_search_ajax, name='products_skus_search_ajax'),
+    path('produits/references/', views_unified.products_skus, name='products_skus'),
+    path('produits/references/recherche-ajax/', views_unified.skus_search_ajax, name='products_skus_search_ajax'),
     # Remap to universal product create view (keeps URL/name stable)
-    path('produits/skus/nouveau/', login_required(ProductCreateView.as_view()), name='sku_create'),
-    path('produits/skus/<int:pk>/', views_unified.sku_detail, name='sku_detail'),
+    path('produits/references/nouveau/', login_required(ProductCreateView.as_view()), name='sku_create'),
+    path('produits/references/<int:pk>/', views_unified.sku_detail, name='sku_detail'),
     path('produits/referentiels/', views_unified.products_referentiels, name='products_referentiels'),
-    path('produits/search/', views_unified.products_search_ajax, name='products_search_ajax'),
+    path('produits/recherche/', views_unified.products_search_ajax, name='products_search_ajax'),
     
     # API Catalogue - Roadmap 25 & 26
     path('api/catalogue/', api_views.catalogue_api, name='catalogue_api'),
@@ -55,4 +55,3 @@ urlpatterns = [
     
     path('stock/', views.InventoryListView.as_view(), name='inventory_list'),
 ]
-

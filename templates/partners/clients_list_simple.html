@@ -1,0 +1,623 @@
+{% extends 'commerce/base_commerce.html' %}
+{% block title %}Clients - Mon Chai{% endblock %}
+{% block commerce_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <h1 class="h4 mb-0">Clients</h1>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="/ventes/clients/">
+      <i class="bi bi-cart-check me-1"></i>Aller aux ventes
+    </a>
+    <a class="btn btn-outline-success" href="/achats/">
+      <i class="bi bi-bag-check me-1"></i>Aller aux achats
+    </a>
+    <a class="btn btn-primary" href="{% url 'partners:partner_create' %}?role=client">
+      <i class="bi bi-plus-lg me-1"></i>Nouveau client
+    </a>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+          <i class="bi bi-chevron-down"></i> Avancé
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="clear-filters">
+          <i class="bi bi-x-circle"></i> Effacer
+        </button>
+      </div>
+    </div>
+
+    <form id="partners-filter-form" hx-get="{% url 'partners:clients_table' %}" hx-target="#partners-table-content"
+      hx-swap="innerHTML" hx-trigger="change, keyup delay:200ms from:input">
+      <!-- Recherche rapide -->
+      <div class="row mb-3">
+        <div class="col-md-8">
+          <div class="position-relative">
+            <input type="text" name="q" id="quick-search" value=""
+              placeholder="Recherche rapide (nom, email, téléphone, SIRET...)" class="form-control pe-5"
+              autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+              <i class="bi bi-search text-muted" id="search-icon"></i>
+              <div class="spinner-border spinner-border-sm text-primary d-none" id="search-spinner" role="status">
+                <span class="visually-hidden">Recherche...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="search-info" class="text-muted small mt-2">{{ total_count }} client{{ total_count|pluralize }}</div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div id="advanced-filters" class="collapse">
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="form-label">Segment</label>
+            <select name="segment" class="form-select">
+              <option value="">Tous</option>
+              <option value="individual">Particulier</option>
+              <option value="business">Professionnel</option>
+              <option value="wine_shop">Caviste</option>
+              <option value="export">Export</option>
+              <option value="restaurant">CHR</option>
+              <option value="distributor">Distributeur</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Statut</label>
+            <select name="is_active" class="form-select">
+              <option value="">Tous</option>
+              <option value="true">Actifs</option>
+              <option value="false">Inactifs</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Pays</label>
+            <input type="text" name="country" class="form-control" placeholder="FR, DE...">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tri</label>
+            <select name="sort" class="form-select">
+              <option value="name">Nom A-Z</option>
+              <option value="name_desc">Nom Z-A</option>
+              <option value="created_desc">Plus récents</option>
+              <option value="created_asc">Plus anciens</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tableau -->
+<div id="partners-table-content" hx-get="{% url 'partners:clients_table' %}" hx-trigger="load" hx-swap="innerHTML">
+  <div class="text-center text-muted py-4">Chargement…</div>
+</div>
+
+<!-- PREVIEW SIDEBAR -->
+<style>
+  .partner-preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(34, 18, 24, 0.25);
+    z-index: 1999;
+    display: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .partner-preview-overlay.open {
+    display: block;
+  }
+
+  .partner-preview-sidebar {
+    position: fixed;
+    top: 1rem;
+    bottom: 1rem;
+    right: -420px;
+    width: 420px;
+    background: radial-gradient(circle at 20% 20%, rgba(247, 231, 206, 0.8) 0%, #fff 45%, #fdf8f3 100%);
+    border-radius: 24px 0 0 24px;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: -25px 0 60px rgba(114, 47, 55, 0.25);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .partner-preview-sidebar.open {
+    right: 0;
+  }
+
+  .partner-preview-header {
+    background: transparent;
+    color: inherit;
+    padding: 1.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .partner-preview-header h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #61242f;
+  }
+
+  .partner-preview-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+
+  .partner-preview-stat {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(97, 36, 47, 0.12);
+    border-radius: 16px;
+    padding: 0.85rem;
+    text-align: center;
+  }
+
+  .partner-preview-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #9c7d6f;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+  }
+
+  .partner-preview-stat-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #412126;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .partner-preview-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .partner-preview-section {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(97, 36, 47, 0.08);
+    border-radius: 18px;
+    padding: 1.15rem;
+  }
+
+  .partner-preview-section h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a17b5c;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+  }
+
+  .partner-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .partner-quick-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(97, 36, 47, 0.15);
+    background: white;
+    color: #61242f;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .partner-quick-action:hover {
+    background: #fdf8f3;
+    border-color: #d4af37;
+    transform: translateY(-2px);
+    color: #61242f;
+  }
+
+  .partner-quick-action.whatsapp {
+    background: #25D366;
+    border-color: #25D366;
+    color: white;
+  }
+
+  .partner-quick-action.whatsapp:hover {
+    background: #128C7E;
+    border-color: #128C7E;
+    color: white;
+  }
+
+  .partner-quick-action.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    filter: grayscale(1);
+  }
+
+
+  .partner-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #f1f3f5;
+    font-size: 0.85rem;
+  }
+
+  .partner-info-row:last-child {
+    border-bottom: none;
+  }
+
+  .partner-info-row span {
+    color: #6c757d;
+  }
+
+  .partner-info-row strong {
+    color: #212529;
+  }
+
+  .partner-preview-footer {
+    padding: 1.5rem;
+    border-top: 1px solid rgba(97, 36, 47, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .partner-preview-footer a {
+    display: block;
+    text-align: center;
+    background: linear-gradient(120deg, #722f37, #4b0e1e);
+    border-radius: 999px;
+    padding: 0.9rem 1.5rem;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    box-shadow: 0 15px 30px rgba(75, 14, 30, 0.35);
+    transition: transform 0.2s;
+  }
+
+  .partner-preview-footer a:hover {
+    transform: translateY(-2px);
+    color: white;
+  }
+
+  @media (max-width: 768px) {
+    .partner-preview-sidebar {
+      width: 100%;
+      right: -100%;
+      border-radius: 0;
+      top: 0;
+      bottom: 0;
+    }
+  }
+</style>
+
+<div class="partner-preview-overlay" id="partner-preview-overlay" onclick="closePartnerPreview()"></div>
+<aside class="partner-preview-sidebar" id="partner-preview-sidebar">
+  <div class="partner-preview-header">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h2 id="partner-preview-name">—</h2>
+        <div class="partner-preview-location">
+          <i class="bi bi-geo-alt me-1"></i><span id="partner-preview-code">—</span>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-light" onclick="closePartnerPreview()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="partner-preview-stats">
+      <div class="partner-preview-stat">
+        <div class="partner-preview-stat-label">Segment</div>
+        <div class="partner-preview-stat-value" id="partner-preview-segment">—</div>
+      </div>
+      <div class="partner-preview-stat">
+        <div class="partner-preview-stat-label">Statut</div>
+        <div class="partner-preview-stat-value" id="partner-preview-status">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="partner-preview-body">
+    <section class="partner-preview-section">
+      <h3><i class="bi bi-lightning-fill me-2"></i>Actions</h3>
+      <div class="partner-action-grid">
+        <a href="#" id="action-whatsapp" class="partner-quick-action whatsapp" target="_blank">
+          <i class="bi bi-whatsapp"></i> WhatsApp
+        </a>
+        <a href="#" id="action-call" class="partner-quick-action">
+          <i class="bi bi-telephone-fill"></i> Appeler
+        </a>
+        <a href="#" id="action-email" class="partner-quick-action">
+          <i class="bi bi-envelope-fill"></i> Email
+        </a>
+        <a href="#" id="action-edit" class="partner-quick-action">
+          <i class="bi bi-pencil-fill"></i> Modifier
+        </a>
+        <a href="#" id="action-invoice" class="partner-quick-action"
+          style="background: linear-gradient(135deg, #198754, #157347); color: white; border-color: #198754;">
+          <i class="bi bi-receipt"></i> Facturer
+        </a>
+        <a href="#" id="action-quote" class="partner-quick-action">
+          <i class="bi bi-file-earmark-text"></i> Devis
+        </a>
+      </div>
+    </section>
+    <section class="partner-preview-section">
+      <h3><i class="bi bi-info-circle me-2"></i>Détails</h3>
+      <div class="partner-info-row">
+        <span>Email</span>
+        <strong id="partner-info-email">—</strong>
+      </div>
+      <div class="partner-info-row">
+        <span>Téléphone</span>
+        <strong id="partner-info-phone">—</strong>
+      </div>
+      <div class="partner-info-row">
+        <span>Pays</span>
+        <strong id="partner-info-country">—</strong>
+      </div>
+    </section>
+  </div>
+  <div class="partner-preview-footer">
+    <a href="#" id="partner-preview-link">Voir la fiche complète</a>
+  </div>
+</aside>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const advBtn = document.getElementById('toggle-advanced-search');
+    const clearBtn = document.getElementById('clear-filters');
+    const adv = document.getElementById('advanced-filters');
+    const quick = document.getElementById('quick-search');
+    const spinner = document.getElementById('search-spinner');
+    const icon = document.getElementById('search-icon');
+    const info = document.getElementById('search-info');
+    const form = document.getElementById('partners-filter-form');
+
+    function setLoading(isLoading) {
+      if (spinner && icon) {
+        spinner.classList.toggle('d-none', !isLoading);
+        icon.classList.toggle('d-none', isLoading);
+      }
+    }
+
+    if (advBtn && adv) {
+      advBtn.addEventListener('click', function () {
+        adv.classList.toggle('show');
+        const i = advBtn.querySelector('i');
+        if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+      });
+    }
+
+    if (clearBtn && form) {
+      clearBtn.addEventListener('click', function () {
+        form.reset();
+        form.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
+    if (quick) quick.addEventListener('input', function () { setLoading(true); });
+
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+      if (evt.target && evt.target.id === 'partners-table-content') {
+        setLoading(false);
+        const meta = document.getElementById('partners-table-meta');
+        if (meta && info) {
+          const total = meta.getAttribute('data-total') || '0';
+          info.textContent = total + ' client' + (parseInt(total) > 1 ? 's' : '');
+        }
+        attachRowHandlers();
+      }
+    });
+
+    // === PREVIEW SIDEBAR ===
+    const previewOverlay = document.getElementById('partner-preview-overlay');
+    const previewSidebar = document.getElementById('partner-preview-sidebar');
+
+    function formatPhoneForWhatsApp(phone) {
+      console.log('🔧 formatPhoneForWhatsApp - Input:', phone);
+      if (!phone || phone === '') {
+        console.log('❌ Pas de téléphone');
+        return null;
+      }
+      // Enlever tous les caractères non-numériques sauf le +
+      let cleaned = phone.replace(/[\s\-\.\(\)]/g, '');
+      console.log('🔧 Après nettoyage:', cleaned);
+
+      // Si commence par 0, c'est un numéro FR
+      if (cleaned.startsWith('0')) {
+        cleaned = '33' + cleaned.substring(1);
+        console.log('🔧 Conversion FR (0 → 33):', cleaned);
+      }
+      // Si commence par +, enlever le +
+      else if (cleaned.startsWith('+')) {
+        cleaned = cleaned.substring(1);
+        console.log('🔧 Enlever +:', cleaned);
+      }
+
+      console.log('✅ Numéro final WhatsApp:', cleaned);
+      return cleaned;
+    }
+
+    function openPartnerPreview(data) {
+      if (!data) return;
+
+      document.getElementById('partner-preview-name').textContent = data.name || '—';
+      document.getElementById('partner-preview-code').textContent = data.code || '';
+      document.getElementById('partner-preview-segment').textContent = data.segment || '—';
+
+      const statusEl = document.getElementById('partner-preview-status');
+      if (data.isActive) {
+        statusEl.textContent = 'Actif';
+        statusEl.style.color = 'var(--bs-success)';
+      } else {
+        statusEl.textContent = 'Inactif';
+        statusEl.style.color = 'var(--bs-secondary)';
+      }
+
+      document.getElementById('partner-info-email').textContent = data.email || '—';
+      document.getElementById('partner-info-phone').textContent = data.phone || '—';
+      document.getElementById('partner-info-country').textContent = data.country || 'FR';
+
+      document.getElementById('partner-preview-link').href = data.detailUrl || '#';
+      document.getElementById('action-edit').href = data.editUrl || '#';
+
+      // WhatsApp
+      console.log('📱 === WHATSAPP DEBUG ===');
+      console.log('📱 data.phone:', data.phone);
+      const whatsappBtn = document.getElementById('action-whatsapp');
+      const whatsappPhone = formatPhoneForWhatsApp(data.phone);
+      if (whatsappPhone) {
+        const waLink = 'https://wa.me/' + whatsappPhone;
+        console.log('✅ Lien WhatsApp créé:', waLink);
+        whatsappBtn.href = waLink;
+        whatsappBtn.classList.remove('disabled');
+        whatsappBtn.onclick = null;
+        console.log('✅ Bouton WhatsApp activé');
+      } else {
+        whatsappBtn.href = '#';
+        whatsappBtn.classList.add('disabled');
+        whatsappBtn.onclick = function (e) {
+          e.preventDefault();
+          alert('❌ Aucun numéro de téléphone renseigné pour ce client.\n\nVeuillez ajouter un numéro de téléphone dans la fiche client.');
+        };
+        console.log('❌ Bouton WhatsApp désactivé');
+      }
+      console.log('📱 === FIN WHATSAPP DEBUG ===');
+
+      // Call
+      const callBtn = document.getElementById('action-call');
+      if (data.phone) {
+        callBtn.href = 'tel:' + data.phone;
+        callBtn.classList.remove('disabled');
+        callBtn.onclick = null;
+      } else {
+        callBtn.href = '#';
+        callBtn.classList.add('disabled');
+        callBtn.onclick = function (e) {
+          e.preventDefault();
+          alert('❌ Aucun numéro de téléphone renseigné pour ce client.\n\nVeuillez ajouter un numéro de téléphone dans la fiche client.');
+        };
+      }
+
+      // Email
+      const emailBtn = document.getElementById('action-email');
+      if (data.email) {
+        emailBtn.href = 'mailto:' + data.email;
+        emailBtn.classList.remove('disabled');
+        emailBtn.onclick = null;
+      } else {
+        emailBtn.href = '#';
+        emailBtn.classList.add('disabled');
+        emailBtn.onclick = function (e) {
+          e.preventDefault();
+          alert('❌ Aucune adresse email renseignée pour ce client.\n\nVeuillez ajouter une adresse email dans la fiche client.');
+        };
+      }
+
+      // Invoice (Facturer) - utilise display_id pour le lien
+      const invoiceBtn = document.getElementById('action-invoice');
+      if (data.id) {
+        invoiceBtn.href = '/ventes/factures/nouvelle/?client=' + data.id;
+        invoiceBtn.classList.remove('disabled');
+      } else {
+        invoiceBtn.href = '#';
+        invoiceBtn.classList.add('disabled');
+      }
+
+      // Quote (Devis) - utilise display_id pour le lien
+      const quoteBtn = document.getElementById('action-quote');
+      if (data.id) {
+        quoteBtn.href = '/ventes/devis/nouveau/?client=' + data.id;
+        quoteBtn.classList.remove('disabled');
+      } else {
+        quoteBtn.href = '#';
+        quoteBtn.classList.add('disabled');
+      }
+
+      previewOverlay.classList.add('open');
+      previewSidebar.classList.add('open');
+
+      document.querySelectorAll('.partner-row').forEach(row => {
+        row.classList.toggle('table-active', row.dataset.id === data.id);
+      });
+    }
+
+    window.closePartnerPreview = function () {
+      previewOverlay.classList.remove('open');
+      previewSidebar.classList.remove('open');
+      document.querySelectorAll('.partner-row').forEach(row => row.classList.remove('table-active'));
+    };
+
+    function getRowData(row) {
+      if (!row) return null;
+
+      console.log('🔍 === DONNÉES DE LA LIGNE CLIQUÉE ===');
+      console.log('  data-id:', row.dataset.id);
+      console.log('  data-name:', row.dataset.name);
+      console.log('  data-email:', row.dataset.email);
+      console.log('  data-phone:', row.dataset.phone, '(longueur:', (row.dataset.phone || '').length, ')');
+      console.log('  data-segment:', row.dataset.segment);
+      console.log('  data-code:', row.dataset.code);
+      console.log('  data-active:', row.dataset.active);
+      console.log('  data-uuid:', row.dataset.uuid);
+      console.log('🔍 === FIN DONNÉES ===');
+
+      return {
+        id: row.dataset.id,
+        uuid: row.dataset.uuid,
+        name: row.dataset.name,
+        email: row.dataset.email,
+        phone: row.dataset.phone,
+        segment: row.dataset.segment,
+        code: row.dataset.code,
+        isActive: row.dataset.active === 'true',
+        country: row.dataset.country,
+        detailUrl: row.dataset.detailUrl,
+        editUrl: row.dataset.editUrl
+      };
+    }
+
+    function attachRowHandlers() {
+      document.querySelectorAll('.partner-row').forEach(row => {
+        row.addEventListener('click', function (e) {
+          if (e.target.closest('a') || e.target.closest('button')) return;
+          e.preventDefault();
+          openPartnerPreview(getRowData(this));
+        });
+      });
+    }
+
+    attachRowHandlers();
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePartnerPreview();
+    });
+  });
+</script>
+{% endblock %}

@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import require_membership
 from apps.catalogue.models import Article, ArticleCategory, ArticleStock, ArticleTag
+from apps.produits.models_catalog import Product
 
 
 # ===== LISTE PRODUITS =====
@@ -25,7 +26,7 @@ def produit_list(request, usage_filter=None):
     Peut être appelé avec usage_filter='achat' ou 'vente' depuis /achats/articles/ ou /ventes/articles/
     """
     org = request.current_org
-    produits = Article.objects.filter(organization=org).select_related('category').prefetch_related('tags')
+    produits = Product.objects.filter(organization=org).select_related('cuvee', 'unit')
     
     # Filtre contextuel (depuis URL achats/ventes)
     context_usage = usage_filter
@@ -39,7 +40,8 @@ def produit_list(request, usage_filter=None):
     if q:
         produits = produits.filter(
             Q(name__icontains=q) |
-            Q(sku__icontains=q) |
+            Q(slug__icontains=q) |
+            Q(ean__icontains=q) |
             Q(description__icontains=q)
         )
     
@@ -50,7 +52,7 @@ def produit_list(request, usage_filter=None):
     
     article_type = request.GET.get('type')
     if article_type:
-        produits = produits.filter(article_type=article_type)
+        produits = produits.filter(type_code=article_type)
     
     statut = request.GET.get('statut')
     if statut == 'actif':
@@ -71,10 +73,10 @@ def produit_list(request, usage_filter=None):
     
     sort_fields = {
         'name': 'name',
-        'sku': 'sku',
-        'category': 'category__name',
-        'price': 'price_ht',
-        'type': 'article_type',
+        'sku': 'slug',
+        'category': 'type_code',
+        'price': 'price_eur_u',
+        'type': 'type_code',
         'created': 'created_at',
     }
     
@@ -89,7 +91,7 @@ def produit_list(request, usage_filter=None):
     page_obj = paginator.get_page(page)
     
     # Stats rapides (adaptées au contexte)
-    base_qs = Article.objects.filter(organization=org)
+    base_qs = Product.objects.filter(organization=org)
     if context_usage == 'achat':
         base_qs = base_qs.filter(is_buyable=True)
     elif context_usage == 'vente':
@@ -106,20 +108,23 @@ def produit_list(request, usage_filter=None):
     categories = ArticleCategory.objects.filter(organization=org).order_by('name')
     
     # Titre et breadcrumb selon contexte
+    base_template = 'referentiels/base_referentiels.html'
     if context_usage == 'achat':
         page_title = 'Articles Achats'
         breadcrumb = [
-            {'name': 'Achats', 'url': '/achats/dashboard/'},
+            {'name': 'Achats', 'url': '/achats/tableau-de-bord/'},
             {'name': 'Articles', 'url': None},
         ]
         create_url = '/achats/articles/nouveau/'
+        base_template = 'commerce/base_commerce.html'
     elif context_usage == 'vente':
         page_title = 'Articles Ventes'
         breadcrumb = [
-            {'name': 'Ventes', 'url': '/ventes/dashboard/'},
+            {'name': 'Ventes', 'url': '/ventes/tableau-de-bord/'},
             {'name': 'Articles', 'url': None},
         ]
         create_url = '/ventes/articles/nouveau/'
+        base_template = 'commerce/base_commerce.html'
     else:
         page_title = 'Produits'
         breadcrumb = [
@@ -133,7 +138,7 @@ def produit_list(request, usage_filter=None):
         'produits': page_obj,
         'stats': stats,
         'categories': categories,
-        'type_choices': Article.TYPE_CHOICES,
+        'type_choices': Product.TYPE_CHOICES,
         'q': q,
         'current_category': category,
         'current_type': article_type,
@@ -145,6 +150,7 @@ def produit_list(request, usage_filter=None):
         'page_title': page_title,
         'breadcrumb_items': breadcrumb,
         'create_url': create_url,
+        'base_template': base_template,
     }
     return render(request, 'referentiels/produits/list.html', context)
 
@@ -158,20 +164,20 @@ def produit_search_ajax(request):
     if len(q) < 2:
         return JsonResponse({'results': []})
     
-    produits = Article.objects.filter(
+    produits = Product.objects.filter(
         organization=org,
         is_active=True
     ).filter(
-        Q(name__icontains=q) | Q(sku__icontains=q)
-    )[:10]
+        Q(name__icontains=q) | Q(slug__icontains=q) | Q(ean__icontains=q)
+    ).select_related('unit')[:10]
     
     results = [{
         'id': p.id,
         'name': p.name,
-        'sku': p.sku or '',
-        'type': p.get_article_type_display(),
-        'price_ht': str(p.price_ht),
-        'unit': p.unit,
+        'sku': p.ean or p.slug or '',
+        'type': p.get_type_code_display(),
+        'price_ht': str(p.price_eur_u or 0),
+        'unit': p.unit.symbole if p.unit else 'u',
     } for p in produits]
     
     return JsonResponse({'results': results})
@@ -184,55 +190,83 @@ def produit_create(request, usage_preset=None):
     """
     Création d'un nouveau produit
     GET/POST /referentiels/produits/nouveau/
-    Peut être appelé avec usage_preset='achat' ou 'vente' depuis /achats/articles/nouveau/ ou /ventes/articles/nouveau/
+    Peut être appelé avec usage_preset='achat' ou 'vente' depuis /achats/produits/nouveau/ ou /ventes/produits/nouveau/
     """
+    from django.utils.text import slugify
+    from apps.referentiels.models import Unite
+    
     org = request.current_org
     
     if request.method == 'POST':
-        # Récupérer les données
-        data = {
-            'name': request.POST.get('name', '').strip(),
-            'sku': request.POST.get('sku', '').strip(),
-            'description': request.POST.get('description', '').strip(),
-            'article_type': request.POST.get('article_type', 'product'),
-            'category_id': request.POST.get('category') or None,
-            'price_ht': request.POST.get('price_ht') or 0,
-            'purchase_price': request.POST.get('purchase_price') or 0,
-            'vat_rate': request.POST.get('vat_rate') or 20,
-            'unit': request.POST.get('unit', 'PCE').strip(),
-            'is_stock_managed': request.POST.get('is_stock_managed') == 'on',
-            'is_buyable': request.POST.get('is_buyable') == 'on',
-            'is_sellable': request.POST.get('is_sellable') == 'on',
-            'is_active': True,
-            'tasting_notes': request.POST.get('tasting_notes', '').strip(),
-            # Douane
-            'hs_code': request.POST.get('hs_code', '').strip(),
-            'origin_country': request.POST.get('origin_country', 'France').strip(),
-            'alcohol_degree': request.POST.get('alcohol_degree') or None,
-            'net_volume': request.POST.get('net_volume') or None,
-            'customs_notes': request.POST.get('customs_notes', '').strip(),
-        }
+        # Récupérer les données du formulaire
+        name = request.POST.get('name', '').strip()
+        ean = request.POST.get('sku', '').strip()  # Le champ SKU du form devient EAN
+        description = request.POST.get('description', '').strip()
+        type_code = request.POST.get('article_type', 'wine')
+        price_eur_u = request.POST.get('price_ht') or None
+        vat_rate = request.POST.get('vat_rate') or 20
+        unit_str = request.POST.get('unit', '').strip()
+        stockable = request.POST.get('is_stock_managed') == 'on'
+        is_buyable = request.POST.get('is_buyable') == 'on'
+        is_sellable = request.POST.get('is_sellable') == 'on'
         
-        # Gestion image
-        if 'image' in request.FILES:
-            data['image'] = request.FILES['image']
+        # Données supplémentaires pour attrs
+        attrs = {}
+        tasting_notes = request.POST.get('tasting_notes', '').strip()
+        if tasting_notes:
+            attrs['tasting_notes'] = tasting_notes
+        hs_code = request.POST.get('hs_code', '').strip()
+        if hs_code:
+            attrs['hs_code'] = hs_code
+        origin_country = request.POST.get('origin_country', '').strip()
+        if origin_country:
+            attrs['origin_country'] = origin_country
+        alcohol_degree = request.POST.get('alcohol_degree')
+        if alcohol_degree:
+            attrs['alcohol_degree'] = alcohol_degree
+        customs_notes = request.POST.get('customs_notes', '').strip()
+        if customs_notes:
+            attrs['customs_notes'] = customs_notes
+        purchase_price = request.POST.get('purchase_price')
+        if purchase_price:
+            attrs['purchase_price'] = purchase_price
+        
+        # Tags (JSONField)
+        tags_input = request.POST.get('tags', '').strip()
+        tags = [t.strip() for t in tags_input.split(',') if t.strip()] if tags_input else []
+        
+        # Volume net
+        net_volume = request.POST.get('net_volume')
+        volume_l = None
+        if net_volume:
+            try:
+                volume_l = float(net_volume)
+            except (ValueError, TypeError):
+                pass
         
         # Validation basique
         errors = {}
-        if not data['name']:
+        if not name:
             errors['name'] = "La désignation est obligatoire."
         
-        if data['sku']:
-            if Article.objects.filter(organization=org, sku=data['sku']).exists():
+        if ean:
+            if Product.objects.filter(organization=org, ean=ean).exists():
                 errors['sku'] = "Ce code article existe déjà."
+        
+        # Chercher ou créer une unité
+        unit = None
+        if unit_str:
+            unit = Unite.objects.filter(organization=org, symbole__iexact=unit_str).first()
+            if not unit:
+                unit = Unite.objects.filter(organization=org, nom__iexact=unit_str).first()
         
         if errors:
             categories = ArticleCategory.objects.filter(organization=org)
             return render(request, 'referentiels/produits/form.html', {
                 'errors': errors,
-                'data': data,
+                'data': request.POST,
                 'categories': categories,
-                'type_choices': Article.TYPE_CHOICES,
+                'type_choices': Product.TYPE_CHOICES,
                 'is_new': True,
                 'page_title': 'Nouveau produit',
                 'breadcrumb_items': [
@@ -242,19 +276,38 @@ def produit_create(request, usage_preset=None):
                 ],
             })
         
-        # Créer le produit
-        produit = Article.objects.create(organization=org, **data)
+        # Générer un slug unique
+        base_slug = slugify(name)
+        slug = base_slug
+        counter = 1
+        while Product.objects.filter(slug=slug).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
         
-        # Gestion des tags
-        tags_input = request.POST.get('tags', '').strip()
-        if tags_input:
-            tag_names = [t.strip() for t in tags_input.split(',') if t.strip()]
-            for tag_name in tag_names:
-                tag, _ = ArticleTag.objects.get_or_create(
-                    organization=org, 
-                    name=tag_name
-                )
-                produit.tags.add(tag)
+        # Créer le produit
+        produit = Product.objects.create(
+            organization=org,
+            name=name,
+            slug=slug,
+            ean=ean,
+            description=description,
+            type_code=type_code,
+            price_eur_u=price_eur_u if price_eur_u else None,
+            vat_rate=vat_rate,
+            unit=unit,
+            stockable=stockable,
+            is_buyable=is_buyable,
+            is_sellable=is_sellable,
+            is_active=True,
+            volume_l=volume_l,
+            tags=tags,
+            attrs=attrs,
+        )
+        
+        # Gestion image
+        if 'image' in request.FILES:
+            produit.image = request.FILES['image']
+            produit.save(update_fields=['image'])
         
         messages.success(request, f'Produit "{produit.name}" créé avec succès.')
         
@@ -273,22 +326,22 @@ def produit_create(request, usage_preset=None):
     
     if context_usage == 'achat':
         prefill.update({'is_buyable': True, 'is_sellable': False})
-        page_title = 'Nouvel article achat'
+        page_title = 'Nouveau produit achat'
         breadcrumb = [
-            {'name': 'Achats', 'url': '/achats/dashboard/'},
-            {'name': 'Articles', 'url': '/achats/articles/'},
+            {'name': 'Achats', 'url': '/achats/tableau-de-bord/'},
+            {'name': 'Produits', 'url': '/achats/produits/'},
             {'name': 'Nouveau', 'url': None},
         ]
-        back_url = '/achats/articles/'
+        back_url = '/achats/produits/'
     elif context_usage == 'vente':
         prefill.update({'is_buyable': False, 'is_sellable': True})
-        page_title = 'Nouvel article vente'
+        page_title = 'Nouveau produit vente'
         breadcrumb = [
-            {'name': 'Ventes', 'url': '/ventes/dashboard/'},
-            {'name': 'Articles', 'url': '/ventes/articles/'},
+            {'name': 'Ventes', 'url': '/ventes/tableau-de-bord/'},
+            {'name': 'Produits', 'url': '/ventes/produits/'},
             {'name': 'Nouveau', 'url': None},
         ]
-        back_url = '/ventes/articles/'
+        back_url = '/ventes/produits/'
     else:
         prefill.update({'is_buyable': True, 'is_sellable': True})
         page_title = 'Nouveau produit'
@@ -301,7 +354,7 @@ def produit_create(request, usage_preset=None):
     
     context = {
         'categories': categories,
-        'type_choices': Article.TYPE_CHOICES,
+        'type_choices': Product.TYPE_CHOICES,
         'is_new': True,
         'data': prefill,
         'context_usage': context_usage,
@@ -321,7 +374,7 @@ def produit_detail(request, pk):
     GET /referentiels/produits/<id>/
     """
     org = request.current_org
-    produit = get_object_or_404(Article, pk=pk, organization=org)
+    produit = get_object_or_404(Product, pk=pk, organization=org)
     
     # Onglet actif
     tab = request.GET.get('tab', 'general')
@@ -381,31 +434,65 @@ def produit_update(request, pk):
     Modification d'un produit
     GET/POST /referentiels/produits/<id>/modifier/
     """
+    from apps.referentiels.models import Unite
+    
     org = request.current_org
-    produit = get_object_or_404(Article, pk=pk, organization=org)
+    produit = get_object_or_404(Product, pk=pk, organization=org)
     
     if request.method == 'POST':
         # Récupérer les données
         produit.name = request.POST.get('name', '').strip()
-        produit.sku = request.POST.get('sku', '').strip()
+        ean = request.POST.get('sku', '').strip()
+        produit.ean = ean
         produit.description = request.POST.get('description', '').strip()
-        produit.article_type = request.POST.get('article_type', 'product')
-        produit.category_id = request.POST.get('category') or None
-        produit.price_ht = request.POST.get('price_ht') or 0
-        produit.purchase_price = request.POST.get('purchase_price') or 0
+        produit.type_code = request.POST.get('article_type', 'wine')
+        produit.price_eur_u = request.POST.get('price_ht') or None
         produit.vat_rate = request.POST.get('vat_rate') or 20
-        produit.unit = request.POST.get('unit', 'PCE').strip()
-        produit.is_stock_managed = request.POST.get('is_stock_managed') == 'on'
+        produit.stockable = request.POST.get('is_stock_managed') == 'on'
         produit.is_buyable = request.POST.get('is_buyable') == 'on'
         produit.is_sellable = request.POST.get('is_sellable') == 'on'
-        produit.tasting_notes = request.POST.get('tasting_notes', '').strip()
         
-        # Douane
-        produit.hs_code = request.POST.get('hs_code', '').strip()
-        produit.origin_country = request.POST.get('origin_country', 'France').strip()
-        produit.alcohol_degree = request.POST.get('alcohol_degree') or None
-        produit.net_volume = request.POST.get('net_volume') or None
-        produit.customs_notes = request.POST.get('customs_notes', '').strip()
+        # Volume
+        net_volume = request.POST.get('net_volume')
+        if net_volume:
+            try:
+                produit.volume_l = float(net_volume)
+            except (ValueError, TypeError):
+                pass
+        
+        # Unité
+        unit_str = request.POST.get('unit', '').strip()
+        if unit_str:
+            unit = Unite.objects.filter(organization=org, symbole__iexact=unit_str).first()
+            if not unit:
+                unit = Unite.objects.filter(organization=org, nom__iexact=unit_str).first()
+            produit.unit = unit
+        
+        # Attrs pour données supplémentaires
+        attrs = produit.attrs or {}
+        tasting_notes = request.POST.get('tasting_notes', '').strip()
+        if tasting_notes:
+            attrs['tasting_notes'] = tasting_notes
+        hs_code = request.POST.get('hs_code', '').strip()
+        if hs_code:
+            attrs['hs_code'] = hs_code
+        origin_country = request.POST.get('origin_country', '').strip()
+        if origin_country:
+            attrs['origin_country'] = origin_country
+        alcohol_degree = request.POST.get('alcohol_degree')
+        if alcohol_degree:
+            attrs['alcohol_degree'] = alcohol_degree
+        customs_notes = request.POST.get('customs_notes', '').strip()
+        if customs_notes:
+            attrs['customs_notes'] = customs_notes
+        purchase_price = request.POST.get('purchase_price')
+        if purchase_price:
+            attrs['purchase_price'] = purchase_price
+        produit.attrs = attrs
+        
+        # Tags (JSONField)
+        tags_input = request.POST.get('tags', '').strip()
+        produit.tags = [t.strip() for t in tags_input.split(',') if t.strip()] if tags_input else []
         
         if 'image' in request.FILES:
             produit.image = request.FILES['image']
@@ -415,8 +502,8 @@ def produit_update(request, pk):
         if not produit.name:
             errors['name'] = "La désignation est obligatoire."
         
-        if produit.sku:
-            if Article.objects.filter(organization=org, sku=produit.sku).exclude(pk=pk).exists():
+        if ean:
+            if Product.objects.filter(organization=org, ean=ean).exclude(pk=pk).exists():
                 errors['sku'] = "Ce code article existe déjà."
         
         if errors:
@@ -424,29 +511,9 @@ def produit_update(request, pk):
             return render(request, 'referentiels/produits/form.html', {
                 'errors': errors,
                 'produit': produit,
-                'data': {
-                    'name': produit.name,
-                    'sku': produit.sku,
-                    'description': produit.description,
-                    'article_type': produit.article_type,
-                    'category': produit.category_id,
-                    'price_ht': produit.price_ht,
-                    'purchase_price': produit.purchase_price,
-                    'vat_rate': produit.vat_rate,
-                    'unit': produit.unit,
-                    'is_stock_managed': produit.is_stock_managed,
-                    'is_buyable': produit.is_buyable,
-                    'is_sellable': produit.is_sellable,
-                    'tasting_notes': produit.tasting_notes,
-                    'hs_code': produit.hs_code,
-                    'origin_country': produit.origin_country,
-                    'alcohol_degree': produit.alcohol_degree,
-                    'net_volume': produit.net_volume,
-                    'customs_notes': produit.customs_notes,
-                    'tags': ', '.join([t.name for t in produit.tags.all()]),
-                },
+                'data': request.POST,
                 'categories': categories,
-                'type_choices': Article.TYPE_CHOICES,
+                'type_choices': Product.TYPE_CHOICES,
                 'is_new': False,
                 'page_title': f'Modifier {produit.name}',
                 'breadcrumb_items': [
@@ -459,18 +526,6 @@ def produit_update(request, pk):
         
         produit.save()
         
-        # Mise à jour des tags
-        tags_input = request.POST.get('tags', '').strip()
-        produit.tags.clear()
-        if tags_input:
-            tag_names = [t.strip() for t in tags_input.split(',') if t.strip()]
-            for tag_name in tag_names:
-                tag, _ = ArticleTag.objects.get_or_create(
-                    organization=org, 
-                    name=tag_name
-                )
-                produit.tags.add(tag)
-        
         messages.success(request, f'Produit "{produit.name}" modifié avec succès.')
         
         next_url = request.POST.get('next') or request.GET.get('next')
@@ -480,32 +535,32 @@ def produit_update(request, pk):
     
     # GET: Afficher formulaire pré-rempli
     categories = ArticleCategory.objects.filter(organization=org)
+    attrs = produit.attrs or {}
     
     context = {
         'produit': produit,
         'data': {
             'name': produit.name,
-            'sku': produit.sku,
+            'sku': produit.ean or '',
             'description': produit.description,
-            'article_type': produit.article_type,
-            'category': produit.category_id,
-            'price_ht': produit.price_ht,
-            'purchase_price': produit.purchase_price,
+            'article_type': produit.type_code,
+            'price_ht': produit.price_eur_u or '',
+            'purchase_price': attrs.get('purchase_price', ''),
             'vat_rate': produit.vat_rate,
-            'unit': produit.unit,
-            'is_stock_managed': produit.is_stock_managed,
+            'unit': produit.unit.symbole if produit.unit else '',
+            'is_stock_managed': produit.stockable,
             'is_buyable': produit.is_buyable,
             'is_sellable': produit.is_sellable,
-            'tasting_notes': produit.tasting_notes,
-            'hs_code': produit.hs_code,
-            'origin_country': produit.origin_country,
-            'alcohol_degree': produit.alcohol_degree,
-            'net_volume': produit.net_volume,
-            'customs_notes': produit.customs_notes,
-            'tags': ', '.join([t.name for t in produit.tags.all()]),
+            'tasting_notes': attrs.get('tasting_notes', ''),
+            'hs_code': attrs.get('hs_code', ''),
+            'origin_country': attrs.get('origin_country', ''),
+            'alcohol_degree': attrs.get('alcohol_degree', ''),
+            'net_volume': produit.volume_l or '',
+            'customs_notes': attrs.get('customs_notes', ''),
+            'tags': ', '.join(produit.tags) if produit.tags else '',
         },
         'categories': categories,
-        'type_choices': Article.TYPE_CHOICES,
+        'type_choices': Product.TYPE_CHOICES,
         'is_new': False,
         'page_title': f'Modifier {produit.name}',
         'breadcrumb_items': [
@@ -528,7 +583,7 @@ def produit_archive(request, pk):
     POST /referentiels/produits/<id>/archiver/
     """
     org = request.current_org
-    produit = get_object_or_404(Article, pk=pk, organization=org)
+    produit = get_object_or_404(Product, pk=pk, organization=org)
     
     # Toggle is_active
     produit.is_active = not produit.is_active

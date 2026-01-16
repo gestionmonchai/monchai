@@ -43,7 +43,7 @@ urlpatterns = [
     # Cépages - Roadmap item 14
     path('cepages/', cepage_list, name='cepage_list'),
     path('cepages/export/', export_cepages, name='export_cepages'),
-    path('cepages/search-ajax/', cepage_search_ajax, name='cepage_search_ajax'),
+    path('cepages/recherche-ajax/', cepage_search_ajax, name='cepage_search_ajax'),
     path('cepages/import-reference/', cepage_import_from_reference, name='cepage_import_reference'),
     path('cepages/<int:pk>/', cepage_detail, name='cepage_detail'),
     path('cepages/nouveau/', cepage_create, name='cepage_create'),
@@ -54,7 +54,7 @@ urlpatterns = [
     path('parcelles/', parcelle_list, name='parcelle_list'),
     path('parcelles/carte/', parcelles_map, name='parcelles_map'),
     path('parcelles/export/', export_parcelles, name='export_parcelles'),
-    path('parcelles/search-ajax/', parcelle_search_ajax, name='parcelle_search_ajax'),
+    path('parcelles/recherche-ajax/', parcelle_search_ajax, name='parcelle_search_ajax'),
     path('parcelles/<int:pk>/', parcelle_detail, name='parcelle_detail'),
     path('parcelles/nouvelle/', parcelle_create, name='parcelle_create'),
     path('parcelles/<int:pk>/modifier/', parcelle_update, name='parcelle_update'),
@@ -72,7 +72,7 @@ urlpatterns = [
     # Unités - Roadmap item 16
     path('unites/', unite_list, name='unite_list'),
     path('unites/export/', export_unites, name='export_unites'),
-    path('unites/search-ajax/', unite_search_ajax, name='unite_search_ajax'),
+    path('unites/recherche-ajax/', unite_search_ajax, name='unite_search_ajax'),
     path('unites/<int:pk>/', unite_detail, name='unite_detail'),
     path('unites/nouvelle/', unite_create, name='unite_create'),
     path('unites/<int:pk>/modifier/', unite_update, name='unite_update'),
@@ -81,7 +81,7 @@ urlpatterns = [
     # Cuvées - Roadmap item 17
     path('cuvees/', cuvee_list, name='cuvee_list'),
     path('cuvees/export/', export_cuvees, name='export_cuvees'),
-    path('cuvees/search-ajax/', cuvee_search_ajax, name='cuvee_search_ajax'),
+    path('cuvees/recherche-ajax/', cuvee_search_ajax, name='cuvee_search_ajax'),
     path('cuvees/<int:pk>/', cuvee_detail, name='cuvee_detail'),
     path('cuvees/nouvelle/', cuvee_create, name='cuvee_create'),
     path('cuvees/<int:pk>/modifier/', cuvee_update, name='cuvee_update'),
@@ -90,7 +90,7 @@ urlpatterns = [
     # Entrepôts - Roadmap item 18
     path('entrepots/', entrepot_list, name='entrepot_list'),
     path('entrepots/export/', export_entrepots, name='export_entrepots'),
-    path('entrepots/search-ajax/', entrepot_search_ajax, name='entrepot_search_ajax'),
+    path('entrepots/recherche-ajax/', entrepot_search_ajax, name='entrepot_search_ajax'),
     path('entrepots/<int:pk>/', entrepot_detail, name='entrepot_detail'),
     path('entrepots/nouveau/', entrepot_create, name='entrepot_create'),
     path('entrepots/<int:pk>/modifier/', entrepot_update, name='entrepot_update'),
@@ -98,7 +98,7 @@ urlpatterns = [
     
     # Produits (base commune) - Nouvelle architecture
     path('produits/', produit_list, name='produit_list'),
-    path('produits/search-ajax/', produit_search_ajax, name='produit_search_ajax'),
+    path('produits/recherche-ajax/', produit_search_ajax, name='produit_search_ajax'),
     path('produits/nouveau/', produit_create, name='produit_create'),
     path('produits/<int:pk>/', produit_detail, name='produit_detail'),
     path('produits/<int:pk>/modifier/', produit_update, name='produit_update'),
@@ -107,9 +107,9 @@ urlpatterns = [
     
     # Import CSV - Roadmap item 18
     path('import/', import_csv, name='import_csv'),
-    path('import/preview/', import_csv_preview, name='import_csv_preview'),
-    path('import/execute/', import_csv_execute, name='import_csv_execute'),
-    path('import/download-errors/', import_csv_download_errors, name='import_csv_download_errors'),
+    path('import/apercu/', import_csv_preview, name='import_csv_preview'),
+    path('import/executer/', import_csv_execute, name='import_csv_execute'),
+    path('import/telecharger-erreurs/', import_csv_download_errors, name='import_csv_download_errors'),
     # New secure Import API
     path('import/api/intake/', import_intake_api, name='import_intake_api'),
     path('import/api/preview/', import_preview_api, name='import_preview_api'),

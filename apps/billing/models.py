@@ -12,7 +12,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from apps.accounts.models import Organization
-from apps.sales.models import Customer, Order, TaxCode
+from apps.partners.models import Contact
+from apps.sales.models import Order, TaxCode
 from apps.stock.models import SKU
 
 User = get_user_model()
@@ -55,7 +56,7 @@ class Invoice(BaseBillingModel):
     ]
 
     customer = models.ForeignKey(
-        Customer,
+        Contact,
         on_delete=models.PROTECT,
         related_name='invoices',
         verbose_name="Client"
@@ -120,7 +121,7 @@ class Invoice(BaseBillingModel):
         ]
 
     def __str__(self):
-        return f"Facture {self.number} - {self.customer.legal_name}"
+        return f"Facture {self.number} - {self.customer.name}"
 
     def clean(self):
         super().clean()
@@ -347,7 +348,7 @@ class Payment(BaseBillingModel):
     ]
 
     customer = models.ForeignKey(
-        Customer,
+        Contact,
         on_delete=models.PROTECT,
         related_name='payments',
         verbose_name="Client"
@@ -385,7 +386,7 @@ class Payment(BaseBillingModel):
         ]
 
     def __str__(self):
-        return f"Paiement {self.amount}€ - {self.customer.legal_name}"
+        return f"Paiement {self.amount}€ - {self.customer.name}"
 
     @property
     def amount_allocated(self):

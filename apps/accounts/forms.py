@@ -422,42 +422,26 @@ class OrganizationBillingForm(forms.ModelForm):
 
 class OrganizationGeneralForm(forms.ModelForm):
     """
-    Formulaire pour les paramètres généraux - Roadmap 09
-    Champs: devise, formats, CGV
+    Formulaire pour les paramètres généraux de l'organisation
+    Champs: couleur (pour le header)
     """
-    
-    # Champ CGV temporaire (à implémenter plus tard)
-    cgv_url = forms.URLField(
-        label='Lien vers vos CGV',
-        required=False,
-        widget=forms.URLInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'https://votre-site.com/cgv'
-        }),
-        help_text='URL vers vos conditions générales de vente'
-    )
     
     class Meta:
         model = Organization
-        fields = ['currency']
+        fields = ['color']
         widgets = {
-            'currency': forms.Select(attrs={
-                'class': 'form-select'
+            'color': forms.TextInput(attrs={
+                'type': 'color',
+                'class': 'form-control form-control-color',
+                'title': 'Choisir une couleur pour le header'
             }),
         }
         labels = {
-            'currency': 'Devise principale',
+            'color': 'Couleur distinctive',
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Ajouter les choix de devise
-        self.fields['currency'].choices = [
-            ('EUR', 'Euro (€)'),
-            ('USD', 'Dollar US ($)'),
-            ('GBP', 'Livre Sterling (£)'),
-        ]
+        help_texts = {
+            'color': 'Cette couleur sera utilisée pour le header et les éléments distinctifs de ce chai.',
+        }
 
 
 class UserProfileForm(forms.ModelForm):

@@ -1,9 +1,9 @@
-{% extends 'auth_base.html' %}
+{% extends 'accounts/base_administration.html' %}
 {% load widget_tweaks %}
 
 {% block title %}Paramètres généraux - {{ organization.name }}{% endblock %}
 
-{% block auth_content %}
+{% block administration_content %}
 <div class="container-sm">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-8">
@@ -27,6 +27,37 @@
             <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
                 
+                <!-- Section Apparence -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-palette me-2"></i>
+                            Apparence
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                {% include 'components/form_group.html' with field=org_form.color %}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-light border">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="rounded me-2" style="width: 20px; height: 20px; background-color: {{ organization.color }};" id="color-preview-box"></div>
+                                        <strong>Aperçu du header</strong>
+                                    </div>
+                                    <div class="p-2 text-white rounded" style="background-color: {{ organization.color }};" id="header-preview">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-grape me-2"></i>
+                                            <strong>Mon Chai</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Section Devise & Formats -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -185,6 +216,19 @@ document.addEventListener('DOMContentLoaded', function() {
     currencySelect.addEventListener('change', updatePreview);
     dateFormatRadios.forEach(radio => radio.addEventListener('change', updatePreview));
     numberFormatRadios.forEach(radio => radio.addEventListener('change', updatePreview));
+    
+    // Preview couleur
+    const colorInput = document.getElementById('id_color');
+    const colorPreviewBox = document.getElementById('color-preview-box');
+    const headerPreview = document.getElementById('header-preview');
+    
+    if (colorInput && colorPreviewBox && headerPreview) {
+        colorInput.addEventListener('input', function() {
+            const color = this.value;
+            colorPreviewBox.style.backgroundColor = color;
+            headerPreview.style.backgroundColor = color;
+        });
+    }
 });
 </script>
 {% endblock %}

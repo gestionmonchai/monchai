@@ -305,25 +305,72 @@ def products_suggestions_api(request):
 @method_decorator(login_required, name='dispatch')
 class MiseListView(View):
     def get(self, request):
-        org = getattr(request, 'current_org', None)
-        # Scope Mises to those having at least one source lot in current org
-        from .models import MiseLigne
-        if org is None:
-            mises = Mise.objects.none()
-        else:
-            m_ids = (
-                MiseLigne.objects.filter(lot_tech_source__cuvee__organization=org)
-                .values_list('mise_id', flat=True)
-                .distinct()
-            )
-            mises = Mise.objects.filter(id__in=m_ids).order_by('-date')[:100]
+        # Récupérer les campagnes disponibles pour les filtres
+        campagnes = list(
+            Mise.objects.values_list('campagne', flat=True)
+            .distinct()
+            .order_by('-campagne')
+        )
+        
         return render(request, 'produits/mises_list.html', {
-            'mises': mises,
+            'campagnes': campagnes,
+            'selected': {
+                'q': request.GET.get('q', ''),
+                'campagne': request.GET.get('campagne', ''),
+            },
             'page_title': 'Mises',
             'breadcrumb_items': [
-                {'name': 'Production', 'url': '/production/parcelles/'},
+                {'name': 'Production', 'url': '/production/'},
                 {'name': 'Mises', 'url': None},
             ]
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class MiseTableView(View):
+    """Vue HTMX pour le tableau des mises avec filtres en temps réel"""
+    
+    def get(self, request):
+        org = getattr(request, 'current_org', None)
+        
+        # Récupérer les paramètres de recherche
+        q = request.GET.get('q', '').strip()
+        campagne = request.GET.get('campagne', '').strip()
+        sort = request.GET.get('sort', 'date_desc')
+        
+        # Construire la requête de base - afficher toutes les mises
+        # Note: Pour le multi-tenant, on pourrait filtrer via les lots commerciaux
+        mises = Mise.objects.all()
+        
+        # Appliquer la recherche texte
+        if q:
+            mises = mises.filter(
+                Q(code_of__icontains=q) |
+                Q(campagne__icontains=q) |
+                Q(notes__icontains=q)
+            )
+        
+        # Filtrer par campagne
+        if campagne:
+            mises = mises.filter(campagne=campagne)
+        
+        # Tri
+        if sort == 'date_asc':
+            mises = mises.order_by('date')
+        elif sort == 'code':
+            mises = mises.order_by('code_of')
+        else:  # date_desc par défaut
+            mises = mises.order_by('-date')
+        
+        # Limiter à 100 résultats
+        mises = mises[:100]
+        
+        # Compter le total
+        total = len(mises)
+        
+        return render(request, 'produits/_mises_table.html', {
+            'mises': mises,
+            'total': total,
         })
 
 
@@ -470,7 +517,7 @@ class MiseWizardView(View):
                     {'lot': str(s['lot'].id), 'volume_l': str(s['volume_l'])} for s in sources
                 ]
                 request.session.modified = True
-                return redirect('/production/mises/nouveau/?step=2')
+                return redirect(reverse('production:mise_new') + '?step=2')
             return render(request, self.template_step1, {'formset': formset})
         elif step == '2':
             formset = MiseStep2FormSet(request.POST)
@@ -488,7 +535,7 @@ class MiseWizardView(View):
                 request.session['mise']['cuvee_id'] = str(meta.cleaned_data['cuvee'].id) if meta.cleaned_data.get('cuvee') else None
                 request.session['mise']['notes'] = meta.cleaned_data.get('notes', '')
                 request.session.modified = True
-                return redirect('/production/mises/nouveau/?step=3')
+                return redirect(reverse('production:mise_new') + '?step=3')
             return render(request, self.template_step2, {'formset': formset, 'meta_form': meta})
         else:
             form = MiseStep3Form(request.POST)
@@ -569,7 +616,7 @@ class MiseWizardView(View):
                 if validation_errors:
                     for err in validation_errors:
                         messages.error(request, err)
-                    return redirect('/production/mises/nouveau/?step=3')
+                    return redirect(reverse('production:mise_new') + '?step=3')
                 
                 # Idempotence token: reuse across retries during this session
                 tok = request.session.get('mise_token')
@@ -687,14 +734,14 @@ class MiseWizardView(View):
                     request.session.modified = True
                     
                     messages.success(request, f"Mise {mise.code_of} créée avec succès – {len(total_by_format)} lot(s) commercial(aux) généré(s)")
-                    return redirect(f'/production/mises/{mise.id}/')
+                    return redirect('production:mise_detail', pk=mise.id)
                 except Exception as e:
                     messages.error(request, f"Erreur création mise: {e}")
-                    return redirect('/production/mises/nouveau/?step=3')
+                    return redirect(reverse('production:mise_new') + '?step=3')
             else:
                 # Form invalide ou non confirmé
                 messages.warning(request, "Veuillez cocher la confirmation")
-                return redirect('/production/mises/nouveau/?step=3')
+                return redirect(reverse('production:mise_new') + '?step=3')
 
 
 # ================== Smart calc API endpoints (HTMX/JSON) ==================

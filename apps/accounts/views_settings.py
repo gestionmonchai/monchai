@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from .decorators import require_membership
 from .utils import checklist_service, ChecklistService
 from .forms import OrganizationBillingForm, OrganizationGeneralForm, OrgBillingForm, OrgSettingsForm
-from .models import OrgSettings
+from .models import OrgSettings, Subscription, Invoice
 
 
 @require_membership(role_min='admin')
@@ -37,6 +37,19 @@ def billing_settings(request):
             vat_status='not_subject_to_vat'
         )
     
+    # Obtenir ou créer l'abonnement
+    subscription, created = Subscription.objects.get_or_create(
+        organization=organization,
+        defaults={
+            'plan_name': 'discovery',
+            'status': 'active',
+            'amount': 0.00
+        }
+    )
+    
+    # Récupérer les factures (5 dernières)
+    invoices = Invoice.objects.filter(organization=organization).order_by('-date', '-created_at')[:5]
+    
     if request.method == 'POST':
         form = OrgBillingForm(request.POST, instance=billing)
         if form.is_valid():
@@ -49,13 +62,15 @@ def billing_settings(request):
                 checklist_service.checklist_update(organization, 'taxes', True)
             
             messages.success(request, 'Informations de facturation mises à jour avec succès.')
-            return redirect('auth:billing_settings')
+            return redirect('billing_settings_pretty')
     else:
         form = OrgBillingForm(instance=billing)
     
     context = {
         'form': form,
         'billing': billing,
+        'subscription': subscription,
+        'invoices': invoices,
         'organization': organization,
         'page_title': 'Informations de facturation'
     }
@@ -75,13 +90,16 @@ def general_settings(request):
     
     if request.method == 'POST':
         form = OrgSettingsForm(request.POST, request.FILES, instance=settings)
-        if form.is_valid():
+        org_form = OrganizationGeneralForm(request.POST, instance=organization)
+        
+        if form.is_valid() and org_form.is_valid():
             # Nettoyer ancien fichier si remplacé
             old_file = None
             if settings.terms_file and form.cleaned_data.get('terms_file'):
                 old_file = settings.terms_file
             
             settings = form.save()
+            org_form.save()
             
             # Supprimer ancien fichier
             if old_file and old_file != settings.terms_file:
@@ -99,12 +117,14 @@ def general_settings(request):
                 checklist_service.checklist_update(organization, 'terms', 'done')
             
             messages.success(request, 'Les paramètres généraux ont été enregistrés avec succès.')
-            return redirect('auth:general_settings')
+            return redirect('general_settings_pretty')
     else:
         form = OrgSettingsForm(instance=settings)
+        org_form = OrganizationGeneralForm(instance=organization)
     
     context = {
         'form': form,
+        'org_form': org_form,
         'settings': settings,
         'organization': organization,
         'format_preview': settings.get_format_preview(),

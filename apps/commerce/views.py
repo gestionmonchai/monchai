@@ -9,10 +9,39 @@ from django.utils import timezone
 from django.http import HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required
 
 from .models import CommercialDocument, CommercialLine, Payment
-from .forms import CommercialDocumentForm, CommercialLineForm, PaymentForm
+from .forms import CommercialDocumentForm, CommercialLineForm, PaymentForm, InvoiceForm, InvoiceLineFormSet
 from apps.accounts.decorators import require_membership
+from apps.partners.models import Partner
+
+
+@login_required
+def client_search_htmx(request):
+    """Recherche de clients via HTMX pour les formulaires de facture/devis"""
+    q = request.GET.get('q', '').strip()
+    org = getattr(request, 'current_org', None)
+    
+    clients = Partner.objects.filter(
+        organization=org,
+        roles__code='client',
+        is_active=True
+    ).order_by('name')
+    
+    if q:
+        clients = clients.filter(
+            Q(name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(phone__icontains=q) |
+            Q(code__icontains=q)
+        )
+    
+    clients = clients[:20]  # Limiter à 20 résultats
+    
+    return render(request, 'commerce/_client_search_results.html', {
+        'clients': clients
+    })
 
 def get_namespace(side):
     return 'ventes' if side == 'sale' else 'achats'
@@ -188,6 +217,117 @@ class DocumentCreateView(LoginRequiredMixin, CreateView):
         ctx['side'] = side
         ctx['namespace'] = 'ventes' if side == 'sale' else 'achats'
         return ctx
+
+
+class InvoiceCreateView(LoginRequiredMixin, CreateView):
+    model = CommercialDocument
+    form_class = InvoiceForm
+    template_name = 'commerce/invoice_create.html'
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['organization'] = getattr(self.request, 'current_org', None)
+        kwargs['side'] = 'sale'
+        return kwargs
+    
+    def get_initial(self):
+        initial = super().get_initial()
+        # Précharger le client depuis l'URL param ?client=UUID ou display_id
+        client = self._get_client_from_param()
+        if client:
+            initial['client'] = str(client.pk)
+        return initial
+    
+    def _get_client_from_param(self):
+        """Récupère le client depuis le param ?client= (UUID ou display_id)"""
+        client_id = self.request.GET.get('client')
+        if not client_id:
+            return None
+        
+        from apps.partners.models import Partner
+        import uuid
+        
+        org = self.request.current_org
+        
+        # Essayer d'abord comme UUID
+        try:
+            uuid.UUID(client_id)
+            return Partner.objects.filter(pk=client_id, organization=org).first()
+        except (ValueError, TypeError):
+            pass
+        
+        # Sinon essayer comme display_id (entier)
+        try:
+            display_id = int(client_id)
+            return Partner.objects.filter(display_id=display_id, organization=org).first()
+        except (ValueError, TypeError):
+            pass
+        
+        return None
+        
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = "Nouvelle Facture"
+        ctx['side'] = 'sale'
+        ctx['namespace'] = 'ventes'
+        
+        # Charger la liste des clients pour le sélecteur
+        from apps.partners.models import Partner
+        org = getattr(self.request, 'current_org', None)
+        ctx['clients'] = Partner.objects.filter(
+            organization=org,
+            roles__code='client',
+            is_active=True
+        ).order_by('name')
+        
+        # Précharger les infos client pour le template
+        client = self._get_client_from_param()
+        if client:
+            ctx['preloaded_client'] = client
+            # Récupérer l'adresse de facturation
+            billing_addr = client.addresses.filter(address_type='billing').first() or client.addresses.first()
+            ctx['preloaded_client_address'] = billing_addr
+        
+        if self.request.POST:
+            ctx['lines'] = InvoiceLineFormSet(self.request.POST, form_kwargs={'organization': self.request.current_org})
+        else:
+            ctx['lines'] = InvoiceLineFormSet(form_kwargs={'organization': self.request.current_org})
+        return ctx
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        lines = context['lines']
+        
+        if form.is_valid() and lines.is_valid():
+            self.object = form.save(commit=False)
+            self.object.organization = getattr(self.request, 'current_org', None)
+            self.object.side = 'sale'
+            self.object.type = CommercialDocument.TYPE_INVOICE
+            self.object.created_by = self.request.user
+            
+            # Simple number generation logic (placeholder)
+            prefix = "FAC"
+            self.object.number = f"{prefix}-{timezone.now().strftime('%Y%m%d')}-{str(timezone.now().timestamp())[-4:]}"
+            self.object.save()
+            
+            lines.instance = self.object
+            lines.save()
+            
+            # Recalculate totals
+            total_ht = sum(l.amount_ht for l in self.object.lines.all())
+            total_tax = sum(l.amount_tax for l in self.object.lines.all())
+            total_ttc = sum(l.amount_ttc for l in self.object.lines.all())
+            self.object.total_ht = total_ht
+            self.object.total_tax = total_tax
+            self.object.total_ttc = total_ttc
+            self.object.save()
+            
+            return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        return reverse('ventes:invoice_detail', args=[self.object.id])
 
 
 class DocumentDetailView(LoginRequiredMixin, DetailView):

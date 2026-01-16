@@ -1,0 +1,104 @@
+<div class="d-none" id="partners-table-meta" data-total="{{ total_count }}"></div>
+<table class="table align-middle table-hover">
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Nom</th>
+      <th>Email</th>
+      <th>Téléphone</th>
+      <th>Segment</th>
+      <th>Statut</th>
+      <th class="text-end">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in partners %}
+    <tr class="partner-row" style="cursor:pointer;"
+        data-id="{{ p.display_id }}"
+        data-uuid="{{ p.pk }}"
+        data-name="{{ p.name }}"
+        data-email="{{ p.email|default:'' }}"
+        data-phone="{{ p.phone|default:'' }}"
+        data-segment="{{ p.get_segment_display|default:'' }}"
+        data-code="{{ p.code }}"
+        data-active="{{ p.is_active|yesno:'true,false' }}"
+        data-country="{{ p.country_code|default:'FR' }}"
+        data-detail-url="{% url 'partners:partner_detail' p.display_id %}"
+        data-edit-url="{% url 'partners:partner_edit' p.display_id %}">
+      <td class="text-muted small">{{ p.code }}</td>
+      <td class="fw-medium">{{ p.name }}</td>
+      <td>
+        {% if p.email %}
+        <a href="mailto:{{ p.email }}" onclick="event.stopPropagation();">{{ p.email }}</a>
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if p.phone %}
+        <a href="tel:{{ p.phone }}" onclick="event.stopPropagation();">{{ p.phone }}</a>
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if p.segment %}
+        <span class="badge bg-light text-dark">{{ p.get_segment_display }}</span>
+        {% else %}
+        <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if p.is_active %}
+        <span class="badge bg-success-subtle text-success">Actif</span>
+        {% else %}
+        <span class="badge bg-secondary-subtle text-secondary">Inactif</span>
+        {% endif %}
+      </td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'partners:partner_detail' p.display_id %}" onclick="event.stopPropagation();">
+          <i class="bi bi-eye me-1"></i>Voir
+        </a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr>
+      <td colspan="7" class="text-center text-muted py-5">
+        <i class="bi bi-people fs-1 d-block mb-3"></i>
+        Aucun {% if role_filter == 'client' %}client{% elif role_filter == 'supplier' %}fournisseur{% else %}partenaire{% endif %} trouvé
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if is_paginated %}
+<nav class="d-flex justify-content-between align-items-center">
+  <div class="text-muted small">
+    Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }} ({{ total_count }} résultat{{ total_count|pluralize }})
+  </div>
+  <ul class="pagination mb-0">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" 
+           hx-get="?page={{ page_obj.previous_page_number }}" 
+           hx-include="#partners-filter-form" 
+           hx-target="#partners-table-content" 
+           hx-swap="innerHTML">«</a>
+      </li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">{{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+    </li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" 
+           hx-get="?page={{ page_obj.next_page_number }}" 
+           hx-include="#partners-filter-form" 
+           hx-target="#partners-table-content" 
+           hx-swap="innerHTML">»</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}

@@ -10,9 +10,11 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from .models import (
-    TaxCode, Customer, PriceList, PriceItem, CustomerPriceList,
+    TaxCode, PriceList, PriceItem, CustomerPriceList,
     Quote, QuoteLine, Order, OrderLine, StockReservation
 )
+# Note: Customer est maintenant importé depuis partners.models (Contact)
+# L'admin est géré dans partners/admin.py
 
 
 class TaxCodeAdmin(admin.ModelAdmin):
@@ -33,59 +35,7 @@ class TaxCodeAdmin(admin.ModelAdmin):
     ]
 
 
-class CustomerAdmin(admin.ModelAdmin):
-    """
-    Admin pour sales.Customer - DÉSACTIVÉ pour utilisateurs normaux
-    Utilisez /clients/ pour la gestion des clients
-    """
-    list_display = ['legal_name', 'type', 'billing_city', 'billing_country', 'currency', 'is_active', 'organization']
-    list_filter = ['type', 'billing_country', 'currency', 'is_active', 'organization']
-    search_fields = ['legal_name', 'vat_number', 'billing_city']
-    readonly_fields = ['id', 'row_version', 'created_at', 'updated_at']
-    
-    fieldsets = [
-        ('Informations générales', {
-            'fields': ['type', 'legal_name', 'vat_number', 'is_active']
-        }),
-        ('Adresse de facturation', {
-            'fields': ['billing_address', 'billing_postal_code', 'billing_city', 'billing_country']
-        }),
-        ('Adresse de livraison', {
-            'fields': ['shipping_address', 'shipping_postal_code', 'shipping_city', 'shipping_country'],
-            'classes': ['collapse']
-        }),
-        ('Conditions commerciales', {
-            'fields': ['payment_terms', 'currency']
-        }),
-        ('Métadonnées', {
-            'fields': ['id', 'organization', 'row_version', 'created_at', 'updated_at'],
-            'classes': ['collapse']
-        }),
-    ]
-    
-    def has_module_permission(self, request):
-        """Seuls les superadmins peuvent voir ce modèle dans l'admin"""
-        return request.user.is_superuser
-    
-    def has_view_permission(self, request, obj=None):
-        """Seuls les superadmins peuvent voir ce modèle"""
-        return request.user.is_superuser
-    
-    def has_add_permission(self, request):
-        """Seuls les superadmins peuvent ajouter"""
-        return request.user.is_superuser
-    
-    def has_change_permission(self, request, obj=None):
-        """Seuls les superadmins peuvent modifier"""
-        return request.user.is_superuser
-    
-    def has_delete_permission(self, request, obj=None):
-        """Seuls les superadmins peuvent supprimer"""
-        return request.user.is_superuser
-
-
-# Enregistrer seulement pour les superadmins
-admin.site.register(Customer, CustomerAdmin)
+# CustomerAdmin supprimé - Customer/Contact est maintenant géré dans partners/admin.py
 
 
 class PriceItemInline(admin.TabularInline):

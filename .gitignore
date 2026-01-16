@@ -64,3 +64,11 @@ htmlcov/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Archive (old docs, tests, prototypes - 5000+ files)
+_archive/
+
+# Temporary test files
+*.test.html
+RAPPORT_*.md
+STATUS.txt

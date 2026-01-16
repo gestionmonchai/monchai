@@ -1,0 +1,9 @@
+{% extends '_layout/base_with_sidebar.html' %}
+
+{% block sidebar_include %}
+    {% include '_layout/sidebar_administration.html' with sidebar_title="Administration" sidebar_icon="bi-gear-wide-connected" sidebar_color="#6c757d" %}
+{% endblock %}
+
+{% block page_content %}
+    {% block administration_content %}{% endblock %}
+{% endblock %}

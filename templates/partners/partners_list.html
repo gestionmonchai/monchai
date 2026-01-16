@@ -1,0 +1,289 @@
+{% extends 'referentiels/base_referentiels.html' %}
+
+{% block title %}{{ page_title }} - {{ organization.display_name }}{% endblock %}
+
+{% block referentiels_content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi {{ icon }} me-2 text-{{ color }}"></i>{{ page_title }}
+            </h1>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/ventes/clients/" class="btn btn-outline-primary">
+                    <i class="bi bi-cart-check"></i> Aller aux ventes
+                </a>
+                <a href="/achats/" class="btn btn-outline-success">
+                    <i class="bi bi-bag-check"></i> Aller aux achats
+                </a>
+                {% if user.get_active_membership.can_edit_data %}
+                <a href="{% url create_url %}" class="btn btn-{{ color }}">
+                    <i class="bi bi-plus"></i> Nouveau
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recherche et filtres -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Filtres de recherche
+            </h6>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" id="toggle-advanced">
+                    <i class="bi bi-chevron-down"></i> Avancé
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="clear-filters">
+                    <i class="bi bi-x-circle"></i> Effacer
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Recherche rapide -->
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <input type="text" id="search-input" name="search" value="{{ filters.search|default:'' }}"
+                        placeholder="Rechercher par nom, email, téléphone, code..." class="form-control pe-5"
+                        autocomplete="off" hx-get="{% url 'partners:partners_search_ajax' %}"
+                        hx-trigger="input changed delay:300ms" hx-target="#results-table" hx-swap="innerHTML"
+                        hx-include="[name='segment'], [name='is_active'], [name='country']">
+                    <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+                        <i class="bi bi-search text-muted" id="search-icon"></i>
+                        <div class="spinner-border spinner-border-sm text-primary d-none htmx-indicator"
+                            id="search-spinner">
+                            <span class="visually-hidden">Recherche...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div id="search-info" class="text-muted small mt-2">
+                    {% if stats.filtered != stats.total %}
+                    {{ stats.filtered }} résultat{{ stats.filtered|pluralize }} sur {{ stats.total }}
+                    {% else %}
+                    {{ stats.total }} partenaire{{ stats.total|pluralize }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres avancés -->
+        <div id="advanced-filters" class="collapse">
+            <hr>
+            <div class="row g-3">
+                {% if not role_filter %}
+                <div class="col-md-3">
+                    <label class="form-label">Rôles</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for role in role_choices %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input filter-checkbox" name="roles"
+                                value="{{ role.code }}" id="role-{{ role.code }}" {% if role.code in filters.roles %}checked{% endif %}>
+                            <label class="form-check-label" for="role-{{ role.code }}">
+                                <i class="bi {{ role.icon }} me-1"></i>{{ role.label }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                <div class="col-md-2">
+                    <label for="filter-segment" class="form-label">Segment</label>
+                    <select id="filter-segment" name="segment" class="form-select filter-select">
+                        <option value="">Tous</option>
+                        {% for value, label in segment_choices %}
+                        <option value="{{ value }}" {% if filters.segment == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-status" class="form-label">Statut</label>
+                    <select id="filter-status" name="is_active" class="form-select filter-select">
+                        <option value="">Tous</option>
+                        <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>Actifs</option>
+                        <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>Inactifs</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-country" class="form-label">Pays</label>
+                    <input type="text" id="filter-country" name="country" value="{{ filters.country|default:'' }}"
+                        placeholder="FR, DE..." class="form-control filter-input" maxlength="2">
+                </div>
+                <div class="col-md-2">
+                    <label for="filter-sort" class="form-label">Tri</label>
+                    <div class="input-group">
+                        <select id="filter-sort" name="sort" class="form-select filter-select">
+                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Nom</option>
+                            <option value="email" {% if sort_by == 'email' %}selected{% endif %}>Email</option>
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Création
+                            </option>
+                            <option value="updated_at" {% if sort_by == 'updated_at' %}selected{% endif %}>Modification
+                            </option>
+                        </select>
+                        <select id="filter-order" name="order" class="form-select filter-select"
+                            style="max-width: 60px;">
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>↑</option>
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>↓</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des partenaires -->
+{% if page_obj %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 80px;">Code</th>
+                        <th>Nom</th>
+                        {% if not role_filter %}
+                        <th>Rôles</th>
+                        {% endif %}
+                        <th>Contact</th>
+                        <th>Localisation</th>
+                        <th>Statut</th>
+                        <th style="width: 100px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="results-table">
+                    {% include 'partners/partials/partner_table_rows.html' %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div id="pagination-container" class="mt-4">
+    {% include 'partners/partials/pagination.html' %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi {{ icon }} display-1 text-muted mb-3"></i>
+        <h4 class="text-muted">Aucun partenaire trouvé</h4>
+        <p class="text-muted">Aucun partenaire ne correspond aux critères de recherche.</p>
+        {% if user.get_active_membership.can_edit_data %}
+        <a href="{% url create_url %}" class="btn btn-{{ color }}">
+            <i class="bi bi-plus"></i> Créer le premier
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('search-input');
+        const toggleAdvancedBtn = document.getElementById('toggle-advanced');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const advancedFilters = document.getElementById('advanced-filters');
+        const searchInfo = document.getElementById('search-info');
+
+        let searchTimeout;
+
+        // Toggle filtres avancés
+        toggleAdvancedBtn.addEventListener('click', function () {
+            const isCollapsed = advancedFilters.classList.contains('collapse');
+            if (isCollapsed) {
+                advancedFilters.classList.remove('collapse');
+                this.innerHTML = '<i class="bi bi-chevron-up"></i> Simple';
+            } else {
+                advancedFilters.classList.add('collapse');
+                this.innerHTML = '<i class="bi bi-chevron-down"></i> Avancé';
+            }
+        });
+
+        // Effacer filtres
+        clearFiltersBtn.addEventListener('click', function () {
+            searchInput.value = '';
+            document.querySelectorAll('.filter-select').forEach(el => el.value = '');
+            document.querySelectorAll('.filter-input').forEach(el => el.value = '');
+            document.querySelectorAll('.filter-checkbox').forEach(el => el.checked = false);
+            performSearch();
+        });
+
+        // Recherche AJAX
+        function performSearch() {
+            const params = new URLSearchParams();
+
+            if (searchInput.value.trim()) {
+                params.set('search', searchInput.value.trim());
+            }
+
+            document.querySelectorAll('.filter-select').forEach(el => {
+                if (el.value) params.set(el.name, el.value);
+            });
+
+            document.querySelectorAll('.filter-input').forEach(el => {
+                if (el.value.trim()) params.set(el.name, el.value.trim());
+            });
+
+            document.querySelectorAll('.filter-checkbox:checked').forEach(el => {
+                params.append(el.name, el.value);
+            });
+
+            {% if role_filter %}
+            params.set('role', '{{ role_filter }}');
+            {% endif %}
+
+            const url = "{% url 'partners:partners_search_ajax' %}?" + params.toString();
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('results-table').innerHTML = data.table_html;
+                        document.getElementById('pagination-container').innerHTML = data.pagination_html;
+
+                        const stats = data.stats;
+                        searchInfo.innerHTML = stats.filtered !== stats.total
+                            ? `${stats.filtered} résultat${stats.filtered > 1 ? 's' : ''} sur ${stats.total}`
+                            : `${stats.total} partenaire${stats.total > 1 ? 's' : ''}`;
+                    }
+                });
+        }
+
+        // Debounce search
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(performSearch, 300);
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', debounceSearch);
+
+        document.querySelectorAll('.filter-select').forEach(el => {
+            el.addEventListener('change', performSearch);
+        });
+
+        document.querySelectorAll('.filter-input').forEach(el => {
+            el.addEventListener('input', debounceSearch);
+        });
+
+        document.querySelectorAll('.filter-checkbox').forEach(el => {
+            el.addEventListener('change', performSearch);
+        });
+    });
+</script>
+{% endblock %}

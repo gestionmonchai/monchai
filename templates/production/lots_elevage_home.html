@@ -34,7 +34,7 @@
 
  <!-- Barre filtres (HTMX) -->
  <form id="lots-filter-form" class="row g-2 align-items-end mb-3"
-       hx-get="/production/lots-elevage/table/"
+       hx-get="/production/lots-elevage/tableau/"
        hx-target="#lots-table" hx-trigger="change, keyup delay:300ms from:.js-q"
        hx-push-url="true">
    {% csrf_token %}
@@ -64,7 +64,7 @@
 
  <!-- Table HTMX -->
  <div id="lots-table"
-      hx-get="/production/lots-elevage/table/"
+      hx-get="/production/lots-elevage/tableau/"
       hx-trigger="load"
       hx-swap="innerHTML"></div>
 {% endblock %}

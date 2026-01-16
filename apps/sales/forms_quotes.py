@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 from apps.sales.models import Quote, QuoteLine, TaxCode
 from apps.stock.models import SKU
-from apps.sales.models import Customer as SalesCustomer
+from apps.partners.models import Contact
 
 
 class QuoteForm(forms.ModelForm):

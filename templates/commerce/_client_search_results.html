@@ -1,0 +1,25 @@
+{% for c in clients %}
+<div class="search-item" 
+     data-id="{{ c.pk }}"
+     data-display-id="{{ c.display_id }}"
+     data-name="{{ c.name }}"
+     data-email="{{ c.email|default:'' }}"
+     data-phone="{{ c.phone|default:'' }}"
+     data-address="{% if c.addresses.first %}{{ c.addresses.first.city|default:'' }}{% endif %}"
+     onclick="selectClient(this)">
+    <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold" 
+             style="width: 32px; height: 32px; background: rgba(114, 47, 55, 0.1); color: var(--wine-burgundy); font-size: 0.75rem;">
+            {{ c.name|slice:":2"|upper }}
+        </div>
+        <div>
+            <div class="fw-medium">{{ c.name }}</div>
+            <div class="small text-muted">{{ c.email|default:c.phone|default:"Aucun contact" }}</div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="p-3 text-center text-muted small">
+    <i class="bi bi-search me-1"></i>Aucun client trouvé
+</div>
+{% endfor %}

@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Tableau de Bord - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Styles spécifiques Dashboard - harmonisés avec viticole_dense.css */
+    .dashboard-weather-card {
+        background: var(--harvest-gradient);
+        border: var(--border-gold);
+        box-shadow: var(--shadow-md);
+        color: #fff;
+    }
+
+    .weather-temp-big {
+        font-size: 3.25rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .weather-icon-bg {
+        position: absolute;
+        right: 1rem;
+        top: 0.5rem;
+        font-size: 7rem;
+        opacity: 0.1;
+    }
+
+    .weather-pill {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
+        padding: 0.4rem 0.85rem;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .kpi-card {
+        transition: transform 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .gauge-container {
+        height: 9px;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 0.75rem;
+    }
+
+    .gauge-bar {
+        height: 100%;
+        background: var(--harvest-gradient);
+        transition: width 0.9s ease-out;
+    }
+
+    .quick-link-card {
+        background: rgba(255, 255, 255, 0.95);
+        border: var(--border-gold);
+        border-radius: 12px;
+        padding: 1.35rem 1rem;
+        text-align: center;
+        transition: all 0.2s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: inherit;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .quick-link-card:hover {
+        background: #fff9ef;
+        box-shadow: var(--shadow-md);
+        color: var(--wine-bordeaux);
+        transform: translateY(-2px);
+    }
+
+    .quick-link-icon {
+        font-size: 2rem;
+        margin-bottom: 0.35rem;
+        color: var(--wine-gold);
+    }
+
+    .section-title {
+        letter-spacing: 1px;
+        font-size: 0.8rem;
+        color: rgba(114, 47, 55, 0.7);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="py-3">
+    
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-end mb-2">
+        <div>
+            <h1 class="h2 mb-1">Tableau de Bord</h1>
+            <p class="text-muted mb-0">
+                Bonjour {{ user.first_name|default:user.username }}, voici la situation de <strong>{{ request.current_org.name }}</strong>.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'auth:dashboard_configure' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                <i class="bi bi-sliders me-2"></i> Configurer
+            </a>
+            <!-- Bouton Tour / Aide -->
+            <button class="btn btn-sm btn-outline-primary" onclick="window.MonChaiTourFlow.startFlow()">
+                <i class="bi bi-question-circle me-2"></i> Guide
+            </button>
+        </div>
+    </div>
+
+    <!-- Ligne 1 : Météo & Alertes Critiques -->
+    <div class="row g-4 mb-3">
+        <!-- Module Météo Intelligent -->
+        <div class="col-lg-8">
+            <div class="card dashboard-weather-card h-100 overflow-hidden position-relative shadow-sm">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <i class="bi bi-cloud-sun weather-icon-bg"></i>
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            {% if weather_current.temp != '--' %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="weather-pill d-inline-flex align-items-center">
+                                        <i class="bi bi-geo-alt-fill me-2 opacity-75"></i>{{ weather_city }}
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div class="weather-temp-big me-3">{{ weather_current.temp }}°</div>
+                                    <div class="lh-sm">
+                                        <div class="fw-bold fs-5">{{ weather_current.description }}</div>
+                                        <div class="small opacity-75">Humidité: --% • Vent: -- km/h</div>
+                                    </div>
+                                </div>
+                                {% if weather_suggestion %}
+                                <div class="mt-3 p-2 rounded bg-white bg-opacity-10 border border-white border-opacity-25">
+                                    <i class="bi bi-lightbulb me-2 text-warning"></i> 
+                                    <span class="small">{{ weather_suggestion }}</span>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-geo-alt fs-1 opacity-50 mb-2"></i>
+                                    <h5>Météo non configurée</h5>
+                                    <p class="small opacity-75 mb-3">Veuillez renseigner les coordonnées GPS d'au moins une parcelle pour activer la météo locale.</p>
+                                    <a href="{% url 'referentiels:parcelle_list' %}" class="btn btn-sm btn-light text-primary">
+                                        Configurer mes parcelles
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 border-start border-white border-opacity-25 ps-md-4">
+                            <h6 class="text-uppercase small opacity-75 mb-3">Prévisions</h6>
+                            <div class="d-flex justify-content-between text-center">
+                                {% for forecast in weather_forecasts|slice:":3" %}
+                                <div>
+                                    <div class="small opacity-75 mb-1">{{ forecast.day_name }}</div>
+                                    <i class="{{ forecast.icon }} fs-4 mb-1 d-block"></i>
+                                    <div class="fw-bold">{{ forecast.temp_max }}°</div>
+                                </div>
+                                {% empty %}
+                                <div class="w-100 text-center small opacity-50 py-3">
+                                    Prévisions indisponibles
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Alertes / DRM -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-gold shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="text-uppercase small fw-bold text-wine">À faire / Alertes</span>
+                    {% if drm_status.days_remaining < 5 %}
+                        <span class="badge bg-danger">Urgent</span>
+                    {% endif %}
+                </div>
+                <div class="list-group list-group-flush">
+                    <!-- DRM Status -->
+                    <div class="list-group-item p-3 {% if drm_status.is_urgent %}bg-danger bg-opacity-10{% endif %}">
+                        <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                            <strong class="{% if drm_status.is_urgent %}text-danger{% endif %}">Déclaration DRM</strong>
+                            <small class="fw-bold {% if drm_status.is_urgent %}text-danger{% else %}text-muted{% endif %}">
+                                J{{ drm_status.days_remaining }}
+                            </small>
+                        </div>
+                        <p class="mb-2 small text-muted">Date limite : {{ drm_status.deadline|date:"d F Y" }}</p>
+                        <div class="d-grid">
+                            <a href="{% url 'production:production_reports' %}" class="btn btn-sm {% if drm_status.is_urgent %}btn-danger{% else %}btn-outline-primary{% endif %}">
+                                Accéder à la déclaration
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Autres alertes (Mockup dynamique si disponible) -->
+                    {% if alerts_chai %}
+                        {% for alert in alerts_chai|slice:":3" %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex align-items-start">
+                                <i class="{{ alert.icon }} me-2 fs-5 {% if alert.type.value == 'alert' %}text-danger{% elif alert.type.value == 'warning' %}text-warning{% elif alert.type.value == 'suggest' %}text-success{% else %}text-info{% endif %}"></i>
+                                <div class="w-100">
+                                    <h6 class="mb-0 small fw-bold {% if alert.type.value == 'alert' %}text-danger{% elif alert.type.value == 'warning' %}text-warning{% elif alert.type.value == 'suggest' %}text-success{% else %}text-info{% endif %}">
+                                        {{ alert.title }}
+                                    </h6>
+                                    <p class="mb-1 small text-muted">{{ alert.message }}</p>
+                                    {% if alert.action_url and alert.action_label %}
+                                        <a href="{{ alert.action_url }}" class="btn btn-xs btn-outline-secondary d-block w-100 mt-2" style="font-size: 0.7rem;">
+                                            {{ alert.action_label }}
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% if not alerts_chai and not drm_status.is_urgent %}
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-muted">
+                    <i class="bi bi-check-circle fs-1 mb-2 text-success opacity-50"></i>
+                    <p class="small mb-0">Aucune alerte critique.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ligne 2 : Indicateurs Clés (KPIs) -->
+    <div class="row g-4 mb-4">
+        
+        <!-- Activité Chai -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm kpi-card">
+                <div class="card-header bg-transparent border-0 pb-0 pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-0">Occupation Chai</h6>
+                        <i class="bi bi-shop text-wine fs-5"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-end mb-1">
+                        <span class="display-6 fw-bold text-wine me-2">{{ occupation_pct }}</span>
+                        <span class="fs-6 text-muted fw-light">%</span>
+                    </div>
+                    
+                    <div class="gauge-container mb-3">
+                        <div class="gauge-bar" style="width: {{ occupation_pct }}%;"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>Stock: <strong>{{ volume_en_cuve_hl|floatformat:1 }} hL</strong></span>
+                        <span>Capacité: <strong>{{ capacite_totale_hl|floatformat:0 }} hL</strong></span>
+                    </div>
+                </div>
+                <div class="card-footer bg-light bg-opacity-50 border-top-0 py-2">
+                    <a href="{% url 'production:inventaire' %}" class="small text-decoration-none fw-bold text-wine d-flex justify-content-between align-items-center">
+                        Gérer le stock
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activité Commerciale -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm kpi-card">
+                <div class="card-header bg-transparent border-0 pb-0 pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-0">Ventes du Mois</h6>
+                        <i class="bi bi-currency-euro text-success fs-5"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-end mb-3">
+                        <span class="display-6 fw-bold text-dark me-2">{{ revenue_month|floatformat:0|intcomma }}</span>
+                        <span class="fs-6 text-muted">€ HT</span>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="p-2 bg-light rounded text-center">
+                                <div class="fw-bold fs-5">{{ orders_count_month }}</div>
+                                <div class="small text-muted" style="font-size: 0.7rem;">COMMANDES</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 bg-light rounded text-center">
+                                <div class="fw-bold fs-5 text-warning">{{ orders_to_ship }}</div>
+                                <div class="small text-muted" style="font-size: 0.7rem;">À EXPÉDIER</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light bg-opacity-50 border-top-0 py-2">
+                    <a href="{% url 'ventes:dashboard' %}" class="small text-decoration-none fw-bold text-wine d-flex justify-content-between align-items-center">
+                        Tableau de bord Ventes
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Infos Domaine -->
+        <div class="col-md-12 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0 pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-0">Mon Exploitation</h6>
+                        <i class="bi bi-house-door text-muted fs-5"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center border-bottom border-light">
+                            <span class="small"><i class="bi bi-grid-3x3 me-2 text-muted"></i>Parcelles déclarées</span>
+                            <span class="fw-bold">{{ nb_parcelles }}</span>
+                        </div>
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center border-bottom border-light">
+                            <span class="small"><i class="bi bi-tag me-2 text-muted"></i>Cuvées actives</span>
+                            <span class="fw-bold">{{ nb_cuvees }}</span>
+                        </div>
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span class="small"><i class="bi bi-calendar-range me-2 text-muted"></i>Campagne en cours</span>
+                            <span class="badge bg-light text-dark border">{{ current_campaign }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light bg-opacity-50 border-top-0 py-2">
+                    <a href="{% url 'auth:general_settings' %}" class="small text-decoration-none fw-bold text-wine d-flex justify-content-between align-items-center">
+                        Paramètres du domaine
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ligne 3 : Accès Rapides -->
+    <h5 class="section-title text-uppercase fw-bold mb-3">Accès Rapides</h5>
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-md-3">
+            <a href="{% url 'referentiels:parcelle_list' %}" class="quick-link-card">
+                <i class="bi bi-map quick-link-icon"></i>
+                <span class="fw-bold">Parcelles</span>
+                <span class="small text-muted mt-1">Gestion du vignoble</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'production:inventaire' %}" class="quick-link-card">
+                <i class="bi bi-droplet-half quick-link-icon"></i>
+                <span class="fw-bold">Stock Vrac</span>
+                <span class="small text-muted mt-1">Cuves & Barriques</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'production:analyses_home' %}" class="quick-link-card">
+                <i class="bi bi-activity quick-link-icon"></i>
+                <span class="fw-bold">Analyses</span>
+                <span class="small text-muted mt-1">Suivi œnologique</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'production:vendanges_list' %}" class="quick-link-card">
+                <i class="bi bi-basket3 quick-link-icon"></i>
+                <span class="fw-bold">Vendanges</span>
+                <span class="small text-muted mt-1">Apports & Réceptions</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

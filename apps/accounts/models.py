@@ -1218,3 +1218,140 @@ class UserShortcut(models.Model):
         
     def __str__(self):
         return f"{self.title} ({self.user})"
+
+# ============================================================================
+# FACTURATION & ABONNEMENT (Roadmap 11)
+# ============================================================================
+
+class Subscription(models.Model):
+    """
+    Abonnement de l'organisation - Roadmap 11
+    Gère le plan actuel, le renouvellement et le statut
+    """
+    PLAN_CHOICES = [
+        ('discovery', 'Découverte (Gratuit)'),
+        ('vigneron', 'Vigneron (Jusqu\'à 20ha)'),
+        ('domain', 'Domaine (Illimité)'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Actif'),
+        ('past_due', 'En retard de paiement'),
+        ('canceled', 'Annulé'),
+    ]
+
+    organization = models.OneToOneField(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='subscription',
+        verbose_name='Organisation'
+    )
+    
+    plan_name = models.CharField(
+        'Nom du plan',
+        max_length=50,
+        choices=PLAN_CHOICES,
+        default='discovery'
+    )
+    
+    status = models.CharField(
+        'Statut',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active'
+    )
+    
+    amount = models.DecimalField(
+        'Montant mensuel (HT)',
+        max_digits=10,
+        decimal_places=2,
+        default=0.00
+    )
+    
+    renewal_date = models.DateField(
+        'Date de renouvellement',
+        null=True,
+        blank=True
+    )
+    
+    payment_method_summary = models.CharField(
+        'Moyen de paiement',
+        max_length=100,
+        blank=True,
+        help_text='Ex: Visa terminaison 4242'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Abonnement'
+        verbose_name_plural = 'Abonnements'
+        db_table = 'accounts_subscription'
+
+    def __str__(self):
+        return f"{self.get_plan_name_display()} - {self.organization.name}"
+
+
+class Invoice(models.Model):
+    """
+    Facture de l'organisation - Roadmap 11
+    Historique des factures générées
+    """
+    STATUS_CHOICES = [
+        ('paid', 'Payée'),
+        ('pending', 'En attente'),
+        ('failed', 'Échouée'),
+    ]
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='invoices',
+        verbose_name='Organisation'
+    )
+    
+    number = models.CharField(
+        'Numéro de facture',
+        max_length=50,
+        unique=True
+    )
+    
+    date = models.DateField('Date de facturation')
+    
+    amount_ht = models.DecimalField(
+        'Montant HT',
+        max_digits=10,
+        decimal_places=2
+    )
+    
+    amount_ttc = models.DecimalField(
+        'Montant TTC',
+        max_digits=10,
+        decimal_places=2
+    )
+    
+    status = models.CharField(
+        'Statut',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+    
+    pdf_file = models.FileField(
+        'Facture PDF',
+        upload_to='invoices/%Y/%m/',
+        blank=True,
+        null=True
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Facture'
+        verbose_name_plural = 'Factures'
+        ordering = ['-date', '-created_at']
+        db_table = 'accounts_invoice'
+
+    def __str__(self):
+        return f"Facture {self.number} ({self.organization.name})"

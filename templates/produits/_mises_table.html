@@ -1,0 +1,46 @@
+<!-- Template partiel pour le tableau des mises (chargé via HTMX) -->
+<div id="mises-table-meta" data-total="{{ total }}"></div>
+
+{% if mises %}
+<table class="table table-sm table-hover">
+    <thead>
+        <tr>
+            <th>Code OF</th>
+            <th>Date</th>
+            <th>Campagne</th>
+            <th>État</th>
+            <th class="text-end"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in mises %}
+        <tr class="row-click" data-href="{% url 'production:mise_detail' m.id %}">
+            <td>
+                <strong>{{ m.code_of }}</strong>
+            </td>
+            <td>{{ m.date|date:"d/m/Y" }}</td>
+            <td>{{ m.campagne }}</td>
+            <td>
+                {% if m.state == 'validee' %}
+                <span class="badge bg-success">Validée</span>
+                {% elif m.state == 'brouillon' %}
+                <span class="badge bg-secondary">Brouillon</span>
+                {% else %}
+                <span class="badge bg-info">{{ m.state }}</span>
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'production:mise_detail' m.id %}">
+                    <i class="bi bi-eye"></i> Voir
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="text-center text-muted py-5">
+    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+    <p class="mt-3">Aucune mise ne correspond à votre recherche</p>
+</div>
+{% endif %}

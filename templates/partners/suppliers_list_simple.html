@@ -1,0 +1,134 @@
+{% extends 'commerce/base_commerce.html' %}
+{% block title %}Fournisseurs - Mon Chai{% endblock %}
+{% block commerce_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex align-items-center gap-3">
+    <h1 class="h4 mb-0">Fournisseurs</h1>
+  </div>
+  <a class="btn btn-success" href="{% url 'partners:partner_create' %}?role=supplier">
+    <i class="bi bi-plus-lg me-1"></i>Nouveau fournisseur
+  </a>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>Filtres de recherche</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary" id="toggle-advanced-search">
+          <i class="bi bi-chevron-down"></i> Avancé
+        </button>
+        <button type="button" class="btn btn-outline-danger" id="clear-filters">
+          <i class="bi bi-x-circle"></i> Effacer
+        </button>
+      </div>
+    </div>
+
+    <form id="partners-filter-form"
+          hx-get="{% url 'partners:suppliers_table' %}"
+          hx-target="#partners-table-content"
+          hx-swap="innerHTML"
+          hx-trigger="change, keyup delay:200ms from:input">
+      <!-- Recherche rapide -->
+      <div class="row mb-3">
+        <div class="col-md-8">
+          <div class="position-relative">
+            <input type="text" name="q" id="quick-search" value="" placeholder="Recherche rapide (nom, email, téléphone, SIRET...)" class="form-control pe-5" autocomplete="off">
+            <div class="position-absolute top-50 end-0 translate-middle-y me-3">
+              <i class="bi bi-search text-muted" id="search-icon"></i>
+              <div class="spinner-border spinner-border-sm text-success d-none" id="search-spinner" role="status">
+                <span class="visually-hidden">Recherche...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="search-info" class="text-muted small mt-2">{{ total_count }} fournisseur{{ total_count|pluralize }}</div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div id="advanced-filters" class="collapse">
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-2">
+            <label class="form-label">Statut</label>
+            <select name="is_active" class="form-select">
+              <option value="">Tous</option>
+              <option value="true">Actifs</option>
+              <option value="false">Inactifs</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Pays</label>
+            <input type="text" name="country" class="form-control" placeholder="FR, DE...">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Tri</label>
+            <select name="sort" class="form-select">
+              <option value="name">Nom A-Z</option>
+              <option value="name_desc">Nom Z-A</option>
+              <option value="created_desc">Plus récents</option>
+              <option value="created_asc">Plus anciens</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tableau -->
+<div id="partners-table-content" hx-get="{% url 'partners:suppliers_table' %}" hx-trigger="load" hx-swap="innerHTML">
+  <div class="text-center text-muted py-4">Chargement…</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const advBtn = document.getElementById('toggle-advanced-search');
+  const clearBtn = document.getElementById('clear-filters');
+  const adv = document.getElementById('advanced-filters');
+  const quick = document.getElementById('quick-search');
+  const spinner = document.getElementById('search-spinner');
+  const icon = document.getElementById('search-icon');
+  const info = document.getElementById('search-info');
+  const form = document.getElementById('partners-filter-form');
+
+  function setLoading(isLoading) {
+    if (spinner && icon) {
+      spinner.classList.toggle('d-none', !isLoading);
+      icon.classList.toggle('d-none', isLoading);
+    }
+  }
+
+  if (advBtn && adv) {
+    advBtn.addEventListener('click', function() {
+      adv.classList.toggle('show');
+      const i = advBtn.querySelector('i');
+      if (i) i.className = adv.classList.contains('show') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    });
+  }
+
+  if (clearBtn && form) {
+    clearBtn.addEventListener('click', function() {
+      form.reset();
+      form.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  if (quick) quick.addEventListener('input', function() { setLoading(true); });
+
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target && evt.target.id === 'partners-table-content') {
+      setLoading(false);
+      const meta = document.getElementById('partners-table-meta');
+      if (meta && info) {
+        const total = meta.getAttribute('data-total') || '0';
+        info.textContent = total + ' fournisseur' + (parseInt(total) > 1 ? 's' : '');
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

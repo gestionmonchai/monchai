@@ -97,7 +97,7 @@
             <li class="dropdown-submenu">
               <a class="dropdown-item dropdown-toggle" href="#"><i class="bi bi-briefcase me-2 text-primary"></i>Gestion Commerciale</a>
               <ul class="dropdown-menu shadow">
-                <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients</a></li>
+                <li><a class="dropdown-item" href="{% url 'ventes:clients_list' %}"><i class="bi bi-people me-2"></i>Clients</a></li>
                 <li><a class="dropdown-item" href="{% url 'ventes:pricelist_list' %}"><i class="bi bi-tags me-2"></i>Grilles tarifaires</a></li>
                 <li><a class="dropdown-item" href="{% url 'ventes:template_list' %}"><i class="bi bi-file-earmark-richtext me-2"></i>Modèles de documents</a></li>
                 <li><a class="dropdown-item" href="{% url 'ventes:conditions_list' %}"><i class="bi bi-file-text me-2"></i>Conditions de vente</a></li>
@@ -131,7 +131,7 @@
             <li class="dropdown-submenu">
               <a class="dropdown-item dropdown-toggle" href="#"><i class="bi bi-building me-2 text-primary"></i>Gestion Fournisseurs</a>
               <ul class="dropdown-menu shadow">
-                <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}?segment=supplier"><i class="bi bi-people me-2"></i>Fournisseurs</a></li>
+                <li><a class="dropdown-item" href="{% url 'partners:partners_list' %}?segment=supplier"><i class="bi bi-people me-2"></i>Fournisseurs</a></li>
               </ul>
             </li>
 
@@ -151,25 +151,25 @@
 
         <!-- DRM -->
         <li class="nav-item dropdown d-none d-xl-flex">
-          <a class="nav-link dropdown-toggle py-2 px-3" href="/drm/" id="navDrmDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <a class="nav-link dropdown-toggle py-2 px-3" href="{% url 'drm:dashboard' %}" id="navDrmDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-file-earmark-text me-1"></i>DRM
           </a>
           <ul class="dropdown-menu" aria-labelledby="navDrmDropdown">
-            <li><a class="dropdown-item" href="/drm/crd/">CRD</a></li>
-            <li><a class="dropdown-item" href="/drm/inao/">Codes INAO</a></li>
-            <li><a class="dropdown-item" href="/drm/">DRM / DAE / DSA</a></li>
+            <li><a class="dropdown-item" href="{% url 'drm:crd' %}">CRD</a></li>
+            <li><a class="dropdown-item" href="{% url 'drm:inao' %}">Codes INAO</a></li>
+            <li><a class="dropdown-item" href="{% url 'drm:dashboard' %}">DRM / DAE / DSA</a></li>
           </ul>
         </li>
 
         <!-- Comptabilité -->
         <li class="nav-item dropdown d-none d-xl-flex">
-          <a class="nav-link dropdown-toggle py-2 px-3" href="/compta/" id="navComptaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <a class="nav-link dropdown-toggle py-2 px-3" href="{% url 'compta:dashboard' %}" id="navComptaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-calculator me-1"></i>Compta
           </a>
           <ul class="dropdown-menu" aria-labelledby="navComptaDropdown">
-            <li><a class="dropdown-item" href="/compta/stock/">Écritures stock</a></li>
-            <li><a class="dropdown-item" href="/compta/ventes/">Ventes (CA, TVA)</a></li>
-            <li><a class="dropdown-item" href="/compta/exports/">Exports (Sage/Quadratus/CSV)</a></li>
+            <li><a class="dropdown-item" href="{% url 'compta_stock' %}">Écritures stock</a></li>
+            <li><a class="dropdown-item" href="{% url 'compta_ventes' %}">Ventes (CA, TVA)</a></li>
+            <li><a class="dropdown-item" href="{% url 'compta_exports' %}">Exports (Sage/Quadratus/CSV)</a></li>
           </ul>
         </li>
 
@@ -180,7 +180,7 @@
           </a>
           <ul class="dropdown-menu" aria-labelledby="navRefDropdown">
             <li class="dropdown-header text-muted small">Master data</li>
-            <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
+            <li><a class="dropdown-item" href="{% url 'partners:partners_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
             <li><a class="dropdown-item" href="{% url 'referentiels:parcelle_list' %}"><i class="bi bi-map me-2"></i>Parcelles</a></li>
             <li><a class="dropdown-item" href="{% url 'referentiels:cepage_list' %}"><i class="bi bi-flower1 me-2"></i>Cépages</a></li>
             <li><a class="dropdown-item" href="{% url 'referentiels:unite_list' %}"><i class="bi bi-rulers me-2"></i>Unités</a></li>
@@ -205,7 +205,7 @@
             <li><a class="dropdown-item" href="/compta/exports/">Exports (Sage/Quadratus/CSV)</a></li>
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header">Référentiels</h6></li>
-            <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
+            <li><a class="dropdown-item" href="{% url 'partners:partners_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
             <li><a class="dropdown-item" href="{% url 'referentiels:parcelle_list' %}"><i class="bi bi-map me-2"></i>Parcelles</a></li>
             <li><a class="dropdown-item" href="{% url 'referentiels:cepage_list' %}"><i class="bi bi-flower1 me-2"></i>Cépages</a></li>
             <li><a class="dropdown-item" href="{% url 'referentiels:unite_list' %}"><i class="bi bi-rulers me-2"></i>Unités</a></li>
@@ -344,7 +344,7 @@
           <li><a class="dropdown-item fw-bold" href="{% url 'ventes:dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><h6 class="dropdown-header text-primary"><i class="bi bi-briefcase me-2"></i>Gestion Commerciale</h6></li>
-          <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients</a></li>
+          <li><a class="dropdown-item" href="{% url 'partners:partners_list' %}"><i class="bi bi-people me-2"></i>Clients</a></li>
           <li><a class="dropdown-item" href="{% url 'ventes:pricelist_list' %}"><i class="bi bi-tags me-2"></i>Grilles tarifaires</a></li>
           <li><a class="dropdown-item" href="{% url 'ventes:template_list' %}"><i class="bi bi-file-earmark-richtext me-2"></i>Modèles de documents</a></li>
           <li><a class="dropdown-item" href="{% url 'ventes:conditions_list' %}"><i class="bi bi-file-text me-2"></i>Conditions</a></li>
@@ -366,7 +366,7 @@
           <li><a class="dropdown-item fw-bold" href="{% url 'achats:dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><h6 class="dropdown-header text-primary"><i class="bi bi-building me-2"></i>Gestion Fournisseurs</h6></li>
-          <li><a class="dropdown-item" href="{% url 'clients:customers_list' %}?segment=supplier"><i class="bi bi-people me-2"></i>Fournisseurs</a></li>
+          <li><a class="dropdown-item" href="{% url 'partners:partners_list' %}?segment=supplier"><i class="bi bi-people me-2"></i>Fournisseurs</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><h6 class="dropdown-header text-warning"><i class="bi bi-file-earmark-text me-2"></i>Documents</h6></li>
           <li><a class="dropdown-item" href="{% url 'achats:quotes_list' %}"><i class="bi bi-chat-quote me-2"></i>Demandes de prix</a></li>

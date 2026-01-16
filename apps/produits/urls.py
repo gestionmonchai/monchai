@@ -46,11 +46,11 @@ urlpatterns = [
     path('produits/cuvees/nouveau/', login_required(cat_views.cuvee_create), name='cuvee_new'),
     path('produits/cuvees/<int:pk>/', login_required(cat_views.cuvee_detail), name='cuvee_detail'),
 
-    # SKUs
-    path('produits/skus/', login_required(cat_views.products_skus), name='skus_list'),
+    # SKUs (Références)
+    path('produits/references/', login_required(cat_views.products_skus), name='skus_list'),
     # Remap nouveau to universal ProductCreateView (fiche à volets)
-    path('produits/skus/nouveau/', login_required(ProductCreateView.as_view()), name='sku_new'),
-    path('produits/skus/<int:pk>/', login_required(cat_views.sku_detail), name='sku_detail'),
+    path('produits/references/nouveau/', login_required(ProductCreateView.as_view()), name='sku_new'),
+    path('produits/references/<int:pk>/', login_required(cat_views.sku_detail), name='sku_detail'),
 
     # Nouveaux flux de création (Workflow Achat/Vente)
     path('produits/achats/nouveau/', login_required(PurchaseArticleCreateView.as_view()), name='purchase_new'),
@@ -62,20 +62,20 @@ urlpatterns = [
     path('produits/ventes/<slug:slug>/acheter/', login_required(BridgeSalesToPurchaseView.as_view()), name='bridge_sales_to_purchase'),
 
     # Partials HTMX (universal product form)
-    path('produits/form/panels/', views_catalog.product_panels_partial, name='panels'),
-    path('produits/form/source/', views_catalog.product_source_partial, name='source_partial'),
-    path('produits/form/source/cuvee/add/', views_catalog.product_source_cuvee_add, name='source_cuvee_add'),
-    path('produits/form/source/cuvee/del/<int:row_id>/', views_catalog.product_source_cuvee_del, name='source_cuvee_del'),
+    path('produits/formulaire/panneaux/', views_catalog.product_panels_partial, name='panels'),
+    path('produits/formulaire/source/', views_catalog.product_source_partial, name='source_partial'),
+    path('produits/formulaire/source/cuvee/ajouter/', views_catalog.product_source_cuvee_add, name='source_cuvee_add'),
+    path('produits/formulaire/source/cuvee/supprimer/<int:row_id>/', views_catalog.product_source_cuvee_del, name='source_cuvee_del'),
 
     # Lots commerciaux
     path('produits/lots-commerciaux/', LotCommercialListView.as_view(), name='lots_com_list'),
     path('produits/lots-commerciaux/<uuid:pk>/', LotCommercialDetailView.as_view(), name='lot_com_detail'),
 
     # HTMX endpoint (Mise step 2 calc)
-    path('produits/api/htmx/calc/', htmx_calc_units, name='htmx_calc_units'),
+    path('produits/api/htmx/calcul/', htmx_calc_units, name='htmx_calc_units'),
 
     # API AJAX pour recherche temps réel (legacy)
-    path('search-ajax/', views.products_search_ajax, name='products_search_ajax'),
+    path('recherche-ajax/', views.products_search_ajax, name='products_search_ajax'),
     # Suggestions API for autocomplete
     path('produits/api/suggestions/', login_required(products_suggestions_api), name='products_suggestions_api'),
 
@@ -83,6 +83,6 @@ urlpatterns = [
     path('produits/catalogue/', login_required(ProductListView.as_view()), name='catalog_list'),
     path('produits/catalogue/nouveau/', login_required(ProductCreateView.as_view()), name='product_new'),
     path('produits/catalogue/<slug:slug>/', login_required(ProductDetailView.as_view()), name='product_detail'),
-    path('produits/catalogue/<slug:slug>/edit/', login_required(ProductUpdateView.as_view()), name='product_edit'),
-    path('produits/skus/<int:pk>/edit/', login_required(SKUUpdateView.as_view()), name='sku_edit'),
+    path('produits/catalogue/<slug:slug>/modifier/', login_required(ProductUpdateView.as_view()), name='product_edit'),
+    path('produits/references/<int:pk>/modifier/', login_required(SKUUpdateView.as_view()), name='sku_edit'),
 ]

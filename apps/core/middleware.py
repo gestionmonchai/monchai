@@ -20,22 +20,9 @@ class ClientsRedirectMiddleware:
     def __call__(self, request):
         path = request.path_info
         
-        # Redirection ciblée: admin sales customer vers clients
-        if path == '/admin/sales/customer/':
-            return HttpResponsePermanentRedirect('/clients/')
-        
-        elif path == '/admin/sales/customer/add/':
-            return HttpResponsePermanentRedirect('/clients/nouveau/')
-        
-        elif path.startswith('/admin/sales/customer/') and path.endswith('/change/'):
-            # /admin/sales/customer/123/change/ → /clients/123/modifier/
-            customer_id = path.split('/')[-3]  # Extraire l'ID
-            return HttpResponsePermanentRedirect(f'/clients/{customer_id}/modifier/')
-        
-        elif path.startswith('/admin/sales/customer/') and not path.endswith('/'):
-            # /admin/sales/customer/123/ → /clients/123/
-            customer_id = path.split('/')[-2]  # Extraire l'ID
-            return HttpResponsePermanentRedirect(f'/clients/{customer_id}/')
+        # SUPPRIMÉ : Redirections automatiques admin → référentiels
+        # Ces redirections créaient de la confusion entre workbenches ventes/référentiels
+        # Les utilisateurs doivent choisir explicitement leur contexte
         
         # Continuer normalement pour toutes les autres URLs
         response = self.get_response(request)

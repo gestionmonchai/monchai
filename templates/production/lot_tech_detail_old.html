@@ -8,23 +8,23 @@
     {% endif %}
   </h1>
   <div class="d-flex gap-2">
-    <a href="/production/services/entry/?entity_type=lottech&entity_id={{ lot.id }}" class="btn btn-outline-primary btn-sm">+ Service</a>
-    <a href="/production/assemblages/nouveau/?step=1&source={{ lot.id }}" class="btn btn-outline-dark btn-sm">Assembler</a>
-    <a href="/production/mises/nouveau/?step=1" class="btn btn-primary btn-sm">Mise</a>
-    <a href="/production/lots-elevage/journal/?lot={{ lot.code }}" class="btn btn-outline-secondary btn-sm">Journal vrac</a>
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/pret_mise/" class="d-inline">{% csrf_token %}
+    <a href="{% url 'production:service_entry' %}?entity_type=lottech&entity_id={{ lot.id }}" class="btn btn-outline-primary btn-sm">+ Service</a>
+    <a href="{% url 'production:assemblage_wizard' %}?step=1&source={{ lot.id }}" class="btn btn-outline-dark btn-sm">Assembler</a>
+    <a href="{% url 'production:mise_new' %}?step=1" class="btn btn-primary btn-sm">Mise</a>
+    <a href="{% url 'production:lots_elevage_journal' %}?lot={{ lot.code }}" class="btn btn-outline-secondary btn-sm">Journal vrac</a>
+    <form method="post" action="{% url 'production:lot_tech_action' lot.id 'pret_mise' %}" class="d-inline">{% csrf_token %}
       <button class="btn btn-outline-success btn-sm">Prêt mise</button>
     </form>
     {% if lot.location_kind != 'OFFSITE' %}
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/offsite_send/" class="d-inline ms-2">{% csrf_token %}
+    <form method="post" action="{% url 'production:lot_tech_action' lot.id 'offsite_send' %}" class="d-inline ms-2">{% csrf_token %}
       <input type="hidden" name="tiers" value="">
       <button class="btn btn-outline-warning btn-sm" title="Envoyer chez un faiseur">Envoyer hors site</button>
     </form>
     {% else %}
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/offsite_return_neutral/" class="d-inline ms-2">{% csrf_token %}
+    <form method="post" action="{% url 'production:lot_tech_action' lot.id 'offsite_return_neutral' %}" class="d-inline ms-2">{% csrf_token %}
       <button class="btn btn-outline-primary btn-sm" title="Retour sans changement de composition">Retour (neutre)</button>
     </form>
-    <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/offsite_return_non_neutral/" class="d-inline ms-1">{% csrf_token %}
+    <form method="post" action="{% url 'production:lot_tech_action' lot.id 'offsite_return_non_neutral' %}" class="d-inline ms-1">{% csrf_token %}
       <button class="btn btn-outline-danger btn-sm" title="Retour avec modification (nouveau lot)">Retour (non neutre)</button>
     </form>
     {% endif %}
@@ -49,7 +49,7 @@
     <div class="col-md-2"><strong>Vol @20°C (hL)</strong><div>{% if lot.volume_hl20 %}{{ lot.volume_hl20 }}{% else %}-{% endif %}</div></div>
     <div class="col-md-2"><strong>Contenant</strong><div>{{ lot.contenant|default:'-' }}</div></div>
     <div class="col-md-2"><strong>Statut</strong><div>{{ lot.get_statut_display }}</div></div>
-    <div class="col-md-3"><strong>Source</strong><div>{% if lot.source %}<a href="/production/vendanges/{{ lot.source.id }}/">Vendange</a>{% else %}-{% endif %}</div></div>
+    <div class="col-md-3"><strong>Source</strong><div>{% if lot.source %}<a href="{% url 'production:vendange_detail' lot.source.id %}">Vendange</a>{% else %}-{% endif %}</div></div>
   </div>
   <div class="row g-3 mt-1">
     <div class="col-md-2"><strong>Densité</strong><div>{{ latest_densite|default:'-' }}</div></div>
@@ -84,7 +84,7 @@
     <div class="card"><div class="card-body">
       <div class="row g-3">
         <div class="col-md-3"><div class="text-muted small">Encuvage source</div>
-          <div>{% if origin and origin.vendange %}<a href="/production/vendanges/{{ origin.vendange.id }}/">{{ origin.vendange.code }}</a>{% else %}-{% endif %}</div>
+          <div>{% if origin and origin.vendange %}<a href="{% url 'production:vendange_detail' origin.vendange.id %}">{{ origin.vendange.code }}</a>{% else %}-{% endif %}</div>
         </div>
         <div class="col-md-3"><div class="text-muted small">Parcelle</div>
           <div>{% if origin and origin.parcelle %}{{ origin.parcelle.nom }}{% else %}-{% endif %}</div>
@@ -102,7 +102,7 @@
           <ul class="list-group list-group-flush">
             {% for ln in lineage_parents %}
             <li class="list-group-item d-flex justify-content-between">
-              <span>{% if ln.parent_lot %}<a href="/production/lots-techniques/{{ ln.parent_lot.id }}/">{{ ln.parent_lot.code }}</a>{% else %}—{% endif %} <span class="text-muted small">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:'Y-m-d' }})</span></span>
+              <span>{% if ln.parent_lot %}<a href="{% url 'production:lot_tech_detail' ln.parent_lot.id %}">{{ ln.parent_lot.code }}</a>{% else %}—{% endif %} <span class="text-muted small">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:'Y-m-d' }})</span></span>
               {% if ln.ratio %}<span class="badge text-bg-light">{{ ln.ratio|floatformat:2 }}</span>{% endif %}
             </li>
             {% empty %}
@@ -115,7 +115,7 @@
           <ul class="list-group list-group-flush">
             {% for ln in lineage_children %}
             <li class="list-group-item d-flex justify-content-between">
-              <span><a href="/production/lots-techniques/{{ ln.child_lot.id }}/">{{ ln.child_lot.code }}</a> <span class="text-muted small">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:'Y-m-d' }})</span></span>
+              <span><a href="{% url 'production:lot_tech_detail' ln.child_lot.id %}">{{ ln.child_lot.code }}</a> <span class="text-muted small">({{ ln.operation.get_kind_display }} · {{ ln.operation.date|date:'Y-m-d' }})</span></span>
               {% if ln.ratio %}<span class="badge text-bg-light">{{ ln.ratio|floatformat:2 }}</span>{% endif %}
             </li>
             {% empty %}
@@ -176,7 +176,7 @@
   <div class="tab-pane fade" id="movements" role="tabpanel" aria-labelledby="movements-tab">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <div class="text-muted">Historique des mouvements (du plus récent au plus ancien)</div>
-      <a class="btn btn-sm btn-outline-secondary" href="/production/lots-techniques/{{ lot.id }}/mouvements/export/">Exporter CSV</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'production:lot_mouvements_export' lot.id %}">Exporter CSV</a>
     </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle">
@@ -212,7 +212,7 @@
             <span>Déclarer une mesure</span>
           </div>
           <div class="card-body">
-            <form method="post" action="/production/lots-techniques/{{ lot.id }}/vinif/measure/add/">
+            <form method="post" action="{% url 'production:lot_vinif_add_measure' lot.id %}">
               {% csrf_token %}
               <div class="row g-2 align-items-end">
                 <div class="col-md-3">
@@ -248,7 +248,7 @@
             <span>Intervention</span>
           </div>
           <div class="card-body">
-            <form method="post" action="/production/lots-techniques/{{ lot.id }}/vinif/intervention/add/">
+            <form method="post" action="{% url 'production:lot_vinif_add_intervention' lot.id %}">
               {% csrf_token %}
               <div class="row g-2 align-items-end">
                 <div class="col-md-4">
@@ -292,7 +292,7 @@
               </div>
 
               <div class="mt-3 d-flex gap-2">
-                <a class="btn btn-outline-secondary" href="/production/lots-techniques/{{ lot.id }}/pressurage/">Écouler / Presser</a>
+                <a class="btn btn-outline-secondary" href="{% url 'production:lot_tech_pressurage' lot.id %}">Écouler / Presser</a>
                 <button class="btn btn-outline-primary">Ajouter</button>
               </div>
             </form>
@@ -368,53 +368,5 @@
       </div>
     </div>
   </div>
-</div>
-
-<div class="row g-3 mt-3">
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">Perte</div>
-      <div class="card-body">
-        <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/perte/">
-          {% csrf_token %}
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4"><label class="form-label">Volume (L)</label><input type="number" step="0.01" name="volume_l" class="form-control" required></div>
-            <div class="col-md-6"><label class="form-label">Notes</label><input type="text" name="notes" class="form-control"></div>
-            <div class="col-md-2"><button class="btn btn-outline-danger w-100" type="submit">Enregistrer</button></div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">Transfert (A → B)</div>
-      <div class="card-body">
-        <form method="post" action="/production/lots-techniques/{{ lot.id }}/action/transfert/">
-          {% csrf_token %}
-          <div class="row g-2 align-items-end">
-            <div class="col-md-4"><label class="form-label">Volume (L)</label><input type="number" step="0.01" name="volume_l" class="form-control" required></div>
-            <div class="col-md-6">
-              <label class="form-label">Lot destination</label>
-              <select class="form-select" name="dst_lot_id" required>
-                <option value="">— Choisir —</option>
-                {% for other in other_lots %}
-                <option value="{{ other.id }}">{{ other.code }} ({{ other.campagne }})</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2"><button class="btn btn-outline-primary w-100" type="submit">Transférer</button></div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="mt-3 d-flex gap-2">
-  <a href="/production/mises/nouveau/?step=1" class="btn btn-primary">Planifier une mise</a>
-  <form id="form-pret-mise" method="post" action="/production/lots-techniques/{{ lot.id }}/action/pret_mise/">{% csrf_token %}<button class="btn btn-outline-success">Marquer Prêt mise</button></form>
-  <a href="/production/lots-elevage/journal/?lot={{ lot.code }}" class="btn btn-outline-secondary">Journal vrac</a>
-  <a href="/production/assemblages/nouveau/?step=1&source={{ lot.id }}" class="btn btn-outline-dark">Créer un assemblage</a>
 </div>
 {% endblock %}

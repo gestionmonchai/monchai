@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from apps.accounts.models import Organization
-from apps.clients.models import Customer
+from apps.partners.models import Contact, ContactRole
 from apps.stock.models import SKU, Warehouse, UnitOfMeasure
 from apps.viticulture.models import Cuvee, GrapeVariety, Appellation, Vintage
 from apps.sales.models import TaxCode, PriceList, PriceItem, Quote, QuoteLine
@@ -107,50 +107,37 @@ class Command(BaseCommand):
         # 4. Clients et Fournisseurs
         self.stdout.write('Création des tiers...')
 
-        # Client
-        client, created = Customer.objects.get_or_create(
+        # Création Client via le modèle Contact unifié
+        client_sales, created = Contact.objects.get_or_create(
             organization=org,
-            name='Jean Dupont', # Le modèle utilise 'name', sales.Customer utilise 'legal_name' ? Vérifions sales.models
-            # sales.models.Customer a 'legal_name', clients.models.Customer a 'name'.
-            # Le prompt demande "un client", je vais créer un client dans le module `clients` car c'est le nouveau module,
-            # MAIS le module `sales` a son propre modèle `Customer`. 
-            # D'après l'analyse des fichiers, `apps.sales.models.Customer` semble être celui utilisé par Quote/Order.
-            # Je vais donc créer un `apps.sales.models.Customer` pour que le devis fonctionne.
-        )
-        
-        # ATTENTION: Il y a deux modèles Customer !
-        # apps.clients.models.Customer (Nouveau)
-        # apps.sales.models.Customer (Ancien/Actuel pour les ventes)
-        # Pour satisfaire la demande "créer un devis", je dois utiliser le Customer de `sales`.
-        
-        # Création Client Ventes (Sales)
-        from apps.sales.models import Customer as SalesCustomer
-        client_sales, created = SalesCustomer.objects.get_or_create(
-            organization=org,
-            legal_name='Restaurant La Belle Table',
+            name='Restaurant La Belle Table',
             defaults={
-                'type': 'pro',
+                'partner_type': 'company',
+                'segment': 'restaurant',
                 'vat_number': 'FR99123456789',
-                'billing_address': '10 Rue de la Gastronomie',
-                'billing_postal_code': '75001',
-                'billing_city': 'Paris',
             }
         )
-        self.stdout.write(f'  - Client (Ventes) créé : {client_sales.legal_name}')
+        if created:
+            # Ajouter le rôle client
+            ContactRole.ensure_defaults()
+            client_sales.add_role(ContactRole.ROLE_CLIENT)
+        self.stdout.write(f'  - Client créé : {client_sales.name}')
 
-        # Création Fournisseur (Clients module - nouveau standard)
-        # Le module `clients` gère les segments, dont 'supplier'.
-        fournisseur, created = Customer.objects.get_or_create(
+        # Création Fournisseur via le modèle Contact unifié
+        fournisseur, created = Contact.objects.get_or_create(
             organization=org,
             name='Verrerie du Sud-Ouest',
             defaults={
-                'segment': 'supplier',
+                'partner_type': 'company',
                 'vat_number': 'FR88987654321',
                 'country_code': 'FR',
                 'email': 'contact@verrerie-so.fr',
                 'phone': '+33556000000'
             }
         )
+        if created:
+            ContactRole.ensure_defaults()
+            fournisseur.add_role(ContactRole.ROLE_SUPPLIER)
         self.stdout.write(f'  - Fournisseur créé : {fournisseur.name}')
 
 

@@ -97,6 +97,57 @@
   </div>
 </div>
 
+<!-- Bilan volumétrique par campagne -->
+{% if bilan_campagnes %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3">
+    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-line me-2 text-info"></i>Bilan volumétrique par campagne</h6>
+    <span class="badge bg-light text-dark border">Rendement moyen 0.75 L/kg</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="bg-light text-muted small text-uppercase">
+          <tr>
+            <th class="ps-3 border-0">Campagne</th>
+            <th class="text-end border-0">Kg rentrés</th>
+            <th class="text-end border-0">L théorique</th>
+            <th class="text-end border-0">L actuels</th>
+            <th class="text-end border-0">Δ pertes</th>
+            <th class="text-end pe-3 border-0">Rendement</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in bilan_campagnes %}
+          <tr>
+            <td class="ps-3">
+              <div class="fw-bold text-dark">{{ b.campagne }}</div>
+              <small class="text-muted">{{ b.vendanges_count }} vendange{{ b.vendanges_count|pluralize }} · {{ b.lots_count }} lot{{ b.lots_count|pluralize }}</small>
+            </td>
+            <td class="text-end font-monospace">{{ b.kg_rentres|floatformat:0 }} <small class="text-muted">kg</small></td>
+            <td class="text-end font-monospace text-muted">{{ b.volume_theorique|floatformat:0 }} <small>L</small></td>
+            <td class="text-end font-monospace fw-bold text-primary">{{ b.volume_actuel|floatformat:0 }} <small>L</small></td>
+            <td class="text-end font-monospace {% if b.pertes > 0 %}text-danger{% else %}text-success{% endif %}">
+              {% if b.pertes > 0 %}-{% endif %}{{ b.pertes|floatformat:0 }} <small>L</small>
+            </td>
+            <td class="text-end pe-3">
+              {% if b.rendement_pct >= 95 %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">{{ b.rendement_pct|floatformat:1 }}%</span>
+              {% elif b.rendement_pct >= 85 %}
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">{{ b.rendement_pct|floatformat:1 }}%</span>
+              {% else %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ b.rendement_pct|floatformat:1 }}%</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-4">
   <!-- Derniers mouvements -->
   <div class="col-lg-6">

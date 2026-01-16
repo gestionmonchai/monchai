@@ -23,6 +23,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver,192.168.1.11').split(',')
 
+# CSRF trusted origins (pour les proxies de développement)
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://127.0.0.1:50683',
+    'http://localhost:50683',
+]
+# Ajouter dynamiquement tous les ports localhost pour le dev
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [f'http://127.0.0.1:{port}' for port in range(50000, 51000)]
+
 # Feature flags
 FEATURE_MS = config('FEATURE_MS', default=True, cast=bool)
 
@@ -55,7 +66,7 @@ LOCAL_APPS = [
     'apps.sales',
     'apps.billing',
     'apps.imports',
-    'apps.clients',
+    'apps.partners',  # App unifiée Tiers (Clients/Fournisseurs/Contacts) - remplace apps.clients
     'apps.produits',
     # New lightweight namespace apps for navigation
     'apps.production.apps.ProductionConfig',
@@ -79,7 +90,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'apps.core.middleware.ClientsRedirectMiddleware',  # Redirections clients ciblées - Phase 7
+    # 'apps.core.middleware.ClientsRedirectMiddleware',  # DÉSACTIVÉ - app clients supprimée
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -187,9 +198,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication URLs (invariants techniques)
-LOGIN_URL = config('LOGIN_URL', default='/auth/login/')
-LOGIN_REDIRECT_URL = config('LOGIN_REDIRECT_URL', default='/auth/first-run/')
-LOGOUT_REDIRECT_URL = config('LOGOUT_REDIRECT_URL', default='/auth/login/')
+LOGIN_URL = config('LOGIN_URL', default='/auth/connexion/')
+LOGIN_REDIRECT_URL = config('LOGIN_REDIRECT_URL', default='/auth/demarrage/')
+LOGOUT_REDIRECT_URL = config('LOGOUT_REDIRECT_URL', default='/auth/connexion/')
 
 # Email configuration (console backend for dev)
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')

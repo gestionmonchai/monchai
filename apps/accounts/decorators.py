@@ -35,7 +35,7 @@ def require_membership(role_min=None):
             membership = request.user.get_active_membership()
             if not membership:
                 # Rediriger vers first-run guard pour créer/rejoindre une organisation
-                return redirect('/auth/first-run/')
+                return redirect('/auth/demarrage/')
             
             # Vérifier le rôle minimum si spécifié
             if role_min:
@@ -112,11 +112,11 @@ def require_active_organization(view_func):
         # Vérifier que l'utilisateur a un Membership actif
         membership = request.user.get_active_membership()
         if not membership:
-            return redirect('/auth/first-run/')
+            return redirect('/auth/demarrage/')
         
         # Vérifier que l'organisation est initialisée
         if not membership.organization.is_initialized:
-            return redirect('/auth/first-run/org/')
+            return redirect('/auth/demarrage/organisation/')
         
         # Tout est OK, continuer vers la vue
         return view_func(request, *args, **kwargs)
@@ -225,7 +225,7 @@ def require_perm(module, action='view', role_min=None):
                     'team': 'l\'equipe'
                 }.get(module, module)
                 messages.error(request, f"Acces refuse. Vous n'avez pas le droit de {action_label} {module_label}.")
-                return redirect('auth:dashboard')
+                return redirect('dashboard')
             
             # Tout OK - ajouter les infos a la request
             request.membership = membership

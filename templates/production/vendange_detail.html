@@ -190,6 +190,97 @@
         </div>
     </div>
 
+    <!-- Lots créés depuis cette vendange -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="card-title h6 fw-bold mb-0 text-info"><i class="bi bi-box-seam me-2"></i>Lots créés depuis cette vendange</h5>
+            {% if lots_from_vendange %}
+            <span class="badge bg-info text-white">{{ lots_from_vendange.count }} lot{{ lots_from_vendange.count|pluralize }}</span>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if lots_from_vendange %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-3">Lot</th>
+                            <th>Contenant</th>
+                            <th class="text-end">Volume</th>
+                            <th class="text-center">Statut</th>
+                            <th class="pe-3 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lot in lots_from_vendange %}
+                        <tr>
+                            <td class="ps-3">
+                                <div class="fw-bold text-primary">{{ lot.code }}</div>
+                                <small class="text-muted">{{ lot.campagne }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ lot.contenant|default:"—" }}</span>
+                            </td>
+                            <td class="text-end font-monospace fw-bold">{{ lot.volume_l|floatformat:0 }} <small class="text-muted fw-normal">L</small></td>
+                            <td class="text-center">
+                                {% if lot.statut == 'epuise' %}
+                                    <span class="badge rounded-pill bg-secondary"><i class="bi bi-x-circle me-1"></i>Épuisé</span>
+                                {% elif lot.statut == 'pret_mise' or lot.statut == 'VIN_PRET_MISE' %}
+                                    <span class="badge rounded-pill bg-success"><i class="bi bi-check-circle me-1"></i>Prêt mise</span>
+                                {% elif 'VIN' in lot.statut or lot.statut == 'en_cours' %}
+                                    <span class="badge rounded-pill bg-primary"><i class="bi bi-arrow-repeat me-1"></i>{{ lot.get_statut_display }}</span>
+                                {% else %}
+                                    <span class="badge rounded-pill bg-warning text-dark">{{ lot.get_statut_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-3 text-end">
+                                <a href="{% url 'production:lot_tech_detail' lot.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Bilan volumétrique -->
+            <div class="p-3 bg-light border-top">
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <div class="small text-muted text-uppercase fw-bold">Volume théorique</div>
+                        <div class="fs-5 fw-bold text-muted">{{ vendange_volume_theorique|floatformat:0 }} L</div>
+                        <div class="small text-muted">(0.75 L/kg)</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-muted text-uppercase fw-bold">Volume lots</div>
+                        <div class="fs-5 fw-bold text-primary">{{ vendange_volume_lots|floatformat:0 }} L</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-muted text-uppercase fw-bold">Rendement</div>
+                        {% if vendange_rendement_pct >= 95 %}
+                            <div class="fs-5 fw-bold text-success">{{ vendange_rendement_pct|floatformat:1 }}%</div>
+                        {% elif vendange_rendement_pct >= 85 %}
+                            <div class="fs-5 fw-bold text-warning">{{ vendange_rendement_pct|floatformat:1 }}%</div>
+                        {% else %}
+                            <div class="fs-5 fw-bold text-danger">{{ vendange_rendement_pct|floatformat:1 }}%</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="p-4 text-center text-muted">
+                <i class="bi bi-inbox display-6 d-block mb-2 text-secondary opacity-50"></i>
+                <p class="mb-2">Aucun lot créé depuis cette vendange.</p>
+                {% if vendange.kg_restant > 0 %}
+                <a href="{% url 'production:vendange_encuvage' vendange.id %}" class="btn btn-warning btn-sm">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Lancer l'encuvage
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Notes libres -->
     {% if vendange.notes %}
     <div class="card border-0 shadow-sm">

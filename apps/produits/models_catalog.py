@@ -169,7 +169,7 @@ class PurchaseProfile(BaseCatalogModel):
     """
     product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='purchaseprofile')
     purchase_unit = models.ForeignKey(Unite, verbose_name="Unité d'achat", on_delete=models.PROTECT)
-    main_supplier = models.ForeignKey('sales.Customer', verbose_name="Fournisseur principal", on_delete=models.SET_NULL, null=True, blank=True)
+    main_supplier = models.ForeignKey('partners.Contact', verbose_name="Fournisseur principal", on_delete=models.SET_NULL, null=True, blank=True)
     # cost_price = models.DecimalField("Prix d'achat HT", max_digits=10, decimal_places=4, null=True, blank=True)
 
     def __str__(self):

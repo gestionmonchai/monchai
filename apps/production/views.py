@@ -38,7 +38,7 @@ class PermissionMixin:
             membership = getattr(request, 'membership', None)
             if membership and not membership.has_permission(self.permission_module, self.permission_action):
                 messages.error(request, f"Acces refuse. Vous n'avez pas la permission sur {self.permission_module}.")
-                return redirect('auth:dashboard')
+                return redirect('dashboard')
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -115,10 +115,10 @@ class LotContainerCreateModal(View):
             # Redirect appropriately (HTMX or normal)
             if request.headers.get('HX-Request') == 'true':
                 resp = HttpResponse('')
-                resp['HX-Redirect'] = '/production/contenants/'
+                resp['HX-Redirect'] = reverse('production:contenants_list')
                 return resp
             else:
-                return redirect('/production/contenants/')
+                return redirect('production:contenants_list')
         except Exception as e:
             return HttpResponse(str(e), status=400)
 
@@ -215,7 +215,7 @@ class ContainerUpdateView(View):
         obj.save()
         messages.success(request, 'Contenant mis à jour')
         try:
-            url = reverse('production:container_detail', kwargs={'pk': obj.id})
+            url = reverse('production:contenants_detail', kwargs={'pk': obj.id})
         except Exception:
             url = f"/production/contenants/{obj.id}/"
         return redirect(url)
@@ -642,6 +642,11 @@ class LotTechniqueCreateView(PermissionMixin, View):
             cuvees_qs = cuvees_qs.filter(organization=org)
         cuvees = list(cuvees_qs.values('id', 'nom', 'couleur'))
         
+        today = timezone.localdate()
+        year = today.year
+        default_campagne = f"{year}-{year+1}"
+        default_lot_name = f"Cuvée {year}"
+
         return render(request, self.template_name, {
             'page_title': 'Nouveau lot technique',
             'breadcrumb_items': [
@@ -652,10 +657,23 @@ class LotTechniqueCreateView(PermissionMixin, View):
             'vendanges': vendanges,
             'contenants': contenants,
             'cuvees': cuvees,
+            'default_campagne': default_campagne,
+            'default_lot_name': default_lot_name,
         })
 
     @transaction.atomic
     def post(self, request):
+        # Déterminer le mode de création
+        creation_mode = request.POST.get('creation_mode')
+        if not creation_mode:
+            creation_mode = 'direct' if request.POST.get('accept_disclaimer') else 'vendange'
+        
+        if creation_mode == 'direct':
+            return self._create_direct_lot(request)
+        else:
+            return self._create_from_vendange(request)
+    
+    def _create_from_vendange(self, request):
         # Wizard submit: créer un lot à partir d'une vendange et le débiter
         vendange_id = (request.POST.get('vendange_id') or '').strip()
         
@@ -663,7 +681,14 @@ class LotTechniqueCreateView(PermissionMixin, View):
         vendange = None
         if vendange_id:
             try:
-                vendange = VendangeReception.objects.get(pk=vendange_id)
+                org = getattr(request, 'current_org', None)
+                vendange = VendangeReception.objects.filter(organization=org).get(pk=vendange_id)
+                
+                # Vérifier qu'il reste du raisin disponible
+                kg_restant = getattr(vendange, 'kg_restant', 0) or 0
+                if kg_restant <= 0:
+                    messages.error(request, "Cette vendange est épuisée. Il n'y a plus de raisin disponible pour créer un lot.")
+                    return self.get(request)
             except VendangeReception.DoesNotExist:
                 pass
 
@@ -720,20 +745,22 @@ class LotTechniqueCreateView(PermissionMixin, View):
                 errors.append("Rendement/efficacité invalides")
         # Fractionnement: kg débités ou part (%)
         kg_debite = None
-        try:
-            # Sécuriser: récupérer la vendange dans l'organisation courante
-            org = getattr(request, 'current_org', None)
-            v = get_object_or_404(VendangeReception.objects.filter(organization=org), pk=vendange_id)
-            if str(poids_debite_kg_raw).strip() != '':
-                kg_debite = _D(str(poids_debite_kg_raw))
-            elif str(part_pct_raw).strip() != '':
-                tot = _D(str(getattr(v, 'poids_kg', '0') or '0'))
-                pctv = _D(str(part_pct_raw))
-                kg_debite = (tot * pctv / _D('100'))
-            if kg_debite is not None and kg_debite <= 0:
-                errors.append("Les kg débités doivent être > 0")
-        except Exception:
-            errors.append("Valeur de kg débités/part (%) invalide")
+        v = None
+        if vendange_id and not errors:
+            try:
+                # Sécuriser: récupérer la vendange dans l'organisation courante
+                org = getattr(request, 'current_org', None)
+                v = get_object_or_404(VendangeReception.objects.filter(organization=org), pk=vendange_id)
+                if str(poids_debite_kg_raw).strip() != '':
+                    kg_debite = _D(str(poids_debite_kg_raw))
+                elif str(part_pct_raw).strip() != '':
+                    tot = _D(str(getattr(v, 'poids_kg', '0') or '0'))
+                    pctv = _D(str(part_pct_raw))
+                    kg_debite = (tot * pctv / _D('100'))
+                if kg_debite is not None and kg_debite <= 0:
+                    errors.append("Les kg débités doivent être > 0")
+            except Exception:
+                errors.append("Valeur de kg débités/part (%) invalide")
 
         if errors:
             for e in errors:
@@ -741,7 +768,7 @@ class LotTechniqueCreateView(PermissionMixin, View):
             return self.get(request)
 
         # Gestion affectation cuvée à la volée
-        if cuvee_id:
+        if cuvee_id and v:
             try:
                 if str(v.cuvee_id) != cuvee_id:
                     c = Cuvee.objects.get(pk=cuvee_id)
@@ -776,6 +803,172 @@ class LotTechniqueCreateView(PermissionMixin, View):
             return redirect(url)
         except Exception as e:
             messages.error(request, f"Erreur création lot: {e}")
+            return self.get(request)
+    
+    def _create_direct_lot(self, request):
+        """Création directe d'un lot sans vendange préalable"""
+        from decimal import Decimal as _D
+        
+        # Validation disclaimer
+        if not request.POST.get('accept_disclaimer'):
+            messages.error(request, "Vous devez accepter le disclaimer pour créer un lot sans vendange")
+            return self.get(request)
+        
+        # Récupération des champs
+        campagne = (request.POST.get('campagne') or '').strip()
+        cuvee_id = (request.POST.get('cuvee_id_direct') or '').strip()
+        volume_l = (request.POST.get('volume_initial_l') or '').strip()
+        date_encuvage = (request.POST.get('date_encuvage') or '').strip()
+        contenant_id = (request.POST.get('contenant') or '').strip()
+        statut_initial = request.POST.get('statut_initial', 'VIN_ELEVAGE')
+        nom_lot = (request.POST.get('nom_lot') or '').strip()
+        origine_geo = (request.POST.get('origine_geo') or '').strip()
+        cepages = (request.POST.get('cepages') or '').strip()
+        temperature_c = (request.POST.get('temperature_c_direct') or '').strip()
+        mode_encuvage = (request.POST.get('mode_encuvage_direct') or '').strip()
+        notes_direct = (request.POST.get('notes_direct') or '').strip()
+        
+        # Validation des champs obligatoires
+        errors = []
+        if not campagne:
+            errors.append("La campagne est obligatoire")
+        if not cuvee_id:
+            errors.append("La cuvée est obligatoire")
+        if not volume_l:
+            errors.append("Le volume initial est obligatoire")
+        if not date_encuvage:
+            errors.append("La date d'encuvage est obligatoire")
+        if not contenant_id:
+            errors.append("Le contenant est obligatoire")
+        
+        # Validation du format de campagne
+        if campagne and not campagne.count('-') == 1:
+            errors.append("Format de campagne invalide (attendu: AAAA-AAAA)")
+        
+        # Validation du volume
+        try:
+            vol_decimal = _D(volume_l)
+            if vol_decimal <= 0:
+                errors.append("Le volume doit être supérieur à 0")
+        except Exception:
+            errors.append("Volume invalide")
+        
+        if errors:
+            for e in errors:
+                messages.error(request, e)
+            return self.get(request)
+        
+        # Création du lot
+        try:
+            org = getattr(request, 'current_org', None)
+            
+            # Vérifier que la cuvée appartient à l'organisation
+            cuvee = get_object_or_404(Cuvee.objects.filter(organization=org), pk=cuvee_id)
+            
+            # Générer le code du lot
+            code = generate_lot_tech_code(campagne)
+            
+            # Résoudre le contenant
+            from .models_containers import Contenant
+            contenant_obj = None
+            contenant_code = ""
+            if contenant_id:
+                try:
+                    contenant_obj = Contenant.objects.select_for_update().get(pk=contenant_id, organization=org)
+                    contenant_code = contenant_obj.code
+                except Exception:
+                    errors.append("Contenant introuvable")
+                    messages.error(request, "Contenant introuvable")
+                    return self.get(request)
+            
+            # Créer le lot
+            lot = LotTechnique.objects.create(
+                code=code,
+                nom=nom_lot,
+                campagne=campagne,
+                cuvee=cuvee,
+                volume_l=vol_decimal,
+                contenant=contenant_code,
+                statut=statut_initial,
+                source=None,  # Pas de vendange source
+            )
+            
+            # Normaliser le volume hL@20°C
+            try:
+                lot.volume_hl20 = (vol_decimal / _D('100')).quantize(_D('0.001'))
+                if hasattr(lot, 'volume_v20_hl'):
+                    lot.volume_v20_hl = lot.volume_hl20
+                lot.save(update_fields=['volume_hl20', 'volume_v20_hl'] if hasattr(lot, 'volume_v20_hl') else ['volume_hl20'])
+            except Exception:
+                pass
+            
+            # Mettre à jour le contenant
+            if contenant_obj:
+                try:
+                    contenant_obj.lot_courant = lot
+                    contenant_obj.volume_occupe_l = (contenant_obj.volume_occupe_l or _D('0')) + vol_decimal
+                    if contenant_obj.statut == 'disponible':
+                        contenant_obj.statut = 'occupe'
+                    contenant_obj.save(update_fields=['lot_courant', 'volume_occupe_l', 'statut'])
+                except Exception:
+                    pass
+            
+            # Créer le mouvement initial
+            notes_combined = f"Création directe (sans vendange)"
+            if origine_geo:
+                notes_combined += f" - Origine: {origine_geo}"
+            if cepages:
+                notes_combined += f" - Cépages: {cepages}"
+            if notes_direct:
+                notes_combined += f" - {notes_direct}"
+            
+            try:
+                MouvementLot.objects.create(
+                    lot=lot,
+                    type='ENTREE_INITIALE',
+                    volume_l=vol_decimal,
+                    date=timezone.datetime.strptime(date_encuvage, '%Y-%m-%d').date() if date_encuvage else timezone.now().date(),
+                    meta={
+                        'creation_mode': 'direct',
+                        'contenant': contenant_code,
+                        'contenant_id': str(contenant_obj.id) if contenant_obj else '',
+                        'origine_geo': origine_geo,
+                        'cepages': cepages,
+                        'temperature_c': temperature_c,
+                        'mode_encuvage': mode_encuvage,
+                    },
+                    notes=notes_combined[:500],
+                    author=request.user,
+                )
+            except Exception:
+                pass
+            
+            # Créer l'opération
+            try:
+                op = Operation.objects.create(
+                    organization=org,
+                    kind='encuvage_direct',
+                    date=timezone.datetime.strptime(date_encuvage, '%Y-%m-%d') if date_encuvage else timezone.now(),
+                    meta={
+                        'creation_mode': 'direct',
+                        'volume_l': str(vol_decimal),
+                        'origine_geo': origine_geo,
+                        'cepages': cepages,
+                    },
+                )
+                LotLineage.objects.create(operation=op, parent_lot=None, child_lot=lot, ratio=None)
+            except Exception:
+                pass
+            
+            messages.success(request, f'Lot technique {code} créé avec succès (création directe)')
+            try:
+                url = reverse('production:lot_tech_detail', kwargs={'pk': lot.id})
+            except Exception:
+                url = f"/production/lots-techniques/{lot.id}/"
+            return redirect(url)
+            
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la création du lot: {e}")
             return self.get(request)
 
 @method_decorator(login_required, name='dispatch')
@@ -1119,8 +1312,20 @@ class VendangeDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        lt = LotTechnique.objects.filter(source=self.object).first()
+        # Tous les lots créés depuis cette vendange
+        lots_from_vendange = LotTechnique.objects.filter(source=self.object).select_related('cuvee').order_by('-created_at')
+        ctx['lots_from_vendange'] = lots_from_vendange
+        lt = lots_from_vendange.first()
         ctx['lot_technique'] = lt
+        
+        # Calcul du bilan volumétrique pour cette vendange
+        vendange = self.object
+        kg_total = vendange.poids_total or Decimal('0')
+        volume_theorique = kg_total * Decimal('0.75')  # rendement moyen
+        volume_lots = lots_from_vendange.aggregate(total=Sum('volume_l'))['total'] or Decimal('0')
+        ctx['vendange_volume_theorique'] = volume_theorique
+        ctx['vendange_volume_lots'] = volume_lots
+        ctx['vendange_rendement_pct'] = (volume_lots / volume_theorique * 100) if volume_theorique > 0 else Decimal('0')
         # Proposer une liste de cuvées pour affectation rapide
         try:
             org = getattr(self.request, 'current_org', None)
@@ -3571,6 +3776,58 @@ class ProductionHomeView(TemplateView):
         
         # KPI: Derniers mouvements
         ctx['last_moves'] = MouvementLot.objects.filter(lot__cuvee__organization=org).select_related('lot', 'lot__source', 'author').order_by('-date')[:10]
+        
+        # ========================================
+        # BILAN VOLUMÉTRIQUE PAR CAMPAGNE
+        # ========================================
+        bilan_campagnes = []
+        
+        # Récupérer les campagnes distinctes des vendanges
+        campagnes = VendangeReception.objects.filter(
+            organization=org
+        ).exclude(
+            campagne=''
+        ).values_list('campagne', flat=True).distinct().order_by('-campagne')[:3]
+        
+        for campagne in campagnes:
+            # Kg rentrés (somme des poids des vendanges de cette campagne)
+            vendanges_campagne = VendangeReception.objects.filter(
+                organization=org,
+                campagne=campagne
+            )
+            kg_rentres = vendanges_campagne.aggregate(
+                total=Sum('poids_kg')
+            )['total'] or Decimal('0')
+            
+            # Volume théorique (rendement moyen 0.75 L/kg)
+            rendement_moyen = Decimal('0.75')
+            volume_theorique = kg_rentres * rendement_moyen
+            
+            # Volume actuel des lots de cette campagne
+            lots_campagne = LotTechnique.objects.filter(
+                cuvee__organization=org,
+                campagne=campagne
+            )
+            volume_actuel = lots_campagne.aggregate(
+                total=Sum('volume_l')
+            )['total'] or Decimal('0')
+            
+            # Calcul des pertes et rendement
+            pertes = volume_theorique - volume_actuel if volume_theorique > 0 else Decimal('0')
+            rendement_pct = (volume_actuel / volume_theorique * 100) if volume_theorique > 0 else Decimal('0')
+            
+            bilan_campagnes.append({
+                'campagne': campagne,
+                'kg_rentres': kg_rentres,
+                'volume_theorique': volume_theorique,
+                'volume_actuel': volume_actuel,
+                'pertes': pertes,
+                'rendement_pct': rendement_pct,
+                'lots_count': lots_campagne.count(),
+                'vendanges_count': vendanges_campagne.count(),
+            })
+        
+        ctx['bilan_campagnes'] = bilan_campagnes
         
         return ctx
 

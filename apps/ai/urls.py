@@ -8,15 +8,15 @@ from .views_smart import (
 app_name = 'ai'
 
 urlpatterns = [
-    path('help/', help_assistant, name='help_assistant'),
-    path('help/query', help_query, name='help_query'),
+    path('aide/', help_assistant, name='help_assistant'),
+    path('aide/requete', help_query, name='help_query'),
     
     # Smart Suggestions API
-    path('smart/weather/parcelle/<int:parcelle_id>/', WeatherAlertsView.as_view(), name='weather_parcelle'),
-    path('smart/weather/forecast/', WeatherForecastView.as_view(), name='weather_forecast'),
+    path('smart/meteo/parcelle/<int:parcelle_id>/', WeatherAlertsView.as_view(), name='weather_parcelle'),
+    path('smart/meteo/previsions/', WeatherForecastView.as_view(), name='weather_forecast'),
     path('smart/cuves/', CuveSuggestionsView.as_view(), name='cuve_suggestions'),
     path('smart/analyse/<int:lot_id>/', AnalyseAlertsView.as_view(), name='analyse_alerts'),
     path('smart/drm/', DRMStatusView.as_view(), name='drm_status'),
     path('smart/intrants/', IntrantSuggestionsView.as_view(), name='intrant_suggestions'),
-    path('smart/context/', SmartContextView.as_view(), name='smart_context'),
+    path('smart/contexte/', SmartContextView.as_view(), name='smart_context'),
 ]

@@ -4,8 +4,12 @@
     {% with entity=referentiel_entity %}
       {% include '_layout/sidebar_referentiels_body.html' %}
     {% endwith %}
+  {% elif '/referentiels/contacts/' in p or '/contacts/' in p %}
+    {% with entity='contacts' %}
+      {% include '_layout/sidebar_referentiels_body.html' %}
+    {% endwith %}
   {% elif '/referentiels/clients/' in p or '/clients/' in p %}
-    {% with entity='clients' %}
+    {% with entity='contacts' %}
       {% include '_layout/sidebar_referentiels_body.html' %}
     {% endwith %}
   {% elif '/referentiels/parcelles/' in p %}

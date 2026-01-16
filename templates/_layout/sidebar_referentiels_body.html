@@ -38,7 +38,8 @@
              <div class="dropdown w-100">
                 <button class="btn btn-light btn-sm w-100 text-start d-flex justify-content-between align-items-center border" type="button" id="entitySwitcher" data-bs-toggle="dropdown" aria-expanded="false">
                     <span>
-                        {% if entity == 'clients' %}<i class="bi bi-people me-2 text-primary"></i>Clients & contacts
+                        {% if entity == 'contacts' %}<i class="bi bi-address-book me-2 text-primary"></i>Contacts (Tiers)
+                        {% elif entity == 'clients' %}<i class="bi bi-people me-2 text-primary"></i>Clients & contacts
                         {% elif entity == 'parcelles' %}<i class="bi bi-geo-alt me-2 text-success"></i>Parcelles
                         {% elif entity == 'cepages' %}<i class="bi bi-flower1 me-2 text-danger"></i>Cépages
                         {% elif entity == 'unites' %}<i class="bi bi-rulers me-2 text-info"></i>Unités
@@ -50,7 +51,8 @@
                     <i class="bi bi-chevron-down small"></i>
                 </button>
                 <ul class="dropdown-menu w-100 shadow-sm" aria-labelledby="entitySwitcher">
-                    <li><a class="dropdown-item {% if entity == 'clients' %}active{% endif %}" href="{% url 'clients:customers_list' %}"><i class="bi bi-people me-2"></i>Clients & contacts</a></li>
+                    <li><a class="dropdown-item {% if entity == 'contacts' %}active{% endif %}" href="{% url 'partners:partners_list' %}"><i class="bi bi-address-book me-2"></i>Contacts (Tiers)</a></li>
+                    <li><a class="dropdown-item {% if entity == 'clients' %}active{% endif %}" href="{% url 'partners:partners_list' %}"><i class="bi bi-people me-2"></i>Clients (legacy)</a></li>
                     <li><a class="dropdown-item {% if entity == 'parcelles' %}active{% endif %}" href="{% url 'referentiels:parcelle_list' %}"><i class="bi bi-geo-alt me-2"></i>Parcelles</a></li>
                     <li><a class="dropdown-item {% if entity == 'cepages' %}active{% endif %}" href="{% url 'referentiels:cepage_list' %}"><i class="bi bi-flower1 me-2"></i>Cépages</a></li>
                     <li><a class="dropdown-item {% if entity == 'unites' %}active{% endif %}" href="{% url 'referentiels:unite_list' %}"><i class="bi bi-rulers me-2"></i>Unités</a></li>
@@ -65,10 +67,40 @@
 
         <!-- DYNAMIC CONTENT BASED ON ENTITY -->
         
-        <!-- 1. CLIENTS -->
-        {% if entity == 'clients' %}
+        <!-- 0. CONTACTS (NOUVEAU) -->
+        {% if entity == 'contacts' %}
             <div class="mb-2">
-                <a href="{% url 'clients:customer_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                <a href="{% url 'partners:partner_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Nouveau contact
+                </a>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Filtres rapides</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="{% url 'partners:partners_list' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small {% if '/referentiels/contacts/' == request.path %}active{% endif %}"><i class="bi bi-people me-2 text-secondary"></i>Tous les contacts</a>
+                    <a href="{% url 'partners:clients_list' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-person-check me-2 text-primary"></i>Clients</a>
+                    <a href="{% url 'partners:suppliers_list' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-truck me-2 text-success"></i>Fournisseurs</a>
+                </div>
+                
+                <p class="text-uppercase text-muted small fw-bold mb-2 mt-3 ps-2" style="font-size: 0.7rem;">Actions</p>
+                <div class="list-group list-group-flush border-0">
+                    <a href="{% url 'referentiels:import_csv' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-upload me-2 text-success"></i>Import CSV</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export CSV/Excel</a>
+                    <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-magic me-2 text-warning"></i>Détecter doublons</a>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-top">
+                 <p class="text-uppercase text-muted small fw-bold mb-2 ps-2" style="font-size: 0.7rem;">Utilisé dans</p>
+                 <div class="d-flex flex-column gap-1 px-2">
+                    <a href="{% url 'ventes:clients_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Ventes / Clients</a>
+                    <a href="{% url 'achats:suppliers_list' %}" class="text-decoration-none text-muted small hover-primary"><i class="bi bi-arrow-return-right me-2"></i>Achats / Fournisseurs</a>
+                 </div>
+            </div>
+
+        <!-- 1. CLIENTS (LEGACY) -->
+        {% elif entity == 'clients' %}
+            <div class="mb-2">
+                <a href="{% url 'partners:partner_create' %}" class="btn btn-primary w-100 mb-3 shadow-sm">
                     <i class="bi bi-plus-lg me-1"></i>Nouveau client
                 </a>
                 
@@ -76,7 +108,7 @@
                 <div class="list-group list-group-flush border-0">
                     <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-person-plus me-2 text-primary"></i>Nouveau contact</a>
                     <a href="{% url 'referentiels:import_csv' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-upload me-2 text-success"></i>Import CSV</a>
-                    <a href="{% url 'clients:customers_export' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export CSV/Excel</a>
+                    <a href="{% url 'partners:partners_export' %}" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-download me-2 text-secondary"></i>Export CSV/Excel</a>
                     <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-tags me-2 text-info"></i>Segments & tags</a>
                     <a href="#" class="list-group-item list-group-item-action border-0 px-2 py-1 rounded small"><i class="bi bi-magic me-2 text-warning"></i>Détecter doublons</a>
                 </div>

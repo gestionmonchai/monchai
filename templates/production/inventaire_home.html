@@ -94,12 +94,12 @@
     actionsBar.innerHTML = '';
     if(tab==='vrac'){
       actionsBar.innerHTML = `
-        <a class="btn btn-outline-secondary" href="/production/assemblages/nouveau/">+ Assemblage</a>
-        <a class="btn btn-outline-secondary" href="/production/lots-techniques/">Gérer les lots</a>
-        <a class="btn btn-outline-secondary" href="/production/mises/">Préparer une mise</a>`;
+        <a class="btn btn-outline-secondary" href="{% url 'production:assemblage_wizard' %}">+ Assemblage</a>
+        <a class="btn btn-outline-secondary" href="{% url 'production:lots_tech_list' %}">Gérer les lots</a>
+        <a class="btn btn-outline-secondary" href="{% url 'production:mises_list' %}">Préparer une mise</a>`;
     } else if(tab==='produits'){
       actionsBar.innerHTML = `
-        <a class="btn btn-outline-secondary" href="/ventes/commandes/">Aller aux commandes</a>`;
+        <a class="btn btn-outline-secondary" href="{% url 'ventes:orders_list' %}">Aller aux commandes</a>`;
     } else {
       actionsBar.innerHTML = FEATURE_MS ? '' : `
         <span class="text-muted">Module Matières sèches non activé.</span>`;

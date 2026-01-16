@@ -30,7 +30,7 @@ urlpatterns = [
     
     # Inventaire - Roadmap 33 (existants)
     path('inventaire/', views.inventaire_view, name='inventaire_view'),
-    path('inventaire/counting/<int:warehouse_id>/', views.inventaire_counting_view, name='inventaire_counting_view'),
+    path('inventaire/comptage/<int:warehouse_id>/', views.inventaire_counting_view, name='inventaire_counting_view'),
     
     # Alertes - Roadmap 34
     path('alertes/', views.alertes_view, name='alertes_view'),
@@ -38,18 +38,19 @@ urlpatterns = [
     
     # API Transferts
     path('api/transferts/', api_views.transferts_api, name='transferts_api'),
-    path('api/transferts/create/', api_views.transfert_create_api, name='transfert_create_api'),
+    path('api/transferts/creer/', api_views.transfert_create_api, name='transfert_create_api'),
     
     # API Inventaire - Roadmap 33
     path('api/inventaire/', api_views.inventaire_api, name='inventaire_api'),
-    path('api/inventaire/counting/<int:warehouse_id>/', api_views.inventaire_counting_api, name='inventaire_counting_api'),
-    path('api/inventaire/calculate-adjustments/', api_views.inventaire_calculate_adjustments_api, name='inventaire_calculate_adjustments_api'),
-    path('api/inventaire/apply-adjustments/', api_views.inventaire_apply_adjustments_api, name='inventaire_apply_adjustments_api'),
+    path('api/inventaire/comptage/<int:warehouse_id>/', api_views.inventaire_counting_api, name='inventaire_counting_api'),
+    path('api/inventaire/calculer-ajustements/', api_views.inventaire_calculate_adjustments_api, name='inventaire_calculate_adjustments_api'),
+    path('api/inventaire/appliquer-ajustements/', api_views.inventaire_apply_adjustments_api, name='inventaire_apply_adjustments_api'),
     
     # API Alertes - Roadmap 34
     path('api/alertes/', api_views.alertes_api, name='alertes_api'),
-    path('api/alertes/acknowledge/', api_views.acknowledge_alert_api, name='acknowledge_alert_api'),
-    path('api/alertes/badge-count/', api_views.alerts_badge_count_api, name='alerts_badge_count_api'),
-    path('api/seuils/create/', api_views.create_threshold_api, name='create_threshold_api'),
+    path('api/alertes/acquitter/', api_views.acknowledge_alert_api, name='acknowledge_alert_api'),
+    path('api/alertes/compteur-badge/', api_views.alerts_badge_count_api, name='alerts_badge_count_api'),
+    path('api/alertes/badge-count/', api_views.alerts_badge_count_api, name='alerts_badge_count_api_en'),
+    path('api/seuils/creer/', api_views.create_threshold_api, name='create_threshold_api'),
     path('api/seuils/<int:threshold_id>/', api_views.delete_threshold_api, name='delete_threshold_api'),
 ]

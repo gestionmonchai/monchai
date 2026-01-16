@@ -5,215 +5,127 @@
 
 {# 2. STYLE CSS POUR LA TRANSITION #}
 {% block extra_css %}
-{{ block.super }}
 <style>
     /* ===========================================
-       LAYOUT REFERENTIELS - RESPONSIVE SIDEBAR
+       LAYOUT REFERENTIELS - ALIGNÉ SUR COMMERCE
        =========================================== */
     
-    /* Base layout */
-    #referentiels-layout {
-        min-height: calc(100vh - 120px);
-    }
-    
-    #referentiels-layout > .row {
-        display: flex;
-        flex-wrap: nowrap;
-    }
-    
     .transition-all {
-        transition: all 0.3s ease-in-out;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     
-    /* ============ DESKTOP (>= 992px) ============ */
     @media (min-width: 992px) {
         #referentiels-layout {
             padding-top: 0.5rem;
         }
-        
         #refSidebar {
-            width: 260px;
-            min-width: 260px;
-            max-width: 260px;
-            flex-shrink: 0;
-            position: sticky;
-            top: 80px;
-            height: fit-content;
-            max-height: calc(100vh - 100px);
-            overflow-y: auto;
+            width: 240px;
+            flex: 0 0 240px;
+            padding-top: 0;
         }
-        
         #refContent {
-            flex: 1;
-            min-width: 0; /* Prevent content overflow */
-            padding-left: 1rem;
+            width: calc(100% - 240px);
+            flex: 0 0 calc(100% - 240px);
+            padding-top: 0;
         }
-        
+        #refSidebar, #refContent {
+            margin-top: 0 !important;
+        }
         #refSidebar .card {
             margin-bottom: 0.5rem;
-            border-radius: 8px;
         }
-        
-        #refSidebar .card-header {
-            padding: 0.6rem 0.85rem;
-            border-radius: 8px 8px 0 0;
-        }
-        
-        #refSidebar .list-group-item {
-            padding: 0.45rem 0.85rem;
-            font-size: 0.875rem;
-        }
-        
-        /* Sidebar Collapsed State */
-        .sidebar-collapsed #refSidebar {
-            width: 70px !important;
-            min-width: 70px !important;
-            max-width: 70px !important;
-        }
-        
-        .sidebar-collapsed #refContent {
-            padding-left: 0.5rem;
-        }
-        
-        .sidebar-collapsed .sidebar-label,
-        .sidebar-collapsed .sidebar-hide-collapsed {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        
-        .sidebar-collapsed .text-muted:not(.sidebar-keep),
-        .sidebar-collapsed .dropdown,
-        .sidebar-collapsed .form-control,
-        .sidebar-collapsed .input-group,
-        .sidebar-collapsed hr,
-        .sidebar-collapsed .list-group-flush {
-            display: none !important;
-        }
-        
-        .sidebar-collapsed .card-header {
-            justify-content: center;
-        }
-        
-        .sidebar-collapsed .card-header .d-flex {
-            justify-content: center;
-        }
-        
-        .sidebar-collapsed .card-header .bg-white {
-            margin: 0 auto;
-        }
-    }
-
-    /* Sidebar label transition */
-    .sidebar-label {
-        display: inline-block;
-        opacity: 1;
-        transition: opacity 0.2s ease-in-out;
-        white-space: nowrap;
-    }
-
-    /* Chevron rotation */
-    #desktopChevron {
-        transition: transform 0.3s ease;
-    }
-    .sidebar-collapsed #desktopChevron {
-        transform: rotate(180deg);
-    }
-    
-    /* ============ TABLET (768px - 991px) ============ */
-    @media (min-width: 768px) and (max-width: 991.98px) {
-        #referentiels-layout > .row {
-            flex-direction: column;
-        }
-        
-        #refSidebar {
-            width: 100% !important;
-            max-width: 100% !important;
-            order: 1;
-            margin-bottom: 1rem;
-        }
-        
-        #refContent {
-            width: 100% !important;
-            order: 2;
-            padding-left: 0;
-        }
-        
-        #refSidebar .card {
-            margin-bottom: 0;
-        }
-        
-        #refSidebar .list-group {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.35s ease-out;
-        }
-        
-        #refSidebar .list-group.show {
-            max-height: 1000px;
-            transition: max-height 0.5s ease-in;
-        }
-    }
-    
-    /* ============ MOBILE (< 768px) ============ */
-    @media (max-width: 767.98px) {
-        #referentiels-layout {
-            padding: 0.5rem;
-        }
-        
-        #referentiels-layout > .row {
-            flex-direction: column;
-        }
-        
-        #refSidebar {
-            width: 100% !important;
-            max-width: 100% !important;
-            order: 1;
-            margin-bottom: 0.75rem;
-        }
-        
-        #refContent {
-            width: 100% !important;
-            order: 2;
-            padding-left: 0;
-        }
-        
-        #refSidebar .card {
-            margin-bottom: 0;
-            border-radius: 8px;
-        }
-        
-        #refSidebar .list-group {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.35s ease-out;
-        }
-        
-        #refSidebar .list-group.show {
-            max-height: 1000px;
-            transition: max-height 0.5s ease-in;
-        }
-        
-        /* Compact mobile header */
         #refSidebar .card-header {
             padding: 0.5rem 0.75rem;
         }
+        #refSidebar .list-group-item {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
     }
     
-    /* ============ CONTENT OVERFLOW FIX ============ */
-    #refContent .row {
-        margin-left: 0;
-        margin-right: 0;
+    /* Sidebar Collapsed */
+    .sidebar-collapsed #refSidebar {
+        width: 70px !important;
+        flex: 0 0 70px !important;
+    }
+    .sidebar-collapsed #refContent {
+        width: calc(100% - 70px) !important;
+        flex: 0 0 calc(100% - 70px) !important;
+    }
+
+    .sidebar-label {
+        display: inline-block;
+        opacity: 1;
+        transform: translateX(0);
+        transition: opacity 0.2s ease-in-out, transform 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .sidebar-collapsed .sidebar-label {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        transform: translateX(10px);
+    }
+
+    /* Section headers */
+    .sidebar-section-header {
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: auto;
+        opacity: 1;
+    }
+    .sidebar-collapsed .sidebar-section-header {
+        height: 0;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 0;
+        border: none;
+    }
+
+    /* Icons centered when collapsed */
+    .sidebar-collapsed .list-group-item {
+        text-align: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .sidebar-collapsed .list-group-item i {
+        margin-right: 0 !important;
+        font-size: 1.2rem;
     }
     
-    #refContent .table-responsive {
-        overflow-x: auto;
+    /* Chevron rotation */
+    .bi-chevron-left {
+        transition: transform 0.4s ease;
+    }
+    .sidebar-collapsed .bi-chevron-left {
+        transform: rotate(180deg);
     }
     
-    #refContent .container-fluid {
-        padding-left: 0;
-        padding-right: 0;
+    /* Mobile styles */
+    @media (max-width: 991.98px) {
+        #refSidebar {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 1;
+            margin-bottom: 0.75rem;
+        }
+        #refContent {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            order: 2;
+        }
+        #referentiels-layout > .row {
+            flex-direction: column;
+        }
+        #refSidebar .list-group {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        #refSidebar .list-group.show {
+            max-height: 800px;
+        }
     }
 </style>
 {% endblock %}

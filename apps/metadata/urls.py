@@ -10,6 +10,6 @@ app_name = 'metadata'
 
 urlpatterns = [
     # Dashboard monitoring (staff only)
-    path('monitoring/', dashboard.monitoring_dashboard, name='monitoring_dashboard'),
-    path('feature-flags/', dashboard.feature_flags_admin, name='feature_flags_admin'),
+    path('surveillance/', dashboard.monitoring_dashboard, name='monitoring_dashboard'),
+    path('fonctionnalites/', dashboard.feature_flags_admin, name='feature_flags_admin'),
 ]

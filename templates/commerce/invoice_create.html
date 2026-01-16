@@ -1,0 +1,1438 @@
+{% extends "commerce/base_commerce.html" %}
+{% block title %}Nouvelle Facture{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+
+<style>
+    /* ═══════════════════════════════════════════════
+   INVOICE WYSIWYG EDITOR
+   ═══════════════════════════════════════════════ */
+
+    /* Container Feuille A4 */
+    .invoice-paper {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(114, 47, 55, 0.15), 0 0 0 1px rgba(212, 175, 55, 0.1);
+        max-width: 900px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .invoice-paper::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(135deg, var(--wine-burgundy) 0%, var(--wine-bordeaux) 100%);
+    }
+
+    /* En-tête Facture */
+    .invoice-header {
+        padding: 2.5rem 2.5rem 1.5rem;
+        border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        background: linear-gradient(180deg, rgba(247, 231, 206, 0.3) 0%, transparent 100%);
+    }
+
+    .invoice-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--wine-burgundy);
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .invoice-title-sub {
+        font-size: 0.9rem;
+        color: var(--wine-oak);
+        margin-top: 0.25rem;
+    }
+
+    .invoice-meta {
+        text-align: left;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 1rem;
+        padding: 1.25rem 1.5rem 1.5rem;
+        min-width: 280px;
+        max-width: 320px;
+        box-shadow: 0 15px 45px rgba(15, 23, 42, 0.08);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .invoice-meta::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--wine-burgundy) 0%, var(--wine-bordeaux) 50%, var(--wine-gold) 100%);
+    }
+
+    .invoice-number {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--wine-burgundy);
+        background: rgba(212, 175, 55, 0.15);
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0;
+    }
+
+    .invoice-dates {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+
+    .invoice-dates .date-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: 0.85rem;
+        background: rgba(247, 231, 206, 0.35);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.9rem;
+    }
+
+    .invoice-dates label {
+        color: var(--wine-oak);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.7rem;
+        margin: 0;
+    }
+
+    .invoice-dates input {
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.85rem;
+        width: 100%;
+        background: #fff;
+    }
+
+    .invoice-dates input:focus {
+        border-color: var(--wine-gold);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+
+    /* Parties (Émetteur / Destinataire) */
+    .invoice-parties {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        padding: 2rem 2.5rem;
+    }
+
+    .party-block {
+        padding: 1.25rem;
+        border-radius: 12px;
+        min-height: 140px;
+    }
+
+    .party-block.sender {
+        background: rgba(247, 231, 206, 0.3);
+        border: 1px solid rgba(212, 175, 55, 0.15);
+    }
+
+    .party-block.recipient {
+        background: rgba(255, 255, 255, 0.8);
+        border: 2px dashed rgba(212, 175, 55, 0.4);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .party-block.recipient:hover {
+        border-color: var(--wine-gold);
+        background: rgba(212, 175, 55, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .party-block.recipient.has-client {
+        border-style: solid;
+        border-color: var(--wine-green);
+        background: rgba(90, 124, 89, 0.05);
+    }
+
+    .party-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--wine-oak);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .party-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--wine-burgundy);
+        margin-bottom: 0.25rem;
+    }
+
+    .party-details {
+        font-size: 0.85rem;
+        color: #666;
+        line-height: 1.5;
+    }
+
+    .party-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--wine-oak);
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .party-placeholder i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.5;
+    }
+
+    .party-placeholder span {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    /* Tableau des lignes */
+    .invoice-lines {
+        padding: 0 2.5rem;
+    }
+
+    .invoice-lines-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .invoice-lines-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--wine-oak);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-add-line {
+        background: linear-gradient(135deg, var(--wine-gold) 0%, #c49a2d 100%);
+        border: none;
+        color: var(--wine-burgundy);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-add-line:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
+
+    .lines-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .lines-table thead th {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95) 0%, rgba(114, 47, 55, 0.95) 100%);
+        color: var(--wine-champagne);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        padding: 0.85rem 0.75rem;
+        text-align: left;
+    }
+
+    .lines-table thead th:first-child {
+        border-radius: 8px 0 0 0;
+    }
+
+    .lines-table thead th:last-child {
+        border-radius: 0 8px 0 0;
+    }
+
+    .lines-table thead th.text-right {
+        text-align: right;
+    }
+
+    .lines-table thead th.text-center {
+        text-align: center;
+    }
+
+    .lines-table tbody tr {
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        transition: background 0.2s;
+    }
+
+    .lines-table tbody tr:hover {
+        background: rgba(247, 231, 206, 0.3);
+    }
+
+    .lines-table tbody td {
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+
+    .lines-table tbody td.product-cell {
+        min-width: 200px;
+    }
+
+    .lines-table tbody td input {
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 6px;
+        padding: 0.4rem 0.5rem;
+        font-size: 0.85rem;
+        width: 100%;
+        transition: all 0.2s;
+    }
+
+    .lines-table tbody td input:focus {
+        border-color: var(--wine-gold);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+
+    .lines-table tbody td input.qty-input {
+        width: 70px;
+        text-align: center;
+    }
+
+    .lines-table tbody td input.price-input {
+        width: 100px;
+        text-align: right;
+    }
+
+    .lines-table tbody td input.tax-input {
+        width: 60px;
+        text-align: center;
+    }
+
+    .line-total {
+        font-weight: 700;
+        color: var(--wine-burgundy);
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .btn-remove-line {
+        background: transparent;
+        border: none;
+        color: var(--wine-bordeaux);
+        font-size: 1.2rem;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: all 0.2s;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .btn-remove-line:hover {
+        opacity: 1;
+        background: rgba(139, 21, 56, 0.1);
+    }
+
+    /* Inline Add Button */
+    .add-cell {
+        width: 40px;
+        text-align: center;
+    }
+
+    .btn-add-inline {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 2px solid var(--wine-gold);
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--wine-gold) 0%, #c49a2d 100%);
+        color: var(--wine-burgundy);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-add-inline:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 10px rgba(212, 175, 55, 0.5);
+    }
+
+    .line-row.empty-line .description-input {
+        cursor: pointer;
+        background: rgba(247, 231, 206, 0.3);
+    }
+
+    .line-row.empty-line .description-input:hover {
+        background: rgba(212, 175, 55, 0.15);
+    }
+
+    .line-row.filled .btn-add-inline {
+        background: var(--wine-green);
+        border-color: var(--wine-green);
+        color: white;
+    }
+
+    .empty-lines {
+        text-align: center;
+        padding: 3rem;
+        color: var(--wine-oak);
+    }
+
+    .empty-lines i {
+        font-size: 3rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .empty-lines p {
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Totaux */
+    .invoice-totals {
+        padding: 2rem 2.5rem;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .totals-box {
+        background: linear-gradient(135deg, rgba(247, 231, 206, 0.5) 0%, rgba(232, 213, 187, 0.5) 100%);
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        min-width: 280px;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    .total-row.subtotal {
+        color: var(--wine-oak);
+    }
+
+    .total-row.tax {
+        color: var(--wine-oak);
+        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .total-row.grand-total {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--wine-burgundy);
+        padding-top: 0.5rem;
+    }
+
+    .total-row span:last-child {
+        font-weight: 600;
+        font-family: 'SF Mono', 'Monaco', monospace;
+    }
+
+    /* Notes */
+    .invoice-notes {
+        padding: 0 2.5rem 2rem;
+    }
+
+    .notes-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--wine-oak);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .notes-textarea {
+        width: 100%;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 8px;
+        padding: 0.75rem;
+        font-size: 0.85rem;
+        resize: vertical;
+        min-height: 60px;
+        transition: all 0.2s;
+    }
+
+    .notes-textarea:focus {
+        border-color: var(--wine-gold);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+
+    /* Footer Actions */
+    .invoice-actions {
+        padding: 1.5rem 2.5rem;
+        background: linear-gradient(0deg, rgba(247, 231, 206, 0.3) 0%, transparent 100%);
+        border-top: 1px solid rgba(212, 175, 55, 0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* ═══════════════════════════════════════════════
+   MODAL STYLES
+   ═══════════════════════════════════════════════ */
+
+    .invoice-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(34, 18, 24, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .invoice-modal-overlay.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+    }
+
+    .invoice-modal {
+        background: #fff;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        box-shadow: 0 25px 80px rgba(114, 47, 55, 0.35);
+        overflow: hidden;
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .invoice-modal-overlay.show .invoice-modal {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, rgba(139, 21, 56, 0.95) 0%, rgba(114, 47, 55, 0.95) 100%);
+        color: var(--wine-champagne);
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .modal-close {
+        background: transparent;
+        border: none;
+        color: var(--wine-champagne);
+        font-size: 1.5rem;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        opacity: 1;
+    }
+
+    .modal-search {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .modal-search input {
+        width: 100%;
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 10px;
+        padding: 0.75rem 1rem 0.75rem 2.75rem;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238b7355' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3E%3C/svg%3E") no-repeat 1rem center;
+    }
+
+    .modal-search input:focus {
+        border-color: var(--wine-gold);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+    }
+
+    .modal-search input::placeholder {
+        color: var(--wine-oak);
+    }
+
+    .modal-results {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 400px;
+    }
+
+    .result-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .result-item:hover {
+        background: rgba(247, 231, 206, 0.4);
+    }
+
+    .result-item:active {
+        background: rgba(212, 175, 55, 0.2);
+    }
+
+    .result-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--wine-burgundy), var(--wine-bordeaux));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .result-avatar.product {
+        background: linear-gradient(135deg, var(--wine-gold), #c49a2d);
+        color: var(--wine-burgundy);
+    }
+
+    .result-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .result-name {
+        font-weight: 600;
+        color: var(--wine-burgundy);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .result-sub {
+        font-size: 0.8rem;
+        color: var(--wine-oak);
+        margin-top: 0.15rem;
+    }
+
+    .result-meta {
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .result-price {
+        font-weight: 700;
+        color: var(--wine-burgundy);
+    }
+
+    .result-stock {
+        font-size: 0.75rem;
+        color: var(--wine-oak);
+    }
+
+    .no-results {
+        padding: 3rem 1.5rem;
+        text-align: center;
+        color: var(--wine-oak);
+    }
+
+    .no-results i {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        margin-bottom: 0.75rem;
+    }
+
+    .searching-indicator {
+        padding: 2rem;
+        text-align: center;
+        color: var(--wine-oak);
+    }
+
+    .searching-indicator .spinner-border {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-width: 2px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .invoice-paper {
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .invoice-header {
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .invoice-meta {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .invoice-parties {
+            grid-template-columns: 1fr;
+            padding: 1.5rem;
+        }
+
+        .invoice-lines,
+        .invoice-totals,
+        .invoice-notes,
+        .invoice-actions {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        .lines-table {
+            font-size: 0.8rem;
+        }
+
+        .totals-box {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block commerce_content %}
+<form method="post" id="invoice-form">
+    {% csrf_token %}
+    {{ lines.management_form }}
+    <input type="hidden" name="client" id="selected-client-id" value="{{ preloaded_client.pk|default:'' }}">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="{% url 'ventes:invoices_list' %}" class="text-muted text-decoration-none">
+                <i class="bi bi-arrow-left me-1"></i> Retour aux factures
+            </a>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'ventes:invoices_list' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Enregistrer
+            </button>
+        </div>
+    </div>
+
+    <!-- Invoice Paper -->
+    <div class="invoice-paper">
+
+        <!-- Header -->
+        <div class="invoice-header">
+            <div>
+                <h1 class="invoice-title">FACTURE</h1>
+                <div class="invoice-title-sub">Brouillon</div>
+            </div>
+            <div class="invoice-meta">
+                <div class="invoice-number">
+                    <i class="bi bi-hash"></i> Généré à l'enregistrement
+                </div>
+                <div class="invoice-dates">
+                    <div class="date-row">
+                        <label>Date :</label>
+                        <input type="date" name="date_issue" value="{{ form.date_issue.value|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="date-row">
+                        <label>Échéance :</label>
+                        <input type="date" name="date_due" value="{{ form.date_due.value|date:'Y-m-d' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parties -->
+        <div class="invoice-parties">
+            <!-- Sender -->
+            <div class="party-block sender">
+                <div class="party-label">
+                    <i class="bi bi-building"></i> Émetteur
+                </div>
+                <div class="party-name">{{ request.current_org.name }}</div>
+                <div class="party-details">
+                    {% if request.current_org.address %}{{ request.current_org.address }}<br>{% endif %}
+                    {% if request.current_org.postal_code or request.current_org.city %}{{
+                    request.current_org.postal_code }} {{ request.current_org.city }}<br>{% endif %}
+                    {% if request.current_org.email %}{{ request.current_org.email }}{% endif %}
+                    {% if request.current_org.phone %}<br>{{ request.current_org.phone }}{% endif %}
+                    {% if request.current_org.siret %}<br>SIRET: {{ request.current_org.siret }}{% endif %}
+                    {% if request.current_org.vat_number %}<br>TVA: {{ request.current_org.vat_number }}{% endif %}
+                </div>
+            </div>
+
+            <!-- Recipient (Client) -->
+            <div class="party-block recipient {% if preloaded_client %}has-client{% endif %}" id="client-zone"
+                onclick="openClientModal()">
+                <div class="party-label">
+                    <i class="bi bi-person"></i> Destinataire
+                    {% if preloaded_client %}
+                    <span class="badge bg-success ms-2" style="font-size: 0.65rem;">Sélectionné</span>
+                    {% endif %}
+                </div>
+
+                {% if preloaded_client %}
+                <div id="client-display">
+                    <div class="party-name" id="client-name">{{ preloaded_client.name }}</div>
+                    <div class="party-details" id="client-details">
+                        {{ preloaded_client.email|default:"" }}<br>
+                        {{ preloaded_client.phone|default:"" }}<br>
+                        {% if preloaded_client_address %}
+                        {{ preloaded_client_address.street|default:"" }}<br>
+                        {{ preloaded_client_address.postal_code|default:"" }} {{
+                        preloaded_client_address.city|default:"" }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="party-placeholder" id="client-placeholder">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Cliquer pour sélectionner un client</span>
+                </div>
+                <div id="client-display" style="display: none;">
+                    <div class="party-name" id="client-name"></div>
+                    <div class="party-details" id="client-details"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Lines -->
+        <div class="invoice-lines">
+            <div class="invoice-lines-header">
+                <div class="invoice-lines-title">
+                    <i class="bi bi-list-ul"></i> Articles & Prestations
+                </div>
+            </div>
+
+            <table class="lines-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Désignation</th>
+                        <th class="text-center" style="width: 80px;">Qté</th>
+                        <th class="text-right" style="width: 110px;">Prix U. HT</th>
+                        <th class="text-center" style="width: 70px;">TVA %</th>
+                        <th class="text-right" style="width: 100px;">Total HT</th>
+                        <th style="width: 40px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="lines-body">
+                    {% for lf in lines %}
+                    <tr class="line-row" data-index="{{ forloop.counter0 }}">
+                        {{ lf.id }}
+                        <input type="hidden" name="{{ lf.sku.html_name }}" value="{{ lf.sku.value|default:'' }}"
+                            class="sku-input">
+                        <td class="add-cell">
+                            <button type="button" class="btn-add-inline" onclick="openProductModal()"
+                                title="Ajouter un article">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </td>
+                        <td class="product-cell">
+                            <input type="text" name="{{ lf.description.html_name }}"
+                                value="{{ lf.description.value|default:'' }}" placeholder="Cliquer + pour ajouter"
+                                class="description-input" readonly onclick="openProductModal()">
+                        </td>
+                        <td>
+                            <input type="number" name="{{ lf.quantity.html_name }}"
+                                value="{{ lf.quantity.value|default:1 }}" class="qty-input" step="0.001" min="0"
+                                onchange="calculateTotals()">
+                        </td>
+                        <td>
+                            <input type="number" name="{{ lf.unit_price.html_name }}"
+                                value="{{ lf.unit_price.value|default:0 }}" class="price-input" step="0.01"
+                                onchange="calculateTotals()">
+                        </td>
+                        <td>
+                            <input type="number" name="{{ lf.tax_rate.html_name }}"
+                                value="{{ lf.tax_rate.value|default:20 }}" class="tax-input" step="0.1"
+                                onchange="calculateTotals()">
+                        </td>
+                        <td class="line-total" data-line-total="0">0,00 €</td>
+                        <td>
+                            <button type="button" class="btn-remove-line" onclick="removeLine(this)">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <!-- Ligne vide par défaut -->
+                    <tr class="line-row empty-line" data-index="0">
+                        <input type="hidden" name="lines-0-sku" value="" class="sku-input">
+                        <input type="hidden" name="lines-0-id" value="">
+                        <td class="add-cell">
+                            <button type="button" class="btn-add-inline" onclick="openProductModal()"
+                                title="Ajouter un article">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </td>
+                        <td class="product-cell">
+                            <input type="text" name="lines-0-description"
+                                placeholder="Cliquer + pour ajouter un article" class="description-input" readonly
+                                onclick="openProductModal()">
+                        </td>
+                        <td>
+                            <input type="number" name="lines-0-quantity" value="1" class="qty-input" step="0.001"
+                                min="0" onchange="calculateTotals()">
+                        </td>
+                        <td>
+                            <input type="number" name="lines-0-unit_price" value="0" class="price-input" step="0.01"
+                                onchange="calculateTotals()">
+                        </td>
+                        <td>
+                            <input type="number" name="lines-0-tax_rate" value="20" class="tax-input" step="0.1"
+                                onchange="calculateTotals()">
+                        </td>
+                        <td class="line-total">0,00 €</td>
+                        <td>
+                            <button type="button" class="btn-remove-line" onclick="removeLine(this)"
+                                style="visibility: hidden;">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div id="empty-lines-message" class="empty-lines" {% if lines %}style="display: none;" {% endif %}>
+                <i class="bi bi-inbox"></i>
+                <p>Aucun article ajouté</p>
+                <button type="button" class="btn-add-line" onclick="openProductModal()">
+                    <i class="bi bi-plus-lg"></i> Ajouter un article
+                </button>
+            </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="invoice-totals">
+            <div class="totals-box">
+                <div class="total-row subtotal">
+                    <span>Total HT</span>
+                    <span id="total-ht">0,00 €</span>
+                </div>
+                <div class="total-row tax">
+                    <span>TVA</span>
+                    <span id="total-tax">0,00 €</span>
+                </div>
+                <div class="total-row grand-total">
+                    <span>Total TTC</span>
+                    <span id="total-ttc">0,00 €</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="invoice-notes">
+            <div class="notes-label">Notes & Conditions</div>
+            <textarea name="notes" class="notes-textarea"
+                placeholder="Conditions de règlement, mentions légales...">{{ form.notes.value|default:'' }}</textarea>
+        </div>
+
+        <!-- Actions Footer -->
+        <div class="invoice-actions">
+            <div class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i>
+                Les calculs sont mis à jour automatiquement
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'ventes:invoices_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-lg me-1"></i>Enregistrer la Facture
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Client Modal -->
+<div class="invoice-modal-overlay" id="client-modal">
+    <div class="invoice-modal">
+        <div class="modal-header">
+            <h3><i class="bi bi-person me-2"></i>Sélectionner un client</h3>
+            <button type="button" class="modal-close" onclick="closeClientModal()">&times;</button>
+        </div>
+        <div class="modal-search">
+            <input type="text" id="client-search-input" placeholder="Rechercher par nom, email, téléphone..."
+                autocomplete="off">
+        </div>
+        <div class="modal-results" id="client-results">
+            <div class="no-results">
+                <i class="bi bi-search d-block mb-2"></i>
+                <span>Tapez au moins 2 caractères pour rechercher</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Modal -->
+<div class="invoice-modal-overlay" id="product-modal">
+    <div class="invoice-modal">
+        <div class="modal-header">
+            <h3><i class="bi bi-box me-2"></i>Ajouter un article</h3>
+            <button type="button" class="modal-close" onclick="closeProductModal()">&times;</button>
+        </div>
+        <div class="modal-search">
+            <input type="text" id="product-search-input" placeholder="Rechercher un produit par nom ou code..."
+                autocomplete="off">
+        </div>
+        <div class="modal-results" id="product-results">
+            <div class="no-results">
+                <i class="bi bi-search d-block mb-2"></i>
+                <span>Tapez au moins 2 caractères pour rechercher</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Line Template -->
+<template id="line-template">
+    <tr class="line-row">
+        <input type="hidden" name="lines-__INDEX__-sku" value="" class="sku-input">
+        <input type="hidden" name="lines-__INDEX__-id" value="">
+        <td class="add-cell">
+            <button type="button" class="btn-add-inline" onclick="openProductModal()" title="Ajouter un article">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </td>
+        <td class="product-cell">
+            <input type="text" name="lines-__INDEX__-description" placeholder="Cliquer + pour ajouter"
+                class="description-input" readonly onclick="openProductModal()">
+        </td>
+        <td>
+            <input type="number" name="lines-__INDEX__-quantity" value="1" class="qty-input" step="0.001" min="0"
+                onchange="calculateTotals()">
+        </td>
+        <td>
+            <input type="number" name="lines-__INDEX__-unit_price" value="0" class="price-input" step="0.01"
+                onchange="calculateTotals()">
+        </td>
+        <td>
+            <input type="number" name="lines-__INDEX__-tax_rate" value="20" class="tax-input" step="0.1"
+                onchange="calculateTotals()">
+        </td>
+        <td class="line-total">0,00 €</td>
+        <td>
+            <button type="button" class="btn-remove-line" onclick="removeLine(this)">
+                <i class="bi bi-x"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+<script>
+    // ═══════════════════════════════════════════════
+    // INVOICE WYSIWYG JAVASCRIPT
+    // ═══════════════════════════════════════════════
+
+    let lineIndex = {{ lines.total_form_count|default:"0" }};
+
+    let searchTimeout = null;
+
+    // ─────────────────────────────────────────────────
+    // CLIENT MODAL
+    // ─────────────────────────────────────────────────
+
+    function openClientModal() {
+        const modal = document.getElementById('client-modal');
+        modal.classList.add('show');
+        document.getElementById('client-search-input').focus();
+        document.getElementById('client-search-input').value = '';
+        document.getElementById('client-results').innerHTML = `
+        <div class="no-results">
+            <i class="bi bi-search d-block mb-2"></i>
+            <span>Tapez au moins 2 caractères pour rechercher</span>
+        </div>`;
+    }
+
+    function closeClientModal() {
+        document.getElementById('client-modal').classList.remove('show');
+    }
+
+    document.getElementById('client-search-input')?.addEventListener('input', function (e) {
+        const query = e.target.value.trim();
+        clearTimeout(searchTimeout);
+
+        if (query.length < 2) {
+            document.getElementById('client-results').innerHTML = `
+            <div class="no-results">
+                <i class="bi bi-search d-block mb-2"></i>
+                <span>Tapez au moins 2 caractères pour rechercher</span>
+            </div>`;
+            return;
+        }
+
+        document.getElementById('client-results').innerHTML = `
+        <div class="searching-indicator">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2">Recherche...</div>
+        </div>`;
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const resp = await fetch(`/ventes/api/clients/search/?q=${encodeURIComponent(query)}`);
+                const data = await resp.json();
+                renderClientResults(data.results || []);
+            } catch (err) {
+                console.error('Erreur recherche client:', err);
+                document.getElementById('client-results').innerHTML = `
+                <div class="no-results">
+                    <i class="bi bi-exclamation-circle d-block mb-2"></i>
+                    <span>Erreur de recherche</span>
+                </div>`;
+            }
+        }, 200);
+    });
+
+    function renderClientResults(clients) {
+        if (clients.length === 0) {
+            document.getElementById('client-results').innerHTML = `
+            <div class="no-results">
+                <i class="bi bi-person-x d-block mb-2"></i>
+                <span>Aucun client trouvé</span>
+            </div>`;
+            return;
+        }
+
+        const html = clients.map(c => `
+        <div class="result-item" onclick="selectClient('${c.id}', '${escapeHtml(c.name)}', '${escapeHtml(c.email || '')}', '${escapeHtml(c.phone || '')}', '${escapeHtml(c.address || '')}')">
+            <div class="result-avatar">${c.initials || c.name?.substring(0, 2).toUpperCase() || '??'}</div>
+            <div class="result-info">
+                <div class="result-name">${escapeHtml(c.name)}</div>
+                <div class="result-sub">${escapeHtml(c.email || c.phone || 'Aucun contact')}</div>
+            </div>
+            <div class="result-meta">
+                <div class="result-sub">${escapeHtml(c.segment || '')}</div>
+            </div>
+        </div>
+    `).join('');
+
+        document.getElementById('client-results').innerHTML = html;
+    }
+
+    function selectClient(id, name, email, phone, address) {
+        document.getElementById('selected-client-id').value = id;
+
+        const clientZone = document.getElementById('client-zone');
+        clientZone.classList.add('has-client');
+
+        const placeholder = document.getElementById('client-placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+
+        const display = document.getElementById('client-display');
+        display.style.display = 'block';
+        document.getElementById('client-name').textContent = name;
+        document.getElementById('client-details').innerHTML = `
+        ${email ? email + '<br>' : ''}
+        ${phone ? phone + '<br>' : ''}
+        ${address || ''}
+    `;
+
+        closeClientModal();
+    }
+
+    // ─────────────────────────────────────────────────
+    // PRODUCT MODAL
+    // ─────────────────────────────────────────────────
+
+    function openProductModal() {
+        const modal = document.getElementById('product-modal');
+        modal.classList.add('show');
+        document.getElementById('product-search-input').focus();
+        document.getElementById('product-search-input').value = '';
+        document.getElementById('product-results').innerHTML = `
+        <div class="no-results">
+            <i class="bi bi-search d-block mb-2"></i>
+            <span>Tapez au moins 2 caractères pour rechercher</span>
+        </div>`;
+    }
+
+    function closeProductModal() {
+        document.getElementById('product-modal').classList.remove('show');
+    }
+
+    document.getElementById('product-search-input')?.addEventListener('input', function (e) {
+        const query = e.target.value.trim();
+        clearTimeout(searchTimeout);
+
+        if (query.length < 2) {
+            document.getElementById('product-results').innerHTML = `
+            <div class="no-results">
+                <i class="bi bi-search d-block mb-2"></i>
+                <span>Tapez au moins 2 caractères pour rechercher</span>
+            </div>`;
+            return;
+        }
+
+        document.getElementById('product-results').innerHTML = `
+        <div class="searching-indicator">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2">Recherche...</div>
+        </div>`;
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const resp = await fetch(`/ventes/api/sku/search/?q=${encodeURIComponent(query)}`);
+                const data = await resp.json();
+                renderProductResults(data.results || []);
+            } catch (err) {
+                console.error('Erreur recherche produit:', err);
+                document.getElementById('product-results').innerHTML = `
+                <div class="no-results">
+                    <i class="bi bi-exclamation-circle d-block mb-2"></i>
+                    <span>Erreur de recherche</span>
+                </div>`;
+            }
+        }, 200);
+    });
+
+    function renderProductResults(products) {
+        if (products.length === 0) {
+            document.getElementById('product-results').innerHTML = `
+            <div class="no-results">
+                <i class="bi bi-box d-block mb-2"></i>
+                <span>Aucun produit trouvé</span>
+            </div>`;
+            return;
+        }
+
+        const html = products.map(p => `
+        <div class="result-item" onclick="selectProduct(${p.id}, '${escapeHtml(p.name)}', ${p.price || 0}, ${p.tax_rate || 20}, ${p.stock || 0})">
+            <div class="result-avatar product">${p.code?.substring(0, 2).toUpperCase() || p.name?.substring(0, 2).toUpperCase() || '??'}</div>
+            <div class="result-info">
+                <div class="result-name">${escapeHtml(p.name)}</div>
+                <div class="result-sub">${escapeHtml(p.code || '')} ${p.unit ? '• ' + p.unit : ''}</div>
+            </div>
+            <div class="result-meta">
+                <div class="result-price">${formatPrice(p.price || 0)} €</div>
+                <div class="result-stock">${p.stock || 0} en stock</div>
+            </div>
+        </div>
+    `).join('');
+
+        document.getElementById('product-results').innerHTML = html;
+    }
+
+    function selectProduct(id, name, price, taxRate, stock) {
+        // Find an empty line first (one without a SKU value)
+        const emptyLine = document.querySelector('.line-row.empty-line, .line-row:not(.filled)');
+        const firstLineEmpty = emptyLine && !emptyLine.querySelector('.sku-input')?.value;
+
+        if (firstLineEmpty && emptyLine) {
+            // Fill the empty line
+            fillLine(emptyLine, id, name, 1, price, taxRate);
+        } else {
+            // Add a new line
+            addLine(id, name, 1, price, taxRate);
+        }
+        closeProductModal();
+    }
+
+    function fillLine(row, skuId, description, qty, price, taxRate) {
+        row.querySelector('.sku-input').value = skuId || '';
+        row.querySelector('.description-input').value = description || '';
+        row.querySelector('.description-input').removeAttribute('readonly');
+        row.querySelector('.qty-input').value = qty || 1;
+        row.querySelector('.price-input').value = price || 0;
+        row.querySelector('.tax-input').value = taxRate || 20;
+
+        // Mark as filled
+        row.classList.remove('empty-line');
+        row.classList.add('filled');
+
+        // Show remove button
+        const removeBtn = row.querySelector('.btn-remove-line');
+        if (removeBtn) removeBtn.style.visibility = 'visible';
+
+        // Hide empty message
+        document.getElementById('empty-lines-message').style.display = 'none';
+
+        calculateTotals();
+    }
+
+    // ─────────────────────────────────────────────────
+    // LINES MANAGEMENT
+    // ─────────────────────────────────────────────────
+
+    function addLine(skuId, description, qty, price, taxRate) {
+        const template = document.getElementById('line-template');
+        const tbody = document.getElementById('lines-body');
+
+        // Clone template
+        const html = template.innerHTML
+            .replace(/__INDEX__/g, lineIndex);
+
+        tbody.insertAdjacentHTML('beforeend', html);
+
+        // Get the new row
+        const newRow = tbody.lastElementChild;
+
+        // Fill values
+        newRow.querySelector('.sku-input').value = skuId || '';
+        newRow.querySelector('.description-input').value = description || '';
+        if (skuId) {
+            newRow.querySelector('.description-input').removeAttribute('readonly');
+            newRow.classList.add('filled');
+        }
+        newRow.querySelector('.qty-input').value = qty || 1;
+        newRow.querySelector('.price-input').value = price || 0;
+        newRow.querySelector('.tax-input').value = taxRate || 20;
+
+        // Update form count
+        lineIndex++;
+        document.querySelector('[name="lines-TOTAL_FORMS"]').value = lineIndex;
+
+        // Hide empty message
+        document.getElementById('empty-lines-message').style.display = 'none';
+
+        // Recalculate
+        calculateTotals();
+    }
+
+    function removeLine(btn) {
+        const row = btn.closest('tr');
+        row.remove();
+
+        // Show empty message if no lines
+        const tbody = document.getElementById('lines-body');
+        if (tbody.children.length === 0) {
+            document.getElementById('empty-lines-message').style.display = 'block';
+        }
+
+        calculateTotals();
+    }
+
+    // ─────────────────────────────────────────────────
+    // CALCULATIONS
+    // ─────────────────────────────────────────────────
+
+    function calculateTotals() {
+        const rows = document.querySelectorAll('#lines-body .line-row');
+        let totalHT = 0;
+        let totalTax = 0;
+
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty-input')?.value) || 0;
+            const price = parseFloat(row.querySelector('.price-input')?.value) || 0;
+            const taxRate = parseFloat(row.querySelector('.tax-input')?.value) || 0;
+
+            const lineHT = qty * price;
+            const lineTax = lineHT * (taxRate / 100);
+
+            totalHT += lineHT;
+            totalTax += lineTax;
+
+            // Update line total display
+            const lineTotalCell = row.querySelector('.line-total');
+            if (lineTotalCell) {
+                lineTotalCell.textContent = formatPrice(lineHT) + ' €';
+            }
+        });
+
+        const totalTTC = totalHT + totalTax;
+
+        document.getElementById('total-ht').textContent = formatPrice(totalHT) + ' €';
+        document.getElementById('total-tax').textContent = formatPrice(totalTax) + ' €';
+        document.getElementById('total-ttc').textContent = formatPrice(totalTTC) + ' €';
+    }
+
+    // ─────────────────────────────────────────────────
+    // UTILITIES
+    // ─────────────────────────────────────────────────
+
+    function formatPrice(value) {
+        return value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeClientModal();
+            closeProductModal();
+        }
+    });
+
+    // Close modals on overlay click
+    document.querySelectorAll('.invoice-modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
+    });
+
+    // Initial calculation
+    document.addEventListener('DOMContentLoaded', function () {
+        calculateTotals();
+    });
+</script>
+{% endblock %}

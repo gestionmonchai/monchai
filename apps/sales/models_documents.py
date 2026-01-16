@@ -141,6 +141,14 @@ class DocumentTemplate(models.Model):
         help_text="Configuration JSON des blocs du builder visuel"
     )
     
+    # Image de fond (papier à en-tête)
+    background_image = models.ImageField(
+        upload_to='document_templates/backgrounds/',
+        blank=True,
+        null=True,
+        help_text="Image de fond du document (papier à en-tête)"
+    )
+    
     # Mode d'édition
     EDITOR_MODES = [
         ('blocks', 'Éditeur visuel (blocs)'),

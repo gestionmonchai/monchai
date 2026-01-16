@@ -32,19 +32,6 @@ except Exception:
     Alert = None
 
 
-class Parcelle(models.Model):
-    # id auto-généré par Django (BigAutoField)
-    nom = models.CharField(max_length=200)
-    cepage = models.CharField(max_length=120, blank=True)
-    surface_ha = models.DecimalField(max_digits=6, decimal_places=2, default=0)
-
-    class Meta:
-        ordering = ("nom",)
-
-    def __str__(self) -> str:
-        return self.nom
-
-
 class VendangeReception(models.Model):
     # id auto-généré par Django (BigAutoField)
     nom = models.CharField(max_length=200, blank=True)

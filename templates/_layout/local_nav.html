@@ -40,9 +40,9 @@ Optional: {% include '_layout/local_nav.html' with section='production' %}
       </ul>
     {% elif section == 'compta' %}
       <ul class="nav nav-pills mb-2">
-        <li class="nav-item"><a class="nav-link {% if '/compta/stock/' in p %}active{% endif %}" href="{% url 'compta_stock' %}">Écritures stock</a></li>
-        <li class="nav-item"><a class="nav-link {% if '/compta/ventes/' in p %}active{% endif %}" href="{% url 'compta_ventes' %}">Ventes (CA, TVA)</a></li>
-        <li class="nav-item"><a class="nav-link {% if '/compta/exports/' in p %}active{% endif %}" href="{% url 'compta_exports' %}">Exports (Sage/Quadratus/CSV)</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/compta/stock/' in p %}active{% endif %}" href="{% url 'compta:stock' %}">Écritures stock</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/compta/ventes/' in p %}active{% endif %}" href="{% url 'compta:ventes' %}">Ventes (CA, TVA)</a></li>
+        <li class="nav-item"><a class="nav-link {% if '/compta/exports/' in p %}active{% endif %}" href="{% url 'compta:exports' %}">Exports (Sage/Quadratus/CSV)</a></li>
       </ul>
     {% elif section == 'referentiels' %}
       <ul class="nav nav-pills mb-2">
@@ -52,7 +52,7 @@ Optional: {% include '_layout/local_nav.html' with section='production' %}
       </ul>
     {% elif section == 'clients' %}
       <ul class="nav nav-pills mb-2">
-        <li class="nav-item"><a class="nav-link {% if p == '/ventes/clients/' or p == '/clients/' %}active{% endif %}" href="{% url 'clients:customers_list' %}">Clients</a></li>
+        <li class="nav-item"><a class="nav-link {% if p == '/ventes/clients/' or p == '/clients/' %}active{% endif %}" href="{% url 'partners:partners_list' %}">Clients</a></li>
         <li class="nav-item"><a class="nav-link {% if '/clients/tarifs/' in p %}active{% endif %}" href="{% url 'ventes:pricelist_list' %}">Tarifs & listes de prix</a></li>
         <li class="nav-item"><a class="nav-link {% if '/ventes/conditions/' in p or '/clients/conditions/' in p %}active{% endif %}" href="{% url 'ventes:conditions_list' %}">Conditions</a></li>
       </ul>

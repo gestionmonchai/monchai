@@ -14,7 +14,8 @@ import uuid
 from apps.accounts.models import Organization
 from apps.viticulture.models import GrapeVariety, Appellation, Vintage, UnitOfMeasure, Cuvee, Warehouse
 from apps.stock.models import SKU, StockSKUBalance
-from apps.sales.models import Customer, TaxCode, Order, OrderLine
+from apps.partners.models import Contact
+from apps.sales.models import TaxCode, Order, OrderLine
 from .models import (
     Invoice, InvoiceLine, CreditNote, Payment, Reconciliation,
     AccountMap, GLEntry

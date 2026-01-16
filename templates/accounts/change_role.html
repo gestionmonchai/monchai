@@ -1,8 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'accounts/base_administration.html' %}
 
 {% block title %}Changer le rôle - {{ organization.name }} - Mon Chai{% endblock %}
 
-{% block content %}
+{% block administration_content %}
+<div class="container-fluid py-4">
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow">
@@ -83,5 +84,6 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}

@@ -212,7 +212,16 @@ class MouvementLot(models.Model):
         return f"{self.lot.numero_lot} - {self.get_type_mouvement_display()} ({self.date_mouvement.strftime('%d/%m/%Y')})"
 
 
-# --- NOUVEAUX MODÈLES CATALOGUE GÉNÉRIQUE (ARTICLES) ---
+# =============================================================================
+# ALIAS ARTICLE → PRODUCT (FUSION DES MODÈLES)
+# =============================================================================
+# Le modèle Article est maintenant un alias de produits.Product pour unifier
+# la gestion des produits. Utiliser Product directement pour les nouveaux développements.
+
+from apps.produits.models_catalog import Product as Article
+from apps.produits.models_catalog import Product  # Export direct
+
+# Les modèles ArticleCategory et ArticleTag restent pour la catégorisation
 
 class ArticleCategory(models.Model):
     """Catégorie d'articles (Vin, Miel, Oenotourisme...)"""
@@ -248,74 +257,8 @@ class ArticleTag(models.Model):
         return self.name
 
 
-class Article(models.Model):
-    """
-    Concept unique d'Article commercialisable.
-    Le 'type' détermine le comportement métier.
-    """
-    TYPE_PRODUCT = 'product'     # Stock simple (Miel, Verres)
-    TYPE_TRACEABLE = 'traceable' # Stock par Batch (Vin)
-    TYPE_SERVICE = 'service'     # Non stocké (Prestation)
-    TYPE_STAY = 'stay'           # Capacité/Calendrier (Nuitée)
-    TYPE_PACK = 'pack'           # Composition (Coffret)
-    
-    TYPE_CHOICES = [
-        (TYPE_PRODUCT, 'Produit stockable'),
-        (TYPE_TRACEABLE, 'Produit traçable (Vin/Lot)'),
-        (TYPE_SERVICE, 'Service / Prestation'),
-        (TYPE_STAY, 'Nuitée / Hébergement'),
-        (TYPE_PACK, 'Pack / Bundle'),
-    ]
-
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='articles')
-    category = models.ForeignKey(ArticleCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='articles', verbose_name="Catégorie")
-    tags = models.ManyToManyField(ArticleTag, blank=True, related_name='articles', verbose_name="Tags")
-    
-    # Identification
-    article_type = models.CharField("Type d'article", max_length=20, choices=TYPE_CHOICES, default=TYPE_PRODUCT)
-    name = models.CharField("Désignation", max_length=200)
-    sku = models.CharField("Code article (SKU)", max_length=50, blank=True, help_text="Référence unique interne")
-    description = models.TextField("Description courte", blank=True, help_text="Pour devis/factures")
-    
-    # Commercial
-    price_ht = models.DecimalField("Prix de vente HT", max_digits=10, decimal_places=2, default=0)
-    purchase_price = models.DecimalField("Prix d'achat HT", max_digits=10, decimal_places=2, default=0, help_text="Prix d'achat de référence (PA HT)")
-    vat_rate = models.DecimalField("Taux de TVA (%)", max_digits=5, decimal_places=2, default=20.0)
-    unit = models.CharField("Unité de vente", max_length=20, default="PCE", help_text="PCE, L, KG, NUIT, PERS...")
-    
-    # Comportement
-    is_stock_managed = models.BooleanField("Gestion de stock", default=True, help_text="Si actif, le système suit les quantités.")
-    is_buyable = models.BooleanField("Achetable", default=True, help_text="Peut être acheté (Fournisseurs)")
-    is_sellable = models.BooleanField("Vendable", default=True, help_text="Peut être vendu (Clients)")
-    is_active = models.BooleanField("Actif", default=True)
-    
-    # Douane & Régie
-    hs_code = models.CharField("Code Douanier (HS)", max_length=20, blank=True, help_text="Code nomenclature pour export")
-    origin_country = models.CharField("Pays d'origine", max_length=100, blank=True, default="France")
-    alcohol_degree = models.DecimalField("Degré d'alcool (%)", max_digits=4, decimal_places=2, null=True, blank=True)
-    net_volume = models.DecimalField("Volume net (L)", max_digits=10, decimal_places=4, null=True, blank=True, help_text="Volume en litres pour la régie")
-    customs_notes = models.TextField("Notes douanières", blank=True)
-    
-    # Métadonnées
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    # Médias & Dégustation
-    image = models.ImageField("Photo produit", upload_to='products/', blank=True, null=True)
-    tasting_notes = models.TextField("Notes de dégustation", blank=True, help_text="Fiche de dégustation, arômes, accords mets-vins...")
-
-    class Meta:
-        verbose_name = "Article"
-        verbose_name_plural = "Articles"
-        ordering = ['category', 'name']
-        unique_together = ['organization', 'sku'] # SKU unique par org
-
-    def __str__(self):
-        return f"[{self.sku}] {self.name}" if self.sku else self.name
-
-    @property
-    def price_ttc(self):
-        return self.price_ht * (1 + self.vat_rate / 100)
+# NOTE: La classe Article a été supprimée et remplacée par un alias vers produits.Product
+# Voir l'import au début de cette section : Article = Product
 
 
 class ArticleStock(models.Model):

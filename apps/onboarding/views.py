@@ -154,7 +154,7 @@ def onboarding_flow(request):
             'key': 'ventes',
             'title': 'Ventes / Expéditions',
             'desc': "Enregistrez vos ventes pour finaliser la chaîne.",
-            'create_url': '/ventes/commandes/nouveau/',
+            'create_url': '/ventes/commandes/nouvelle/',
         },
     ]
     steps = []
@@ -245,7 +245,7 @@ def onboarding_dismiss(request):
     st.save()
     if request.headers.get('Hx-Request') == 'true':
         return render(request, 'components/banner.html', {'type': 'info', 'message': "Onboarding masqué."})
-    return redirect('/dashboard/')
+    return redirect('/tableau-de-bord/')
 
 
 @require_POST

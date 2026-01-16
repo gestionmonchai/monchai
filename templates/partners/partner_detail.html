@@ -1,0 +1,602 @@
+{% extends 'referentiels/base_referentiels.html' %}
+
+{% block title %}{{ partner.name }} - Mon Chai{% endblock %}
+
+{% block referentiels_content %}
+<!-- Header partenaire -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                        <i class="bi bi-{% if partner.partner_type == 'company' %}building{% else %}person{% endif %} fs-2 text-secondary"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-1">{{ partner.name }}</h2>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="text-muted">{{ partner.code }}</span>
+                            {% for role in partner.roles.all %}
+                            <span class="badge bg-{{ role.color }}">
+                                <i class="bi {{ role.icon }} me-1"></i>{{ role.label }}
+                            </span>
+                            {% endfor %}
+                            {% if partner.segment %}
+                            <span class="badge bg-light text-dark">{{ partner.get_segment_display }}</span>
+                            {% endif %}
+                            {% if not partner.is_active %}
+                            <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="btn-group" role="group">
+                    {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'partners:partner_edit' display_id=partner.display_id %}" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i>Modifier
+                    </a>
+                    <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                        <span class="visually-hidden">Actions</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                            <i class="bi bi-plus-circle me-2"></i>Ajouter un rôle
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% if partner.is_archived %}
+                        <li>
+                            <form action="{% url 'partners:partner_restore' display_id=partner.display_id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-success">
+                                    <i class="bi bi-arrow-counterclockwise me-2"></i>Restaurer
+                                </button>
+                            </form>
+                        </li>
+                        {% else %}
+                        <li>
+                            <form action="{% url 'partners:partner_archive' display_id=partner.display_id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-archive me-2"></i>Archiver
+                                </button>
+                            </form>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation par onglets -->
+<ul class="nav nav-tabs mb-4" id="partnerTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'overview' %}active{% endif %}" 
+           href="?tab=overview" role="tab">
+            <i class="bi bi-house me-1"></i>Aperçu
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'contacts' %}active{% endif %}" 
+           href="?tab=contacts" role="tab">
+            <i class="bi bi-people me-1"></i>Interlocuteurs
+            <span class="badge bg-secondary ms-1">{{ partner.contacts.count }}</span>
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'addresses' %}active{% endif %}" 
+           href="?tab=addresses" role="tab">
+            <i class="bi bi-geo-alt me-1"></i>Adresses
+            <span class="badge bg-secondary ms-1">{{ partner.addresses.count }}</span>
+        </a>
+    </li>
+    {% if partner.is_client %}
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'sales' %}active{% endif %}" 
+           href="?tab=sales" role="tab">
+            <i class="bi bi-cart me-1"></i>Ventes
+        </a>
+    </li>
+    {% endif %}
+    {% if partner.is_supplier %}
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'purchases' %}active{% endif %}" 
+           href="?tab=purchases" role="tab">
+            <i class="bi bi-truck me-1"></i>Achats
+        </a>
+    </li>
+    {% endif %}
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'documents' %}active{% endif %}" 
+           href="?tab=documents" role="tab">
+            <i class="bi bi-file-earmark me-1"></i>Documents
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_tab == 'timeline' %}active{% endif %}" 
+           href="?tab=timeline" role="tab">
+            <i class="bi bi-clock-history me-1"></i>Timeline
+        </a>
+    </li>
+</ul>
+
+<!-- Contenu des onglets -->
+<div class="tab-content">
+    
+    <!-- ONGLET APERÇU -->
+    {% if current_tab == 'overview' %}
+    <div class="row">
+        <!-- Informations principales -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informations générales</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <th style="width: 140px;" class="text-muted">Type</th>
+                            <td>{{ partner.get_partner_type_display }}</td>
+                        </tr>
+                        {% if partner.first_name or partner.last_name %}
+                        <tr>
+                            <th class="text-muted">Nom complet</th>
+                            <td>{{ partner.first_name }} {{ partner.last_name }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th class="text-muted">Email</th>
+                            <td>
+                                {% if partner.email %}
+                                <a href="mailto:{{ partner.email }}">{{ partner.email }}</a>
+                                {% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Téléphone</th>
+                            <td>
+                                {% if partner.phone %}
+                                <a href="tel:{{ partner.phone }}">{{ partner.phone }}</a>
+                                {% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Mobile</th>
+                            <td>
+                                {% if partner.mobile %}
+                                <a href="tel:{{ partner.mobile }}">{{ partner.mobile }}</a>
+                                {% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Site web</th>
+                            <td>
+                                {% if partner.website %}
+                                <a href="{{ partner.website }}" target="_blank">{{ partner.website }}</a>
+                                {% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations légales -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-building me-2"></i>Informations légales</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <th style="width: 140px;" class="text-muted">SIRET</th>
+                            <td>{{ partner.siret|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">SIREN</th>
+                            <td>{{ partner.siren|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">N° TVA</th>
+                            <td>{{ partner.vat_number|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Code NAF</th>
+                            <td>{{ partner.naf_code|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Pays</th>
+                            <td>{{ partner.country_code }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Devise</th>
+                            <td>{{ partner.currency }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Adresse principale -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Adresse principale</h6>
+                    <a href="?tab=addresses" class="btn btn-sm btn-outline-secondary">
+                        Voir toutes <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% with addr=partner.primary_address %}
+                    {% if addr %}
+                    <address class="mb-0">
+                        <strong>{{ addr.label|default:addr.get_address_type_display }}</strong><br>
+                        {{ addr.street }}<br>
+                        {% if addr.street2 %}{{ addr.street2 }}<br>{% endif %}
+                        {{ addr.postal_code }} {{ addr.city }}<br>
+                        {{ addr.country }}
+                    </address>
+                    {% else %}
+                    <p class="text-muted mb-0">Aucune adresse enregistrée</p>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact principal -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Contact principal</h6>
+                    <a href="?tab=contacts" class="btn btn-sm btn-outline-secondary">
+                        Voir tous <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% with contact=partner.primary_contact %}
+                    {% if contact %}
+                    <div class="d-flex align-items-center">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                            <i class="bi bi-person fs-4 text-secondary"></i>
+                        </div>
+                        <div>
+                            <strong>{{ contact.full_name }}</strong>
+                            {% if contact.job_title %}<br><small class="text-muted">{{ contact.job_title }}</small>{% endif %}
+                            {% if contact.email %}<br><a href="mailto:{{ contact.email }}" class="small">{{ contact.email }}</a>{% endif %}
+                            {% if contact.phone %}<br><small>{{ contact.phone }}</small>{% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Aucun contact enregistré</p>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profil client (si rôle client) -->
+        {% if client_profile %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-cart me-2"></i>Profil client</h6>
+                    {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'partners:client_profile_edit' partner_display_id=partner.display_id %}" class="btn btn-sm btn-light">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <th class="text-muted">Conditions paiement</th>
+                            <td>{{ client_profile.get_payment_terms_display }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Grille tarifaire</th>
+                            <td>{{ client_profile.get_price_category_display }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Remise par défaut</th>
+                            <td>{{ client_profile.default_discount_pct }}%</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Plafond encours</th>
+                            <td>{{ client_profile.credit_limit }} €</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Encours actuel</th>
+                            <td>
+                                {{ client_profile.current_balance }} €
+                                {% if client_profile.is_over_limit %}
+                                <span class="badge bg-danger ms-1">Dépassé</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Profil fournisseur (si rôle fournisseur) -->
+        {% if supplier_profile %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Profil fournisseur</h6>
+                    {% if user.get_active_membership.can_edit_data %}
+                    <a href="{% url 'partners:supplier_profile_edit' partner_display_id=partner.display_id %}" class="btn btn-sm btn-light">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <th class="text-muted">Conditions paiement</th>
+                            <td>{{ supplier_profile.get_payment_terms_display }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Incoterm</th>
+                            <td>{{ supplier_profile.get_incoterm_display|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Délai livraison</th>
+                            <td>{{ supplier_profile.lead_time_days }} jours</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Commande min.</th>
+                            <td>{{ supplier_profile.min_order_amount }} €</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">Statut</th>
+                            <td>
+                                {% if supplier_profile.is_approved %}
+                                <span class="badge bg-success">Agréé</span>
+                                {% else %}
+                                <span class="badge bg-warning">Non agréé</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Notes -->
+        {% if partner.notes %}
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notes</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ partner.notes|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- ONGLET INTERLOCUTEURS -->
+    {% if current_tab == 'contacts' %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-people me-2"></i>Interlocuteurs</h6>
+            {% if user.get_active_membership.can_edit_data %}
+            <a href="{% url 'partners:contact_create' partner_display_id=partner.display_id %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus"></i> Ajouter
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body" id="contacts-list">
+            {% include 'partners/partials/contacts_list.html' %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ONGLET ADRESSES -->
+    {% if current_tab == 'addresses' %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Adresses</h6>
+            {% if user.get_active_membership.can_edit_data %}
+            <a href="{% url 'partners:address_create' partner_display_id=partner.display_id %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus"></i> Ajouter
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body" id="addresses-list">
+            {% include 'partners/partials/addresses_list.html' %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ONGLET VENTES -->
+    {% if current_tab == 'sales' and partner.is_client %}
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-cart me-2"></i>Historique ventes</h6>
+        </div>
+        <div class="card-body">
+            {% if sales_documents %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Numéro</th>
+                            <th>Montant TTC</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in sales_documents %}
+                        <tr>
+                            <td>{{ doc.date_issue|date:"d/m/Y" }}</td>
+                            <td>{{ doc.get_type_display }}</td>
+                            <td>{{ doc.number }}</td>
+                            <td>{{ doc.total_ttc }} €</td>
+                            <td><span class="badge bg-{{ doc.status_color }}">{{ doc.get_status_display }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-inbox display-4"></i><br>
+                Aucun document de vente
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ONGLET ACHATS -->
+    {% if current_tab == 'purchases' and partner.is_supplier %}
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Historique achats</h6>
+        </div>
+        <div class="card-body">
+            {% if purchase_documents %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Numéro</th>
+                            <th>Montant TTC</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in purchase_documents %}
+                        <tr>
+                            <td>{{ doc.date_issue|date:"d/m/Y" }}</td>
+                            <td>{{ doc.get_type_display }}</td>
+                            <td>{{ doc.number }}</td>
+                            <td>{{ doc.total_ttc }} €</td>
+                            <td><span class="badge bg-{{ doc.status_color }}">{{ doc.get_status_display }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-inbox display-4"></i><br>
+                Aucun document d'achat
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ONGLET DOCUMENTS -->
+    {% if current_tab == 'documents' %}
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-file-earmark me-2"></i>Documents</h6>
+        </div>
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-file-earmark display-4"></i>
+            <p class="mt-2 mb-0">Gestion des documents à venir</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ONGLET TIMELINE -->
+    {% if current_tab == 'timeline' %}
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Timeline</h6>
+        </div>
+        <div class="card-body">
+            {% if recent_events %}
+            <ul class="list-unstyled timeline-list">
+                {% for event in recent_events %}
+                <li class="d-flex mb-3 pb-3 border-bottom">
+                    <div class="me-3">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-{% if event.event_type == 'note' %}sticky{% elif event.event_type == 'call' %}telephone{% elif event.event_type == 'email' %}envelope{% elif event.event_type == 'order' %}cart{% else %}clock{% endif %}"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ event.title }}</strong>
+                            <small class="text-muted">{{ event.event_date|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <span class="badge bg-secondary">{{ event.get_event_type_display }}</span>
+                        {% if event.description %}
+                        <p class="text-muted small mb-0 mt-1">{{ event.description|truncatewords:30 }}</p>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-clock-history display-4"></i><br>
+                Aucun événement enregistré
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+</div>
+
+<!-- Modal ajout rôle -->
+<div class="modal fade" id="addRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{% url 'partners:partner_add_role' display_id=partner.display_id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter un rôle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select name="role" class="form-select" required>
+                        <option value="">Sélectionner un rôle</option>
+                        <option value="client">Client</option>
+                        <option value="supplier">Fournisseur</option>
+                        <option value="prospect">Prospect</option>
+                        <option value="carrier">Transporteur</option>
+                        <option value="subcontractor">Prestataire</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Métadonnées -->
+<div class="card mt-4 bg-light">
+    <div class="card-body py-2">
+        <small class="text-muted">
+            <i class="bi bi-clock me-1"></i>Créé le {{ partner.created_at|date:"d/m/Y H:i" }}
+            | Modifié le {{ partner.updated_at|date:"d/m/Y H:i" }}
+            {% if partner.internal_ref %}| Réf: {{ partner.internal_ref }}{% endif %}
+            {% if partner.source %}| Source: {{ partner.source }}{% endif %}
+        </small>
+    </div>
+</div>
+{% endblock %}

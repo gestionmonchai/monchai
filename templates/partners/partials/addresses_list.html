@@ -1,0 +1,63 @@
+{% if addresses %}
+<div class="row">
+    {% for address in addresses %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 {% if address.is_default %}border-primary{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1">
+                            {{ address.label|default:address.get_address_type_display }}
+                            {% if address.is_default %}<span class="badge bg-primary ms-1">Par défaut</span>{% endif %}
+                        </h6>
+                        <span class="badge bg-secondary">{{ address.get_address_type_display }}</span>
+                    </div>
+                    {% if user.get_active_membership.can_edit_data %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form action="{% url 'partners:address_delete' address_id=address.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Supprimer cette adresse ?')">
+                                        <i class="bi bi-trash me-2"></i>Supprimer
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                <hr class="my-2">
+                <address class="mb-0 small">
+                    {{ address.street }}<br>
+                    {% if address.street2 %}{{ address.street2 }}<br>{% endif %}
+                    {{ address.postal_code }} {{ address.city }}<br>
+                    {% if address.state %}{{ address.state }}, {% endif %}{{ address.country }}
+                </address>
+                {% if address.contact_name or address.contact_phone %}
+                <hr class="my-2">
+                <div class="small text-muted">
+                    <i class="bi bi-person me-1"></i>
+                    {{ address.contact_name|default:"-" }}
+                    {% if address.contact_phone %} - {{ address.contact_phone }}{% endif %}
+                </div>
+                {% endif %}
+                {% if address.delivery_hours %}
+                <div class="small text-muted mt-1">
+                    <i class="bi bi-clock me-1"></i>{{ address.delivery_hours }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted text-center py-4 mb-0">
+    <i class="bi bi-geo-alt display-4"></i><br>
+    Aucune adresse enregistrée
+</p>
+{% endif %}

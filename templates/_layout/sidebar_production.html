@@ -62,9 +62,6 @@
         <a href="{% url 'production:vendanges_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'vendanges_list' %}active{% endif %}">
             <i class="bi bi-list-ul me-2"></i><span class="sidebar-label">Liste vendanges</span>
         </a>
-        <a href="{% url 'production:vendanges_map' %}" class="list-group-item list-group-item-action {% if 'carte' in request.path %}active{% endif %}">
-            <i class="bi bi-geo-alt me-2"></i><span class="sidebar-label">Carte</span>
-        </a>
         <a href="{% url 'production:encuvages_list' %}" class="list-group-item list-group-item-action {% if 'encuvage' in request.path %}active{% endif %}">
             <i class="bi bi-box-arrow-in-down me-2"></i><span class="sidebar-label">Encuvages</span>
         </a>

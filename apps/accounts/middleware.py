@@ -60,12 +60,12 @@ class CurrentOrganizationMiddleware(MiddlewareMixin):
             # PROTECTION: Utilisateur sans organisation - forcer la création
             # Exclure certaines URLs pour éviter les boucles de redirection
             allowed_paths = [
-                '/auth/logout/',
-                '/auth/login/',
-                '/auth/register/',
-                '/auth/create-organization/',
-                '/auth/onboarding/',
-                '/auth/first-run/',
+                '/auth/deconnexion/',
+                '/auth/connexion/',
+                '/auth/inscription/',
+                '/auth/demarrage/organisation/',
+                '/onboarding/',
+                '/auth/demarrage/',
                 '/static/',
                 '/media/',
                 '/admin/',
@@ -77,7 +77,7 @@ class CurrentOrganizationMiddleware(MiddlewareMixin):
                 try:
                     return redirect('auth:create_organization')
                 except Exception:
-                    return redirect('/auth/create-organization/')
+                    return redirect('/auth/demarrage/organisation/')
         
         return None
 

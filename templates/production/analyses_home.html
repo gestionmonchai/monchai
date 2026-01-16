@@ -4,8 +4,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">Analyses</h1>
   <div class="btn-group">
-    <a href="/production/lots-elevage/" class="btn btn-outline-secondary">Retour Lots & Élevage</a>
-    <a href="/production/lots-techniques/?status=en_cours" class="btn btn-outline-secondary"><i class="bi bi-table me-1"></i>Vue BDD</a>
+    <a href="{% url 'production:lots_elevage_home' %}" class="btn btn-outline-secondary">Retour Lots & Élevage</a>
+    <a href="{% url 'production:lots_tech_list' %}?status=en_cours" class="btn btn-outline-secondary"><i class="bi bi-table me-1"></i>Vue BDD</a>
   </div>
 </div>
 

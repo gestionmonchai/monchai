@@ -10,7 +10,8 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from apps.accounts.models import Organization
-from apps.sales.models import Customer, Order, OrderLine
+from apps.partners.models import Contact
+from apps.sales.models import Order, OrderLine
 from apps.billing.models import AccountMap, Invoice, InvoiceLine, Payment, CreditNote, Reconciliation, GLEntry
 from apps.billing.managers import BillingManager, AccountingManager
 

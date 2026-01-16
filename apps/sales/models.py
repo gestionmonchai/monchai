@@ -81,86 +81,12 @@ class TaxCode(BaseSalesModel):
         return f"{self.code} - {self.rate_pct}% ({self.country})"
 
 
-class Customer(BaseSalesModel):
-    """
-    Client - customer
-    Gestion clients B2B et B2C
-    """
-    CUSTOMER_TYPES = [
-        ('pro', 'Professionnel'),
-        ('part', 'Particulier'),
-    ]
-
-    type = models.CharField(
-        max_length=4,
-        choices=CUSTOMER_TYPES,
-        default='part',
-        help_text="Type de client"
-    )
-    legal_name = models.CharField(max_length=200, help_text="Raison sociale ou nom complet")
-    vat_number = models.CharField(
-        max_length=20,
-        blank=True,
-        help_text="Numéro de TVA intracommunautaire (optionnel)"
-    )
-    
-    # Adresse de facturation
-    billing_address = models.TextField(help_text="Adresse de facturation complète")
-    billing_postal_code = models.CharField(max_length=10, help_text="Code postal facturation")
-    billing_city = models.CharField(max_length=100, help_text="Ville facturation")
-    billing_country = models.CharField(max_length=2, default='FR', help_text="Pays facturation (ISO)")
-    
-    # Adresse de livraison (optionnelle)
-    shipping_address = models.TextField(blank=True, help_text="Adresse de livraison (si différente)")
-    shipping_postal_code = models.CharField(max_length=10, blank=True)
-    shipping_city = models.CharField(max_length=100, blank=True)
-    shipping_country = models.CharField(max_length=2, blank=True)
-    
-    # Conditions commerciales
-    payment_terms = models.CharField(
-        max_length=50,
-        default='30j',
-        help_text="Conditions de paiement (30j, comptant, etc.)"
-    )
-    currency = models.CharField(max_length=3, default='EUR', help_text="Devise par défaut")
-    
-    is_active = models.BooleanField(default=True, help_text="Client actif")
-
-    class Meta:
-        verbose_name = "Client"
-        verbose_name_plural = "Clients"
-        unique_together = [['organization', 'legal_name']]
-        ordering = ['legal_name']
-        indexes = [
-            models.Index(fields=['organization', 'legal_name']),
-            models.Index(fields=['organization', 'vat_number']),
-            models.Index(fields=['organization', 'type']),
-        ]
-
-    def __str__(self):
-        return f"{self.legal_name} ({self.get_type_display()})"
-
-    def clean(self):
-        super().clean()
-        
-        # Validation: client pro doit avoir un numéro de TVA si assujetti
-        if self.type == 'pro' and self.billing_country in ['FR'] and not self.vat_number:
-            # Pour les pros français, TVA recommandée mais pas obligatoire (micro-entreprises)
-            pass
-        
-        # Nettoyage numéro de TVA
-        if self.vat_number:
-            self.vat_number = self.vat_number.upper().replace(' ', '')
-
-    @property
-    def display_address(self):
-        """Adresse d'affichage (facturation par défaut)"""
-        return f"{self.billing_address}, {self.billing_postal_code} {self.billing_city}"
-
-    @property
-    def has_shipping_address(self):
-        """Le client a-t-il une adresse de livraison différente ?"""
-        return bool(self.shipping_address)
+# =============================================================================
+# CUSTOMER - IMPORTÉ DEPUIS PARTNERS
+# =============================================================================
+# Le modèle Customer est maintenant unifié avec Contact dans apps.partners
+# Cette classe était un doublon - utiliser Contact depuis partners à la place
+from apps.partners.models import Contact as Customer
 
 
 class PriceList(BaseSalesMixin):

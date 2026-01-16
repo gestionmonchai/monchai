@@ -26,7 +26,7 @@
     <div class="list-group list-group-flush">
 
         <!-- Tableau de bord -->
-        <a href="/compta/" class="list-group-item list-group-item-action {% if request.path == '/compta/' %}active{% endif %}">
+        <a href="{% url 'compta:dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.namespace == 'compta' %}active{% endif %}">
             <i class="bi bi-speedometer2 me-2"></i><span class="sidebar-label">Tableau de bord</span>
         </a>
 
@@ -35,13 +35,13 @@
             <span class="sidebar-label">Écritures</span>
         </div>
         
-        <a href="/compta/stock/" class="list-group-item list-group-item-action {% if 'stock' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:stock' %}" class="list-group-item list-group-item-action {% if 'stock' in request.path %}active{% endif %}">
             <i class="bi bi-boxes me-2"></i><span class="sidebar-label">Écritures stock</span>
         </a>
-        <a href="/compta/ventes/" class="list-group-item list-group-item-action {% if 'ventes' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:ventes' %}" class="list-group-item list-group-item-action {% if 'ventes' in request.path %}active{% endif %}">
             <i class="bi bi-graph-up me-2"></i><span class="sidebar-label">Ventes (CA, TVA)</span>
         </a>
-        <a href="/compta/achats/" class="list-group-item list-group-item-action {% if 'achats' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:achats' %}" class="list-group-item list-group-item-action {% if 'achats' in request.path %}active{% endif %}">
             <i class="bi bi-cart-check me-2"></i><span class="sidebar-label">Achats</span>
         </a>
 
@@ -50,16 +50,16 @@
             <span class="sidebar-label">Exports</span>
         </div>
         
-        <a href="/compta/exports/" class="list-group-item list-group-item-action {% if 'exports' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:exports' %}" class="list-group-item list-group-item-action {% if 'exports' in request.path %}active{% endif %}">
             <i class="bi bi-download me-2"></i><span class="sidebar-label">Exports comptables</span>
         </a>
-        <a href="/compta/exports/sage/" class="list-group-item list-group-item-action {% if 'sage' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:exports' %}?format=sage" class="list-group-item list-group-item-action {% if 'sage' in request.GET.format %}active{% endif %}">
             <i class="bi bi-file-earmark-spreadsheet me-2"></i><span class="sidebar-label">Format Sage</span>
         </a>
-        <a href="/compta/exports/quadratus/" class="list-group-item list-group-item-action {% if 'quadratus' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:exports' %}?format=quadratus" class="list-group-item list-group-item-action {% if 'quadratus' in request.GET.format %}active{% endif %}">
             <i class="bi bi-file-earmark-spreadsheet me-2"></i><span class="sidebar-label">Format Quadratus</span>
         </a>
-        <a href="/compta/exports/csv/" class="list-group-item list-group-item-action {% if 'csv' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:exports' %}?format=csv" class="list-group-item list-group-item-action {% if 'csv' in request.GET.format %}active{% endif %}">
             <i class="bi bi-filetype-csv me-2"></i><span class="sidebar-label">Export CSV</span>
         </a>
 
@@ -68,10 +68,10 @@
             <span class="sidebar-label">Paramètres</span>
         </div>
         
-        <a href="/compta/plan-comptable/" class="list-group-item list-group-item-action {% if 'plan-comptable' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:plan_comptable' %}" class="list-group-item list-group-item-action {% if 'plan-comptable' in request.path %}active{% endif %}">
             <i class="bi bi-journal-bookmark me-2"></i><span class="sidebar-label">Plan comptable</span>
         </a>
-        <a href="/compta/journaux/" class="list-group-item list-group-item-action {% if 'journaux' in request.path %}active{% endif %}">
+        <a href="{% url 'compta:journaux' %}" class="list-group-item list-group-item-action {% if 'journaux' in request.path %}active{% endif %}">
             <i class="bi bi-journal-text me-2"></i><span class="sidebar-label">Journaux</span>
         </a>
 

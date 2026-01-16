@@ -13,7 +13,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h1 class="h4 mb-0">Nouveau lot technique</h1>
-    <p class="text-muted mb-0 small">Créez un lot à partir d'une vendange</p>
+    <p class="text-muted mb-0 small" id="subtitle-text">Créez un lot à partir d'une vendange</p>
   </div>
   <a href="{% url 'production:lots_tech_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Retour</a>
 </div>
@@ -26,22 +26,74 @@
 
 <form id="lottech-wizard" method="post" class="card">
   {% csrf_token %}
-  <div class="card-header">
-    <ul class="nav nav-tabs card-header-tabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-origine" data-bs-toggle="tab" data-bs-target="#pane-origine" type="button" role="tab">1. Origine & Cuvée</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-params" data-bs-toggle="tab" data-bs-target="#pane-params" type="button" role="tab">2. Destination & Paramètres</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-resume" data-bs-toggle="tab" data-bs-target="#pane-resume" type="button" role="tab">3. Résumé</button>
-      </li>
-    </ul>
+  <div class="card-body border-bottom bg-light-subtle">
+    <h6 class="mb-3"><i class="bi bi-signpost-split me-2"></i>Mode de création</h6>
+    <div class="btn-group w-100 mb-3" role="group">
+      <input type="radio" class="btn-check" name="creation_mode" id="mode_vendange" value="vendange" checked>
+      <label class="btn btn-outline-primary" for="mode_vendange">
+        <i class="bi bi-basket me-2"></i>Depuis une vendange
+        <small class="d-block text-muted mt-1">Traçabilité complète</small>
+      </label>
+      
+      <input type="radio" class="btn-check" name="creation_mode" id="mode_direct" value="direct">
+      <label class="btn btn-outline-warning" for="mode_direct">
+        <i class="bi bi-lightning me-2"></i>Création directe
+        <small class="d-block text-muted mt-1">Sans vendange préalable</small>
+      </label>
+    </div>
+
+    <!-- Disclaimer pour création directe -->
+    <div class="alert alert-warning mb-0" id="disclaimer-direct" style="display:none;">
+      <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Attention : Traçabilité limitée</h6>
+      <p class="mb-2">En créant un lot directement sans vendange, vous ne pourrez pas :</p>
+      <ul class="mb-3">
+        <li>Lier le lot à une parcelle spécifique</li>
+        <li>Conserver les données de vendange (poids, degré, date de récolte)</li>
+        <li>Générer une traçabilité complète pour les exports réglementaires</li>
+      </ul>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="accept_disclaimer" name="accept_disclaimer">
+        <label class="form-check-label fw-bold" for="accept_disclaimer">
+          Je comprends et accepte de créer un lot sans traçabilité complète
+        </label>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Barre de progression pour mode vendange -->
+  <div class="card-header" id="progress-vendange">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-basket me-2"></i>Création depuis vendange</h6>
+      <small class="text-muted">Traçabilité complète</small>
+    </div>
+    <div class="progress" style="height: 8px;">
+      <div class="progress-bar" id="progress-bar-vendange" role="progressbar" style="width: 33%" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2 small">
+      <span class="step-label active" id="step-v1"><i class="bi bi-1-circle-fill"></i> Vendange</span>
+      <span class="step-label" id="step-v2"><i class="bi bi-2-circle"></i> Contenant</span>
+      <span class="step-label" id="step-v3"><i class="bi bi-3-circle"></i> Validation</span>
+    </div>
+  </div>
+  
+  <!-- Barre de progression pour mode direct -->
+  <div class="card-header" id="progress-direct" style="display:none;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Création directe</h6>
+      <small class="text-muted">Sans vendange préalable</small>
+    </div>
+    <div class="progress" style="height: 8px;">
+      <div class="progress-bar bg-warning" id="progress-bar-direct" role="progressbar" style="width: 33%" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2 small">
+      <span class="step-label active" id="step-d1"><i class="bi bi-1-circle-fill"></i> Informations</span>
+      <span class="step-label" id="step-d2"><i class="bi bi-2-circle"></i> Contenant</span>
+      <span class="step-label" id="step-d3"><i class="bi bi-3-circle"></i> Validation</span>
+    </div>
   </div>
 
   <div class="card-body tab-content">
-    <!-- Origine & Cuvée -->
+    <!-- Origine & Cuvée (mode vendange) -->
     <div class="tab-pane fade show active" id="pane-origine" role="tabpanel" aria-labelledby="tab-origine">
       <div class="row g-3 align-items-end mb-3">
         <div class="col-md-5">
@@ -75,13 +127,25 @@
           </thead>
           <tbody>
             {% for v in vendanges %}
-              <tr data-id="{{ v.id }}" data-code="{{ v.code }}" data-parcelle="{{ v.parcelle }}" data-cuvee="{{ v.cuvee }}" data-cuvee-id="{{ v.cuvee_id }}" data-kg="{{ v.kg_restant }}">
+              <tr data-id="{{ v.id }}" data-code="{{ v.code }}" data-parcelle="{{ v.parcelle }}" data-cuvee="{{ v.cuvee }}" data-cuvee-id="{{ v.cuvee_id }}" data-kg="{{ v.kg_restant }}" class="{% if v.kg_restant <= 0 %}table-secondary{% endif %}">
                 <td><span class="fw-semibold">{{ v.code|default:'—' }}</span></td>
                 <td>{{ v.date }}</td>
                 <td>{{ v.parcelle|default:'—' }}</td>
                 <td>{% if v.cuvee %}<span class="badge bg-primary">{{ v.cuvee }}</span>{% else %}<span class="text-danger small">Non affectée</span>{% endif %}</td>
-                <td class="text-end"><span class="badge {% if v.kg_restant > 0 %}bg-success{% else %}bg-secondary{% endif %}">{{ v.kg_restant }} kg</span></td>
-                <td class="text-end"><button type="button" class="btn btn-sm btn-outline-primary" onclick="selectVendange(this)">Choisir</button></td>
+                <td class="text-end">
+                  {% if v.kg_restant > 0 %}
+                    <span class="badge bg-success">{{ v.kg_restant }} kg</span>
+                  {% else %}
+                    <span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Épuisée</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  {% if v.kg_restant > 0 %}
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectVendange(this)">Choisir</button>
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Vendange épuisée"><i class="bi bi-lock"></i></button>
+                  {% endif %}
+                </td>
               </tr>
             {% empty %}
               <tr><td colspan="6" class="text-center text-muted">Aucune vendange disponible</td></tr>
@@ -92,6 +156,74 @@
       <input type="hidden" name="vendange_id" id="vendange_id">
       <div class="mt-3">
         <div class="alert alert-info mb-0" id="vendangeSelected" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Création directe (mode direct) -->
+    <div class="tab-pane fade" id="pane-direct" role="tabpanel" aria-labelledby="tab-direct" style="display:none;">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Campagne <span class="text-danger">*</span></label>
+          <input type="text" name="campagne" id="campagne_direct" class="form-control" placeholder="Ex: 2024-2025" pattern="\d{4}-\d{4}" value="{{ default_campagne }}">
+          <small class="text-muted">Format: AAAA-AAAA</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold"><i class="bi bi-wine me-1"></i>Cuvée <span class="text-danger">*</span></label>
+          <select name="cuvee_id_direct" id="cuvee_id_direct" class="form-select">
+            <option value="">— Sélectionner une cuvée —</option>
+            {% for c in cuvees %}
+              <option value="{{ c.id }}">{{ c.nom }}{% if c.couleur %} ({{ c.couleur }}){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Volume initial (L) <span class="text-danger">*</span></label>
+          <input type="number" step="0.01" min="0.01" name="volume_initial_l" id="volume_initial_l" class="form-control" placeholder="Ex: 1000">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Date d'encuvage <span class="text-danger">*</span></label>
+          <input type="date" name="date_encuvage" id="date_encuvage" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Statut initial</label>
+          <select name="statut_initial" id="statut_initial" class="form-select">
+            <option value="VIN_ELEVAGE" selected>Vin en élevage</option>
+            <option value="MOUT_ENCUVE">Moût encuvé</option>
+            <option value="VIN_EN_FA">Vin en FA</option>
+            <option value="VIN_POST_FA">Vin post-FA</option>
+            <option value="VIN_EN_FML">Vin en FML</option>
+            <option value="VIN_STABILISE">Vin stabilisé</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nom du lot <span class="text-muted">(optionnel)</span></label>
+          <input type="text" name="nom_lot" id="nom_lot" class="form-control" placeholder="Ex: Cuvée Prestige 2024" value="{{ default_lot_name }}" data-auto-generated="true">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Origine géographique <span class="text-muted">(optionnel)</span></label>
+          <input type="text" name="origine_geo" id="origine_geo" class="form-control" placeholder="Ex: Parcelle Les Vignes">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Cépages <span class="text-muted">(optionnel)</span></label>
+          <input type="text" name="cepages" id="cepages" class="form-control" placeholder="Ex: Merlot 60%, Cabernet 40%">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Température (°C)</label>
+          <input type="number" step="0.1" name="temperature_c_direct" id="temperature_c_direct" class="form-control" placeholder="18.5">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Mode encuvage</label>
+          <select name="mode_encuvage_direct" id="mode_encuvage_direct" class="form-select">
+            <option value="">—</option>
+            <option value="égrappé">Égrappé</option>
+            <option value="entier">Grappes entières</option>
+            <option value="pressurage_direct">Pressurage direct</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea name="notes_direct" id="notes_direct" class="form-control" rows="3" placeholder="Notes sur l'origine, la vinification, etc."></textarea>
+        </div>
       </div>
     </div>
 
@@ -210,16 +342,240 @@
   </div>
 
   <div class="card-footer d-flex justify-content-between">
-    <div class="text-muted small">Statuts disponibles: <span class="badge bg-secondary">En élevage</span> <span class="badge bg-warning text-dark">Prêt mise</span> <span class="badge bg-dark">Épuisés</span> (gérés ensuite depuis la fiche du lot).</div>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-outline-secondary" onclick="prevTab()">Précédent</button>
-      <button type="button" class="btn btn-outline-primary" onclick="nextTab()">Suivant</button>
-      <button type="submit" class="btn btn-primary" onclick="return validateBeforeSubmit()">Créer le lot</button>
+    <button type="button" class="btn btn-outline-secondary" id="btn-prev" onclick="prevStep()" style="display:none;"><i class="bi bi-arrow-left me-1"></i>Précédent</button>
+    <div class="ms-auto d-flex gap-2">
+      <button type="button" class="btn btn-primary" id="btn-next" onclick="nextStep()">Suivant<i class="bi bi-arrow-right ms-1"></i></button>
+      <button type="submit" class="btn btn-success" id="btn-submit" style="display:none;" onclick="return validateBeforeSubmit()"><i class="bi bi-check-circle me-1"></i>Créer le lot</button>
     </div>
   </div>
 </form>
 
+<style>
+.step-label {
+  color: #6c757d;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+.step-label.active {
+  color: #0d6efd;
+  font-weight: 600;
+}
+.step-label.completed {
+  color: #198754;
+}
+.step-label i {
+  font-size: 1.1rem;
+  vertical-align: middle;
+}
+</style>
+
 <script>
+  // Variables globales pour la gestion des étapes
+  let currentStep = 1;
+  let currentMode = 'vendange';
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const modeRadios = document.querySelectorAll('input[name="creation_mode"]');
+    const disclaimerDiv = document.getElementById('disclaimer-direct');
+    const paneOrigine = document.getElementById('pane-origine');
+    const paneDirect = document.getElementById('pane-direct');
+    const paneParams = document.getElementById('pane-params');
+    const paneResume = document.getElementById('pane-resume');
+    const subtitleText = document.getElementById('subtitle-text');
+    const progressVendange = document.getElementById('progress-vendange');
+    const progressDirect = document.getElementById('progress-direct');
+    
+    const campagneInput = document.getElementById('campagne_direct');
+    const lotNameInput = document.getElementById('nom_lot');
+
+    function autoUpdateLotName() {
+      if (!lotNameInput) return;
+      const isAuto = lotNameInput.dataset.autoGenerated === 'true';
+      if (!isAuto) return;
+      const campagne = (campagneInput?.value || '').trim();
+      const year = campagne.split('-')[0] || '';
+      if (year.match(/^\d{4}$/)) {
+        lotNameInput.value = `Cuvée ${year}`;
+      }
+    }
+
+    if (campagneInput) {
+      campagneInput.addEventListener('input', autoUpdateLotName);
+    }
+    if (lotNameInput) {
+      lotNameInput.addEventListener('input', () => { lotNameInput.dataset.autoGenerated = 'false'; });
+    }
+
+    function updateMode() {
+      const isDirect = document.getElementById('mode_direct').checked;
+      currentMode = isDirect ? 'direct' : 'vendange';
+      currentStep = 1;
+      
+      // Afficher/masquer les sections
+      disclaimerDiv.style.display = isDirect ? '' : 'none';
+      progressVendange.style.display = isDirect ? 'none' : '';
+      progressDirect.style.display = isDirect ? '' : 'none';
+      
+      // Réinitialiser les panes
+      paneOrigine.classList.remove('show', 'active');
+      paneDirect.classList.remove('show', 'active');
+      paneParams.classList.remove('show', 'active');
+      paneResume.classList.remove('show', 'active');
+      
+      // Afficher le premier pane selon le mode
+      if (isDirect) {
+        paneDirect.classList.add('show', 'active');
+        paneDirect.style.display = '';
+        paneOrigine.style.display = 'none';
+        subtitleText.textContent = 'Création directe sans vendange préalable';
+      } else {
+        paneOrigine.classList.add('show', 'active');
+        paneOrigine.style.display = '';
+        paneDirect.style.display = 'none';
+        subtitleText.textContent = 'Créez un lot à partir d\'une vendange';
+      }
+      
+      // Ajuster les champs requis
+      document.getElementById('vendange_id').required = !isDirect;
+      document.getElementById('accept_disclaimer').required = isDirect;
+      
+      const directFields = ['campagne_direct', 'cuvee_id_direct', 'volume_initial_l', 'date_encuvage'];
+      directFields.forEach(id => {
+        const field = document.getElementById(id);
+        if (field) field.required = isDirect;
+      });
+      
+      // Réinitialiser la progression
+      if (isDirect) {
+        autoUpdateLotName();
+      }
+      updateProgress();
+    }
+    
+    modeRadios.forEach(radio => {
+      radio.addEventListener('change', updateMode);
+    });
+    
+    // Initialiser l'état au chargement
+    updateMode();
+  });
+  
+  // Mise à jour de la barre de progression
+  function updateProgress() {
+    const isDirect = currentMode === 'direct';
+    const progressBar = isDirect ? document.getElementById('progress-bar-direct') : document.getElementById('progress-bar-vendange');
+    const prefix = isDirect ? 'd' : 'v';
+    
+    // Calculer le pourcentage
+    const percent = (currentStep / 3) * 100;
+    progressBar.style.width = percent + '%';
+    progressBar.setAttribute('aria-valuenow', percent);
+    
+    // Mettre à jour les labels d'étapes
+    for (let i = 1; i <= 3; i++) {
+      const stepLabel = document.getElementById('step-' + prefix + i);
+      const icon = stepLabel.querySelector('i');
+      
+      if (i < currentStep) {
+        stepLabel.classList.add('completed');
+        stepLabel.classList.remove('active');
+        icon.className = 'bi bi-check-circle-fill';
+      } else if (i === currentStep) {
+        stepLabel.classList.add('active');
+        stepLabel.classList.remove('completed');
+        icon.className = 'bi bi-' + i + '-circle-fill';
+      } else {
+        stepLabel.classList.remove('active', 'completed');
+        icon.className = 'bi bi-' + i + '-circle';
+      }
+    }
+    
+    // Afficher/masquer les boutons
+    document.getElementById('btn-prev').style.display = currentStep > 1 ? '' : 'none';
+    document.getElementById('btn-next').style.display = currentStep < 3 ? '' : 'none';
+    document.getElementById('btn-submit').style.display = currentStep === 3 ? '' : 'none';
+  }
+  
+  // Navigation entre les étapes
+  function nextStep() {
+    const isDirect = currentMode === 'direct';
+    
+    // Validation avant de passer à l'étape suivante
+    if (currentStep === 1) {
+      if (isDirect) {
+        // Valider disclaimer et champs obligatoires
+        const disclaimer = document.getElementById('accept_disclaimer');
+        if (!disclaimer.checked) {
+          alert('Vous devez accepter le disclaimer pour continuer.');
+          return;
+        }
+        const campagne = document.getElementById('campagne_direct').value.trim();
+        const cuvee = document.getElementById('cuvee_id_direct').value.trim();
+        const volume = document.getElementById('volume_initial_l').value.trim();
+        const date = document.getElementById('date_encuvage').value.trim();
+        
+        if (!campagne || !cuvee || !volume || !date) {
+          alert('Veuillez remplir tous les champs obligatoires.');
+          return;
+        }
+      } else {
+        // Valider vendange sélectionnée
+        const vendangeId = document.getElementById('vendange_id').value;
+        if (!vendangeId) {
+          alert('Veuillez sélectionner une vendange.');
+          return;
+        }
+      }
+    } else if (currentStep === 2) {
+      // Valider contenant
+      const contenant = document.getElementById('contenant').value.trim();
+      if (!contenant) {
+        alert('Veuillez sélectionner un contenant.');
+        return;
+      }
+    }
+    
+    // Passer à l'étape suivante
+    currentStep++;
+    showStep(currentStep);
+    updateProgress();
+  }
+  
+  function prevStep() {
+    if (currentStep > 1) {
+      currentStep--;
+      showStep(currentStep);
+      updateProgress();
+    }
+  }
+  
+  function showStep(step) {
+    const isDirect = currentMode === 'direct';
+    const paneOrigine = document.getElementById('pane-origine');
+    const paneDirect = document.getElementById('pane-direct');
+    const paneParams = document.getElementById('pane-params');
+    const paneResume = document.getElementById('pane-resume');
+    
+    // Masquer tous les panes
+    [paneOrigine, paneDirect, paneParams, paneResume].forEach(pane => {
+      pane.classList.remove('show', 'active');
+    });
+    
+    // Afficher le pane approprié
+    if (step === 1) {
+      if (isDirect) {
+        paneDirect.classList.add('show', 'active');
+      } else {
+        paneOrigine.classList.add('show', 'active');
+      }
+    } else if (step === 2) {
+      paneParams.classList.add('show', 'active');
+    } else if (step === 3) {
+      paneResume.classList.add('show', 'active');
+      updateResume();
+    }
+  }
+
   // Filtrage des vendanges par recherche
   function filterVendanges(){
     const q = (document.getElementById('vendangeSearch').value || '').toLowerCase();
@@ -240,7 +596,13 @@
     const parc = tr.dataset.parcelle;
     const cuv = tr.dataset.cuvee;
     const cuvId = tr.dataset.cuveeId;
-    const kg = tr.dataset.kg;
+    const kg = parseFloat(tr.dataset.kg);
+    
+    // Vérifier que la vendange a du raisin restant
+    if (kg <= 0) {
+      alert('Cette vendange est épuisée. Veuillez en sélectionner une autre.');
+      return;
+    }
     
     document.getElementById('vendange_id').value = id;
     
@@ -266,9 +628,8 @@
     document.querySelectorAll('#vendangesTable tbody tr').forEach(r => r.classList.remove('table-primary'));
     tr.classList.add('table-primary');
     
-    // Aller à l'onglet paramètres
-    document.querySelector('#tab-params').click();
-    updateResume();
+    // Passer automatiquement à l'étape suivante
+    nextStep();
   }
 
   // Filtrage des contenants par type (cuve/barrique)
@@ -319,24 +680,6 @@
     updateResume();
   }
 
-  // Navigation onglets
-  function nextTab(){
-    const active = document.querySelector('.nav-link.active');
-    if (active && active.id === 'tab-origine'){ 
-      document.querySelector('#tab-params').click(); 
-    } else if (active && active.id === 'tab-params'){ 
-      document.querySelector('#tab-resume').click(); 
-      updateResume(); 
-    }
-  }
-  function prevTab(){
-    const active = document.querySelector('.nav-link.active');
-    if (active && active.id === 'tab-resume'){ 
-      document.querySelector('#tab-params').click(); 
-    } else if (active && active.id === 'tab-params'){ 
-      document.querySelector('#tab-origine').click(); 
-    }
-  }
 
   // Mise à jour du résumé
   function updateResume(){
@@ -399,18 +742,61 @@
 
   // Validation avant soumission
   function validateBeforeSubmit(){
-    const v = document.getElementById('vendange_id').value;
-    if (!v){ 
-      alert('Sélectionnez une vendange.'); 
-      document.querySelector('#tab-origine').click(); 
-      return false; 
+    const isDirect = document.getElementById('mode_direct').checked;
+    
+    if (isDirect) {
+      // Validation mode direct
+      const disclaimer = document.getElementById('accept_disclaimer');
+      if (!disclaimer.checked) {
+        alert('Vous devez accepter le disclaimer pour créer un lot sans vendange.');
+        return false;
+      }
+      
+      const campagne = document.getElementById('campagne_direct').value.trim();
+      if (!campagne) {
+        alert('La campagne est obligatoire.');
+        document.querySelector('#tab-origine').click();
+        return false;
+      }
+      
+      const cuvee = document.getElementById('cuvee_id_direct').value.trim();
+      if (!cuvee) {
+        alert('La cuvée est obligatoire.');
+        document.querySelector('#tab-origine').click();
+        return false;
+      }
+      
+      const volume = document.getElementById('volume_initial_l').value.trim();
+      if (!volume || parseFloat(volume) <= 0) {
+        alert('Le volume initial doit être supérieur à 0.');
+        document.querySelector('#tab-origine').click();
+        return false;
+      }
+      
+      const date = document.getElementById('date_encuvage').value.trim();
+      if (!date) {
+        alert('La date d\'encuvage est obligatoire.');
+        document.querySelector('#tab-origine').click();
+        return false;
+      }
+    } else {
+      // Validation mode vendange (existant)
+      const v = document.getElementById('vendange_id').value;
+      if (!v){ 
+        alert('Sélectionnez une vendange.'); 
+        document.querySelector('#tab-origine').click(); 
+        return false; 
+      }
     }
+    
+    // Validation commune: contenant
     const cont = document.getElementById('contenant').value.trim();
     if (!cont){ 
       alert('Sélectionnez une cuve ou barrique.'); 
       document.querySelector('#tab-params').click(); 
       return false; 
     }
+    
     return true;
   }
 </script>

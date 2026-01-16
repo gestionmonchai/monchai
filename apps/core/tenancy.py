@@ -27,7 +27,9 @@ class TenantManager(models.Manager):
             q = Q()
             for lk in lookups:
                 q |= Q(**{lk: org})
-            return qs.filter(q)
+            # Relations traversed in lookups can duplicate rows (e.g., multiple lignes/lots).
+            # Distinct ensures primary-key uniqueness for downstream get()/count().
+            return qs.filter(q).distinct()
         field = getattr(self.model, 'TENANT_ORG_FIELD', None)
         if field:
             return qs.filter(**{field: org})

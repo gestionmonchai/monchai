@@ -1,105 +1,134 @@
 {% load static %}
 <div class="card shadow-sm mb-4 border-0">
-    <!-- HEADER VENTES - Bleu -->
-    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+    <!-- HEADER VENTES - Bordeaux -->
+    <div class="card-header border-0 py-2" style="background: linear-gradient(135deg, #8B1538 0%, #722f37 100%);">
         <div class="d-flex justify-content-between align-items-center">
             <!-- Logo + Titre -->
             <div class="d-flex align-items-center gap-2">
-                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                <div class="bg-white bg-opacity-10 rounded-2 p-1 d-flex align-items-center justify-content-center"
+                    style="width: 28px; height: 28px;">
                     <i class="bi bi-graph-up-arrow text-white"></i>
                 </div>
                 <span class="sidebar-label text-white fw-semibold" style="font-size: 0.9rem;">Ventes</span>
             </div>
-            
+
             <!-- Actions: Toggle -->
             <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block" id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-none d-lg-block"
+                    id="btnToggleSidebarDesktop" title="Réduire/Déplier le menu">
                     <i class="bi bi-chevron-left" id="desktopChevron"></i>
                 </button>
-                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none" id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
+                <button class="btn btn-sm btn-link text-white text-decoration-none p-0 d-lg-none"
+                    id="btnToggleSidebarMobile" title="Afficher/Masquer le menu">
                     <i class="bi bi-chevron-down" id="mobileMenuChevron"></i>
                 </button>
             </div>
         </div>
     </div>
-    
+
     <div class="list-group list-group-flush">
 
         <!-- Tableau de bord -->
-        <a href="{% url 'ventes:dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <a href="{% url 'ventes:dashboard' %}"
+            class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="bi bi-speedometer2 me-2"></i><span class="sidebar-label">Tableau de bord</span>
         </a>
 
         <!-- Gestion Commerciale (Fusion Clients + Pipeline) -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-primary">
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2"
+            style="color: #0d6efd;">
             <span class="sidebar-label">Gestion Commerciale</span>
         </div>
-        
-        <a href="{% url 'clients:customers_list' %}?segment=business" class="list-group-item list-group-item-action {% if '/clients/' in request.path and 'nouveau' not in request.path %}active{% endif %}">
+
+        <a href="/ventes/clients/"
+            class="list-group-item list-group-item-action {% if '/ventes/clients' in request.path %}active{% endif %}">
             <i class="bi bi-people me-2"></i><span class="sidebar-label">Clients</span>
         </a>
-        <a href="{% url 'ventes:pipeline' %}" class="list-group-item list-group-item-action {% if 'pipeline' in request.path %}active{% endif %}">
+        <a href="{% url 'ventes:pipeline' %}"
+            class="list-group-item list-group-item-action {% if 'pipeline' in request.path %}active{% endif %}">
             <i class="bi bi-funnel me-2"></i><span class="sidebar-label">Pipeline</span>
         </a>
-        <a href="{% url 'ventes:quotes_list' %}" class="list-group-item list-group-item-action {% if 'devis' in request.path %}active{% endif %}">
+        <a href="{% url 'ventes:quotes_list' %}"
+            class="list-group-item list-group-item-action {% if 'devis' in request.path %}active{% endif %}">
             <i class="bi bi-file-earmark-text me-2"></i><span class="sidebar-label">Devis / Proformas</span>
         </a>
-        <a href="{% url 'ventes:pricelist_list' %}" class="list-group-item list-group-item-action {% if 'grilletarifs' in request.path %}active{% endif %}">
+        <a href="{% url 'ventes:pricelist_list' %}"
+            class="list-group-item list-group-item-action {% if 'grilletarifs' in request.path %}active{% endif %}">
             <i class="bi bi-currency-euro me-2"></i><span class="sidebar-label">Grilles tarifaires</span>
-        </a>
-        <a href="{% url 'ventes:conditions_list' %}" class="list-group-item list-group-item-action {% if 'conditions' in request.path %}active{% endif %}">
-            <i class="bi bi-card-text me-2"></i><span class="sidebar-label">Conditions de vente</span>
         </a>
 
         <!-- Commandes & Exécution -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-primary">
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2"
+            style="color: #722f37;">
             <span class="sidebar-label">Commandes & Exécution</span>
         </div>
-        
-        <a href="{% url 'ventes:orders_list' %}" class="list-group-item list-group-item-action {% if 'commandes' in request.path %}active{% endif %}">
+
+        <a href="{% url 'ventes:orders_list' %}"
+            class="list-group-item list-group-item-action {% if 'commandes' in request.path %}active{% endif %}">
             <i class="bi bi-cart me-2"></i><span class="sidebar-label">Commandes clients</span>
         </a>
-        <a href="{% url 'ventes:deliveries_list' %}" class="list-group-item list-group-item-action {% if 'livraisons' in request.path %}active{% endif %}">
+        <a href="{% url 'ventes:deliveries_list' %}"
+            class="list-group-item list-group-item-action {% if 'livraisons' in request.path %}active{% endif %}">
             <i class="bi bi-truck me-2"></i><span class="sidebar-label">Livraisons (BL)</span>
         </a>
 
         <!-- Facturation -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-primary">
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2"
+            style="color: #198754;">
             <span class="sidebar-label">Facturation</span>
         </div>
-        
-        <a href="{% url 'ventes:invoices_list' %}" class="list-group-item list-group-item-action {% if 'factures' in request.path %}active{% endif %}">
+
+        <a href="{% url 'ventes:invoices_list' %}"
+            class="list-group-item list-group-item-action {% if 'factures' in request.path %}active{% endif %}">
             <i class="bi bi-receipt me-2"></i><span class="sidebar-label">Factures</span>
         </a>
-        <a href="{% url 'ventes:credit_notes_list' %}" class="list-group-item list-group-item-action {% if 'avoirs' in request.path %}active{% endif %}">
+        <a href="{% url 'ventes:credit_notes_list' %}"
+            class="list-group-item list-group-item-action {% if 'avoirs' in request.path %}active{% endif %}">
             <i class="bi bi-arrow-counterclockwise me-2"></i><span class="sidebar-label">Avoirs</span>
         </a>
 
         <!-- Encaissements -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-primary">
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2"
+            style="color: #be185d;">
             <span class="sidebar-label">Encaissements</span>
         </div>
-        
-        <a href="{% url 'ventes:payment_schedule' %}" class="list-group-item list-group-item-action {% if 'echeancier' in request.path %}active{% endif %}">
+
+        <a href="{% url 'ventes:payment_schedule' %}"
+            class="list-group-item list-group-item-action {% if 'echeancier' in request.path %}active{% endif %}">
             <i class="bi bi-calendar-event me-2"></i><span class="sidebar-label">Échéancier</span>
         </a>
-        <a href="{% url 'ventes:payment_list' %}" class="list-group-item list-group-item-action {% if 'encaissements' in request.path %}active{% endif %}">
+        <a href="{% url 'ventes:payment_list' %}"
+            class="list-group-item list-group-item-action {% if 'encaissements' in request.path %}active{% endif %}">
             <i class="bi bi-cash-coin me-2"></i><span class="sidebar-label">Encaissements</span>
         </a>
 
-        <!-- Articles & Tarifs -->
-        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2 text-primary">
-            <span class="sidebar-label">Articles & Tarifs</span>
+        <!-- Produits & Tarifs -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2"
+            style="color: #20c997;">
+            <span class="sidebar-label">Produits & Tarifs</span>
         </div>
-        
-        <a href="{% url 'ventes:article_create' %}" class="list-group-item list-group-item-action text-primary fw-bold">
-            <i class="bi bi-plus-circle me-2"></i><span class="sidebar-label">Nouveau produit</span>
-        </a>
-        <a href="{% url 'ventes:article_list' %}" class="list-group-item list-group-item-action {% if '/ventes/articles/' in request.path %}active{% endif %}">
-            <i class="bi bi-tags me-2"></i><span class="sidebar-label">Articles</span>
+
+        <a href="{% url 'ventes:produit_list' %}"
+            class="list-group-item list-group-item-action {% if '/ventes/produits/' in request.path %}active{% endif %}">
+            <i class="bi bi-tags me-2"></i><span class="sidebar-label">Produits</span>
         </a>
         <a href="#" class="list-group-item list-group-item-action text-muted">
             <i class="bi bi-percent me-2"></i><span class="sidebar-label">Tarifs & Remises</span>
+        </a>
+
+        <!-- Documents -->
+        <div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2"
+            style="color: #6f42c1;">
+            <span class="sidebar-label">Documents</span>
+        </div>
+
+        <a href="{% url 'ventes:template_list' %}"
+            class="list-group-item list-group-item-action {% if '/ventes/modeles' in request.path %}active{% endif %}">
+            <i class="bi bi-file-earmark-code me-2"></i><span class="sidebar-label">Modèles de documents</span>
+        </a>
+        <a href="{% url 'ventes:conditions_list' %}"
+            class="list-group-item list-group-item-action {% if 'conditions' in request.path %}active{% endif %}">
+            <i class="bi bi-card-text me-2"></i><span class="sidebar-label">Conditions de vente</span>
         </a>
 
     </div>

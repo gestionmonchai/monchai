@@ -1,0 +1,591 @@
+{% extends 'commerce/base_commerce.html' %}
+{% load humanize %}
+
+{% block title %}Clients - Ventes · {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .client-row.active {
+        background: rgba(212, 175, 55, 0.08);
+    }
+    .client-preview-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(16, 7, 9, 0.35);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 1040;
+    }
+    .client-preview-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .client-preview-sidebar {
+        position: fixed;
+        top: 60px;
+        bottom: 60px;
+        right: -420px;
+        width: 380px;
+        background: linear-gradient(165deg, #ffffff 0%, #fdf5ea 65%, #f9f0df 100%);
+        border-radius: 20px 0 0 20px;
+        box-shadow: -12px 0 40px rgba(114, 47, 55, 0.25);
+        border: 1px solid rgba(114, 47, 55, 0.08);
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1050;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .client-preview-sidebar.open {
+        right: 20px;
+    }
+    .client-preview-header {
+        padding: 1.75rem;
+        border-bottom: 1px solid rgba(114, 47, 55, 0.1);
+        background: linear-gradient(120deg, #7a2c36, #5c1e29);
+        color: #fff;
+        position: relative;
+    }
+    .client-preview-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.4);
+        font-weight: 700;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .client-preview-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+    .client-preview-card {
+        background: rgba(255,255,255,0.9);
+        border: 1px solid rgba(114, 47, 55, 0.08);
+        border-radius: 16px;
+        padding: 1rem;
+    }
+    .client-preview-card h3 {
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #946c59;
+        margin-bottom: 0.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-weight: 700;
+    }
+    .client-preview-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+    .client-preview-stat {
+        text-align: center;
+        padding: 0.75rem;
+        border-radius: 12px;
+        border: 1px solid rgba(114, 47, 55, 0.08);
+        background: #fff;
+    }
+    .client-preview-stat span {
+        display: block;
+    }
+    .client-preview-stat .label {
+        font-size: 0.7rem;
+        color: #b08a78;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .client-preview-stat .value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #5a1f29;
+    }
+    .client-preview-footer {
+        padding: 1.25rem;
+        border-top: 1px solid rgba(114, 47, 55, 0.08);
+        background: rgba(255,255,255,0.9);
+    }
+    .client-preview-footer .btn {
+        font-weight: 600;
+    }
+    @media (max-width: 991.98px) {
+        .client-preview-sidebar {
+            right: 0;
+            width: 100%;
+            top: auto;
+            bottom: 0;
+            height: 90vh;
+            border-radius: 20px 20px 0 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block commerce_content %}
+<div class="py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <p class="text-uppercase text-muted small mb-1">Ventes</p>
+            <h1 class="h2 mb-1">Clients & Relations commerciales</h1>
+            <p class="text-muted mb-0">Vue consolidée de vos clients actifs et prospects.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'partners:partners_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ul me-1"></i> Mode avancé
+            </a>
+            <a href="{% url 'partners:partner_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nouveau client
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted text-uppercase small fw-bold">Total clients</span>
+                        <i class="bi bi-people text-wine"></i>
+                    </div>
+                    <div class="display-6 fw-bold mt-2">{{ stats.total }}</div>
+                    <p class="small text-muted mb-0">Base complète.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted text-uppercase small fw-bold">Actifs</span>
+                        <i class="bi bi-check2-circle text-success"></i>
+                    </div>
+                    <div class="display-6 fw-bold mt-2">{{ stats.active }}</div>
+                    <p class="small text-muted mb-0">{{ stats.active_percent }} % de la base</p>
+                    <p class="small text-muted mb-0">Clients exploitables.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted text-uppercase small fw-bold">Nouveaux (mois)</span>
+                        <i class="bi bi-stars text-warning"></i>
+                    </div>
+                    <div class="display-6 fw-bold mt-2">{{ stats.new_this_month }}</div>
+                    <p class="small text-muted mb-0">Créés depuis le 1ᵉʳ {{ now|date:"F" }}.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted text-uppercase small fw-bold">Segments suivis</span>
+                        <i class="bi bi-diagram-3 text-primary"></i>
+                    </div>
+                    <div class="display-6 fw-bold mt-2">{{ stats.segments_count }}</div>
+                    <p class="small text-muted mb-0">Répartition par typologie.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres + liste -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <form method="get" id="clientFilters" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="client-search" class="form-label text-uppercase small fw-bold">Recherche rapide</label>
+                            <input type="text"
+                                   id="client-search"
+                                   class="form-control"
+                                   name="q"
+                                   value="{{ filters.query }}"
+                                   placeholder="Nom, email, téléphone, TVA...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-uppercase small fw-bold" for="client-segment">Segment</label>
+                            <select name="segment" id="client-segment" class="form-select">
+                                <option value="">Tous</option>
+                                {% for key, label in segment_choices %}
+                                <option value="{{ key }}" {% if filters.segment == key %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-uppercase small fw-bold" for="client-status">Statut</label>
+                            <select name="status" id="client-status" class="form-select">
+                                <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Actifs</option>
+                                <option value="all" {% if filters.status == 'all' %}selected{% endif %}>Tous</option>
+                                <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>Inactifs</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-uppercase small fw-bold" for="client-sort">Tri</label>
+                            <select name="sort" id="client-sort" class="form-select">
+                                <option value="name_asc" {% if filters.sort == 'name_asc' %}selected{% endif %}>Nom A → Z</option>
+                                <option value="name_desc" {% if filters.sort == 'name_desc' %}selected{% endif %}>Nom Z → A</option>
+                                <option value="recent_update" {% if filters.sort == 'recent_update' %}selected{% endif %}>Mises à jour récentes</option>
+                                <option value="created_desc" {% if filters.sort == 'created_desc' %}selected{% endif %}>Créations récentes</option>
+                                <option value="created_asc" {% if filters.sort == 'created_asc' %}selected{% endif %}>Créations anciennes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 d-flex gap-2 justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i> Rechercher
+                            </button>
+                            <a href="{% url 'ventes:clients_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Effacer
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="text-uppercase small fw-bold">Clients</span>
+                    <span class="badge bg-light text-dark">{{ page_obj.paginator.count }} entrées</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nom</th>
+                                <th>Segment</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in page_obj %}
+                            <tr class="client-row"
+                                data-client-row
+                                data-name="{{ customer.name|default_if_none:''|escape }}"
+                                data-segment="{{ customer.segment|default_if_none:''|escape }}"
+                                data-segment-label="{{ customer.get_segment_display|default_if_none:''|escape }}"
+                                data-email="{{ customer.email|default_if_none:''|escape }}"
+                                data-phone="{{ customer.phone|default_if_none:''|escape }}"
+                                data-country="{{ customer.country_code|default_if_none:'—'|upper }}"
+                                data-status="{{ customer.is_active|yesno:'Actif,Inactif' }}"
+                                data-vat="{{ customer.vat_number|default_if_none:'—'|escape }}"
+                                data-updated="{{ customer.updated_at|date:'d/m/Y' }}"
+                                data-created="{{ customer.created_at|date:'d/m/Y' }}"
+                                data-url="{% url 'partners:partner_detail' customer.display_id %}"
+                                data-phone-tel="{{ customer.phone_tel_href|default_if_none:'' }}"
+                                data-phone-whatsapp="{{ customer.phone_whatsapp_href|default_if_none:'' }}"
+                                data-notes="Bientôt disponible"
+                                data-segment-badge-class="{% if customer.segment == 'business' %}bg-primary text-white{% elif customer.segment == 'wine_shop' %}bg-info text-dark{% elif customer.segment == 'export' %}bg-warning text-dark{% else %}bg-light text-muted{% endif %}"
+                            >
+                                <td>
+                                    <a href="{% url 'partners:partner_detail' customer.display_id %}" class="fw-bold text-decoration-none text-wine">
+                                        {{ customer.name }}
+                                    </a>
+                                    <div class="small text-muted">{{ customer.country_code|default:"—" }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ customer.get_segment_display }}</span>
+                                </td>
+                                <td class="small">
+                                    <div><i class="bi bi-envelope text-muted me-1"></i>{{ customer.email|default:"—" }}</div>
+                                    <div><i class="bi bi-telephone text-muted me-1"></i>{{ customer.phone|default:"—" }}</div>
+                                </td>
+                                <td>
+                                    {% if customer.is_active %}
+                                        <span class="badge bg-success-subtle text-success">Actif</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactif</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group">
+                                        <a href="{% url 'partners:partner_detail' customer.display_id %}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                                        <a href="{% url 'partners:partner_edit' customer.display_id %}" class="btn btn-sm btn-outline-primary">Éditer</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    Aucun client trouvé. <a href="{% url 'partners:partner_create' %}">Créer un client</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if page_obj.has_other_pages %}
+                <div class="card-footer d-flex justify-content-center">
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ filters.query }}&segment={{ filters.segment }}&status={{ filters.status }}">Préc.</a>
+                            </li>
+                            {% endif %}
+                            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ filters.query }}&segment={{ filters.segment }}&status={{ filters.status }}">Suiv.</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="text-uppercase small fw-bold">Segments</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for segment in segments %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">{{ segment.label }}</div>
+                            <div class="small text-muted">{{ segment.percent }}% de la base</div>
+                        </div>
+                        <span class="badge bg-light text-dark">{{ segment.count }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-muted small">Aucun segment renseigné.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <span class="text-uppercase small fw-bold">Mises à jour récentes</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for item in recent_updates %}
+                    <div class="list-group-item">
+                        <div class="fw-bold">{{ item.name }}</div>
+                        <div class="small text-muted">Modifié le {{ item.updated_at|date:"d M Y" }}</div>
+                        <div class="small"><i class="bi bi-envelope me-1"></i>{{ item.email|default:"—" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-muted small">Pas encore d'activité récente.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Client preview sidebar -->
+    <div class="client-preview-overlay" id="clientPreviewOverlay"></div>
+    <aside class="client-preview-sidebar" id="clientPreviewSidebar" aria-hidden="true">
+        <div class="client-preview-header text-white">
+            <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-3" id="clientPreviewClose" aria-label="Fermer">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <div class="d-flex align-items-center gap-3">
+                <div class="client-preview-avatar" id="clientPreviewAvatar">MC</div>
+                <div>
+                    <div class="small text-white-50 text-uppercase fw-semibold letter-spacing-1" id="clientPreviewSegment">—</div>
+                    <h2 class="mb-0" id="clientPreviewName">Sélectionner un client</h2>
+                    <div class="small text-white-50" id="clientPreviewLocation"><i class="bi bi-geo-alt me-1"></i>---</div>
+                </div>
+            </div>
+        </div>
+        <div class="client-preview-content">
+            <div class="d-flex gap-2">
+                <a id="clientPreviewEmail" class="btn btn-outline-light text-wine flex-grow-1" href="#" target="_blank">
+                    <i class="bi bi-envelope me-1"></i>Email
+                </a>
+                <a id="clientPreviewPhone" class="btn btn-light text-wine flex-grow-1" href="#" target="_blank">
+                    <i class="bi bi-telephone me-1"></i>Appeler
+                </a>
+                <a id="clientPreviewWhatsapp" class="btn flex-grow-1" href="#" target="_blank" style="background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(18, 140, 126, 0.3); color: #128c7e; font-weight: 600;">
+                    <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                </a>
+            </div>
+
+            <div class="client-preview-card">
+                <h3><i class="bi bi-clipboard-data"></i>Informations rapides</h3>
+                <div class="client-preview-stats">
+                    <div class="client-preview-stat">
+                        <span class="label">Statut</span>
+                        <span class="value" id="clientPreviewStatus">—</span>
+                    </div>
+                    <div class="client-preview-stat">
+                        <span class="label">Dernière mise à jour</span>
+                        <span class="value" id="clientPreviewUpdated">—</span>
+                    </div>
+                    <div class="client-preview-stat">
+                        <span class="label">Créé le</span>
+                        <span class="value" id="clientPreviewCreated">—</span>
+                    </div>
+                    <div class="client-preview-stat">
+                        <span class="label">Pays</span>
+                        <span class="value" id="clientPreviewCountry">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="client-preview-card">
+                <h3><i class="bi bi-person-lines-fill"></i>Coordonnées</h3>
+                <div class="small text-muted">Email</div>
+                <p class="fw-semibold mb-2" id="clientPreviewEmailDisplay">—</p>
+                <div class="small text-muted">Téléphone</div>
+                <p class="fw-semibold mb-2" id="clientPreviewPhoneDisplay">—</p>
+                <div class="small text-muted">N° TVA</div>
+                <p class="fw-semibold mb-0" id="clientPreviewVAT">—</p>
+            </div>
+
+            <div class="client-preview-card">
+                <h3><i class="bi bi-lightning-charge"></i>Profil commercial</h3>
+                <p class="mb-2 small text-muted" id="clientPreviewNotes">Sélectionnez un client pour afficher les informations détaillées.</p>
+                <div class="d-flex flex-wrap gap-2" id="clientPreviewBadges">
+                    <span class="badge rounded-pill bg-warning text-dark">Bientôt</span>
+                    <span class="badge rounded-pill bg-light text-muted">Profil conso</span>
+                </div>
+            </div>
+
+            <div class="client-preview-card">
+                <h3><i class="bi bi-clock-history"></i>Historique rapide</h3>
+                <ul class="list-unstyled mb-0 small" id="clientPreviewHistory">
+                    <li class="d-flex justify-content-between">
+                        <span>Création dans le CRM</span>
+                        <span class="text-muted" id="clientHistoryCreated">—</span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                        <span>Dernière interaction</span>
+                        <span class="text-muted">Bientôt</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="client-preview-footer">
+            <div class="d-grid gap-2">
+                <a href="#" class="btn btn-primary w-100" id="clientPreviewDetailBtn">
+                    <i class="bi bi-card-text me-2"></i>Ouvrir la fiche complète
+                </a>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'ventes:quote_create' %}" class="btn btn-outline-secondary flex-grow-1">
+                        <i class="bi bi-file-earmark-plus me-1"></i> Nouveau devis
+                    </a>
+                    <a href="{% url 'ventes:order_create' %}" class="btn btn-outline-secondary flex-grow-1">
+                        <i class="bi bi-cart-plus me-1"></i> Commande
+                    </a>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const filterForm = document.getElementById('clientFilters');
+    if (filterForm) {
+        const autos = filterForm.querySelectorAll('select, input[type="text"]');
+        autos.forEach((el) => {
+            el.addEventListener('change', () => filterForm.submit());
+        });
+    }
+
+    const rows = document.querySelectorAll('[data-client-row]');
+    const overlay = document.getElementById('clientPreviewOverlay');
+    const sidebar = document.getElementById('clientPreviewSidebar');
+    const closeBtn = document.getElementById('clientPreviewClose');
+
+    const fields = {
+        avatar: document.getElementById('clientPreviewAvatar'),
+        name: document.getElementById('clientPreviewName'),
+        segment: document.getElementById('clientPreviewSegment'),
+        location: document.getElementById('clientPreviewLocation'),
+        status: document.getElementById('clientPreviewStatus'),
+        updated: document.getElementById('clientPreviewUpdated'),
+        created: document.getElementById('clientPreviewCreated'),
+        country: document.getElementById('clientPreviewCountry'),
+        email: document.getElementById('clientPreviewEmail'),
+        emailDisplay: document.getElementById('clientPreviewEmailDisplay'),
+        phone: document.getElementById('clientPreviewPhone'),
+        phoneDisplay: document.getElementById('clientPreviewPhoneDisplay'),
+        vat: document.getElementById('clientPreviewVAT'),
+        notes: document.getElementById('clientPreviewNotes'),
+        historyCreated: document.getElementById('clientHistoryCreated'),
+        detailBtn: document.getElementById('clientPreviewDetailBtn'),
+        badges: document.getElementById('clientPreviewBadges'),
+        whatsapp: document.getElementById('clientPreviewWhatsapp')
+    };
+
+    function openPreview(row) {
+        const data = row.dataset;
+        const initials = (data.name || 'MC').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        fields.avatar.textContent = initials;
+        fields.name.textContent = data.name || '—';
+        fields.segment.textContent = data.segmentLabel || '—';
+        fields.location.innerHTML = `<i class="bi bi-geo-alt me-1"></i>${data.country || '—'}`;
+        fields.status.textContent = data.status || '—';
+        fields.updated.textContent = data.updated || '—';
+        fields.created.textContent = data.created || '—';
+        fields.country.textContent = data.country || '—';
+        fields.email.href = data.email ? `mailto:${data.email}` : '#';
+        fields.emailDisplay.textContent = data.email || '—';
+        fields.phone.href = data.phoneTel || (data.phone ? `tel:${data.phone}` : '#');
+        fields.phoneDisplay.textContent = data.phone || '—';
+        fields.whatsapp.href = data.phoneWhatsapp || '#';
+        fields.vat.textContent = data.vat || '—';
+        fields.notes.textContent = data.notes || 'Profil consommateur à compléter.';
+        fields.historyCreated.textContent = data.created || '—';
+        fields.detailBtn.href = data.url || '#';
+
+        fields.badges.innerHTML = '';
+        if (data.segmentLabel) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-light text-dark rounded-pill';
+            badge.textContent = data.segmentLabel;
+            fields.badges.appendChild(badge);
+        } else {
+            fields.badges.innerHTML = '<span class="badge bg-light text-muted rounded-pill">Segment inconnu</span>';
+        }
+
+        overlay.classList.add('open');
+        sidebar.classList.add('open');
+        sidebar.setAttribute('aria-hidden', 'false');
+
+        rows.forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+    }
+
+    function closePreview() {
+        overlay.classList.remove('open');
+        sidebar.classList.remove('open');
+        sidebar.setAttribute('aria-hidden', 'true');
+        rows.forEach(r => r.classList.remove('active'));
+    }
+
+    rows.forEach(row => {
+        row.addEventListener('click', (event) => {
+            if (event.target.closest('.btn-group')) return;
+            openPreview(row);
+        });
+    });
+
+    overlay.addEventListener('click', closePreview);
+    closeBtn.addEventListener('click', closePreview);
+});
+</script>
+{% endblock %}

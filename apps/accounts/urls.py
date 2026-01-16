@@ -11,42 +11,43 @@ app_name = 'auth'
 
 urlpatterns = [
     # Authentification de base
-    path('login/', views.LoginView.as_view(), name='login'),
-    path('signup/', views.SignupView.as_view(), name='signup'),
-    path('logout/', views.logout_view, name='logout'),
+    path('connexion/', views.LoginView.as_view(), name='login'),
+    path('inscription/', views.SignupView.as_view(), name='signup'),
+    path('deconnexion/', views.logout_view, name='logout'),
     
     # Réinitialisation mot de passe
-    path('password/reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
-    path('password/reset/done/', views.PasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('reset/complete/', views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    path('mot-de-passe/reinitialisation/', views.CustomPasswordResetView.as_view(), name='password_reset'),
+    path('mot-de-passe/reinitialisation/termine/', views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('reinitialisation/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('reinitialisation/complete/', views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     
     # First-run guard (onboarding)
-    path('first-run/', views.first_run_view, name='first_run'),
-    path('first-run/org/', views.create_organization_view, name='create_organization'),
+    path('demarrage/', views.first_run_view, name='first_run'),
+    path('demarrage/organisation/', views.create_organization_view, name='create_organization'),
     
     # Gestion des rôles (Roadmap 04)
-    path('settings/roles/', views.roles_management_view, name='roles_management'),
-    path('settings/roles/invite/', views.invite_user_view, name='invite_user'),
-    path('settings/roles/change/<int:membership_id>/', views.change_role_view, name='change_role'),
-    path('settings/roles/deactivate/<int:membership_id>/', views.deactivate_member_view, name='deactivate_member'),
+    path('parametres/roles/', views.roles_management_view, name='roles_management'),
+    path('parametres/roles/inviter/', views.invite_user_view, name='invite_user'),
+    path('parametres/roles/changer/<int:membership_id>/', views.change_role_view, name='change_role'),
+    path('parametres/roles/desactiver/<int:membership_id>/', views.deactivate_member_view, name='deactivate_member'),
     
     # Invitations (Roadmap 07)
-    path('invite/accept/<str:token>/', views_invitations.accept_invitation, name='accept_invitation'),
-    path('invite/send/', views_invitations.send_invitation, name='send_invitation'),
-    path('invite/cancel/<int:invitation_id>/', views_invitations.cancel_invitation, name='cancel_invitation'),
-    path('invite/resend/<int:invitation_id>/', views_invitations.resend_invitation, name='resend_invitation'),
+    path('invitation/accepter/<str:token>/', views_invitations.accept_invitation, name='accept_invitation'),
+    path('invitation/envoyer/', views_invitations.send_invitation, name='send_invitation'),
+    path('invitation/annuler/<int:invitation_id>/', views_invitations.cancel_invitation, name='cancel_invitation'),
+    path('invitation/renvoyer/<int:invitation_id>/', views_invitations.resend_invitation, name='resend_invitation'),
     
     # Paramètres (Roadmap 09)
-    path('settings/billing/', views_settings.billing_settings, name='billing_settings'),
-    path('settings/general/', views_settings.general_settings, name='general_settings'),
+    # Note: Des alias "pretty" existent à la racine (/parametres/facturation/)
+    path('parametres/facturation/', views_settings.billing_settings, name='billing_settings'),
+    path('parametres/general/', views_settings.general_settings, name='general_settings'),
     
     # Profil utilisateur (Roadmap 10)
-    path('me/profile/', views_profile.profile_view, name='profile'),
-    path('me/team/<int:member_id>/', views_profile.member_detail_view, name='member_detail'),
+    path('mon-profil/', views_profile.profile_view, name='profile'),
+    path('equipe/<int:member_id>/', views_profile.member_detail_view, name='member_detail'),
     
     # Dashboard personnalisable
-    path('dashboard/configure/', views.dashboard_configure, name='dashboard_configure'),
+    path('tableau-de-bord/configuration/', views.dashboard_configure, name='dashboard_configure'),
     
     # API Dashboard
     path('api/dashboard/config/', views_dashboard_api.save_dashboard_config, name='api_save_dashboard_config'),
@@ -60,10 +61,10 @@ urlpatterns = [
     path('api/shortcuts/delete/<int:shortcut_id>/', views_shortcuts.delete_shortcut, name='api_shortcut_delete'),
     
     # Gestion multi-chai (UX Points 1-18)
-    path('organizations/', views_orgs.my_organizations, name='my_organizations'),
-    path('organizations/select/', views_orgs.select_organization, name='select_organization'),
-    path('organizations/create/', views_orgs.create_organization, name='create_organization'),
-    path('organizations/switch/<int:org_id>/', views_orgs.switch_org, name='switch_org'),
-    path('organizations/leave/<int:org_id>/', views_orgs.leave_organization, name='leave_organization'),
-    path('organizations/accept/<int:invitation_id>/', views_orgs.accept_invitation_quick, name='accept_invitation_quick'),
+    path('organisations/', views_orgs.my_organizations, name='my_organizations'),
+    path('organisations/selection/', views_orgs.select_organization, name='select_organization'),
+    path('organisations/creer/', views_orgs.create_organization, name='create_organization'),
+    path('organisations/changer/<int:org_id>/', views_orgs.switch_org, name='switch_org'),
+    path('organisations/quitter/<int:org_id>/', views_orgs.leave_organization, name='leave_organization'),
+    path('organisations/accepter/<int:invitation_id>/', views_orgs.accept_invitation_quick, name='accept_invitation_quick'),
 ]

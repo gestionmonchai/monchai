@@ -7,7 +7,7 @@ from django import forms
 from .models_catalog import Product, SKU, ProductType, PurchaseProfile, SalesProfile
 from apps.viticulture.models import Cuvee
 from apps.referentiels.models import Unite
-from apps.sales.models import Customer
+from apps.partners.models import Contact
 
 
 class ProductForm(forms.ModelForm):

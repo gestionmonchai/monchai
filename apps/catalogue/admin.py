@@ -9,23 +9,9 @@ class ArticleCategoryAdmin(admin.ModelAdmin):
     list_filter = ('organization',)
 
 
-@admin.register(Article)
-class ArticleAdmin(admin.ModelAdmin):
-    list_display = ('sku', 'name', 'article_type', 'category', 'price_ht', 'unit', 'is_active')
-    list_filter = ('article_type', 'is_active', 'organization', 'category')
-    search_fields = ('name', 'sku', 'description')
-    ordering = ('name',)
-    fieldsets = (
-        ('Identification', {
-            'fields': ('organization', 'category', 'article_type', 'name', 'sku', 'description')
-        }),
-        ('Commercial', {
-            'fields': ('price_ht', 'vat_rate', 'unit', 'is_active')
-        }),
-        ('Paramètres', {
-            'fields': ('is_stock_managed',)
-        })
-    )
+# NOTE: Article est maintenant un alias de Product (apps.produits.models_catalog)
+# L'admin Product est géré dans apps.produits.admin
+# @admin.register(Article) - DÉSACTIVÉ car géré par produits.ProductAdmin
 
 
 @admin.register(ArticleStock)

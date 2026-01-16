@@ -1,0 +1,86 @@
+{% for partner in partners %}
+<tr class="{% if not partner.is_active %}table-secondary{% endif %}">
+    <td>
+        <a href="{% url 'partners:partner_detail' display_id=partner.display_id %}" class="text-decoration-none fw-medium">
+            {{ partner.code }}
+        </a>
+    </td>
+    <td>
+        <div class="d-flex flex-column">
+            <a href="{% url 'partners:partner_detail' display_id=partner.display_id %}" class="text-decoration-none fw-medium text-dark">
+                {{ partner.name }}
+            </a>
+            {% if partner.segment %}
+            <small class="text-muted">{{ partner.get_segment_display }}</small>
+            {% endif %}
+        </div>
+    </td>
+    {% if not role_filter %}
+    <td>
+        <div class="d-flex flex-wrap gap-1">
+            {% for role in partner.roles.all %}
+            <span class="badge bg-{{ role.color }}" title="{{ role.label }}">
+                <i class="bi {{ role.icon }} me-1"></i>{{ role.label }}
+            </span>
+            {% empty %}
+            <span class="text-muted">-</span>
+            {% endfor %}
+        </div>
+    </td>
+    {% endif %}
+    <td>
+        <div class="d-flex flex-column">
+            {% if partner.email %}
+            <a href="mailto:{{ partner.email }}" class="text-decoration-none small">
+                <i class="bi bi-envelope me-1"></i>{{ partner.email }}
+            </a>
+            {% endif %}
+            {% if partner.phone %}
+            <a href="tel:{{ partner.phone }}" class="text-decoration-none small text-muted">
+                <i class="bi bi-telephone me-1"></i>{{ partner.phone }}
+            </a>
+            {% endif %}
+            {% if not partner.email and not partner.phone %}
+            <span class="text-muted">-</span>
+            {% endif %}
+        </div>
+    </td>
+    <td>
+        {% with addr=partner.primary_address %}
+        {% if addr %}
+        <span class="small">{{ addr.city }}, {{ addr.country }}</span>
+        {% else %}
+        <span class="text-muted">{{ partner.country_code }}</span>
+        {% endif %}
+        {% endwith %}
+    </td>
+    <td>
+        {% if partner.is_active %}
+        <span class="badge bg-success">Actif</span>
+        {% else %}
+        <span class="badge bg-secondary">Inactif</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="{% url 'partners:partner_detail' display_id=partner.display_id %}" 
+               class="btn btn-outline-primary" title="Voir">
+                <i class="bi bi-eye"></i>
+            </a>
+            {% if user.get_active_membership.can_edit_data %}
+            <a href="{% url 'partners:partner_edit' display_id=partner.display_id %}" 
+               class="btn btn-outline-secondary" title="Modifier">
+                <i class="bi bi-pencil"></i>
+            </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="{% if role_filter %}6{% else %}7{% endif %}" class="text-center py-4 text-muted">
+        <i class="bi bi-inbox display-6"></i>
+        <p class="mb-0 mt-2">Aucun résultat</p>
+    </td>
+</tr>
+{% endfor %}

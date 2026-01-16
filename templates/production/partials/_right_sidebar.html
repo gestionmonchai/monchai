@@ -56,6 +56,9 @@ Variables attendues :
                 <a href="{% url 'production:lot_tech_soutirage' primary_object.pk %}" class="action-btn">
                     <i class="bi bi-arrow-down-up text-secondary"></i><span>Soutirage</span>
                 </a>
+                <a href="{% url 'production:mise_new' %}?step=1&source_lot={{ primary_object.pk }}" class="action-btn">
+                    <i class="bi bi-bottle text-danger"></i><span>Mise en bouteille</span>
+                </a>
                 {% elif primary_object_type == 'parcelle' %}
                 <a href="{% url 'production:journal_cultural' %}?parcelle={{ primary_object.pk }}" class="action-btn">
                     <i class="bi bi-journal-text text-success"></i><span>Journal cultural</span>

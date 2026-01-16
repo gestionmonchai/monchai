@@ -1,0 +1,64 @@
+{% extends '_layout/sidebar_base.html' %}
+
+{% block sidebar_nav_items %}
+<!-- MON ORGANISATION -->
+<div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #0d6efd;">
+    <span class="sidebar-label">Mon Organisation</span>
+</div>
+
+<a href="{% url 'billing_settings_pretty' %}" class="list-group-item list-group-item-action d-flex align-items-center {% if '/parametres/facturation/' in request.path %}active{% endif %}">
+    <i class="bi bi-info-circle me-3"></i>
+    <span class="sidebar-label">Informations</span>
+</a>
+
+<a href="#" class="list-group-item list-group-item-action d-flex align-items-center disabled">
+    <i class="bi bi-credit-card me-3"></i>
+    <span class="sidebar-label">Abonnements</span>
+    <span class="badge bg-light text-dark ms-auto rounded-pill" style="font-size: 0.6rem;">Bientôt</span>
+</a>
+
+<a href="{% url 'general_settings_pretty' %}" class="list-group-item list-group-item-action d-flex align-items-center {% if '/parametres/general/' in request.path %}active{% endif %}">
+    <i class="bi bi-sliders me-3"></i>
+    <span class="sidebar-label">Paramètres</span>
+</a>
+
+<!-- ÉQUIPE & ACCÈS -->
+<div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #6610f2;">
+    <span class="sidebar-label">Équipe & Accès</span>
+</div>
+
+<a href="{% url 'auth:roles_management' %}" class="list-group-item list-group-item-action d-flex align-items-center {% if '/parametres/roles/' in request.path %}active{% endif %}">
+    <i class="bi bi-people me-3"></i>
+    <span class="sidebar-label">Collaborateurs</span>
+</a>
+
+<a href="{% url 'auth:roles_management' %}" class="list-group-item list-group-item-action d-flex align-items-center {% if '/parametres/permissions/' in request.path %}active{% endif %}">
+    <i class="bi bi-shield-lock me-3"></i>
+    <span class="sidebar-label">Rôles & Permissions</span>
+</a>
+
+<!-- INFRASTRUCTURE -->
+<div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #fd7e14;">
+    <span class="sidebar-label">Infrastructure</span>
+</div>
+
+<a href="{% url 'referentiels:entrepot_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+    <i class="bi bi-buildings me-3"></i>
+    <span class="sidebar-label">Sites & Bâtiments</span>
+</a>
+
+<a href="{% url 'production:contenants_list' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+    <i class="bi bi-box-seam me-3"></i>
+    <span class="sidebar-label">Inventaire Matériel</span>
+</a>
+
+<!-- Navigation globale -->
+<div class="sidebar-section-header list-group-item bg-light fw-bold text-uppercase small py-1 mt-2" style="color: #6c757d;">
+    <span class="sidebar-label">Navigation</span>
+</div>
+
+<a href="{% url 'auth:my_organizations' %}" class="list-group-item list-group-item-action d-flex align-items-center {% if request.resolver_match.url_name == 'my_organizations' %}active{% endif %}">
+    <i class="bi bi-grid me-3"></i>
+    <span class="sidebar-label">Mes chais</span>
+</a>
+{% endblock %}

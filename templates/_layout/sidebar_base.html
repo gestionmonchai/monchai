@@ -1,26 +1,4 @@
 {% load static %}
-{#
-=====================================================================
-SIDEBAR BASE - Template de sidebar réutilisable
-=====================================================================
-Structure standardisée pour toutes les sidebars (ventes, production, 
-achats, compta, etc.). Personnaliser via les variables et blocks.
-
-Variables requises:
-    - sidebar_title: Titre affiché (ex: "Ventes", "Production")
-    - sidebar_icon: Icône Bootstrap (ex: "bi-graph-up-arrow")
-    - sidebar_color: Couleur du header (ex: "#0d6efd", "#722f37")
-
-Variables optionnelles:
-    - sidebar_gradient_end: Couleur fin du gradient (défaut: plus foncé)
-    - sidebar_accent_color: Couleur d'accent pour items actifs
-
-Blocks disponibles:
-    - sidebar_header_actions: Actions dans le header (badges, boutons)
-    - sidebar_quick_actions: Boutons d'action rapide sous le header
-    - sidebar_nav_items: Items de navigation
-=====================================================================
-#}
 
 <div class="card sidebar-card shadow-sm mb-4 border-0" style="--sidebar-accent-color: {{ sidebar_accent_color|default:sidebar_color }};">
     <!-- HEADER -->

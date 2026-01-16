@@ -679,8 +679,12 @@ def cepage_detail(request, pk):
 @require_membership(role_min='editor')
 @require_http_methods(["GET", "POST"])
 def cepage_create(request):
-    """Création d'un cépage"""
+    """Création d'un cépage (supporte le mode modal HTMX)."""
     organization = request.current_org
+    is_htmx = request.headers.get('HX-Request') == 'true' or request.GET.get('modal') == '1'
+    template_name = 'referentiels/cepage_form.html'
+    if is_htmx:
+        template_name = 'referentiels/partials/modal_cepage_form.html'
     
     if request.method == 'POST':
         form = CepageForm(request.POST, organization=organization)
@@ -688,6 +692,17 @@ def cepage_create(request):
             cepage = form.save(commit=False)
             cepage.organization = organization
             cepage.save()
+            
+            if is_htmx:
+                payload = {
+                    'id': cepage.pk,
+                    'nom': cepage.nom,
+                    'couleur': cepage.couleur,
+                    'couleur_label': cepage.get_couleur_display(),
+                }
+                response = HttpResponse('')
+                response['HX-Trigger'] = json.dumps({'cepage-added': payload})
+                return response
             
             messages.success(request, f'Le cépage "{cepage.nom}" a été créé avec succès.')
             return redirect('referentiels:cepage_detail', pk=cepage.pk)
@@ -697,10 +712,11 @@ def cepage_create(request):
     context = {
         'form': form,
         'organization': organization,
-        'page_title': 'Nouveau cépage'
+        'page_title': 'Nouveau cépage',
+        'is_modal': is_htmx,
     }
     
-    return render(request, 'referentiels/cepage_form.html', context)
+    return render(request, template_name, context)
 
 
 @require_membership(role_min='editor')

@@ -10,9 +10,9 @@ achats, compta, etc.). Le CSS est identique partout, seul le contenu
 de la sidebar change.
 
 Usage:
-    {% extends '_layout/base_with_sidebar.html' %}
-    {% block sidebar_include %}{% include '_layout/sidebar_xxx.html' %}{% endblock %}
-    {% block page_content %}...{% endblock %}
+    [extends '_layout/base_with_sidebar.html']
+    [block sidebar_include] include '_layout/sidebar_xxx.html' [/block]
+    [block page_content] ... [/block]
 
 Variables de configuration (optionnelles):
     - sidebar_id: ID unique du layout (défaut: 'page-layout')

@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('accounts', '0019_cepages_reference'),
-        ('clients', '0004_alter_customer_segment'),
+        ('partners', '0001_create_partners_models'),
         ('produits', '0011_lot_commercial_etiquetage'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
                 ('internal_notes', models.TextField(blank=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='commercial_documents', to='clients.customer', verbose_name='Tiers (Client/Fournisseur)')),
+                ('client', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='commercial_documents', to='partners.contact', verbose_name='Tiers (Client/Fournisseur)')),
                 ('created_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
                 ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='commerce_documents', to='accounts.organization')),
                 ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='children', to='commerce.commercialdocument', verbose_name='Document parent')),

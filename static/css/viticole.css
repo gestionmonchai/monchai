@@ -936,6 +936,14 @@ img, svg, video {
     min-width: 180px;
 }
 
+@media (min-width: 992px) {
+    .navbar .dropdown:hover > .dropdown-menu,
+    .navbar .dropdown:focus-within > .dropdown-menu {
+        display: block;
+        margin-top: 0;
+    }
+}
+
 /* Affichage au survol */
 .dropdown-submenu:hover > .dropdown-menu {
     display: block;

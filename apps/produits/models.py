@@ -9,9 +9,10 @@ from apps.viticulture.models import Appellation as ViticultureAppellation
 from apps.accounts.models import Organization
 from apps.referentiels.models import Unite
 from apps.core.tenancy import TenantManager
-from apps.sales.models import Customer  # supplier as Customer
+from apps.partners.models import Contact  # Modèle unifié pour clients/fournisseurs
 from apps.production.models import LotTechnique
 from .models_catalog import Product  # register Product model for FK resolution
+from .models_supplies import Supply, SupplyCategory, SupplyStock, SupplyMovement  # Fournitures
 
 
 class Mise(models.Model):
@@ -127,7 +128,7 @@ class PurchaseBatchVrac(models.Model):
     """Achat de vrac (négoce)."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    supplier = models.ForeignKey(Customer, on_delete=models.PROTECT)
+    supplier = models.ForeignKey(Contact, on_delete=models.PROTECT)
     appellation = models.ForeignKey(ViticultureAppellation, null=True, blank=True, on_delete=models.SET_NULL)
     vintage = models.PositiveIntegerField(null=True, blank=True)
     volume_l = models.DecimalField(max_digits=12, decimal_places=2)
@@ -150,7 +151,7 @@ class PurchaseBatchBottle(models.Model):
     """Achat de bouteilles (négoce)."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    supplier = models.ForeignKey(Customer, on_delete=models.PROTECT)
+    supplier = models.ForeignKey(Contact, on_delete=models.PROTECT)
     product_label = models.CharField(max_length=200)
     ean_supplier = models.CharField(max_length=64, blank=True)
     unit = models.ForeignKey(Unite, on_delete=models.PROTECT)

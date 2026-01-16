@@ -11,10 +11,10 @@ from .views_journal_entry import (
 app_name = 'viticulture'
 
 urlpatterns = [
-    path('cuvee/<int:pk>/change/', views.cuvee_change, name='cuvee_change'),
+    path('cuvee/<int:pk>/modifier/', views.cuvee_change, name='cuvee_change'),
     # Journal de parcelle (lecture seule)
     path('parcelles/<int:pk>/journal/', ParcelleJournalView.as_view(), name='parcelle_journal'),
-    path('parcelles/<int:pk>/journal/partial/', ParcelleJournalPartial.as_view(), name='parcelle_journal_partial'),
+    path('parcelles/<int:pk>/journal/partiel/', ParcelleJournalPartial.as_view(), name='parcelle_journal_partial'),
     # Création d'opérations rapides (lecture/écriture via journal)
     path('parcelles/<int:pk>/operation/<str:code>/', ParcelleQuickOpCreateView.as_view(), name='parcelle_quick_op'),
     

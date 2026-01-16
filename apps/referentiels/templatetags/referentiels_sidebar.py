@@ -30,11 +30,11 @@ ENTITY_SWITCHER = [
 ENTITY_CONFIG = {
     'clients': {
         'label': _('Clients & contacts'),
-        'primary': {'label': _('Nouveau client'), 'href': _safe_url('clients:customer_create'), 'icon': 'bi-person-plus-fill'},
+        'primary': {'label': _('Nouveau client'), 'href': _safe_url('partners:partner_create'), 'icon': 'bi-person-plus-fill'},
         'quick_actions': [
-            _action(_('Nouveau contact'), 'bi-person-plus', _safe_url('clients:customer_create') + '#contact'),
-            _action(_('Import CSV'), 'bi-upload', '/referentiels/clients/import/', tone='warning'),
-            _action(_('Exporter (CSV/Excel)'), 'bi-download', _safe_url('clients:customers_export')),
+            _action(_('Nouveau contact'), 'bi-person-plus', _safe_url('partners:partner_create') + '#contact'),
+            _action(_('Import CSV'), 'bi-upload', '/referentiels/contacts/import/', tone='warning'),
+            _action(_('Exporter (CSV/Excel)'), 'bi-download', _safe_url('partners:partners_export')),
             _action(_('Segments & tags'), 'bi-tags', '/referentiels/clients/tags/', tone='secondary'),
             _action(_('Détecter doublons'), 'bi-shuffle', '/referentiels/clients/duplicates/', tone='danger'),
             _action(_('Champs personnalisés'), 'bi-sliders', '/referentiels/clients/custom-fields/', tone='secondary'),
@@ -42,7 +42,7 @@ ENTITY_CONFIG = {
         'used_in': [
             {'label': _('Ventes / Clients'), 'href': '/ventes/clients/'},
             {'label': _('Production / Parcelles'), 'href': '/production/parcelles/'},
-            {'label': _('Compta / Tiers'), 'href': '/compta/ventes/'},
+            {'label': _('Compta / Tiers'), 'href': _safe_url('compta:ventes')},
         ],
     },
     'parcelles': {

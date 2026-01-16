@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from apps.accounts.models import Organization
-from apps.clients.models import Customer
+from apps.partners.models import Partner as Customer
 from apps.produits.models_catalog import SKU
 
 class CommercialDocument(models.Model):
