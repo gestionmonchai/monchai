@@ -634,7 +634,8 @@ def render_single_block(block_type, props):
         if p.get('show_date', True):
             parts.append(f'<p>{p.get("date_label", "Date")} : {{{{ document.date|date:"d/m/Y" }}}}</p>')
         if p.get('show_validity'):
-            parts.append(f'<p>{p.get("validity_label", "Valable jusqu\'au")} : {{{{ document.valid_until|date:"d/m/Y" }}}}</p>')
+            validity_label = p.get('validity_label', "Valable jusqu'au")
+            parts.append(f'<p>{validity_label} : {{{{ document.valid_until|date:"d/m/Y" }}}}</p>')
         if p.get('show_due_date'):
             parts.append(f'<p>{p.get("due_date_label", "Échéance")} : {{{{ document.due_date|date:"d/m/Y" }}}}</p>')
         return f'<div style="text-align: {p.get("alignment", "left")}; font-size: {p.get("font_size", 12)}px;">{"".join(parts)}</div>'
